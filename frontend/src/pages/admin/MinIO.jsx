@@ -40,99 +40,166 @@ function parentPath(path) {
   return parts.join("/");
 }
 
+function splitPath(path) {
+  return path.split("/").filter(Boolean);
+}
+
 function lastName(path) {
-  const parts = path.split("/").filter(Boolean);
+  const parts = splitPath(path);
   return parts[parts.length - 1] || "";
 }
 
+function makeDefaultCats() {
+  const t = Date.now();
+  return [
+    { id: `cat-${t}-topic`, name: "topic" },
+    { id: `cat-${t}-lesson`, name: "lesson" },
+    { id: `cat-${t}-chunk`, name: "chunk" },
+  ];
+}
+
 export default function MinIO() {
+  const [currentPath, setCurrentPath] = useState(""); // "" = root
   const [q, setQ] = useState("");
-
-  // currentPath là folder hiện tại trong cây folder
-  // "" = root (đang xem danh sách folder root)
-  const [currentPath, setCurrentPath] = useState("");
-
-  // Khi chưa vào folder nào => mode "folders"
-  // Khi đã click vào 1 folder cụ thể => mode "files"
-  const [selectedFolder, setSelectedFolder] = useState(null); // full path folder đang xem file
 
   const [openCreateFolder, setOpenCreateFolder] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openInsert, setOpenInsert] = useState(false);
   const [openFilter, setOpenFilter] = useState(false);
-
   const [filters, setFilters] = useState({ type: "all" });
 
-  // ===== MOCK TREE FOLDERS (lồng folder) =====
-  // path: "documents/reports/2026"
+  // ====== FOLDERS: chỉ lưu folder thật (documents/class/subject) ======
   const [folders, setFolders] = useState([
-    { id: "f1", path: "documents" },
-    { id: "f2", path: "documents/reports" },
-    { id: "f3", path: "documents/reports/2026" },
-    { id: "f4", path: "images" },
-    { id: "f5", path: "images/events" },
-    { id: "f6", path: "backup" },
+    { id: "doc", path: "documents" },
+    { id: "c10", path: "documents/class-10" },
+    { id: "c11", path: "documents/class-11" },
+    { id: "s101", path: "documents/class-10/tin-hoc" },
+    { id: "s102", path: "documents/class-10/toan" },
+    { id: "s111", path: "documents/class-11/tin-hoc" },
   ]);
 
-  // files chỉ tồn tại khi đang xem 1 selectedFolder
-  const [filesByFolder, setFilesByFolder] = useState({
-    "documents": [
-      { id: "d2", name: "outline.docx", size: 880000, updatedAt: "2026-01-25 09:10", meta: {} },
+  // ====== SUBJECT CATS: folder level 4 dưới mỗi subject (rename/xoá/tạo thêm được) ======
+  const [subjectCats, setSubjectCats] = useState({
+    "documents/class-10/tin-hoc": [
+      { id: "cat-th-topic", name: "topic" },
+      { id: "cat-th-lesson", name: "lesson" },
+      { id: "cat-th-chunk", name: "chunk" },
     ],
-    "documents/reports/2026": [
-      { id: "d1", name: "report.pdf", size: 2430000, updatedAt: "2026-01-26 14:20", meta: { subject: "Toán" } },
+    "documents/class-10/toan": [
+      { id: "cat-to-topic", name: "topic" },
+      { id: "cat-to-lesson", name: "lesson" },
+      { id: "cat-to-chunk", name: "chunk" },
     ],
-    "images": [
-      { id: "i1", name: "campus.png", size: 340210, updatedAt: "2026-01-24 18:02", meta: {} },
+    "documents/class-11/tin-hoc": [
+      { id: "cat-11-topic", name: "topic" },
+      { id: "cat-11-lesson", name: "lesson" },
+      { id: "cat-11-chunk", name: "chunk" },
     ],
-    "images/events": [
-      { id: "i2", name: "opening.jpg", size: 1203210, updatedAt: "2026-01-23 11:40", meta: {} },
-    ],
-    "backup": [],
   });
 
-  const isViewingFiles = !!selectedFolder;
+  // ====== FILES ======
+  const [filesByFolder, setFilesByFolder] = useState({
+    images: [
+      { id: "im1", name: "campus.png", size: 340210, updatedAt: "2026-01-24 18:02", meta: {} },
+      { id: "im2", name: "opening.jpg", size: 1203210, updatedAt: "2026-01-23 11:40", meta: {} },
+    ],
+    video: [
+      { id: "v1", name: "intro.mp4", size: 52340210, updatedAt: "2026-01-22 20:00", meta: {} },
+    ],
 
-  // ===== LIST CHILD FOLDERS of currentPath =====
-  const childFolders = useMemo(() => {
+    "documents/class-10/tin-hoc/topic": [
+      { id: "t1", name: "topic-1.pdf", size: 2430000, updatedAt: "2026-01-26 14:20", meta: {} },
+    ],
+    "documents/class-10/tin-hoc/lesson": [
+      { id: "l1", name: "lesson-1.pdf", size: 1890000, updatedAt: "2026-01-25 10:00", meta: {} },
+    ],
+    "documents/class-10/tin-hoc/chunk": [
+      { id: "k1", name: "chunk-001.txt", size: 900, updatedAt: "2026-01-26 14:22", meta: {} },
+    ],
+  });
+
+  // ====== DERIVE ======
+  const parts = splitPath(currentPath);
+  const section = parts[0] || "";
+
+  const isRoot = currentPath === "";
+  const isImages = currentPath === "images";
+  const isVideo = currentPath === "video";
+  const isDocuments = section === "documents";
+
+  const isDocsSubject = isDocuments && parts.length === 3; // documents/class-10/tin-hoc
+  const isDocsCategory = isDocuments && parts.length === 4; // bất kỳ folder level 4 => file view
+
+  const isFileView = isImages || isVideo || isDocsCategory;
+  const isFolderView = isRoot || (isDocuments && !isDocsCategory);
+
+  // ====== ROOT rows ======
+  const rootRows = useMemo(() => {
+    const items = [
+      { id: "r-doc", name: "documents", fullPath: "documents", isFixed: true },
+      { id: "r-img", name: "images", fullPath: "images", isFixed: true },
+      { id: "r-vid", name: "video", fullPath: "video", isFixed: true },
+    ];
+    const s = q.trim().toLowerCase();
+    return !s ? items : items.filter((x) => x.name.toLowerCase().includes(s));
+  }, [q]);
+
+  // ====== Child folders for documents ======
+  const docChildFolders = useMemo(() => {
+    if (!isDocuments) return [];
+
+    // subject => show cats
+    if (isDocsSubject) {
+      const cats = subjectCats[currentPath] || [];
+      const s = q.trim().toLowerCase();
+      const rows = cats.map((c) => ({
+        id: c.id,
+        name: c.name,
+        fullPath: `${currentPath}/${c.name}`,
+        isCategory: true,
+        subjectPath: currentPath,
+      }));
+      return !s ? rows : rows.filter((x) => x.name.toLowerCase().includes(s));
+    }
+
+    // documents/class => show direct child folders
     const prefix = currentPath ? currentPath + "/" : "";
-
     const direct = folders.filter((f) => {
-      if (currentPath === "") {
-        // root: folder không có "/"
-        return !f.path.includes("/");
-      }
+      if (f.path === currentPath) return false;
       if (!f.path.startsWith(prefix)) return false;
       const rest = f.path.slice(prefix.length);
       return rest.length > 0 && !rest.includes("/");
     });
 
-    // search theo tên folder (chỉ dùng khi đang xem folder list)
     const s = q.trim().toLowerCase();
     const searched = !s ? direct : direct.filter((f) => lastName(f.path).toLowerCase().includes(s));
-    return [...searched].sort((a, b) => lastName(a.path).localeCompare(lastName(b.path)));
-  }, [folders, currentPath, q]);
 
-  // ===== LIST FILES of selectedFolder =====
+    return [...searched]
+      .map((f) => ({
+        id: f.id,
+        name: lastName(f.path),
+        fullPath: f.path,
+        isCategory: false,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [folders, currentPath, q, isDocuments, isDocsSubject, subjectCats]);
+
+  // ====== Files in currentPath ======
   const fileRows = useMemo(() => {
-    if (!selectedFolder) return [];
-    const list = filesByFolder[selectedFolder] || [];
+    if (!isFileView) return [];
 
-    // filter type
+    const list = filesByFolder[currentPath] || [];
     const byType =
       filters.type === "all" ? list : list.filter((x) => getFileType(x.name) === filters.type);
 
-    // search theo tên file
     const s = q.trim().toLowerCase();
     const searched = !s ? byType : byType.filter((x) => x.name.toLowerCase().includes(s));
 
     return [...searched].sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedFolder, filesByFolder, q, filters]);
+  }, [filesByFolder, currentPath, q, filters, isFileView]);
 
-  // ===== COLUMNS =====
-  const folderColumns = [
-    { key: "name", label: "FOLDER", render: (r) => `📁 ${r.name}` },
-  ];
+  // ====== Columns ======
+  const folderColumns = [{ key: "name", label: "THƯ MỤC", render: (r) => `📁 ${r.name}` }];
 
   const fileColumns = [
     { key: "name", label: "TÊN FILE" },
@@ -148,53 +215,272 @@ export default function MinIO() {
     { key: "updatedAt", label: "CẬP NHẬT" },
   ];
 
-  // ===== ACTIONS =====
+  // ====== Nav ======
+  function goBack() {
+    if (isRoot) return;
+    setCurrentPath(parentPath(currentPath));
+    setQ("");
+    setFilters({ type: "all" });
+  }
+
+  function openFolder(fullPath) {
+    setCurrentPath(fullPath);
+    setQ("");
+    setFilters({ type: "all" });
+  }
+
+  // ====== Create folder rules ======
+  function canCreateFolderHere() {
+    if (!isDocuments) return false;
+    if (isDocsCategory) return false;
+    // cho tạo ở: documents (1), class (2), subject (3)
+    return parts.length === 1 || parts.length === 2 || parts.length === 3;
+  }
+
   function createFolder(name) {
     const n = name.trim();
     if (!n) return;
 
-    const newPath = currentPath ? `${currentPath}/${n}` : n;
+    if (!canCreateFolderHere()) {
+      alert("Không thể tạo thư mục ở vị trí này.");
+      return;
+    }
+    if (n.includes("/")) {
+      alert("Tên folder không được chứa dấu '/'.");
+      return;
+    }
 
+    // Nếu đang ở SUBJECT => tạo folder level 4
+    if (parts.length === 3) {
+      const cats = subjectCats[currentPath] || [];
+      if (cats.some((c) => c.name === n)) {
+        alert("Folder đã tồn tại trong subject này!");
+        return;
+      }
+
+      setSubjectCats((prev) => ({
+        ...prev,
+        [currentPath]: [{ id: String(Date.now()), name: n }, ...(prev[currentPath] || [])],
+      }));
+
+      const full = `${currentPath}/${n}`;
+      setFilesByFolder((prev) => ({ ...prev, [full]: prev[full] || [] }));
+
+      setOpenCreateFolder(false);
+      return;
+    }
+
+    // documents / class => tạo folder thật
+    const newPath = `${currentPath}/${n}`;
     if (folders.some((f) => f.path === newPath)) {
       alert("Folder đã tồn tại ở vị trí này!");
       return;
     }
 
     setFolders((prev) => [{ id: String(Date.now()), path: newPath }, ...prev]);
-    // tạo sẵn list files cho folder mới
-    setFilesByFolder((prev) => ({ ...prev, [newPath]: [] }));
+
+    // nếu vừa tạo subject => auto tạo 3 folder mặc định (rename/xoá được)
+    if (splitPath(newPath).length === 3) {
+      setSubjectCats((prev) => ({ ...prev, [newPath]: makeDefaultCats() }));
+    }
+
     setOpenCreateFolder(false);
   }
 
-  function openFolderFolderList(folderPath) {
-    // vào thư mục con (tiếp tục xem list folder con)
-    setCurrentPath(folderPath);
-    setQ("");
+  // ====== Edit/Delete folder ======
+  function canEditDeleteFolder(row) {
+    if (row?.isFixed) return false;
+    if (row?.isCategory) return true; // subject cats
+    const len = splitPath(row.fullPath).length;
+    return row.fullPath.startsWith("documents/") && (len === 2 || len === 3);
   }
 
-  function viewFilesInFolder(folderPath) {
-    // chuyển qua view files trong folder này
-    setSelectedFolder(folderPath);
+  function renameFolderPath(oldPath, newPath) {
+    // update folders
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.path === oldPath || f.path.startsWith(oldPath + "/")) {
+          return { ...f, path: newPath + f.path.slice(oldPath.length) };
+        }
+        return f;
+      })
+    );
+
+    // update filesByFolder keys
+    setFilesByFolder((prev) => {
+      const next = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (k === oldPath || k.startsWith(oldPath + "/")) {
+          const nk = newPath + k.slice(oldPath.length);
+          next[nk] = v;
+        } else {
+          next[k] = v;
+        }
+      }
+      return next;
+    });
+
+    // update subjectCats keys
+    setSubjectCats((prev) => {
+      const next = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (k === oldPath || k.startsWith(oldPath + "/")) {
+          const nk = newPath + k.slice(oldPath.length);
+          next[nk] = v;
+        } else {
+          next[k] = v;
+        }
+      }
+      return next;
+    });
+
+    // update currentPath if inside
+    setCurrentPath((cp) => {
+      if (cp === oldPath || cp.startsWith(oldPath + "/")) {
+        return newPath + cp.slice(oldPath.length);
+      }
+      return cp;
+    });
+
     setQ("");
     setFilters({ type: "all" });
   }
 
-  function back() {
-    if (isViewingFiles) {
-      // đang xem file => quay về list folder của folder đó
-      setSelectedFolder(null);
-      setQ("");
-      setFilters({ type: "all" });
+  function editCategory(row) {
+    const subjectPath = row.subjectPath;
+    const oldName = row.name;
+    const oldFull = row.fullPath;
+
+    const n = window.prompt("Tên mới:", oldName);
+    if (n == null) return;
+    const name = n.trim();
+    if (!name) return;
+
+    if (name.includes("/")) {
+      alert("Tên folder không được chứa dấu '/'.");
       return;
     }
 
-    // đang xem list folder => về folder cha
-    setCurrentPath(parentPath(currentPath));
+    const cats = subjectCats[subjectPath] || [];
+    if (cats.some((c) => c.name === name)) {
+      alert("Tên folder bị trùng trong subject này!");
+      return;
+    }
+
+    const newFull = `${subjectPath}/${name}`;
+
+    setSubjectCats((prev) => ({
+      ...prev,
+      [subjectPath]: (prev[subjectPath] || []).map((c) => (c.id === row.id ? { ...c, name } : c)),
+    }));
+
+    setFilesByFolder((prev) => {
+      const next = { ...prev };
+      if (oldFull in next) {
+        next[newFull] = next[oldFull];
+        delete next[oldFull];
+      } else {
+        next[newFull] = next[newFull] || [];
+      }
+      return next;
+    });
+
+    setCurrentPath((cp) => (cp === oldFull ? newFull : cp));
     setQ("");
+    setFilters({ type: "all" });
+  }
+
+  function deleteCategory(row) {
+    const subjectPath = row.subjectPath;
+    const full = row.fullPath;
+
+    if (!confirm(`Xoá folder "${row.name}" và toàn bộ file bên trong? (demo)`)) return;
+
+    setSubjectCats((prev) => ({
+      ...prev,
+      [subjectPath]: (prev[subjectPath] || []).filter((c) => c.id !== row.id),
+    }));
+
+    setFilesByFolder((prev) => {
+      const next = { ...prev };
+      delete next[full];
+      return next;
+    });
+
+    setCurrentPath((cp) => (cp === full ? subjectPath : cp));
+    setQ("");
+    setFilters({ type: "all" });
+  }
+
+  function editFolder(row) {
+    if (row?.isCategory) return editCategory(row);
+
+    const oldPath = row.fullPath;
+    const oldName = lastName(oldPath);
+
+    const n = window.prompt("Tên mới:", oldName);
+    if (n == null) return;
+    const name = n.trim();
+    if (!name) return;
+
+    if (name.includes("/")) {
+      alert("Tên folder không được chứa dấu '/'.");
+      return;
+    }
+
+    const p = parentPath(oldPath);
+    const newPath = p ? `${p}/${name}` : name;
+
+    if (folders.some((f) => f.path === newPath)) {
+      alert("Tên folder mới bị trùng ở vị trí này!");
+      return;
+    }
+
+    renameFolderPath(oldPath, newPath);
+  }
+
+  function deleteFolderCascade(row) {
+    if (row?.isCategory) return deleteCategory(row);
+
+    const target = row.fullPath;
+    if (!confirm(`Xoá folder "${lastName(target)}" và toàn bộ dữ liệu con? (demo)`)) return;
+
+    setFolders((prev) =>
+      prev.filter((f) => !(f.path === target || f.path.startsWith(target + "/")))
+    );
+
+    setFilesByFolder((prev) => {
+      const next = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (k === target || k.startsWith(target + "/")) continue;
+        next[k] = v;
+      }
+      return next;
+    });
+
+    setSubjectCats((prev) => {
+      const next = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (k === target || k.startsWith(target + "/")) continue;
+        next[k] = v;
+      }
+      return next;
+    });
+
+    setCurrentPath((cp) =>
+      cp === target || cp.startsWith(target + "/") ? parentPath(target) : cp
+    );
+    setQ("");
+    setFilters({ type: "all" });
+  }
+
+  // ====== File actions ======
+  function canFileActionsHere() {
+    return isFileView;
   }
 
   function uploadFile(file) {
-    if (!selectedFolder) return;
+    if (!canFileActionsHere()) return;
 
     const newItem = {
       id: String(Date.now()),
@@ -205,16 +491,15 @@ export default function MinIO() {
     };
 
     setFilesByFolder((prev) => {
-      const cur = prev[selectedFolder] || [];
-      return { ...prev, [selectedFolder]: [newItem, ...cur] };
+      const cur = prev[currentPath] || [];
+      return { ...prev, [currentPath]: [newItem, ...cur] };
     });
 
     setOpenUpload(false);
-    alert("Demo: Upload xong (thêm vào bảng).");
   }
 
   function insertItem({ meta, file }) {
-    if (!selectedFolder) return;
+    if (!canFileActionsHere()) return;
 
     const name = meta.name?.trim() || file?.name || `item-${Date.now()}.txt`;
     const size = file?.size ?? 0;
@@ -228,95 +513,92 @@ export default function MinIO() {
     };
 
     setFilesByFolder((prev) => {
-      const cur = prev[selectedFolder] || [];
-      return { ...prev, [selectedFolder]: [newItem, ...cur] };
+      const cur = prev[currentPath] || [];
+      return { ...prev, [currentPath]: [newItem, ...cur] };
     });
 
     setOpenInsert(false);
-    alert("Demo: Insert xong (metadata + file).");
   }
 
   function editFile(row) {
     alert(
-      `Demo: Sửa\n\nFile: ${row.name}\nType: ${getFileType(row.name)}\n\nMetadata:\n` +
+      `File: ${row.name}\nType: ${getFileType(row.name)}\n\nMeta:\n` +
         JSON.stringify(row.meta || {}, null, 2)
     );
   }
 
   function deleteFile(row) {
-    if (!selectedFolder) return;
     if (!confirm(`Xoá "${row.name}"? (demo)`)) return;
 
     setFilesByFolder((prev) => {
-      const cur = prev[selectedFolder] || [];
-      return { ...prev, [selectedFolder]: cur.filter((x) => x.id !== row.id) };
+      const cur = prev[currentPath] || [];
+      return { ...prev, [currentPath]: cur.filter((x) => x.id !== row.id) };
     });
   }
 
-  // ===== BUILD ROWS =====
-  const folderRows = childFolders.map((f) => ({
-    id: f.id,
-    name: lastName(f.path),
-    fullPath: f.path,
-  }));
+  const headerTitle = useMemo(() => {
+    if (isRoot) return "MinIO";
+    if (isImages) return "Images";
+    if (isVideo) return "Video";
+    return lastName(currentPath);
+  }, [isRoot, isImages, isVideo, currentPath]);
+
+  const hasFolderData = isRoot ? rootRows.length > 0 : docChildFolders.length > 0;
+  const hasFileData = fileRows.length > 0;
 
   return (
     <div>
-      {/* HEADER */}
+      {/* HEADER (gọn) */}
       <div className="page-header">
         <div className="page-header-top">
-          <div>
-            <div className="title-row">
-              {(currentPath !== "" || isViewingFiles) && (
-                <>
-                  <button className="back-btn" onClick={back}>
-                    ← Quay lại
-                  </button>
-                  <span className="badge-folder">
-                    {isViewingFiles ? selectedFolder : currentPath}
-                  </span>
-                </>
-              )}
+          <div className="title-row">
+            <h2 className="page-title">{headerTitle}</h2>
 
-              <h2 className="page-title">
-                {isViewingFiles
-                  ? `Tập tin trong "${lastName(selectedFolder)}"`
-                  : `Thư mục: ${currentPath === "" ? "root" : currentPath}`}
-              </h2>
-            </div>
-
-            <p className="page-subtitle">
-              {isViewingFiles
-                ? "Search theo tên file. Upload/Insert/Filter áp dụng trong folder này."
-                : "Double-click: 1) vào folder con  2) xem file trong folder đó (xem hướng dẫn dưới)."}
-            </p>
+            {!isRoot && (
+              <button className="back-btn back-btn-right" onClick={goBack}>
+                Back →
+              </button>
+            )}
           </div>
+
+          {!isRoot && (
+            <div className="breadcrumb">
+              {splitPath(currentPath).map((p, idx, arr) => (
+                <span key={idx} className="crumb">
+                  {p}
+                  {idx < arr.length - 1 ? <span className="sep">/</span> : null}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="page-header-bottom">
           <div className="search-box">
             <input
-              placeholder={isViewingFiles ? "Tìm file..." : "Tìm folder..."}
+              placeholder={canFileActionsHere() ? "Tìm file..." : "Tìm folder..."}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
 
           <div className="header-actions">
-            <button className="btn btn-primary" onClick={() => setOpenCreateFolder(true)}>
-              + Thư mục mới
-            </button>
+            {canCreateFolderHere() && (
+              <button className="btn btn-primary" onClick={() => setOpenCreateFolder(true)}>
+                + Folder
+              </button>
+            )}
 
-            {isViewingFiles && (
+            {canFileActionsHere() && (
               <>
                 <button className="btn btn-primary" onClick={() => setOpenUpload(true)}>
-                  Tải lên
+                  Upload
                 </button>
                 <button className="btn btn-primary" onClick={() => setOpenInsert(true)}>
-                  Thêm metadata
+                  Insert
                 </button>
                 <button className="btn" onClick={() => setOpenFilter(true)}>
-                  Lọc
+                  Filter
                 </button>
               </>
             )}
@@ -325,48 +607,74 @@ export default function MinIO() {
       </div>
 
       {/* CONTENT */}
-      {!isViewingFiles ? (
-        <DataTable
-          columns={folderColumns}
-          rows={folderRows}
-          renderActions={null}
-          getRowClassName={() => "row-click"}
-          onRowDoubleClick={(row) => {
-            // Double-click folder:
-            // - nếu bạn muốn: double click = vào folder con
-            // - và thêm nút/1 hành động để "Xem file"
-            // Ở đây mình làm kiểu "MinIO-like":
-            //   Double-click => đi vào folder con (xem folder con)
-            //   Giữ SHIFT + double-click => xem file trong folder đó (mẹo demo)
-            openFolderFolderList(row.fullPath);
-          }}
-        />
-      ) : (
-        <DataTable
-          columns={fileColumns}
-          rows={fileRows}
-          renderActions={(row) => (
-            <div className="table-actions">
-              <button className="btn" onClick={() => editFile(row)}>
-                Sửa
-              </button>
-              <button className="btn" onClick={() => deleteFile(row)}>
-                Xoá
-              </button>
+      <div className="table-wrapper">
+        {isFolderView ? (
+          hasFolderData ? (
+            <DataTable
+              columns={folderColumns}
+              rows={isRoot ? rootRows : docChildFolders}
+              getRowClassName={() => "row-click"}
+              onRowDoubleClick={(row) => openFolder(row.fullPath)}
+              renderActions={
+                isRoot
+                  ? null
+                  : (row) => {
+                      if (!canEditDeleteFolder(row)) return null;
+                      return (
+                        <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editFolder(row);
+                            }}
+                            onDoubleClick={(e) => e.stopPropagation()}
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            className="btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteFolderCascade(row);
+                            }}
+                            onDoubleClick={(e) => e.stopPropagation()}
+                          >
+                            Xoá
+                          </button>
+                        </div>
+                      );
+                    }
+              }
+            />
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📂</div>
+              <p>{isRoot ? "Không có dữ liệu." : "Không tìm thấy thư mục nào."}</p>
             </div>
-          )}
-        />
-      )}
-
-      {/* TIP nhỏ để bạn thao tác demo */}
-      {!isViewingFiles && (
-        <div style={{ marginTop: 10, fontSize: 13, color: "#64748b" }}>
-          <b>Mẹo demo:</b> Double-click folder để vào folder con.  
-          Nếu bạn muốn “double-click để xem file” thay vì “vào folder con”, nói mình đổi 1 dòng là xong.
-          <br />
-          (Gợi ý UX chuẩn: click 1 lần folder → hiện nút “Xem file” / “Mở”)
-        </div>
-      )}
+          )
+        ) : hasFileData ? (
+          <DataTable
+            columns={fileColumns}
+            rows={fileRows}
+            renderActions={(row) => (
+              <div className="table-actions">
+                <button className="btn" onClick={() => editFile(row)}>
+                  Sửa
+                </button>
+                <button className="btn" onClick={() => deleteFile(row)}>
+                  Xoá
+                </button>
+              </div>
+            )}
+          />
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-icon">📄</div>
+            <p>{q ? `Không tìm thấy file với "${q}"` : "Thư mục trống."}</p>
+          </div>
+        )}
+      </div>
 
       {/* MODALS */}
       <CreateFolderModal
@@ -378,14 +686,14 @@ export default function MinIO() {
       <UploadFileModal
         open={openUpload}
         onClose={() => setOpenUpload(false)}
-        folderName={selectedFolder || ""}
+        folderName={currentPath}
         onUpload={uploadFile}
       />
 
       <InsertMetadataModal
         open={openInsert}
         onClose={() => setOpenInsert(false)}
-        folderName={selectedFolder || ""}
+        folderName={currentPath}
         onInsert={insertItem}
       />
 

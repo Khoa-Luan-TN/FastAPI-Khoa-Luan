@@ -1,9 +1,12 @@
-// src/components/layouts/AdminLayout.jsx
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import "../styles/admin/layout.css";
+import schoolLogo from "../../public/logo.png";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  
+  // Lấy tên admin từ localStorage hoặc state
+  const adminName = "Admin"; // Có thể thay bằng state hoặc context
 
   function logout() {
     localStorage.removeItem("role");
@@ -14,7 +17,13 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <h1>Quản trị hệ thống</h1>
+          <div className="brand-content">
+            <img src={schoolLogo} alt="Logo trường" className="school-logo" />
+            <div className="brand-text">
+              <div className="brand-subtitle">HỆ THỐNG QUẢN TRỊ</div>
+              <h1 className="brand-title">{adminName}</h1>
+            </div>
+          </div>
         </div>
 
         <nav className="admin-nav">
@@ -23,7 +32,7 @@ export default function AdminLayout() {
             className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
           >
             <span>📁</span>
-            <span>MinIO Files</span>
+            <span>MinIO</span>
           </NavLink>
           <NavLink 
             to="/admin/mongo" 
@@ -49,7 +58,8 @@ export default function AdminLayout() {
         </nav>
 
         <button className="logout-btn" onClick={logout}>
-          Đăng xuất
+          <span>🚪</span>
+          <span>Đăng xuất</span>
         </button>
       </aside>
 

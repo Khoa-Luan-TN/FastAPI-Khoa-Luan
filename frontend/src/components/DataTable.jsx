@@ -13,36 +13,35 @@ export default function DataTable({
         <thead>
           <tr>
             {columns.map((c) => (
-              <th key={c.key}>{c.label}</th>
+              <th key={c.key} style={{ width: c.width || 'auto' }}>
+                {c.label}
+              </th>
             ))}
-            {renderActions ? <th style={{ textAlign: "right" }}>Actions</th> : null}
+            {renderActions ? (
+              <th style={{ textAlign: "right", width: '150px' }}>
+                THAO TÁC
+              </th>
+            ) : null}
           </tr>
         </thead>
 
         <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={columns.length + (renderActions ? 1 : 0)}
-                style={{ padding: 16, color: "rgba(15,23,42,0.6)" }}
-              >
-                Không có dữ liệu.
-              </td>
+          {rows.map((row) => (
+            <tr
+              key={row.id}
+              className={getRowClassName ? getRowClassName(row) : undefined}
+              onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
+            >
+              {columns.map((c) => (
+                <td key={c.key}>{c.render ? c.render(row) : row[c.key]}</td>
+              ))}
+              {renderActions ? (
+                <td style={{ textAlign: 'right' }}>
+                  {renderActions(row)}
+                </td>
+              ) : null}
             </tr>
-          ) : (
-            rows.map((row) => (
-              <tr
-                key={row.id}
-                className={getRowClassName ? getRowClassName(row) : undefined}
-                onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
-              >
-                {columns.map((c) => (
-                  <td key={c.key}>{c.render ? c.render(row) : row[c.key]}</td>
-                ))}
-                {renderActions ? <td>{renderActions(row)}</td> : null}
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
     </div>

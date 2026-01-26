@@ -3,119 +3,184 @@
   min-height: 100vh;
   display: flex;
   background: #f8fafc;
+  font-family: 'Segoe UI', 'Inter', -apple-system, system-ui, sans-serif;
 }
 
 .admin-sidebar {
-  width: 240px;
-  background: white;
-  border-right: 1px solid #e2e8f0;
+  width: 280px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: fixed;
+  height: 100vh;
+  z-index: 10;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.06);
+  border-right: 1px solid #e5e7eb;
 }
 
 .admin-brand {
-  padding: 24px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 32px 24px 28px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.admin-brand h1 {
-  color: #0f172a;
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
+.brand-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  text-align: center;
+  gap: 20px;
 }
 
-.admin-brand h1::before {
-  content: "";
-  display: block;
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, #0066cc, #0b2a4a);
-  border-radius: 6px;
+.school-logo {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0066cc;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(0, 102, 204, 0.08);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.brand-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 4px 0 0 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .admin-nav {
-  padding: 20px 16px;
+  padding: 28px 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .nav-item {
-  padding: 12px 16px;
+  padding: 15px 18px;
   text-decoration: none;
   color: #475569;
   font-weight: 500;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  border-radius: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  font-size: 15px;
   position: relative;
-}
-
-.nav-item::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  background: #0066cc;
-  border-radius: 0 2px 2px 0;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  margin: 0 4px;
 }
 
 .nav-item:hover {
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   color: #0f172a;
+  transform: translateX(6px);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .nav-item.active {
-  background: #e0f2fe;
-  color: #0066cc;
+  background: linear-gradient(135deg, #0066cc, #0088ff);
+  color: white;
   font-weight: 600;
+  border-color: #0066cc;
+  box-shadow: 0 4px 16px rgba(0, 102, 204, 0.2);
 }
 
 .nav-item.active::before {
+  content: '';
+  position: absolute;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+}
+
+.nav-item span:first-child {
+  font-size: 18px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.nav-item.active span:first-child {
   opacity: 1;
 }
 
 .logout-btn {
-  margin: 16px;
-  padding: 12px 16px;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  font-weight: 500;
+  margin: 20px;
+  padding: 14px;
+  background: #ffffff;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.25s ease;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-}
-
-.logout-btn::before {
-  content: "↩";
-  font-size: 14px;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .logout-btn:hover {
-  background: #fee2e2;
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
 
 .admin-main {
   flex: 1;
-  padding: 20px;
+  margin-left: 280px;
+  padding: 32px;
   background: #f8fafc;
-  overflow-y: auto;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 240px;
+    margin-left: -240px;
+    transition: margin-left 0.3s ease;
+  }
+  
+  .admin-sidebar.open {
+    margin-left: 0;
+  }
+  
+  .admin-main {
+    margin-left: 0;
+    padding: 20px;
+  }
 }
