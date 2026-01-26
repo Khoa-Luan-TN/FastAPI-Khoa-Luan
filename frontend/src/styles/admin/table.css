@@ -1,0 +1,116 @@
+/* admin/table.css */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: #f8fafc;
+}
+
+.table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 14px;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.row-click {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.row-click:hover {
+  background: #e0f2fe !important;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.table-actions .btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Empty state */
+.empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-state p {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* File type badges */
+.file-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-type-badge.pdf {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.file-type-badge.video {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.file-type-badge.image {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.file-type-badge.other {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.file-type-badge.folder {
+  background: #fef3c7;
+  color: #b45309;
+}
