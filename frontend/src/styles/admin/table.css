@@ -4,6 +4,10 @@
   overflow: hidden;
 }
 
+.table-container {
+  background: white;
+  border-radius: 12px; /* giữ giống header */
+}
 .table {
   width: 100%;
   border-collapse: separate;
@@ -38,6 +42,16 @@
   font-size: 15px;
   vertical-align: middle;
   font-weight: 500;
+}
+
+.table th {
+  padding: 10px 14px;
+  font-size: 12px;
+}
+
+.table td {
+  padding: 10px 14px;
+  font-size: 13px;
 }
 
 .table tbody tr:last-child td {
@@ -174,11 +188,11 @@
   .table-container {
     overflow-x: auto;
   }
-  
+
   .empty-state {
     padding: 60px 20px;
   }
-  
+
   .empty-state-icon {
     font-size: 48px;
   }
@@ -195,3 +209,144 @@
   margin-left: 8px;
   border: 1px solid rgba(0, 102, 204, 0.2);
 }
+
+/* ===== Folder row style (đỡ trống, đẹp hơn) ===== */
+.folder-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.folder-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px;
+
+  min-width: 0; /* để ellipsis hoạt động */
+}
+
+.folder-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  flex: 0 0 auto;
+}
+
+.folder-left {
+  padding: 4px 8px; /* giảm từ 6px 10px */
+  border-radius: 10px; /* giảm từ 12px */
+}
+
+.folder-icon {
+  width: 28px; /* giảm từ 32px */
+  height: 28px;
+  border-radius: 9px;
+}
+
+.folder-divider {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
+}
+
+.folder-name {
+  font-weight: 600;
+  color: #0f172a;
+
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folder-right {
+  color: #94a3b8;
+  font-size: 18px;
+  padding-right: 4px;
+}
+
+.folder-right {
+  font-size: 16px; /* giảm từ 18px */
+}
+
+/* hover “đã mắt” hơn */
+.row-click:hover .folder-left {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.row-click:hover .folder-right {
+  color: #0ea5e9;
+}
+
+/* ===== File row style (icon + pill + divider) ===== */
+.file-cell {
+  display: flex;
+  align-items: center;
+}
+
+.file-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 10px;
+
+  min-width: 0; /* ellipsis */
+}
+
+.file-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+
+  border-radius: 9px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  flex: 0 0 auto;
+}
+
+/* divider giữa icon và tên */
+.file-divider {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #0f172a;
+
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* hover đẹp hơn */
+.table tbody tr:hover .file-left {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.file-pdf { border-color: #fecaca; background: #fff1f2; }
+.file-video { border-color: #bfdbfe; background: #eff6ff; }
+.file-image { border-color: #bbf7d0; background: #f0fdf4; }
+.file-other { border-color: #e5e7eb; background: #f9fafb; }

@@ -154,15 +154,36 @@
     max-width: calc(100vw - 40px);
     max-height: 80vh;
   }
-  
+
   .modal-header,
   .modal-body,
   .modal-footer {
     padding: 20px;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+}
+
+.kv-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.kv-input:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.12);
+}
+
+.kv-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
 }

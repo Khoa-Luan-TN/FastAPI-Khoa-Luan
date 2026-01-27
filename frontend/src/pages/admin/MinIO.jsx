@@ -199,10 +199,50 @@ export default function MinIO() {
   }, [filesByFolder, currentPath, q, filters, isFileView]);
 
   // ====== Columns ======
-  const folderColumns = [{ key: "name", label: "THƯ MỤC", render: (r) => `📁 ${r.name}` }];
+  const folderColumns = [
+    {
+      key: "name",
+      label: "THƯ MỤC",
+      render: (r) => (
+        <div className="folder-cell">
+          <div className="folder-left">
+            <div className="folder-icon">📁</div>
+            <div className="folder-divider" />
+            <div className="folder-name" title={r.name}>
+              {r.name}
+            </div>
+          </div>
+
+          <div className="folder-right">›</div>
+        </div>
+      ),
+    },
+  ];
 
   const fileColumns = [
-    { key: "name", label: "TÊN FILE" },
+    {
+      key: "name",
+      label: "TÊN FILE",
+      render: (r) => {
+        const type = getFileType(r.name);
+
+        const icon =
+          type === "pdf" ? "📄" : type === "video" ? "🎬" : type === "image" ? "🖼️" : "📦";
+
+        return (
+          <div className="file-cell">
+            <div className="file-left">
+              <div className={`file-icon file-${type}`}>{icon}</div>
+              <div className="file-divider" />
+              <div className="file-name" title={r.name}>
+                {r.name}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+
     {
       key: "type",
       label: "LOẠI",
