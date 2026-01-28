@@ -100,6 +100,12 @@ export default function Users() {
     { id: "u1", username: "admin", role: "admin", active: true, updatedAt: "2026-01-27 09:00" },
     { id: "u2", username: "thanh", role: "user", active: true, updatedAt: "2026-01-27 09:20" },
     { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
+    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
   ]);
 
   // modal
@@ -260,6 +266,7 @@ export default function Users() {
       {/* Table */}
       <div className="table-wrapper">
         <DataTable
+          pageSize={7}
           columns={columns}
           rows={rows}
           getRowClassName={() => "row-click"}

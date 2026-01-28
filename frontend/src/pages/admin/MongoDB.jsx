@@ -809,6 +809,7 @@ export default function MongoDB() {
                 <DataTable
                   columns={detailEditColumns}
                   rows={detailPairs}
+                  pageSize={7}
                   renderActions={(row) =>
                     row.locked ? null : (
                       <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
@@ -838,6 +839,7 @@ export default function MongoDB() {
           <DataTable
             columns={docColumns}
             rows={docRows}
+            pageSize={7}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => {
               setCurrentDocId(row._id);

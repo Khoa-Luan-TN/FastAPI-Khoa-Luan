@@ -1,12 +1,10 @@
 # app/main.py
-from pickle import FALSE
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from starlette.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 
 from app.routers.minio import router as minio_router
 from app.routers.postgre import router as postgre_router
@@ -14,7 +12,7 @@ from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
 
 from app.services.postgre_client import engine, Base
-import app.models.model_postgre  # đảm bảo model được import để create_all thấy bảng
+import app.models.model_postgre  
 
 
 @asynccontextmanager
@@ -25,17 +23,24 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# UI static
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# ===== CORS (để React gọi API) =====
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/ui", include_in_schema=False)
-def ui():
-    return FileResponse("app/static/index.html")
 
-
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/")
 def home():
-    return f"<h1 style='color: red;'>Hello World!</h1>"
+    return "Hello Worlds"
 
 
 app.include_router(minio_router)

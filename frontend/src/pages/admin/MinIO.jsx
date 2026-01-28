@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import * as minioApi from "../../services/minioAdminApi";
 import "../../styles/admin/page.css";
 import DataTable from "../../components/DataTable";
 import CreateFolderModal from "../../components/CreateFolderModal";
@@ -67,56 +68,9 @@ export default function MinIO() {
   const [openInsert, setOpenInsert] = useState(false);
   const [openFilter, setOpenFilter] = useState(false);
   const [filters, setFilters] = useState({ type: "all" });
-
-  // ====== FOLDERS: chỉ lưu folder thật (documents/class/subject) ======
-  const [folders, setFolders] = useState([
-    { id: "doc", path: "documents" },
-    { id: "c10", path: "documents/class-10" },
-    { id: "c11", path: "documents/class-11" },
-    { id: "s101", path: "documents/class-10/tin-hoc" },
-    { id: "s102", path: "documents/class-10/toan" },
-    { id: "s111", path: "documents/class-11/tin-hoc" },
-  ]);
-
-  // ====== SUBJECT CATS: folder level 4 dưới mỗi subject (rename/xoá/tạo thêm được) ======
-  const [subjectCats, setSubjectCats] = useState({
-    "documents/class-10/tin-hoc": [
-      { id: "cat-th-topic", name: "topic" },
-      { id: "cat-th-lesson", name: "lesson" },
-      { id: "cat-th-chunk", name: "chunk" },
-    ],
-    "documents/class-10/toan": [
-      { id: "cat-to-topic", name: "topic" },
-      { id: "cat-to-lesson", name: "lesson" },
-      { id: "cat-to-chunk", name: "chunk" },
-    ],
-    "documents/class-11/tin-hoc": [
-      { id: "cat-11-topic", name: "topic" },
-      { id: "cat-11-lesson", name: "lesson" },
-      { id: "cat-11-chunk", name: "chunk" },
-    ],
-  });
-
-  // ====== FILES ======
-  const [filesByFolder, setFilesByFolder] = useState({
-    images: [
-      { id: "im1", name: "campus.png", size: 340210, updatedAt: "2026-01-24 18:02", meta: {} },
-      { id: "im2", name: "opening.jpg", size: 1203210, updatedAt: "2026-01-23 11:40", meta: {} },
-    ],
-    video: [
-      { id: "v1", name: "intro.mp4", size: 52340210, updatedAt: "2026-01-22 20:00", meta: {} },
-    ],
-
-    "documents/class-10/tin-hoc/topic": [
-      { id: "t1", name: "topic-1.pdf", size: 2430000, updatedAt: "2026-01-26 14:20", meta: {} },
-    ],
-    "documents/class-10/tin-hoc/lesson": [
-      { id: "l1", name: "lesson-1.pdf", size: 1890000, updatedAt: "2026-01-25 10:00", meta: {} },
-    ],
-    "documents/class-10/tin-hoc/chunk": [
-      { id: "k1", name: "chunk-001.txt", size: 900, updatedAt: "2026-01-26 14:22", meta: {} },
-    ],
-  });
+  const [remote, setRemote] = useState({ folders: [], files: [] });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
   // ====== DERIVE ======
   const parts = splitPath(currentPath);
@@ -133,6 +87,43 @@ export default function MinIO() {
   const isFileView = isImages || isVideo || isDocsCategory;
   const isFolderView = isRoot || (isDocuments && !isDocsCategory);
 
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      // root không cần gọi API vì UI bạn cố định 3 mục
+      if (currentPath === "") {
+        setRemote({ folders: [], files: [] });
+        setErr("");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setErr("");
+
+      try {
+        const data = await minioApi.minioList(currentPath);
+        if (!alive) return;
+        setRemote({
+          folders: data.folders || [],
+          files: data.files || [],
+        });
+      } catch (e) {
+        if (!alive) return;
+        setErr(String(e?.message || e));
+        setRemote({ folders: [], files: [] });
+      } finally {
+        alive && setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [currentPath]);
+
   // ====== ROOT rows ======
   const rootRows = useMemo(() => {
     const items = [
@@ -148,55 +139,43 @@ export default function MinIO() {
   const docChildFolders = useMemo(() => {
     if (!isDocuments) return [];
 
-    // subject => show cats
-    if (isDocsSubject) {
-      const cats = subjectCats[currentPath] || [];
-      const s = q.trim().toLowerCase();
-      const rows = cats.map((c) => ({
-        id: c.id,
-        name: c.name,
-        fullPath: `${currentPath}/${c.name}`,
-        isCategory: true,
-        subjectPath: currentPath,
-      }));
-      return !s ? rows : rows.filter((x) => x.name.toLowerCase().includes(s));
-    }
-
-    // documents/class => show direct child folders
-    const prefix = currentPath ? currentPath + "/" : "";
-    const direct = folders.filter((f) => {
-      if (f.path === currentPath) return false;
-      if (!f.path.startsWith(prefix)) return false;
-      const rest = f.path.slice(prefix.length);
-      return rest.length > 0 && !rest.includes("/");
-    });
-
     const s = q.trim().toLowerCase();
-    const searched = !s ? direct : direct.filter((f) => lastName(f.path).toLowerCase().includes(s));
 
-    return [...searched]
-      .map((f) => ({
-        id: f.id,
-        name: lastName(f.path),
-        fullPath: f.path,
-        isCategory: false,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [folders, currentPath, q, isDocuments, isDocsSubject, subjectCats]);
+    const rows = (remote.folders || []).map((f) => ({
+      id: `f-${f.fullPath}`,
+      name: f.name,
+      fullPath: f.fullPath,
+      // nếu đang ở subject (level 3) thì folder con là category
+      isCategory: isDocsSubject,
+      subjectPath: isDocsSubject ? currentPath : undefined,
+    }));
+
+    const filtered = !s ? rows : rows.filter((x) => x.name.toLowerCase().includes(s));
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }, [remote.folders, q, isDocuments, isDocsSubject, currentPath]);
 
   // ====== Files in currentPath ======
   const fileRows = useMemo(() => {
     if (!isFileView) return [];
 
-    const list = filesByFolder[currentPath] || [];
+    const list = (remote.files || []).map((x) => ({
+      id: x.object_key,
+      name: x.name,
+      size: x.size || 0,
+      updatedAt: x.last_modified ? x.last_modified.slice(0, 16).replace("T", " ") : "",
+      meta: { object_key: x.object_key, url: x.url },
+      object_key: x.object_key,
+      url: x.url,
+    }));
+
     const byType =
-      filters.type === "all" ? list : list.filter((x) => getFileType(x.name) === filters.type);
+      filters.type === "all" ? list : list.filter((r) => getFileType(r.name) === filters.type);
 
     const s = q.trim().toLowerCase();
-    const searched = !s ? byType : byType.filter((x) => x.name.toLowerCase().includes(s));
+    const searched = !s ? byType : byType.filter((r) => r.name.toLowerCase().includes(s));
 
-    return [...searched].sort((a, b) => a.name.localeCompare(b.name));
-  }, [filesByFolder, currentPath, q, filters, isFileView]);
+    return searched.sort((a, b) => a.name.localeCompare(b.name));
+  }, [remote.files, currentPath, q, filters, isFileView]);
 
   // ====== Columns ======
   const folderColumns = [
@@ -277,7 +256,7 @@ export default function MinIO() {
     return parts.length === 1 || parts.length === 2 || parts.length === 3;
   }
 
-  function createFolder(name) {
+  async function createFolder(name) {
     const n = name.trim();
     if (!n) return;
 
@@ -290,41 +269,31 @@ export default function MinIO() {
       return;
     }
 
-    // Nếu đang ở SUBJECT => tạo folder level 4
-    if (parts.length === 3) {
-      const cats = subjectCats[currentPath] || [];
-      if (cats.some((c) => c.name === n)) {
-        alert("Folder đã tồn tại trong subject này!");
-        return;
+    const fullPath = currentPath ? `${currentPath}/${n}` : n;
+
+    try {
+      await minioApi.createFolder(fullPath);
+
+      // nếu vừa tạo SUBJECT (level 3) => auto tạo topic/lesson/chunk giống UI cũ
+      if (splitPath(fullPath).length === 3) {
+        const defaults = ["topic", "lesson", "chunk"];
+        for (const d of defaults) {
+          try {
+            await minioApi.createFolder(`${fullPath}/${d}`);
+          } catch {
+            // ignore nếu đã tồn tại
+          }
+        }
       }
 
-      setSubjectCats((prev) => ({
-        ...prev,
-        [currentPath]: [{ id: String(Date.now()), name: n }, ...(prev[currentPath] || [])],
-      }));
-
-      const full = `${currentPath}/${n}`;
-      setFilesByFolder((prev) => ({ ...prev, [full]: prev[full] || [] }));
-
       setOpenCreateFolder(false);
-      return;
+
+      // reload lại danh sách folder hiện tại
+      const data = await minioApi.minioList(currentPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
     }
-
-    // documents / class => tạo folder thật
-    const newPath = `${currentPath}/${n}`;
-    if (folders.some((f) => f.path === newPath)) {
-      alert("Folder đã tồn tại ở vị trí này!");
-      return;
-    }
-
-    setFolders((prev) => [{ id: String(Date.now()), path: newPath }, ...prev]);
-
-    // nếu vừa tạo subject => auto tạo 3 folder mặc định (rename/xoá được)
-    if (splitPath(newPath).length === 3) {
-      setSubjectCats((prev) => ({ ...prev, [newPath]: makeDefaultCats() }));
-    }
-
-    setOpenCreateFolder(false);
   }
 
   // ====== Edit/Delete folder ======
@@ -452,9 +421,7 @@ export default function MinIO() {
     setFilters({ type: "all" });
   }
 
-  function editFolder(row) {
-    if (row?.isCategory) return editCategory(row);
-
+  async function editFolder(row) {
     const oldPath = row.fullPath;
     const oldName = lastName(oldPath);
 
@@ -471,47 +438,47 @@ export default function MinIO() {
     const p = parentPath(oldPath);
     const newPath = p ? `${p}/${name}` : name;
 
-    if (folders.some((f) => f.path === newPath)) {
-      alert("Tên folder mới bị trùng ở vị trí này!");
-      return;
-    }
+    try {
+      await minioApi.renameFolder(oldPath, newPath);
 
-    renameFolderPath(oldPath, newPath);
+      // nếu đang đứng trong folder bị rename => cập nhật currentPath
+      setCurrentPath((cp) => {
+        if (cp === oldPath) return newPath;
+        if (cp.startsWith(oldPath + "/")) return newPath + cp.slice(oldPath.length);
+        return cp;
+      });
+
+      // reload (theo currentPath mới)
+      const data = await minioApi.minioList(parentPath(newPath) || newPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
-  function deleteFolderCascade(row) {
-    if (row?.isCategory) return deleteCategory(row);
-
+  async function deleteFolderCascade(row) {
     const target = row.fullPath;
-    if (!confirm(`Xoá folder "${lastName(target)}" và toàn bộ dữ liệu con? (demo)`)) return;
+    if (!confirm(`Xoá folder "${lastName(target)}" và toàn bộ dữ liệu con?`)) return;
 
-    setFolders((prev) =>
-      prev.filter((f) => !(f.path === target || f.path.startsWith(target + "/")))
-    );
+    try {
+      await minioApi.deleteFolder(target);
 
-    setFilesByFolder((prev) => {
-      const next = {};
-      for (const [k, v] of Object.entries(prev)) {
-        if (k === target || k.startsWith(target + "/")) continue;
-        next[k] = v;
+      // nếu currentPath đang nằm trong folder bị xoá => bật lên cha
+      setCurrentPath((cp) =>
+        cp === target || cp.startsWith(target + "/") ? parentPath(target) : cp
+      );
+
+      // reload folder cha
+      const parent = parentPath(target);
+      if (parent) {
+        const data = await minioApi.minioList(parent);
+        setRemote({ folders: data.folders || [], files: data.files || [] });
+      } else {
+        setRemote({ folders: [], files: [] });
       }
-      return next;
-    });
-
-    setSubjectCats((prev) => {
-      const next = {};
-      for (const [k, v] of Object.entries(prev)) {
-        if (k === target || k.startsWith(target + "/")) continue;
-        next[k] = v;
-      }
-      return next;
-    });
-
-    setCurrentPath((cp) =>
-      cp === target || cp.startsWith(target + "/") ? parentPath(target) : cp
-    );
-    setQ("");
-    setFilters({ type: "all" });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
   // ====== File actions ======
@@ -519,61 +486,74 @@ export default function MinIO() {
     return isFileView;
   }
 
-  function uploadFile(file) {
+  async function uploadFile(file) {
     if (!canFileActionsHere()) return;
 
-    const newItem = {
-      id: String(Date.now()),
-      name: file.name,
-      size: file.size,
-      updatedAt: nowStr(),
-      meta: {},
-    };
+    try {
+      await minioApi.uploadFiles(currentPath, [file]);
+      setOpenUpload(false);
 
-    setFilesByFolder((prev) => {
-      const cur = prev[currentPath] || [];
-      return { ...prev, [currentPath]: [newItem, ...cur] };
-    });
-
-    setOpenUpload(false);
+      const data = await minioApi.minioList(currentPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
-  function insertItem({ meta, file }) {
+  async function insertItem({ meta, file }) {
     if (!canFileActionsHere()) return;
 
-    const name = meta.name?.trim() || file?.name || `item-${Date.now()}.txt`;
-    const size = file?.size ?? 0;
+    try {
+      await minioApi.insertItem(currentPath, meta || {}, file || null);
+      setOpenInsert(false);
 
-    const newItem = {
-      id: String(Date.now()),
-      name,
-      size,
-      updatedAt: nowStr(),
-      meta,
-    };
-
-    setFilesByFolder((prev) => {
-      const cur = prev[currentPath] || [];
-      return { ...prev, [currentPath]: [newItem, ...cur] };
-    });
-
-    setOpenInsert(false);
+      const data = await minioApi.minioList(currentPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
-  function editFile(row) {
-    alert(
-      `File: ${row.name}\nType: ${getFileType(row.name)}\n\nMeta:\n` +
-        JSON.stringify(row.meta || {}, null, 2)
-    );
+  async function editFile(row) {
+    const oldName = row.name || "";
+    const input = window.prompt("Đổi tên file:", oldName);
+    if (input == null) return; // bấm Cancel
+
+    let newName = input.trim();
+    if (!newName) return;
+
+    // chặn ký tự path
+    if (newName.includes("/") || newName.includes("\\")) {
+      alert("Tên file không được chứa '/' hoặc '\\'.");
+      return;
+    }
+
+    // (Tuỳ chọn) nếu user nhập không có đuôi, tự giữ đuôi cũ
+    const oldExt = oldName.includes(".") ? oldName.split(".").pop() : "";
+    const hasExt = newName.includes(".");
+    if (oldExt && !hasExt) newName = `${newName}.${oldExt}`;
+
+    try {
+      await minioApi.renameObject(row.object_key, newName);
+
+      // reload lại list để UI cập nhật
+      const data = await minioApi.minioList(currentPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
-  function deleteFile(row) {
-    if (!confirm(`Xoá "${row.name}"? (demo)`)) return;
+  async function deleteFile(row) {
+    if (!confirm(`Xoá "${row.name}"?`)) return;
 
-    setFilesByFolder((prev) => {
-      const cur = prev[currentPath] || [];
-      return { ...prev, [currentPath]: cur.filter((x) => x.id !== row.id) };
-    });
+    try {
+      await minioApi.deleteObject(row.object_key);
+      const data = await minioApi.minioList(currentPath);
+      setRemote({ folders: data.folders || [], files: data.files || [] });
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
   const headerTitle = useMemo(() => {
@@ -651,6 +631,7 @@ export default function MinIO() {
         {isFolderView ? (
           hasFolderData ? (
             <DataTable
+              pageSize={7}
               columns={folderColumns}
               rows={isRoot ? rootRows : docChildFolders}
               getRowClassName={() => "row-click"}
@@ -695,6 +676,7 @@ export default function MinIO() {
           )
         ) : hasFileData ? (
           <DataTable
+            pageSize={7}
             columns={fileColumns}
             rows={fileRows}
             renderActions={(row) => (

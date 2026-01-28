@@ -71,7 +71,7 @@ class RenameObjectBody(BaseModel):
 # =================== START GET =================== #
 # =================== List cấu trúc MinIO =================== #
 @router.get("/list", summary="Lấy ra cấu trúc list trong MinIO")
-def list(path: str = Query("", description="Mẫu: documents, documents/class-10, ...")):
+def list_structure(path: str = Query("", description="Mẫu: documents, documents/class-10, ...")):
     client = get_minio_client()
 
     p = (path or "").strip()
@@ -93,6 +93,9 @@ def list(path: str = Query("", description="Mẫu: documents, documents/class-10
         files = []
 
         for obj in objects:
+            if prefix and obj.object_name == prefix:
+                continue
+
             # folder sẽ có is_dir=True hoặc object_name kết thúc bằng "/"
             if getattr(obj, "is_dir", False) or obj.object_name.endswith("/"):
                 full = obj.object_name.rstrip("/")

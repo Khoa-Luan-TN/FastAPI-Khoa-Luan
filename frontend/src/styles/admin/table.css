@@ -1,13 +1,25 @@
 /* admin/table.css */
 .table-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* ✅ QUAN TRỌNG */
   overflow: hidden;
+
+  background: white;
+  border-radius: 12px;
 }
 
-.table-container {
-  background: white;
-  border-radius: 12px; /* giữ giống header */
+.table-scroll {
+  flex: 1;
+  min-height: 0; /* ✅ QUAN TRỌNG */
+  overflow: auto; /* ✅ cho phép cuộn */
 }
+
+.table-pagination {
+  flex: 0 0 auto; /* ✅ footer luôn có chỗ */
+}
+
 .table {
   width: 100%;
   border-collapse: separate;
@@ -346,7 +358,54 @@
   background: #f0f9ff;
 }
 
-.file-pdf { border-color: #fecaca; background: #fff1f2; }
-.file-video { border-color: #bfdbfe; background: #eff6ff; }
-.file-image { border-color: #bbf7d0; background: #f0fdf4; }
-.file-other { border-color: #e5e7eb; background: #f9fafb; }
+.file-pdf {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+.file-video {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+.file-image {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+.file-other {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+/* ===== Pagination ===== */
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 10px 14px;
+  border-top: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.table-pagination__info {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.table-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-pagination__page {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+}

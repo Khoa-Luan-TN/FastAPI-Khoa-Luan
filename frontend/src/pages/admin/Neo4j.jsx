@@ -275,6 +275,7 @@ export default function Neo4j() {
       <div className="table-wrapper">
         {isRoot ? (
           <DataTable
+            pageSize={7}
             columns={labelColumns}
             rows={labelRows}
             getRowClassName={() => "row-click"}
@@ -285,6 +286,7 @@ export default function Neo4j() {
           <DataTable columns={detailColumns} rows={detailRows} renderActions={null} />
         ) : (
           <DataTable
+            pageSize={7}
             columns={nodeColumns}
             rows={nodeRows}
             getRowClassName={() => "row-click"}
