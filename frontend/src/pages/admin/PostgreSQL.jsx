@@ -295,7 +295,9 @@ export default function PostgreSQL() {
               disabled={isRowDetail} // detail chỉ xem, không cần search
             />
           </div>
-
+          <span className="crumb" style={{ opacity: 0.7 }}>
+            View only
+          </span>
           {/* Read-only => không có nút tạo/sửa/xoá */}
           <div className="header-actions" />
         </div>

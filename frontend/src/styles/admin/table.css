@@ -45,12 +45,12 @@
 }
 
 .table th {
-  padding: 10px 14px;
+  padding: 10px 18px;
   font-size: 12px;
 }
 
 .table td {
-  padding: 10px 14px;
+  padding: 16px 18px;
   font-size: 13px;
 }
 
@@ -87,7 +87,7 @@
 
 .table-actions .btn {
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 12px;
   height: 36px;
   min-width: auto;
   font-weight: 600;
