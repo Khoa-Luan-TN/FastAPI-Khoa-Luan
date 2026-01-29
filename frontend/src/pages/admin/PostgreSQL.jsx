@@ -1,118 +1,96 @@
 // pages/admin/PostgreSQL.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../../styles/admin/page.css";
 import DataTable from "../../components/DataTable";
-
-function fakeObjectId() {
-  const hex = "0123456789abcdef";
-  let s = "";
-  for (let i = 0; i < 24; i++) s += hex[Math.floor(Math.random() * 16)];
-  return s;
-}
+import * as pgApi from "../../services/postgreAdminApi";
 
 function truncate(s = "", n = 48) {
-  const str = String(s);
+  const str = String(s ?? "");
   return str.length > n ? str.slice(0, n) + "…" : str;
+}
+
+function rowTitle(row = {}) {
+  return (
+    row.class_name ||
+    row.subject_name ||
+    row.topic_name ||
+    row.lesson_name ||
+    row.chunk_name ||
+    row.keyword_name ||
+    row.username ||
+    row.name ||
+    ""
+  );
 }
 
 export default function PostgreSQL() {
   // root -> table -> row detail
   const [currentTable, setCurrentTable] = useState("");
-  const [currentRowId, setCurrentRowId] = useState("");
+  const [currentPk, setCurrentPk] = useState("");
   const [q, setQ] = useState("");
 
+  const [tables, setTables] = useState([]); // [{id,name}]
+  const [rows, setRows] = useState([]); // raw rows from API
+  const [totalRows, setTotalRows] = useState(0);
+
+  const [err, setErr] = useState("");
+
   const isRoot = currentTable === "";
-  const isRowDetail = !!currentRowId;
+  const isRowDetail = !!currentPk;
 
-  // ===== Mock: tables cố định =====
-  const tables = useMemo(
-    () => [
-      { id: "t1", name: "resource_map" },
-      { id: "t2", name: "lesson_map" },
-      { id: "t3", name: "chunk_map" },
-      { id: "t4", name: "user_activity" },
-    ],
-    []
-  );
+  async function reloadTables() {
+    setErr("");
+    try {
+      const data = await pgApi.listTables();
+      const list = (data?.tables || []).map((name) => ({ id: name, name }));
+      setTables(list);
+    } catch (e) {
+      setErr(String(e?.message || e));
+      setTables([]);
+    }
+  }
 
-  // ===== Mock: rows theo table =====
-  const rowsByTable = useMemo(
-    () => ({
-      resource_map: [
-        {
-          postgreId: 101,
-          name: "Bài 1 - Hàm số",
-          mongodbId: fakeObjectId(),
-          minioUrl: "minio://documents/class-10/toan/topic/bai-1.pdf",
-          createdAt: "2026-01-26 10:10",
-          tags: ["math", "grade10"],
-          status: "active",
-        },
-        {
-          postgreId: 102,
-          name: "Bài 2 - Đạo hàm",
-          mongodbId: fakeObjectId(),
-          minioUrl: "minio://documents/class-10/toan/topic/bai-2.pdf",
-          createdAt: "2026-01-26 10:30",
-          tags: ["math"],
-          status: "active",
-        },
-      ],
-      lesson_map: [
-        {
-          postgreId: 201,
-          name: "Lesson 1 - Tin học",
-          mongodbId: fakeObjectId(),
-          minioUrl: "minio://documents/class-10/tin-hoc/lesson/lesson-1.pdf",
-          createdAt: "2026-01-26 11:00",
-          teacher: "demo",
-        },
-      ],
-      chunk_map: [
-        {
-          postgreId: 301,
-          name: "chunk-001",
-          mongodbId: fakeObjectId(),
-          minioUrl: "minio://documents/class-10/tin-hoc/chunk/chunk-001.txt",
-          createdAt: "2026-01-26 11:20",
-          tokens: 512,
-        },
-      ],
-      user_activity: [
-        {
-          postgreId: 401,
-          name: "view_resource",
-          mongodbId: fakeObjectId(),
-          minioUrl: "",
-          createdAt: "2026-01-26 12:00",
-          userId: "u-001",
-          ip: "127.0.0.1",
-        },
-      ],
-    }),
-    []
-  );
+  async function reloadRows(tableName) {
+    if (!tableName) return;
+    setErr("");
+    try {
+      const data = await pgApi.listRows(tableName, 500, 0);
+      setRows(data?.rows || []);
+      setTotalRows(data?.total ?? (data?.rows || []).length);
+    } catch (e) {
+      setErr(String(e?.message || e));
+      setRows([]);
+      setTotalRows(0);
+    }
+  }
+
+  useEffect(() => {
+    reloadTables();
+  }, []);
+
+  useEffect(() => {
+    if (!currentTable) return;
+    reloadRows(currentTable);
+  }, [currentTable]);
 
   const headerTitle = useMemo(() => {
     if (isRoot) return "PostgreSQL";
     if (isRowDetail) {
-      const r = (rowsByTable[currentTable] || []).find(
-        (x) => String(x.postgreId) === String(currentRowId)
-      );
-      return r?.name || String(currentRowId);
+      const r = rows.find((x) => String(x._pk) === String(currentPk)) || null;
+      return rowTitle(r) || String(currentPk);
     }
     return currentTable;
-  }, [isRoot, isRowDetail, currentTable, currentRowId, rowsByTable]);
+  }, [isRoot, isRowDetail, currentTable, currentPk, rows]);
 
   const breadcrumbParts = useMemo(() => {
     if (isRoot) return [];
-    if (isRowDetail) return ["postgres", currentTable, String(currentRowId)];
+    if (isRowDetail) return ["postgres", currentTable, String(currentPk)];
     return ["postgres", currentTable];
-  }, [isRoot, isRowDetail, currentTable, currentRowId]);
+  }, [isRoot, isRowDetail, currentTable, currentPk]);
 
   function goBack() {
-    if (currentRowId) {
-      setCurrentRowId("");
+    if (currentPk) {
+      setCurrentPk("");
       setQ("");
       return;
     }
@@ -122,40 +100,53 @@ export default function PostgreSQL() {
 
   function openTable(row) {
     setCurrentTable(row.name);
-    setCurrentRowId("");
+    setCurrentPk("");
     setQ("");
   }
 
-  // ===== Root: table rows =====
+  // ===== Root: tables =====
   const tableRows = useMemo(() => {
     const s = q.trim().toLowerCase();
     const list = !s ? tables : tables.filter((t) => t.name.toLowerCase().includes(s));
-    return list.map((t) => ({ ...t }));
+    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
   }, [tables, q]);
 
-  // ===== Table: data rows =====
+  // ===== Table: rows =====
   const dataRows = useMemo(() => {
-    const list = rowsByTable[currentTable] || [];
     const s = q.trim().toLowerCase();
+
+    const list = (rows || []).map((r) => {
+      const title = rowTitle(r);
+      const mongo = r?.mongo_id || "";
+      const minio = r?.minio_url || "";
+
+      return {
+        ...r,
+        id: String(r._pk), // DataTable needs id
+        _title: title,
+        _mongo_display: mongo,
+        _minio_display: minio,
+      };
+    });
+
     const filtered = !s
       ? list
       : list.filter((r) => {
-          const a = String(r.name || "").toLowerCase();
-          const b = String(r.postgreId || "").toLowerCase();
-          const c = String(r.mongodbId || "").toLowerCase();
-          return a.includes(s) || b.includes(s) || c.includes(s);
+          const a = String(r._pk || "").toLowerCase();
+          const b = String(r._title || "").toLowerCase();
+          const c = String(r._mongo_display || "").toLowerCase();
+          const d = String(r._minio_display || "").toLowerCase();
+          return a.includes(s) || b.includes(s) || c.includes(s) || d.includes(s);
         });
 
-    // DataTable cần row.id
-    return filtered.map((r) => ({ ...r, id: String(r.postgreId) }));
-  }, [rowsByTable, currentTable, q]);
+    return filtered;
+  }, [rows, q]);
 
-  // ===== Detail: field rows =====
+  // ===== Detail: selected row =====
   const selectedRow = useMemo(() => {
-    if (!currentTable || !currentRowId) return null;
-    const list = rowsByTable[currentTable] || [];
-    return list.find((r) => String(r.postgreId) === String(currentRowId)) || null;
-  }, [rowsByTable, currentTable, currentRowId]);
+    if (!currentTable || !currentPk) return null;
+    return rows.find((r) => String(r._pk) === String(currentPk)) || null;
+  }, [rows, currentTable, currentPk]);
 
   const fieldRows = useMemo(() => {
     if (!selectedRow) return [];
@@ -190,43 +181,47 @@ export default function PostgreSQL() {
     },
   ];
 
-  // 4 field bạn yêu cầu: postgreId, name, mongodbId, minioUrl
+  // View-only: hiển thị 4 cột chuẩn cho mọi table
   const dataColumns = [
     {
-      key: "postgreId",
-      label: "POSTGRE ID",
-      render: (r) => <span className="crumb">{r.postgreId}</span>,
+      key: "_pk",
+      label: "PK",
+      render: (r) => (
+        <span className="crumb" title={String(r._pk || "")}>
+          {truncate(String(r._pk || ""), 24)}
+        </span>
+      ),
     },
     {
-      key: "name",
+      key: "_title",
       label: "NAME",
       render: (r) => (
         <div className="file-cell">
           <div className="file-left">
             <div className="file-icon file-other">📄</div>
             <div className="file-divider" />
-            <div className="file-name" title={r.name || ""}>
-              {r.name || "(no name)"}
+            <div className="file-name" title={r._title || ""}>
+              {r._title || "(no name field)"}
             </div>
           </div>
         </div>
       ),
     },
     {
-      key: "mongodbId",
-      label: "MONGODB ID",
+      key: "mongo_id",
+      label: "MONGO ID",
       render: (r) => (
-        <span className="crumb" title={r.mongodbId}>
-          {String(r.mongodbId).slice(0, 10)}…
+        <span className="crumb" title={String(r.mongo_id || "")}>
+          {r.mongo_id ? String(r.mongo_id).slice(0, 10) + "…" : ""}
         </span>
       ),
     },
     {
-      key: "minioUrl",
+      key: "minio_url",
       label: "MINIO URL",
       render: (r) => (
-        <span title={r.minioUrl || ""} style={{ whiteSpace: "nowrap" }}>
-          {truncate(r.minioUrl || "", 46)}
+        <span title={r.minio_url || ""} style={{ whiteSpace: "nowrap" }}>
+          {truncate(r.minio_url || "", 46)}
         </span>
       ),
     },
@@ -288,27 +283,35 @@ export default function PostgreSQL() {
                   ? "Tìm bảng..."
                   : isRowDetail
                     ? "Đang xem chi tiết (read-only)"
-                    : "Tìm dữ liệu (name/postgreId/mongodbId)..."
+                    : `Tìm dữ liệu (${totalRows} rows) (pk/name/mongo/minio)...`
               }
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              disabled={isRowDetail} // detail chỉ xem, không cần search
+              disabled={isRowDetail}
             />
           </div>
+
           <span className="crumb" style={{ opacity: 0.7 }}>
             View only
           </span>
-          {/* Read-only => không có nút tạo/sửa/xoá */}
+
           <div className="header-actions" />
         </div>
       </div>
+
+      {err ? (
+        <div className="empty-state" style={{ marginBottom: 16 }}>
+          <div className="empty-state-icon">⚠️</div>
+          <p>{err}</p>
+        </div>
+      ) : null}
 
       <div className="table-wrapper">
         {isRoot ? (
           <DataTable
             columns={tableColumns}
             rows={tableRows}
-            pageSize={7}
+            pageSize={10}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => openTable(row)}
             renderActions={null}
@@ -319,9 +322,9 @@ export default function PostgreSQL() {
           <DataTable
             columns={dataColumns}
             rows={dataRows}
-            pageSize={7}
+            pageSize={10}
             getRowClassName={() => "row-click"}
-            onRowDoubleClick={(row) => setCurrentRowId(String(row.postgreId))}
+            onRowDoubleClick={(row) => setCurrentPk(String(row._pk))}
             renderActions={null}
           />
         )}
