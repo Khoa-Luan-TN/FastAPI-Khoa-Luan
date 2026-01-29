@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 from typing import Any, Dict, List, Tuple, Annotated
+from pydantic import BaseModel
 
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as models
@@ -13,6 +14,7 @@ import app.models.model_postgre as models
 router = APIRouter(prefix="/admin/postgre", tags=["PostgreSQL"])
 
 
+# ===================== DB =====================
 def get_db() -> Session:
     db = SessionLocal()
     try:
@@ -24,13 +26,43 @@ def get_db() -> Session:
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
+# ===================== LOGIN (PostgreSQL) =====================
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/login", summary="Login by PostgreSQL user table")
+def login(payload: LoginIn, db: db_dependency):
+    u = (payload.username or "").strip()
+    pw = (payload.password or "").strip()
+
+    if not u or not pw:
+        raise HTTPException(status_code=422, detail="username/password is required")
+
+    user = db.query(models.User).filter(models.User.username == u).first()
+    if not user or (user.password or "") != pw:
+        raise HTTPException(status_code=401, detail="Tên đăng nhập hoặc mật khẩu không đúng")
+
+    # nếu DB có cột is_active thì chặn user disabled
+    if hasattr(user, "is_active") and user.is_active is False:
+        raise HTTPException(status_code=403, detail="Tài khoản đang bị vô hiệu hoá")
+
+    return {
+        "user_id": str(user.user_id),
+        "username": str(user.username),
+        "role": str(user.user_role),
+    }
+
+
+# ===================== READ-ONLY TABLE API =====================
 TABLE_MODEL_MAP = {
     "class": models.Class,
     "subject": models.Subject,
     "topic": models.Topic,
     "lesson": models.Lesson,
     "chunk": models.Chunk,
-    "keyword": models.Keyword,  # ✅ giờ PK ghép đúng DB
+    "keyword": models.Keyword,  # PK ghép (chunk_id, keyword_name)
     "user": models.User,
 }
 
@@ -48,7 +80,7 @@ def _pk_cols(model) -> List[str]:
 def _row_to_dict(model, row) -> Dict[str, Any]:
     data = {col.name: getattr(row, col.name) for col in model.__table__.columns}
 
-    # UI-friendly PK
+    # UI-friendly PK string
     pks = _pk_cols(model)
     if len(pks) == 1:
         data["_pk"] = str(getattr(row, pks[0]))

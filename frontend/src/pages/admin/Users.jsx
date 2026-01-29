@@ -1,27 +1,44 @@
-import { useMemo, useState } from "react";
+// pages/admin/Users.jsx
+import { useEffect, useMemo, useState } from "react";
 import "../../styles/admin/page.css";
 import "../../styles/admin/modal.css";
 import DataTable from "../../components/DataTable";
+import * as userApi from "../../services/userMongoApi";
 
 function nowStr() {
   return new Date().toISOString().slice(0, 16).replace("T", " ");
 }
 
+function fmtTime(s) {
+  // Mongo jsonable_encoder thường ra ISO: 2026-01-27T09:00:00+00:00
+  if (!s) return "";
+  const str = String(s);
+  if (str.includes("T")) return str.slice(0, 16).replace("T", " ");
+  return str.slice(0, 16);
+}
+
 function UserModal({ open, onClose, title, initial, onSave }) {
   const [username, setUsername] = useState(initial?.username || "");
-  const [password, setPassword] = useState(initial?.password || "");
+  const [password, setPassword] = useState(""); // edit cũng bắt nhập lại
   const [role, setRole] = useState(initial?.role || "user");
   const [active, setActive] = useState(initial?.active ?? true);
+
+  useEffect(() => {
+    if (!open) return;
+    setUsername(initial?.username || "");
+    setPassword("");
+    setRole(initial?.role || "user");
+    setActive(initial?.active ?? true);
+  }, [open, initial]);
 
   if (!open) return null;
 
   function submit(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     const u = username.trim();
     const pw = password.trim();
     if (!u) return;
 
-    // bắt buộc password cho cả create và edit
     if (!pw) {
       alert("Vui lòng nhập password!");
       return;
@@ -96,22 +113,36 @@ function UserModal({ open, onClose, title, initial, onSave }) {
 export default function Users() {
   const [q, setQ] = useState("");
 
-  const [users, setUsers] = useState([
-    { id: "u1", username: "admin", role: "admin", active: true, updatedAt: "2026-01-27 09:00" },
-    { id: "u2", username: "thanh", role: "user", active: true, updatedAt: "2026-01-27 09:20" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-    { id: "u3", username: "linh", role: "user", active: false, updatedAt: "2026-01-27 09:30" },
-  ]);
+  // ✅ data từ Mongo
+  const [users, setUsers] = useState([]); // {id,username,role,active,updatedAt}
 
   // modal
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+
+  async function reloadUsers() {
+    const data = await userApi.listUsers({ limit: 500, offset: 0 });
+    const docs = data.documents || [];
+
+    const mapped = docs.map((d) => ({
+      id: String(d._id),
+      username: d.username || "",
+      role: d.user_role || "user",
+      active: d.is_active ?? true,
+      updatedAt: fmtTime(d.updated_at || d.created_at || ""),
+      // không hiển thị password ra table
+    }));
+
+    setUsers(mapped);
+  }
+
+  useEffect(() => {
+    reloadUsers().catch((e) => {
+      console.error(e);
+      alert(`Load users failed: ${e.message || e}`);
+    });
+  }, []);
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -126,8 +157,7 @@ export default function Users() {
 
     return list
       .slice()
-      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
-      .map((u) => ({ ...u }));
+      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   }, [users, q]);
 
   const columns = [
@@ -174,14 +204,17 @@ export default function Users() {
     { key: "updatedAt", label: "CẬP NHẬT" },
   ];
 
-  function toggleDisable(row) {
+  async function toggleDisable(row) {
     const nextActive = !row.active;
-    if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"? (demo)`))
-      return;
+    if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"?`)) return;
 
-    setUsers((prev) =>
-      prev.map((u) => (u.id === row.id ? { ...u, active: nextActive, updatedAt: nowStr() } : u))
-    );
+    try {
+      await userApi.updateUser(row.id, { is_active: nextActive });
+      await reloadUsers();
+    } catch (e) {
+      console.error(e);
+      alert(`Update failed: ${e.message || e}`);
+    }
   }
 
   function openEditUser(row) {
@@ -189,56 +222,43 @@ export default function Users() {
     setOpenEdit(true);
   }
 
-  function saveEditUser(data) {
+  async function saveEditUser(data) {
     if (!editTarget) return;
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === editTarget.id
-          ? {
-              ...u,
-              username: data.username,
-              password: data.password, // ✅ thêm dòng này
-              role: data.role,
-              active: data.active,
-              updatedAt: nowStr(),
-            }
-          : u
-      )
-    );
-
-    setOpenEdit(false);
-    setEditTarget(null);
+    try {
+      await userApi.updateUser(editTarget.id, {
+        username: data.username,
+        password: data.password,
+        user_role: data.role,
+        is_active: data.active,
+      });
+      await reloadUsers();
+      setOpenEdit(false);
+      setEditTarget(null);
+    } catch (e) {
+      console.error(e);
+      alert(`Update failed: ${e.message || e}`);
+    }
   }
 
-  function saveCreateUser(data) {
-    if (!data.password) {
-      alert("Thiếu password!");
-      return;
+  async function saveCreateUser(data) {
+    try {
+      await userApi.createUser({
+        username: data.username,
+        password: data.password,
+        user_role: data.role,
+        is_active: data.active,
+      });
+      await reloadUsers();
+      setOpenCreate(false);
+    } catch (e) {
+      console.error(e);
+      alert(`Create failed: ${e.message || e}`);
     }
-
-    // demo: username unique
-    if (users.some((u) => u.username.toLowerCase() === data.username.toLowerCase())) {
-      alert("Username đã tồn tại!");
-      return;
-    }
-
-    const newUser = {
-      id: `u-${Date.now()}`,
-      username: data.username,
-      password: data.password, // ✅ thêm dòng này
-      role: data.role,
-      active: data.active,
-      updatedAt: nowStr(),
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-    setOpenCreate(false);
   }
 
   return (
     <div>
-      {/* Header đồng bộ */}
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">
@@ -263,7 +283,6 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="table-wrapper">
         <DataTable
           pageSize={7}
@@ -296,7 +315,6 @@ export default function Users() {
         />
       </div>
 
-      {/* Modals */}
       <UserModal
         open={openCreate}
         onClose={() => setOpenCreate(false)}

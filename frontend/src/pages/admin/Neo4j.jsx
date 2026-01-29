@@ -1,80 +1,61 @@
-// pages/admin/Neo4j
-import { useMemo, useState } from "react";
+// pages/admin/Neo4j.jsx
+import { useEffect, useMemo, useState } from "react";
 import "../../styles/admin/page.css";
 import DataTable from "../../components/DataTable";
-
-function nowStr() {
-  return new Date().toISOString().slice(0, 16).replace("T", " ");
-}
+import * as neoApi from "../../services/neoAdminApi";
 
 export default function Neo4j() {
-  // "" = root labels, else = label name
   const [currentLabel, setCurrentLabel] = useState("");
   const [currentNodeId, setCurrentNodeId] = useState("");
   const [q, setQ] = useState("");
 
+  const [labels, setLabels] = useState([]); // {id,name,count}
+  const [nodes, setNodes] = useState([]); // {id,postgreId,name,updatedAt,props}
+  const [selectedNode, setSelectedNode] = useState(null);
+
   const isRoot = currentLabel === "";
   const isNodeDetail = !!currentNodeId;
 
-  // ===== MOCK LABELS (node types) =====
-  const [labels] = useState([
-    { id: "l1", name: "LightNode", count: 12 },
-    { id: "l2", name: "Lesson", count: 40 },
-    { id: "l3", name: "Chunk", count: 128 },
-  ]);
+  async function reloadLabels() {
+    const data = await neoApi.listLabels();
+    setLabels(data.labels || []);
+  }
 
-  // ===== MOCK NODES =====
-  const [nodesByLabel] = useState({
-    LightNode: [
-      {
-        id: "neo-1",
-        postgreId: 101,
-        name: "Light A",
-        updatedAt: "2026-01-26 10:10",
-        props: { level: 1, type: "light", status: "active" },
-      },
-      {
-        id: "neo-2",
-        postgreId: 102,
-        name: "Light B",
-        updatedAt: "2026-01-26 11:20",
-        props: { level: 2, type: "light", status: "inactive" },
-      },
-    ],
-    Lesson: [
-      {
-        id: "neo-9",
-        postgreId: 501,
-        name: "Lesson 1",
-        updatedAt: "2026-01-25 09:00",
-        props: { grade: 10, subject: "tin-hoc" },
-      },
-    ],
-    Chunk: [
-      {
-        id: "neo-20",
-        postgreId: 9001,
-        name: "chunk-001",
-        updatedAt: nowStr(),
-        props: { tokens: 512, lang: "vi" },
-      },
-    ],
-  });
+  async function reloadNodes(label) {
+    const data = await neoApi.listNodes(label);
+    setNodes(data.nodes || []);
+  }
 
-  const selectedNode = useMemo(() => {
-    if (!currentLabel || !currentNodeId) return null;
-    const list = nodesByLabel[currentLabel] || [];
-    return list.find((n) => n.id === currentNodeId) || null;
-  }, [currentLabel, currentNodeId, nodesByLabel]);
+  async function reloadNodeDetail(nodeId) {
+    const data = await neoApi.getNode(nodeId);
+    setSelectedNode(data.node || null);
+  }
 
-  // ===== HEADER TITLE (gọn) =====
+  useEffect(() => {
+    reloadLabels().catch((e) => console.error(e));
+  }, []);
+
+  useEffect(() => {
+    if (!currentLabel) return;
+    reloadNodes(currentLabel)
+      .then(() => setSelectedNode(null))
+      .catch((e) => console.error(e));
+  }, [currentLabel]);
+
+  useEffect(() => {
+    if (!currentNodeId) {
+      setSelectedNode(null);
+      return;
+    }
+    reloadNodeDetail(currentNodeId).catch((e) => console.error(e));
+  }, [currentNodeId]);
+
   const headerTitle = useMemo(() => {
     if (isRoot) return "Neo4j";
     if (isNodeDetail) return selectedNode?.name || currentLabel;
     return currentLabel;
   }, [isRoot, isNodeDetail, selectedNode, currentLabel]);
 
-  // ===== BREADCRUMB =====
   const breadcrumbParts = useMemo(() => {
     if (isRoot) return [];
     const parts = ["neo4j", currentLabel];
@@ -90,6 +71,7 @@ export default function Neo4j() {
     }
     if (!isRoot) {
       setCurrentLabel("");
+      setNodes([]);
       setQ("");
       return;
     }
@@ -106,50 +88,44 @@ export default function Neo4j() {
     setQ("");
   }
 
-  // ===== ROWS: LABELS =====
   const labelRows = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const list = !s ? labels : labels.filter((l) => l.name.toLowerCase().includes(s));
-    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
+    const list = !s ? labels : labels.filter((l) => (l.name || "").toLowerCase().includes(s));
+    return list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [labels, q]);
 
-  // ===== ROWS: NODES (only postgreId + name) =====
   const nodeRows = useMemo(() => {
-    const list = nodesByLabel[currentLabel] || [];
     const s = q.trim().toLowerCase();
-    const filtered = !s
-      ? list
-      : list.filter(
-          (n) => String(n.postgreId ?? "").includes(s) || (n.name || "").toLowerCase().includes(s)
+    const list = !s
+      ? nodes
+      : nodes.filter(
+          (n) =>
+            String(n.postgreId ?? "")
+              .toLowerCase()
+              .includes(s) ||
+            String(n.name || "")
+              .toLowerCase()
+              .includes(s)
         );
-    return filtered
-      .slice()
-      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
-      .map((n) => ({ ...n, _rowId: n.id })); // giữ id riêng nếu DataTable dùng row.id ở nơi khác
-  }, [nodesByLabel, currentLabel, q]);
 
-  // ===== ROWS: NODE DETAIL (view only) =====
+    return list
+      .slice()
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  }, [nodes, q]);
+
   const detailRows = useMemo(() => {
     if (!selectedNode) return [];
-    const rows = [
-      { id: "id", k: "id", v: String(selectedNode.id || "") },
-      { id: "postgreId", k: "postgreId", v: String(selectedNode.postgreId ?? "") },
-      { id: "name", k: "name", v: String(selectedNode.name || "") },
-      { id: "updatedAt", k: "updatedAt", v: String(selectedNode.updatedAt || "") },
-    ];
 
-    const props = selectedNode.props || {};
-    for (const [k, val] of Object.entries(props)) {
-      rows.push({
-        id: `prop-${k}`,
-        k,
-        v: typeof val === "string" ? val : JSON.stringify(val),
-      });
-    }
-    return rows;
+    const idKey = selectedNode.entity_id_key || "id";
+    const nameKey = selectedNode.entity_name_key || "name";
+
+    return [
+      { id: "entity_id", k: idKey, v: String(selectedNode.entity_id || "") },
+      { id: "entity_name", k: nameKey, v: String(selectedNode.entity_name || "") },
+      { id: "relation", k: "relation", v: String(selectedNode.relation || "") },
+    ];
   }, [selectedNode]);
 
-  // ===== COLUMNS =====
   const labelColumns = [
     {
       key: "name",
@@ -167,11 +143,7 @@ export default function Neo4j() {
         </div>
       ),
     },
-    {
-      key: "count",
-      label: "COUNT",
-      render: (r) => <span className="crumb">{r.count ?? ""}</span>,
-    },
+    { key: "count", label: "COUNT", render: (r) => <span className="crumb">{r.count ?? ""}</span> },
   ];
 
   const nodeColumns = [
@@ -221,12 +193,10 @@ export default function Neo4j() {
 
   return (
     <div>
-      {/* Header đồng bộ */}
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">
             <h2 className="page-title">{headerTitle}</h2>
-
             {!isRoot && (
               <button className="back-btn back-btn-right" onClick={goBack}>
                 Back →
@@ -263,7 +233,6 @@ export default function Neo4j() {
           </div>
 
           <div className="header-actions">
-            {/* Neo4j view-only => không có create/edit/delete */}
             <span className="crumb" style={{ opacity: 0.7 }}>
               View only
             </span>
@@ -271,7 +240,6 @@ export default function Neo4j() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="table-wrapper">
         {isRoot ? (
           <DataTable
@@ -290,7 +258,7 @@ export default function Neo4j() {
             columns={nodeColumns}
             rows={nodeRows}
             getRowClassName={() => "row-click"}
-            onRowDoubleClick={(row) => openNode({ id: row.id })}
+            onRowDoubleClick={(row) => openNode(row)}
             renderActions={null}
           />
         )}

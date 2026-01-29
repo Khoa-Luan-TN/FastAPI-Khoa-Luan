@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/login.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+
 export default function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -10,30 +12,44 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    
-    if (!username.trim() || !password.trim()) {
+
+    const u = username.trim();
+    const pw = password.trim();
+
+    if (!u || !pw) {
       setError("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
     setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/postgre/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: pw }),
+      });
 
-    // Simulate API call
-    setTimeout(() => {
-      if (username === "admin" && password === "123") {
-        localStorage.setItem("role", "admin");
-        navigate("/admin");
-      } else if (username === "user" && password === "123") {
-        localStorage.setItem("role", "user");
-        navigate("/user");
-      } else {
-        setError("Tên đăng nhập hoặc mật khẩu không đúng");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.detail || "Đăng nhập thất bại");
+        return;
       }
+
+      // backend trả {user_id, username, role}
+      localStorage.setItem("role", data.role || "user");
+      localStorage.setItem("user_id", data.user_id || "");
+      localStorage.setItem("username", data.username || u);
+
+      if ((data.role || "").toLowerCase() === "admin") navigate("/admin");
+      else navigate("/user");
+    } catch (err) {
+      setError(String(err?.message || err || "Network error"));
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   }
 
   return (
@@ -49,9 +65,7 @@ export default function Login() {
               <img src="/logo.png" alt="Logo trường" />
             </div>
             <div className="school-info">
-              <h1 className="school-name">
-                ĐH Sư phạm TP. Hồ Chí Minh
-              </h1>
+              <h1 className="school-name">ĐH Sư phạm TP. Hồ Chí Minh</h1>
               <div className="school-subtitle">Khoá Luận Tốt Nghiệp</div>
             </div>
           </div>
@@ -59,7 +73,7 @@ export default function Login() {
           {/* Form */}
           <div className="form-container">
             <h2 className="form-title">Đăng nhập hệ thống</h2>
-            
+
             <form className="login-form" onSubmit={handleSubmit}>
               <div className="input-group">
                 <div className="input-field">
@@ -95,11 +109,7 @@ export default function Login() {
               )}
 
               {/* Submit Button */}
-              <button 
-                type="submit" 
-                className="submit-btn"
-                disabled={isLoading}
-              >
+              <button type="submit" className="submit-btn" disabled={isLoading}>
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
             </form>
