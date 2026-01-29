@@ -1,27 +1,146 @@
-// pages/admin/MongoDB
+// pages/admin/MongoDB.jsx
 import { useEffect, useMemo, useState } from "react";
 import "../../styles/admin/page.css";
 import "../../styles/admin/modal.css";
 import DataTable from "../../components/DataTable";
+import * as mongoApi from "../../services/mongoAdminApi";
 
-function splitPath(path) {
-  return path.split("/").filter(Boolean);
+/** ===== Helpers ===== */
+function docTitle(doc = {}) {
+  return (
+    doc.class_name ||
+    doc.subject_name ||
+    doc.topic_name ||
+    doc.lesson_name ||
+    doc.chunk_name ||
+    doc.keyword_name ||
+    doc.image_name ||
+    doc.video_name ||
+    doc.table_name ||
+    doc.username ||
+    doc.name ||
+    ""
+  );
 }
 
-function fakeObjectId() {
-  const hex = "0123456789abcdef";
-  let s = "";
-  for (let i = 0; i < 24; i++) s += hex[Math.floor(Math.random() * 16)];
+// parse value để bạn nhập [] / {} là thành array/object thật
+function parseValue(v) {
+  const s = String(v ?? "").trim();
+  if (s === "") return "";
+
+  if (s.startsWith("{") || s.startsWith("[")) {
+    try {
+      return JSON.parse(s);
+    } catch {
+      return s;
+    }
+  }
+
+  if (s === "true") return true;
+  if (s === "false") return false;
+  if (s === "null") return null;
+
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+
   return s;
 }
 
-function nowStr() {
-  return new Date().toISOString().slice(0, 16).replace("T", " ");
+function defaultPairsForCollection(col) {
+  // mặc định minio dùng bucket data-edu
+  const minioPrefix = { k: "minio", v: '{"bucket":"data-edu","prefix":""}' };
+  const minioFile = { k: "minio", v: '{"bucket":"data-edu","object_key":"","url":""}' };
+
+  switch (col) {
+    case "class":
+      return [{ k: "class_name", v: "" }, minioPrefix];
+
+    case "subject":
+      return [
+        { k: "class_id", v: "" },
+        { k: "subject_name", v: "" },
+        { k: "subject_type", v: "" },
+        minioPrefix,
+      ];
+
+    case "topic":
+      return [
+        { k: "subject_id", v: "" },
+        { k: "topic_num", v: "" },
+        { k: "topic_name", v: "" },
+        minioPrefix,
+      ];
+
+    case "lesson":
+      return [
+        { k: "topic_id", v: "" },
+        { k: "lesson_num", v: "" },
+        { k: "lesson_name", v: "" },
+        { k: "lesson_type", v: "ly thuyet" },
+        minioPrefix,
+      ];
+
+    case "chunk":
+      return [
+        { k: "lesson_id", v: "" },
+        { k: "chunk_label", v: "1" },
+        { k: "chunk_name", v: "" },
+        { k: "chunk_des", v: "" },
+        { k: "images", v: "[]" },
+        { k: "tables", v: "[]" },
+        minioPrefix,
+      ];
+
+    case "keyword":
+      return [
+        { k: "chunk_id", v: "" },
+        { k: "keyword_name", v: "" },
+        { k: "keyword_des", v: "" },
+      ];
+
+    case "image":
+      return [
+        { k: "chunk_id", v: "" },
+        { k: "image_name", v: "" },
+        { k: "image_url", v: "[]" },
+        minioFile,
+      ];
+
+    case "video":
+      return [
+        { k: "chunk_id", v: "" },
+        { k: "video_name", v: "" },
+        { k: "video_url", v: "[]" },
+        minioFile,
+      ];
+
+    case "table":
+      return [
+        { k: "chunk_id", v: "" },
+        { k: "table_name", v: "" },
+        { k: "table_url", v: "[]" },
+        minioFile,
+      ];
+
+    case "user":
+      return [
+        { k: "username", v: "" },
+        { k: "password", v: "" },
+        { k: "user_role", v: "user" },
+        { k: "is_active", v: "true" },
+      ];
+
+    default:
+      return [{ k: "name", v: "" }, minioPrefix, { k: "is_deleted", v: "false" }];
+  }
 }
 
 /** ===== Mini modal: Create/Rename Collection ===== */
 function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
   const [name, setName] = useState(initialName);
+
+  useEffect(() => {
+    setName(initialName || "");
+  }, [initialName, open]);
 
   if (!open) return null;
 
@@ -37,7 +156,6 @@ function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <p className="modal-subtitle">Demo UI (mock) - sau này thay bằng API MongoDB thật.</p>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -51,7 +169,7 @@ function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
             </div>
 
             <div className="modal-note">
-              <strong>Lưu ý:</strong> Tên không nên có khoảng trắng hoặc ký tự lạ (demo).
+              <strong>Lưu ý:</strong> Nên dùng chữ/số/_/- (vd: demo, class, lesson_10).
             </div>
           </form>
         </div>
@@ -70,18 +188,20 @@ function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
 }
 
 /** ===== Modal: Create/Edit Document (fields động) ===== */
-function DocumentModal({ open, onClose, title, initialDoc, onSave }) {
-  // initialDoc: { _id?, fields: [{k,v}], updatedAt? }
-  const [pairs, setPairs] = useState(() => {
-    // default: name + minioUrl
+function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
+  const [pairs, setPairs] = useState([]);
+
+  useEffect(() => {
+    if (!open) return;
+
     if (!initialDoc) {
-      return [
-        { k: "name", v: "" },
-        { k: "minioUrl", v: "" },
-      ];
+      setPairs(defaultPairsForCollection(collectionName));
+      return;
     }
-    return initialDoc.fields.length ? initialDoc.fields : [{ k: "name", v: "" }];
-  });
+
+    const fields = initialDoc.fields || [];
+    setPairs(fields.length ? fields : defaultPairsForCollection(collectionName));
+  }, [open, initialDoc, collectionName]);
 
   if (!open) return null;
 
@@ -100,18 +220,12 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave }) {
   function submit(e) {
     e.preventDefault();
 
-    // build object from pairs
     const obj = {};
     for (const p of pairs) {
       const k = (p.k || "").trim();
-      const v = (p.v ?? "").toString();
       if (!k) continue;
-      obj[k] = v;
+      obj[k] = parseValue(p.v);
     }
-
-    // yêu cầu tối thiểu: name + minioUrl (bạn vẫn có thể bỏ nếu muốn)
-    if (!obj.name) obj.name = "";
-    if (!obj.minioUrl) obj.minioUrl = "";
 
     onSave(obj);
   }
@@ -121,7 +235,10 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <p className="modal-subtitle">Bạn có thể tự thêm field bất kỳ (key/value).</p>
+          <p className="modal-subtitle">
+            Tip: nhập <code>[]</code>/<code>{"{}"}</code> để lưu array/object. Field{" "}
+            <code>minio</code> nên là JSON object.
+          </p>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -130,50 +247,63 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave }) {
         <div className="modal-body">
           <form onSubmit={submit}>
             <div style={{ display: "grid", gap: 10 }}>
-              {pairs.map((p, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1.4fr auto",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <input
-                    className="kv-input"
-                    placeholder="field (vd: name)"
-                    value={p.k}
-                    onChange={(e) => change(i, "k", e.target.value)}
-                  />
-                  <input
-                    className="kv-input"
-                    placeholder="value (vd: abc)"
-                    value={p.v}
-                    onChange={(e) => change(i, "v", e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => removeRow(i)}
-                    title="Xoá field"
-                    style={{ height: 38 }}
+              {pairs.map((p, i) => {
+                const keyName = (p.k || "").trim();
+                const isBoolField = keyName === "is_deleted" || keyName === "is_active";
+
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1.4fr auto",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <input
+                      className="kv-input"
+                      placeholder="field (vd: class_name, minio...)"
+                      value={p.k}
+                      onChange={(e) => change(i, "k", e.target.value)}
+                    />
+
+                    {isBoolField ? (
+                      <select
+                        className="kv-input"
+                        value={String(p.v ?? "false")}
+                        onChange={(e) => change(i, "v", e.target.value)}
+                      >
+                        <option value="false">false</option>
+                        <option value="true">true</option>
+                      </select>
+                    ) : (
+                      <input
+                        className="kv-input"
+                        placeholder='value (vd: "abc" hoặc [] hoặc {"bucket":"data-edu"...})'
+                        value={p.v}
+                        onChange={(e) => change(i, "v", e.target.value)}
+                      />
+                    )}
+
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => removeRow(i)}
+                      title="Xoá field"
+                      style={{ height: 38 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
               <button type="button" className="btn" onClick={addRow}>
                 + Thêm field
               </button>
-            </div>
-
-            <div className="modal-note">
-              <strong>Gợi ý:</strong> Document list chỉ hiển thị <code>_id</code>, <code>name</code>
-              , <code>minioUrl</code>. Các field khác vẫn được lưu trong mock state.
             </div>
           </form>
         </div>
@@ -192,142 +322,179 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave }) {
 }
 
 export default function MongoDB() {
-  // "" = root collections, else = "collectionName"
-  const [current, setCurrent] = useState("");
-  const [currentDocId, setCurrentDocId] = useState("");
+  const [current, setCurrent] = useState(""); // "" = root collections
+  const [currentDocId, setCurrentDocId] = useState(""); // doc detail
   const [q, setQ] = useState("");
+
+  const [collections, setCollections] = useState([]);
+  const [docs, setDocs] = useState([]);
+  const [totalDocs, setTotalDocs] = useState(0);
+
+  const [err, setErr] = useState("");
+
   const [isEditingDoc, setIsEditingDoc] = useState(false);
   const [detailPairs, setDetailPairs] = useState([]);
 
   const isRoot = current === "";
   const currentCollection = current;
+  const isDocDetail = !!currentDocId;
 
   // modals
   const [openCreateCol, setOpenCreateCol] = useState(false);
   const [openRenameCol, setOpenRenameCol] = useState(false);
-  const [renameTarget, setRenameTarget] = useState(null); // {id,name}
+  const [renameTarget, setRenameTarget] = useState(null); // {name}
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
   const [openEditDoc, setOpenEditDoc] = useState(false);
-  const [editDocTarget, setEditDocTarget] = useState(null); // row
+  const [editDocTarget, setEditDocTarget] = useState(null); // doc
 
-  // mock collections
-  const [collections, setCollections] = useState([
-    { id: "c1", name: "resources" },
-    { id: "c2", name: "chunks" },
-    { id: "c3", name: "lessons" },
-  ]);
+  async function reloadCollections() {
+    setErr("");
+    try {
+      const cols = await mongoApi.listCollections();
+      const rows = (cols || []).map((name) => ({ id: name, name }));
+      setCollections(rows);
+    } catch (e) {
+      setErr(String(e?.message || e));
+      setCollections([]);
+    }
+  }
 
-  // docsByCollection: name -> docs array
-  const [docsByCollection, setDocsByCollection] = useState({
-    resources: [
-      {
-        _id: fakeObjectId(),
-        name: "Bài 1 - Hàm số",
-        minioUrl: "minio://documents/class-10/toan/topic/bai-1.pdf",
-        updatedAt: "2026-01-26 10:10",
-        extra: { author: "demo", grade: "10" },
-      },
-    ],
-    chunks: [
-      {
-        _id: fakeObjectId(),
-        name: "chunk-001",
-        minioUrl: "minio://documents/class-10/tin-hoc/chunk/chunk-001.txt",
-        updatedAt: "2026-01-26 11:20",
-        extra: { tokens: "512" },
-      },
-    ],
-    lessons: [],
-  });
+  async function reloadDocs(collectionName) {
+    if (!collectionName) return;
+    setErr("");
+    try {
+      const data = await mongoApi.listDocuments(collectionName, 200, 0);
+      setDocs(data.documents || []);
+      setTotalDocs(data.total ?? (data.documents || []).length);
+    } catch (e) {
+      setErr(String(e?.message || e));
+      setDocs([]);
+      setTotalDocs(0);
+    }
+  }
 
-  const isDocDetail = !!currentDocId;
+  useEffect(() => {
+    reloadCollections();
+  }, []);
+
+  useEffect(() => {
+    if (!currentCollection) return;
+    reloadDocs(currentCollection);
+  }, [currentCollection]);
 
   const selectedDoc = useMemo(() => {
-    if (!currentCollection || !currentDocId) return null;
-    const list = docsByCollection[currentCollection] || [];
-    return list.find((d) => d._id === currentDocId) || null;
-  }, [docsByCollection, currentCollection, currentDocId]);
+    if (!currentDocId) return null;
+    return docs.find((d) => String(d._id) === String(currentDocId)) || null;
+  }, [docs, currentDocId]);
+
+  function formatVal(k, val) {
+    if (val == null) return "";
+    // nếu là field *_at thì format
+    if (k.endsWith("_at")) {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return d.toLocaleString("vi-VN", { hour12: false });
+    }
+    return typeof val === "string" ? val : JSON.stringify(val);
+  }
+
+  function buildPairsFromDoc(doc) {
+    if (!doc) return [];
+
+    const keys = Object.keys(doc).sort((a, b) => a.localeCompare(b));
+
+    const LOCK_FIELDS = new Set([
+      "_id",
+      "created_at",
+      "created_by",
+      "updated_at",
+      "updated_by",
+      "deleted_at",
+    ]);
+
+    return keys.map((k) => ({
+      id: k,
+      k,
+      v: formatVal(k, doc[k]),
+      locked: LOCK_FIELDS.has(k),
+    }));
+  }
 
   useEffect(() => {
     if (!selectedDoc) {
       setDetailPairs([]);
       return;
     }
-    if (isEditingDoc) return; // ✅ đang sửa thì không overwrite
+    if (isEditingDoc) return;
     setDetailPairs(buildPairsFromDoc(selectedDoc));
   }, [selectedDoc, isEditingDoc]);
 
-  /** ===== Header title (gọn như MinIO bạn đang làm) ===== */
   const headerTitle = useMemo(() => {
     if (isRoot) return "MongoDB";
-    return currentCollection; // chỉ hiện tên collection
+    return currentCollection;
   }, [isRoot, currentCollection]);
 
-  /** ===== Breadcrumb (gọn) ===== */
   const breadcrumbParts = useMemo(() => {
     if (isRoot) return [];
     return ["mongo", currentCollection];
   }, [isRoot, currentCollection]);
 
   function goBack() {
-    // nếu đang xem detail doc => back về list documents
     if (currentDocId) {
       setIsEditingDoc(false);
       setCurrentDocId("");
       setQ("");
       return;
     }
-    // còn lại: back về root collections
     setCurrent("");
     setQ("");
   }
 
-  /** ===== Collections view rows ===== */
   const collectionRows = useMemo(() => {
     const s = q.trim().toLowerCase();
     const list = !s ? collections : collections.filter((c) => c.name.toLowerCase().includes(s));
-    return list
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((c) => ({ ...c, fullPath: c.name })); // fullPath for open
+    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
   }, [collections, q]);
 
-  /** ===== Documents view rows ===== */
   const docRows = useMemo(() => {
-    const list = docsByCollection[currentCollection] || [];
     const s = q.trim().toLowerCase();
+
+    const list = docs.map((d) => {
+      const minio = d?.minio || {};
+      const title = docTitle(d);
+
+      const displayMinio =
+        minio.url ||
+        (minio.bucket && minio.object_key ? `${minio.bucket}/${minio.object_key}` : "") ||
+        (minio.bucket && minio.prefix ? `${minio.bucket}/${minio.prefix}` : "") ||
+        minio.object_key ||
+        minio.prefix ||
+        "";
+
+      return {
+        ...d,
+        id: String(d._id),
+        _title: title,
+        _minio_display: displayMinio,
+      };
+    });
+
     const filtered = !s
       ? list
-      : list.filter((d) => (d.name || "").toLowerCase().includes(s) || (d._id || "").includes(s));
-    return filtered
-      .slice()
-      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
-      .map((d) => ({ ...d, id: d._id })); // DataTable uses row.id
-  }, [docsByCollection, currentCollection, q]);
+      : list.filter(
+          (d) =>
+            String(d._id || "").includes(s) ||
+            String(d._title || "")
+              .toLowerCase()
+              .includes(s) ||
+            String(d._minio_display || "")
+              .toLowerCase()
+              .includes(s)
+        );
 
-  const fieldRows = useMemo(() => {
-    if (!selectedDoc) return [];
+    return filtered.slice();
+  }, [docs, q]);
 
-    const rows = [];
-    rows.push({ id: "_id", k: "_id", v: String(selectedDoc._id || "") });
-    rows.push({ id: "name", k: "name", v: String(selectedDoc.name || "") });
-    rows.push({ id: "minioUrl", k: "minioUrl", v: String(selectedDoc.minioUrl || "") });
-    rows.push({ id: "updatedAt", k: "updatedAt", v: String(selectedDoc.updatedAt || "") });
-
-    const extra = selectedDoc.extra || {};
-    for (const [k, val] of Object.entries(extra)) {
-      rows.push({
-        id: `extra-${k}`,
-        k,
-        v: typeof val === "string" ? val : JSON.stringify(val),
-      });
-    }
-
-    return rows;
-  }, [selectedDoc]);
-
-  /** ===== Columns ===== */
   const collectionColumns = [
     {
       key: "name",
@@ -352,88 +519,36 @@ export default function MongoDB() {
       key: "_id",
       label: "OBJECTID",
       render: (r) => (
-        <span className="crumb" title={r._id}>
+        <span className="crumb" title={String(r._id)}>
           {String(r._id).slice(0, 10)}…
         </span>
       ),
     },
     {
-      key: "name",
+      key: "_title",
       label: "NAME",
       render: (r) => (
         <div className="file-cell">
           <div className="file-left">
             <div className="file-icon file-other">📄</div>
             <div className="file-divider" />
-            <div className="file-name" title={r.name || ""}>
-              {r.name || "(no name)"}
+            <div className="file-name" title={r._title || ""}>
+              {r._title || "(no name field)"}
             </div>
           </div>
         </div>
       ),
     },
     {
-      key: "minioUrl",
-      label: "MINIO URL",
+      key: "_minio_display",
+      label: "MINIO",
       render: (r) => (
-        <span title={r.minioUrl || ""} style={{ whiteSpace: "nowrap" }}>
-          {r.minioUrl
-            ? String(r.minioUrl).slice(0, 42) + (String(r.minioUrl).length > 42 ? "…" : "")
+        <span title={r._minio_display || ""} style={{ whiteSpace: "nowrap" }}>
+          {r._minio_display
+            ? String(r._minio_display).slice(0, 48) +
+              (String(r._minio_display).length > 48 ? "…" : "")
             : ""}
         </span>
-      ),
-    },
-  ];
-
-  const fieldColumns = [
-    {
-      key: "k",
-      label: "FIELD",
-      render: (r) => <span className="crumb">{r.k}</span>,
-    },
-    {
-      key: "v",
-      label: "VALUE",
-      render: (r) => (
-        <span
-          title={r.v}
-          style={{
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "block",
-            maxWidth: 520,
-          }}
-        >
-          {r.v}
-        </span>
-      ),
-    },
-  ];
-
-  const detailColumns = [
-    {
-      key: "k",
-      label: "FIELD",
-      render: (r) => (
-        <input
-          className="kv-input"
-          value={r.k}
-          disabled={r.locked}
-          onChange={(e) => changePair(r.id, "k", e.target.value)}
-        />
-      ),
-    },
-    {
-      key: "v",
-      label: "VALUE",
-      render: (r) => (
-        <input
-          className="kv-input"
-          value={r.v}
-          disabled={r.locked && r.k === "_id"} // _id không sửa
-          onChange={(e) => changePair(r.id, "v", e.target.value)}
-        />
       ),
     },
   ];
@@ -460,179 +575,6 @@ export default function MongoDB() {
     },
   ];
 
-  /** ===== Actions: Collections ===== */
-  function openCollection(row) {
-    setCurrent(row.name);
-    setCurrentDocId("");
-    setIsEditingDoc(false);
-    setQ("");
-  }
-
-  function createCollection(name) {
-    const n = name.trim();
-    if (!n) return;
-    if (collections.some((c) => c.name === n)) {
-      alert("Collection đã tồn tại!");
-      return;
-    }
-    setCollections((prev) => [{ id: String(Date.now()), name: n }, ...prev]);
-    setDocsByCollection((prev) => ({ ...prev, [n]: prev[n] || [] }));
-    setOpenCreateCol(false);
-  }
-
-  function renameCollectionSubmit(newName) {
-    const n = newName.trim();
-    if (!renameTarget) return;
-    if (!n) return;
-
-    const oldName = renameTarget.name;
-    if (n === oldName) {
-      setOpenRenameCol(false);
-      return;
-    }
-
-    if (collections.some((c) => c.name === n)) {
-      alert("Tên collection bị trùng!");
-      return;
-    }
-
-    setCollections((prev) => prev.map((c) => (c.id === renameTarget.id ? { ...c, name: n } : c)));
-
-    setDocsByCollection((prev) => {
-      const next = { ...prev };
-      next[n] = next[oldName] || [];
-      delete next[oldName];
-      return next;
-    });
-
-    setCurrent((cur) => (cur === oldName ? n : cur));
-    setOpenRenameCol(false);
-    setRenameTarget(null);
-  }
-
-  function deleteCollection(row) {
-    if (!confirm(`Xoá collection "${row.name}" và toàn bộ documents? (demo)`)) return;
-
-    setCollections((prev) => prev.filter((c) => c.id !== row.id));
-    setDocsByCollection((prev) => {
-      const next = { ...prev };
-      delete next[row.name];
-      return next;
-    });
-
-    setCurrent((cur) => (cur === row.name ? "" : cur));
-    setQ("");
-  }
-
-  /** ===== Actions: Documents ===== */
-  function openCreateDocModal() {
-    setOpenCreateDoc(true);
-  }
-
-  function createDoc(dataObj) {
-    const doc = {
-      _id: fakeObjectId(),
-      name: dataObj.name ?? "",
-      minioUrl: dataObj.minioUrl ?? "",
-      updatedAt: nowStr(),
-      extra: Object.fromEntries(
-        Object.entries(dataObj).filter(([k]) => k !== "name" && k !== "minioUrl")
-      ),
-    };
-
-    setDocsByCollection((prev) => {
-      const cur = prev[currentCollection] || [];
-      return { ...prev, [currentCollection]: [doc, ...cur] };
-    });
-
-    setOpenCreateDoc(false);
-  }
-
-  function openEditDocModal(row) {
-    setEditDocTarget(row);
-    setOpenEditDoc(true);
-  }
-
-  function saveEditDoc(dataObj) {
-    if (!editDocTarget) return;
-
-    const updated = {
-      _id: editDocTarget._id,
-      name: dataObj.name ?? "",
-      minioUrl: dataObj.minioUrl ?? "",
-      updatedAt: nowStr(),
-      extra: Object.fromEntries(
-        Object.entries(dataObj).filter(([k]) => k !== "name" && k !== "minioUrl")
-      ),
-    };
-
-    setDocsByCollection((prev) => {
-      const cur = prev[currentCollection] || [];
-      return {
-        ...prev,
-        [currentCollection]: cur.map((d) => (d._id === updated._id ? updated : d)),
-      };
-    });
-
-    setOpenEditDoc(false);
-    setEditDocTarget(null);
-  }
-
-  function deleteDoc(row) {
-    if (!confirm(`Xoá document "${row.name}"? (demo)`)) return;
-
-    setDocsByCollection((prev) => {
-      const cur = prev[currentCollection] || [];
-      return { ...prev, [currentCollection]: cur.filter((d) => d._id !== row._id) };
-    });
-  }
-
-  function docToModalFields(doc) {
-    // flatten: name + minioUrl + extra fields
-    const pairs = [
-      { k: "name", v: doc?.name ?? "" },
-      { k: "minioUrl", v: doc?.minioUrl ?? "" },
-    ];
-    const extra = doc?.extra || {};
-    for (const [k, v] of Object.entries(extra)) {
-      pairs.push({ k, v: String(v ?? "") });
-    }
-    return pairs;
-  }
-
-  function buildPairsFromDoc(doc) {
-    if (!doc) return [];
-    const pairs = [
-      { id: "_id", k: "_id", v: String(doc._id || ""), locked: true },
-      { id: "name", k: "name", v: String(doc.name || ""), locked: false },
-      { id: "minioUrl", k: "minioUrl", v: String(doc.minioUrl || ""), locked: false },
-      { id: "updatedAt", k: "updatedAt", v: String(doc.updatedAt || ""), locked: true },
-    ];
-
-    const extra = doc.extra || {};
-    for (const [k, val] of Object.entries(extra)) {
-      pairs.push({
-        id: `extra-${k}`,
-        k,
-        v: typeof val === "string" ? val : JSON.stringify(val),
-        locked: false,
-      });
-    }
-    return pairs;
-  }
-
-  function changePair(id, key, value) {
-    setDetailPairs((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
-  }
-
-  function removePair(id) {
-    setDetailPairs((prev) => prev.filter((p) => p.id !== id));
-  }
-
-  function addFieldRow() {
-    setDetailPairs((prev) => [...prev, { id: `new-${Date.now()}`, k: "", v: "", locked: false }]);
-  }
-
   const detailEditColumns = [
     {
       key: "k",
@@ -649,70 +591,182 @@ export default function MongoDB() {
     {
       key: "v",
       label: "VALUE",
-      render: (r) => (
-        <input
-          className="kv-input"
-          value={r.v}
-          disabled={r.locked && r.k === "_id"}
-          onChange={(e) => changePair(r.id, "v", e.target.value)}
-        />
-      ),
+      render: (r) => {
+        const keyName = (r.k || "").trim();
+        const isBoolField = keyName === "is_deleted" || keyName === "is_active";
+
+        if (isBoolField) {
+          return (
+            <select
+              className="kv-input"
+              value={String(r.v ?? "false")}
+              disabled={r.locked} // nếu field locked thì disable luôn
+              onChange={(e) => changePair(r.id, "v", e.target.value)}
+            >
+              <option value="false">false</option>
+              <option value="true">true</option>
+            </select>
+          );
+        }
+
+        return (
+          <input
+            className="kv-input"
+            value={r.v}
+            disabled={r.locked} // lock cả value nếu cần
+            onChange={(e) => changePair(r.id, "v", e.target.value)}
+          />
+        );
+      },
     },
   ];
 
+  function openCollection(row) {
+    setCurrent(row.name);
+    setCurrentDocId("");
+    setIsEditingDoc(false);
+    setQ("");
+  }
+
+  async function createCollection(name) {
+    const n = name.trim();
+    if (!n) return;
+
+    try {
+      await mongoApi.createCollection(n);
+      setOpenCreateCol(false);
+      await reloadCollections();
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  async function renameCollectionSubmit(newName) {
+    const n = newName.trim();
+    if (!renameTarget) return;
+    if (!n) return;
+
+    try {
+      await mongoApi.renameCollection(renameTarget.name, n);
+      setOpenRenameCol(false);
+      setRenameTarget(null);
+
+      setCurrent((cur) => (cur === renameTarget.name ? n : cur));
+      await reloadCollections();
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  async function deleteCollection(row) {
+    if (!confirm(`Xoá collection "${row.name}" và toàn bộ documents?`)) return;
+    try {
+      await mongoApi.deleteCollection(row.name);
+      if (current === row.name) setCurrent("");
+      setQ("");
+      await reloadCollections();
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  function docToModalFields(doc) {
+    const entries = Object.entries(doc || {}).filter(([k]) => k !== "_id");
+    return entries.map(([k, v]) => ({
+      k,
+      v: typeof v === "string" ? v : JSON.stringify(v),
+    }));
+  }
+
+  async function createDoc(dataObj) {
+    try {
+      await mongoApi.createDocument(currentCollection, dataObj);
+      setOpenCreateDoc(false);
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  function openEditDocModal(row) {
+    setEditDocTarget(row);
+    setOpenEditDoc(true);
+  }
+
+  async function saveEditDoc(dataObj) {
+    if (!editDocTarget) return;
+
+    try {
+      await mongoApi.updateDocument(currentCollection, String(editDocTarget._id), dataObj);
+      setOpenEditDoc(false);
+      setEditDocTarget(null);
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  async function deleteDoc(row) {
+    if (!confirm(`Xoá document "${docTitle(row) || row._id}"?`)) return;
+    try {
+      await mongoApi.deleteDocument(currentCollection, String(row._id));
+      await reloadDocs(currentCollection);
+      setCurrentDocId((id) => (String(id) === String(row._id) ? "" : id));
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  function changePair(id, key, value) {
+    setDetailPairs((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
+  }
+
+  function removePair(id) {
+    setDetailPairs((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  function addFieldRow() {
+    setDetailPairs((prev) => [...prev, { id: `new-${Date.now()}`, k: "", v: "", locked: false }]);
+  }
+
   function cancelEditDoc() {
     setIsEditingDoc(false);
-    setDetailPairs(buildPairsFromDoc(selectedDoc)); // quay về dữ liệu hiện tại
+    setDetailPairs(buildPairsFromDoc(selectedDoc));
   }
 
-  function updateDocFromDetail() {
+  async function updateDocFromDetail() {
     if (!selectedDoc) return;
 
-    const obj = {};
+    const patch = {};
     for (const p of detailPairs) {
       const k = (p.k || "").trim();
-      if (!k) continue;
-      obj[k] = (p.v ?? "").toString();
+      if (!k || k === "_id") continue;
+      patch[k] = parseValue(p.v);
     }
 
-    const updated = {
-      _id: selectedDoc._id,
-      name: obj.name ?? "",
-      minioUrl: obj.minioUrl ?? "",
-      updatedAt: nowStr(),
-      extra: Object.fromEntries(
-        Object.entries(obj).filter(([k]) => !["_id", "name", "minioUrl", "updatedAt"].includes(k))
-      ),
-    };
-
-    setDocsByCollection((prev) => {
-      const cur = prev[currentCollection] || [];
-      return {
-        ...prev,
-        [currentCollection]: cur.map((d) => (d._id === updated._id ? updated : d)),
-      };
-    });
-
-    setIsEditingDoc(false); // ✅ quay về view mode
-    setDetailPairs(buildPairsFromDoc(updated));
-    alert("Demo: Cập nhật document xong.");
+    try {
+      await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
+      setIsEditingDoc(false);
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
-  function deleteDocFromDetail() {
+  async function deleteDocFromDetail() {
     if (!selectedDoc) return;
-    if (!confirm(`Xoá document "${selectedDoc.name}"? (demo)`)) return;
-
-    setDocsByCollection((prev) => {
-      const cur = prev[currentCollection] || [];
-      return { ...prev, [currentCollection]: cur.filter((d) => d._id !== selectedDoc._id) };
-    });
-
-    setCurrentDocId(""); // back về list docs
+    if (!confirm(`Xoá document "${docTitle(selectedDoc) || selectedDoc._id}"?`)) return;
+    try {
+      await mongoApi.deleteDocument(currentCollection, String(selectedDoc._id));
+      setCurrentDocId("");
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
   }
 
   return (
     <div>
-      {/* Header đồng bộ MinIO */}
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">
@@ -740,7 +794,7 @@ export default function MongoDB() {
         <div className="page-header-bottom">
           <div className="search-box">
             <input
-              placeholder={isRoot ? "Tìm collection..." : "Tìm document (name hoặc _id)..."}
+              placeholder={isRoot ? "Tìm collection..." : "Tìm document (name/_id/minio)..."}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -752,7 +806,7 @@ export default function MongoDB() {
                 + Collection
               </button>
             ) : (
-              <button className="btn btn-primary" onClick={openCreateDocModal}>
+              <button className="btn btn-primary" onClick={() => setOpenCreateDoc(true)}>
                 + Document
               </button>
             )}
@@ -760,7 +814,13 @@ export default function MongoDB() {
         </div>
       </div>
 
-      {/* Content */}
+      {err ? (
+        <div className="empty-state" style={{ marginBottom: 16 }}>
+          <div className="empty-state-icon">⚠️</div>
+          <p>{err}</p>
+        </div>
+      ) : null}
+
       <div className="table-wrapper">
         {isRoot ? (
           <DataTable
@@ -774,7 +834,7 @@ export default function MongoDB() {
                   className="btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setRenameTarget({ id: row.id, name: row.name });
+                    setRenameTarget({ name: row.name });
                     setOpenRenameCol(true);
                   }}
                 >
@@ -798,6 +858,9 @@ export default function MongoDB() {
               <>
                 <DataTable columns={detailViewColumns} rows={detailPairs} renderActions={null} />
                 <div className="detail-footer">
+                  <button className="btn" onClick={deleteDocFromDetail}>
+                    Xoá
+                  </button>
                   <div className="spacer" />
                   <button className="btn btn-primary" onClick={() => setIsEditingDoc(true)}>
                     Sửa
@@ -809,7 +872,6 @@ export default function MongoDB() {
                 <DataTable
                   columns={detailEditColumns}
                   rows={detailPairs}
-                  pageSize={7}
                   renderActions={(row) =>
                     row.locked ? null : (
                       <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
@@ -839,14 +901,16 @@ export default function MongoDB() {
           <DataTable
             columns={docColumns}
             rows={docRows}
-            pageSize={7}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => {
-              setCurrentDocId(row._id);
+              setCurrentDocId(String(row._id));
               setIsEditingDoc(false);
             }}
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
+                <button className="btn" onClick={() => openEditDocModal(row)}>
+                  Sửa
+                </button>
                 <button className="btn" onClick={() => deleteDoc(row)}>
                   Xoá
                 </button>
@@ -856,7 +920,6 @@ export default function MongoDB() {
         )}
       </div>
 
-      {/* Modals */}
       <CollectionModal
         open={openCreateCol}
         onClose={() => setOpenCreateCol(false)}
@@ -878,9 +941,10 @@ export default function MongoDB() {
       <DocumentModal
         open={openCreateDoc}
         onClose={() => setOpenCreateDoc(false)}
-        title="Tạo document mới"
+        title={`Tạo document mới (${currentCollection})`}
         initialDoc={null}
         onSave={createDoc}
+        collectionName={currentCollection}
       />
 
       <DocumentModal
@@ -889,11 +953,14 @@ export default function MongoDB() {
           setOpenEditDoc(false);
           setEditDocTarget(null);
         }}
-        title="Sửa document"
+        title={`Sửa document (${currentCollection})`}
         initialDoc={
-          editDocTarget ? { _id: editDocTarget._id, fields: docToModalFields(editDocTarget) } : null
+          editDocTarget
+            ? { _id: String(editDocTarget._id), fields: docToModalFields(editDocTarget) }
+            : null
         }
         onSave={saveEditDoc}
+        collectionName={currentCollection}
       />
     </div>
   );

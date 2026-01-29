@@ -28,7 +28,7 @@ export default function DataTable({
       const headH = head ? head.getBoundingClientRect().height : 0;
 
       const available = el.getBoundingClientRect().height - headH;
-      const n = Math.max(3, Math.floor(available / rowH)); // tối thiểu 3 dòng
+      const n = Math.max(7, Math.floor(available / rowH)); // tối thiểu 3 dòng
       setAutoSize(n);
     };
 
@@ -141,4 +141,3 @@ export default function DataTable({
     </div>
   );
 }
-    

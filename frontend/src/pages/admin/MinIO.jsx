@@ -631,7 +631,6 @@ export default function MinIO() {
         {isFolderView ? (
           hasFolderData ? (
             <DataTable
-              pageSize={7}
               columns={folderColumns}
               rows={isRoot ? rootRows : docChildFolders}
               getRowClassName={() => "row-click"}
@@ -676,7 +675,6 @@ export default function MinIO() {
           )
         ) : hasFileData ? (
           <DataTable
-            pageSize={7}
             columns={fileColumns}
             rows={fileRows}
             renderActions={(row) => (
