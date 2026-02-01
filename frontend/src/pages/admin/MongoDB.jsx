@@ -52,7 +52,7 @@ function defaultPairsForCollection(col) {
 
   switch (col) {
     case "class":
-      return [{ k: "class_name", v: "" }, minioPrefix];
+      return [{ k: "class_name", v: "" }];
 
     case "subject":
       return [

@@ -1,23 +1,23 @@
 // src/services/mongoAdminApi.js
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
+function getActorId() {
+  return localStorage.getItem("user_id") || "system";
+}
+
 async function httpJson(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
       "Content-Type": "application/json",
-      "X-Actor": getActor(),
+      "x-actor-id": getActorId(), // ✅ only id
     },
   });
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Request failed");
   return data;
-}
-
-function getActor() {
-  return localStorage.getItem("username") || "admin-ui";
 }
 
 export function listCollections() {

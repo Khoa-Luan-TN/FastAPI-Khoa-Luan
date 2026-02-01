@@ -12,6 +12,7 @@
 
 .modal {
   width: 100%;
+  position: relative;
   max-width: 480px;
   background: white;
   border-radius: 12px;

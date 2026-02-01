@@ -1,8 +1,8 @@
 // src/services/userMongoApi.js
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
-function getActor() {
-  return localStorage.getItem("username") || "admin-ui";
+function getActorId() {
+  return localStorage.getItem("user_id") || "system";
 }
 
 async function httpJson(url, options = {}) {
@@ -11,9 +11,10 @@ async function httpJson(url, options = {}) {
     headers: {
       ...(options.headers || {}),
       "Content-Type": "application/json",
-      "x-user": getActor(), // backend đã hỗ trợ x-user (và x-actor)
+      "x-actor-id": getActorId(), // ✅ only id
     },
   });
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Request failed");
   return data;

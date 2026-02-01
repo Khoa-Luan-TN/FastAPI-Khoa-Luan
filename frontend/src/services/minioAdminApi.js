@@ -1,15 +1,37 @@
+// src/services/minioAdminApi.js
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
+function getActorId() {
+  return localStorage.getItem("user_id") || "system";
+}
+
+/** JSON requests */
 async function httpJson(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
       "Content-Type": "application/json",
+      "x-actor-id": getActorId(), // ✅ only id
     },
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Request failed");
+  return data;
+}
+
+async function httpForm(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      "x-actor-id": getActorId(),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Request failed");
+  return data;
 }
 
 export async function minioList(path = "") {
@@ -26,7 +48,6 @@ export async function createFolder(fullPath) {
 }
 
 export async function renameFolder(oldPath, newPath) {
-  // backend bạn đang để PUT "/folders/" (có dấu / cuối) -> gọi đúng để khỏi redirect
   return httpJson(`${API_BASE}/admin/minio/folders/`, {
     method: "PUT",
     body: JSON.stringify({ old_path: oldPath, new_path: newPath }),
@@ -44,12 +65,10 @@ export async function uploadFiles(path, files) {
   fd.append("path", path);
   for (const f of files) fd.append("files", f);
 
-  const res = await fetch(`${API_BASE}/admin/minio/files/`, {
+  return httpForm(`${API_BASE}/admin/minio/files/`, {
     method: "POST",
     body: fd,
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
 }
 
 export async function insertItem(path, meta, file) {
@@ -59,16 +78,13 @@ export async function insertItem(path, meta, file) {
   fd.append("meta_json", JSON.stringify(meta || {}));
   if (file) fd.append("file", file);
 
-  const res = await fetch(`${API_BASE}/admin/minio/objects/`, {
+  return httpForm(`${API_BASE}/admin/minio/objects/`, {
     method: "POST",
     body: fd,
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
 }
 
 export async function deleteObject(objectKey) {
-  // backend đang đặt DELETE "/files" để xoá file theo object_key
   const url = new URL(`${API_BASE}/admin/minio/files`);
   url.searchParams.set("object_key", objectKey);
   return httpJson(url.toString(), { method: "DELETE" });

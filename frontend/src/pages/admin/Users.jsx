@@ -17,16 +17,16 @@ function fmtTime(s) {
   return str.slice(0, 16);
 }
 
-function UserModal({ open, onClose, title, initial, onSave }) {
+function UserModal({ open, onClose, title, initial, onSave, isEdit = false }) {
   const [username, setUsername] = useState(initial?.username || "");
-  const [password, setPassword] = useState(""); // edit cũng bắt nhập lại
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState(initial?.role || "user");
   const [active, setActive] = useState(initial?.active ?? true);
 
   useEffect(() => {
     if (!open) return;
     setUsername(initial?.username || "");
-    setPassword("");
+    setPassword(""); // edit: để trống mặc định
     setRole(initial?.role || "user");
     setActive(initial?.active ?? true);
   }, [open, initial]);
@@ -35,28 +35,37 @@ function UserModal({ open, onClose, title, initial, onSave }) {
 
   function submit(e) {
     e?.preventDefault?.();
+
     const u = username.trim();
     const pw = password.trim();
-    if (!u) return;
 
-    if (!pw) {
-      alert("Vui lòng nhập password!");
+    // CREATE: bắt buộc username + password
+    if (!isEdit) {
+      if (!u) return alert("Vui lòng nhập username!");
+      if (!pw) return alert("Vui lòng nhập password!");
+      return onSave({ username: u, password: pw, role, active });
+    }
+
+    // EDIT: cho phép bỏ trống field nào thì field đó giữ nguyên
+    // chỉ gửi field nào user thật sự nhập/đổi
+    const patch = {};
+    if (u && u !== (initial?.username || "")) patch.username = u;
+    if (pw) patch.password = pw; // chỉ đổi password nếu có nhập
+    if ((role || "user") !== (initial?.role || "user")) patch.user_role = role;
+    if ((active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
+
+    if (Object.keys(patch).length === 0) {
+      alert("Không có thay đổi nào để cập nhật.");
       return;
     }
 
-    onSave({ username: u, password: pw, role, active });
+    onSave(patch);
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">{title}</h3>
-          <button className="modal-close" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
+        {/* ... */}
         <div className="modal-body">
           <form onSubmit={submit}>
             <div className="field">
@@ -70,30 +79,11 @@ function UserModal({ open, onClose, title, initial, onSave }) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nhập mật khẩu..."
+                placeholder={isEdit ? "Để trống nếu không đổi mật khẩu" : "Nhập mật khẩu..."}
               />
             </div>
 
-            <div className="field">
-              <label>Role</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <div className="field" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <input
-                id="active"
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-                style={{ width: 18, height: 18 }}
-              />
-              <label htmlFor="active" style={{ margin: 0 }}>
-                Kích hoạt tài khoản
-              </label>
-            </div>
+            {/* role + active giữ nguyên */}
           </form>
         </div>
 
@@ -155,9 +145,7 @@ export default function Users() {
             (u.id || "").toLowerCase().includes(s)
         );
 
-    return list
-      .slice()
-      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    return list.slice().sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   }, [users, q]);
 
   const columns = [
@@ -206,7 +194,8 @@ export default function Users() {
 
   async function toggleDisable(row) {
     const nextActive = !row.active;
-    if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"?`)) return;
+    if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"?`))
+      return;
 
     try {
       await userApi.updateUser(row.id, { is_active: nextActive });
@@ -222,16 +211,11 @@ export default function Users() {
     setOpenEdit(true);
   }
 
-  async function saveEditUser(data) {
+  async function saveEditUser(patch) {
     if (!editTarget) return;
 
     try {
-      await userApi.updateUser(editTarget.id, {
-        username: data.username,
-        password: data.password,
-        user_role: data.role,
-        is_active: data.active,
-      });
+      await userApi.updateUser(editTarget.id, patch);
       await reloadUsers();
       setOpenEdit(false);
       setEditTarget(null);
@@ -321,6 +305,7 @@ export default function Users() {
         title="Thêm User"
         initial={{ username: "", role: "user", active: true }}
         onSave={saveCreateUser}
+        isEdit={false}
       />
 
       <UserModal
@@ -332,6 +317,7 @@ export default function Users() {
         title="Sửa User"
         initial={editTarget}
         onSave={saveEditUser}
+        isEdit={true}
       />
     </div>
   );

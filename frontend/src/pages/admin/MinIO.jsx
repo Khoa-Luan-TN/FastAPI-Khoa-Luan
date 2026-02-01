@@ -11,6 +11,36 @@ function nowStr() {
   return new Date().toISOString().slice(0, 16).replace("T", " ");
 }
 
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function openFile(row) {
+  const url = row?.url || row?.meta?.url;
+  if (!url) {
+    alert("File này chưa có url để mở.");
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 function getExt(name = "") {
   const i = name.lastIndexOf(".");
   return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
@@ -86,6 +116,13 @@ export default function MinIO() {
 
   const isFileView = isImages || isVideo || isDocsCategory;
   const isFolderView = isRoot || (isDocuments && !isDocsCategory);
+
+  function closeAllModals() {
+    setOpenCreateFolder(false);
+    setOpenUpload(false);
+    setOpenInsert(false);
+    setOpenFilter(false);
+  }
 
   useEffect(() => {
     let alive = true;
@@ -237,12 +274,14 @@ export default function MinIO() {
   // ====== Nav ======
   function goBack() {
     if (isRoot) return;
+    closeAllModals();
     setCurrentPath(parentPath(currentPath));
     setQ("");
     setFilters({ type: "all" });
   }
 
   function openFolder(fullPath) {
+    closeAllModals();
     setCurrentPath(fullPath);
     setQ("");
     setFilters({ type: "all" });
@@ -276,7 +315,7 @@ export default function MinIO() {
 
       // nếu vừa tạo SUBJECT (level 3) => auto tạo topic/lesson/chunk giống UI cũ
       if (splitPath(fullPath).length === 3) {
-        const defaults = ["topic", "lesson", "chunk"];
+        const defaults = ["subject", "topic", "lesson", "chunk"];
         for (const d of defaults) {
           try {
             await minioApi.createFolder(`${fullPath}/${d}`);
@@ -556,6 +595,30 @@ export default function MinIO() {
     }
   }
 
+  async function copyMinioJson(row) {
+    const bucket = "data-edu"; // hoặc lấy từ env nếu bạn có
+    const object_key = row?.object_key || row?.meta?.object_key || "";
+    const url = row?.url || row?.meta?.url || "";
+
+    if (!object_key && !url) {
+      alert("File này chưa có object_key/url để copy.");
+      return;
+    }
+
+    const minioObj = { bucket, object_key, url };
+    const text = JSON.stringify(minioObj, null, 2);
+
+    const ok = await copyToClipboard(text);
+    if (!ok) alert("Copy thất bại (trình duyệt chặn clipboard).");
+  }
+
+  async function copyUrl(row) {
+    const url = row?.url || row?.meta?.url;
+    if (!url) return alert("File này chưa có url để copy.");
+    const ok = await copyToClipboard(String(url));
+    if (!ok) alert("Copy thất bại (trình duyệt chặn clipboard).");
+  }
+
   const headerTitle = useMemo(() => {
     if (isRoot) return "MinIO";
     if (isImages) return "Images";
@@ -677,8 +740,14 @@ export default function MinIO() {
           <DataTable
             columns={fileColumns}
             rows={fileRows}
+            getRowClassName={() => "row-click"}
+            onRowDoubleClick={(row) => openFile(row)}
             renderActions={(row) => (
               <div className="table-actions">
+                <button className="btn" onClick={() => copyMinioJson(row)} title="Copy JSON minio">
+                  Copy
+                </button>
+
                 <button className="btn" onClick={() => editFile(row)}>
                   Sửa
                 </button>

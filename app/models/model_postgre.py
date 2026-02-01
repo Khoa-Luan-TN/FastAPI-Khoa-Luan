@@ -23,6 +23,7 @@ class Subject(Base):
     subject_name = Column(String, nullable=False)
     subject_type = Column(String, nullable=False)
     mongo_id = Column(String, unique=True, nullable=True)
+    minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}
 
 

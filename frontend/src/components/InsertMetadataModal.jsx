@@ -1,131 +1,312 @@
-// components/InsertMetadataModel.jsx
-import { useState } from "react";
-import "../styles/admin/modal.css";
+import { useEffect, useMemo, useState } from "react";
+import "../../src/styles/admin/modal.css";
+
+function splitPath(path) {
+  return (path || "").split("/").filter(Boolean);
+}
+
+function detectKind(folderName) {
+  const p = (folderName || "").trim();
+
+  if (p === "images") return "image";
+  if (p === "video") return "video";
+
+  const parts = splitPath(p);
+  // documents/class-10/tin-hoc/topic
+  if (parts[0] === "documents" && parts.length >= 4) {
+    const cat = parts[3];
+    if (["subject", "topic", "lesson", "chunk"].includes(cat)) return cat;
+  }
+  return "unknown";
+}
+
+function encodeObjectKey(key) {
+  // encodeURIComponent nhưng giữ lại dấu /
+  return (key || "").split("/").map(encodeURIComponent).join("/");
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function actorName() {
+  // tuỳ bạn lưu localStorage key gì
+  return localStorage.getItem("username") || localStorage.getItem("actor") || "admin-ui";
+}
+
+const DEFAULT_BUCKET = import.meta?.env?.VITE_MINIO_BUCKET || "data-edu";
+const DEFAULT_PUBLIC_BASE = (
+  import.meta?.env?.VITE_MINIO_PUBLIC_BASE_URL || "http://127.0.0.1:9000"
+).replace(/\/+$/, "");
 
 export default function InsertMetadataModal({ open, onClose, folderName, onInsert }) {
-  const [meta, setMeta] = useState({
-    class: "",
-    subject: "",
-    topic: "",
-    lesson: "",
-    chunk: "",
-    name: "",
-  });
+  const kind = useMemo(() => detectKind(folderName), [folderName]);
+
+  const schema = useMemo(() => {
+    if (kind === "subject") {
+      return {
+        title: "Insert Subject (PDF)",
+        requiredFile: true,
+        fields: [
+          { name: "class_id", label: "class_id", required: true },
+          { name: "subject_name", label: "subject_name", required: true },
+          { name: "subject_type", label: "subject_type", required: true },
+        ],
+      };
+    }
+
+    if (kind === "topic") {
+      return {
+        title: "Insert Topic (PDF)",
+        requiredFile: true,
+        fields: [
+          { name: "subject_id", label: "subject_id", required: true },
+          { name: "topic_num", label: "topic_num", type: "number", required: true },
+          { name: "topic_name", label: "topic_name", required: true },
+        ],
+      };
+    }
+
+    if (kind === "lesson") {
+      return {
+        title: "Insert Lesson (PDF)",
+        requiredFile: true,
+        fields: [
+          { name: "topic_id", label: "topic_id", required: true },
+          { name: "lesson_num", label: "lesson_num", type: "number", required: true },
+          { name: "lesson_name", label: "lesson_name", required: true },
+          { name: "lesson_type", label: "lesson_type", required: false },
+        ],
+      };
+    }
+
+    if (kind === "chunk") {
+      return {
+        title: "Insert Chunk (PDF)",
+        requiredFile: true,
+        fields: [
+          { name: "lesson_id", label: "lesson_id", required: true },
+          { name: "chunk_label", label: "chunk_label", type: "number", required: true },
+          { name: "chunk_name", label: "chunk_name", required: true },
+        ],
+      };
+    }
+
+    if (kind === "image") {
+      return {
+        title: "Insert Image",
+        requiredFile: true,
+        fields: [
+          { name: "chunk_id", label: "chunk_id", required: true },
+          { name: "title", label: "title", required: true },
+        ],
+      };
+    }
+
+    if (kind === "video") {
+      return {
+        title: "Insert Video",
+        requiredFile: true,
+        fields: [
+          { name: "chunk_id", label: "chunk_id", required: true },
+          { name: "title", label: "title", required: true },
+        ],
+      };
+    }
+
+    return { title: "Insert", requiredFile: true, fields: [] };
+  }, [kind]);
+
+  const [values, setValues] = useState({});
   const [file, setFile] = useState(null);
+
+  // reset khi mở modal / đổi folder
+  useEffect(() => {
+    if (!open) return;
+    setValues({}); // ✅ không cần set audit ở đây nữa
+    setFile(null);
+  }, [open, folderName]);
 
   if (!open) return null;
 
-  function change(k, v) {
-    setMeta((prev) => ({ ...prev, [k]: v }));
+  // minio computed (readonly preview)
+  const objectKeyPreview = file ? `${folderName}/${file.name}` : "";
+  const urlPreview = file
+    ? `${DEFAULT_PUBLIC_BASE}/${DEFAULT_BUCKET}/${encodeObjectKey(objectKeyPreview)}`
+    : "";
+
+  function onChangeField(name, v) {
+    setValues((prev) => ({ ...prev, [name]: v }));
   }
 
-  function submit(e) {
-    e.preventDefault();
-    if (!meta.name.trim() && !file) {
-      alert("Vui lòng nhập tên hoặc chọn file");
-      return;
+  function validate() {
+    if (kind === "unknown") {
+      alert(
+        "Folder này chưa map được loại metadata. Hãy vào đúng folder (subject/topic/lesson/chunk/images/video)."
+      );
+      return false;
     }
-    onInsert({ meta, file });
-    setMeta({ class: "", subject: "", topic: "", lesson: "", chunk: "", name: "" });
-    setFile(null);
+
+    for (const f of schema.fields) {
+      if (!f.required) continue;
+      const v = values[f.name];
+      const ok = v !== undefined && v !== null && String(v).trim() !== "";
+      if (!ok) {
+        alert(`Thiếu field bắt buộc: ${f.label}`);
+        return false;
+      }
+    }
+
+    if (schema.requiredFile && !file) {
+      alert("Bạn phải chọn file để Insert.");
+      return false;
+    }
+    return true;
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const a = actorName();
+    const t = nowIso();
+
+    const meta = { ...values };
+
+    // ép kiểu số
+    for (const f of schema.fields) {
+      if (f.type === "number" && meta[f.name] !== "" && meta[f.name] != null) {
+        const n = Number(meta[f.name]);
+        if (Number.isNaN(n)) {
+          alert(`${f.label} phải là số`);
+          return;
+        }
+        meta[f.name] = n;
+      }
+    }
+
+    // ✅ audit: không hiển thị nhưng luôn set
+    meta.created_by = a;
+    meta.updated_by = a;
+    meta.is_deleted = false;
+    meta.deleted_at = null;
+    meta.created_at = t;
+    meta.updated_at = t;
+
+    // minio auto
+    meta.minio = {
+      bucket: DEFAULT_BUCKET,
+      object_key: objectKeyPreview || "",
+      url: urlPreview || "",
+    };
+
+    if (kind === "image" || kind === "video") {
+      meta.minio.content_type = file?.type || "";
+      meta.minio.size = file?.size || 0;
+    }
+
+    await onInsert({ meta, file });
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div
+        className="modal"
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{ position: "relative" }}
+      >
         <div className="modal-header">
-          <h3 className="modal-title">Tạo thư mục mới</h3>
-          <p className="modal-subtitle">Thêm thư mục để tổ chức tập tin</p>
-          <button className="modal-close" onClick={onClose}>
+          <h3 className="modal-title">{schema.title}</h3>
+          <p className="modal-subtitle">Folder: {folderName}</p>
+
+          <button type="button" className="modal-close" onClick={onClose}>
             ×
           </button>
         </div>
 
-        <div className="modal-body">
-          <form onSubmit={submit}>
-            <div className="form-grid">
-              <div className="field">
-                <label htmlFor="class">Lớp học</label>
-                <input
-                  id="class"
-                  value={meta.class}
-                  onChange={(e) => change("class", e.target.value)}
-                  placeholder="10A1, 11B2, ..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="subject">Môn học</label>
-                <input
-                  id="subject"
-                  value={meta.subject}
-                  onChange={(e) => change("subject", e.target.value)}
-                  placeholder="Toán, Lý, Hoá, ..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="topic">Chủ đề</label>
-                <input
-                  id="topic"
-                  value={meta.topic}
-                  onChange={(e) => change("topic", e.target.value)}
-                  placeholder="Hàm số, Cơ học, ..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="lesson">Bài học</label>
-                <input
-                  id="lesson"
-                  value={meta.lesson}
-                  onChange={(e) => change("lesson", e.target.value)}
-                  placeholder="Bài 1, Chương 2, ..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="chunk">Chunk</label>
-                <input
-                  id="chunk"
-                  value={meta.chunk}
-                  onChange={(e) => change("chunk", e.target.value)}
-                  placeholder="chunk-001, part-01, ..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="name">Tên file</label>
-                <input
-                  id="name"
-                  value={meta.name}
-                  onChange={(e) => change("name", e.target.value)}
-                  placeholder="bai1.pdf, video1.mp4, ..."
-                  required
-                />
+        {kind === "unknown" ? (
+          <>
+            <div className="modal-body">
+              <div className="modal-note">
+                <p>
+                  Folder hiện tại: <b>{folderName}</b>
+                </p>
+                <p>Chỉ cho Insert ở:</p>
+                <ul>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/subject</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/topic</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/lesson</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/chunk</li>
+                  <li>images</li>
+                  <li>video</li>
+                </ul>
               </div>
             </div>
 
-            <div className="field">
-              <label htmlFor="file">Chọn file (tùy chọn)</label>
-              <input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file && (
-                <div className="file-info">
-                  <strong>Đã chọn:</strong> {file.name} ({Math.round(file.size / 1024)} KB)
-                </div>
-              )}
+            <div className="modal-footer">
+              <button type="button" className="btn" onClick={onClose}>
+                Đóng
+              </button>
+            </div>
+          </>
+        ) : (
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <div className="modal-body">
+              <div className="form-grid">
+                {schema.fields.map((f) => {
+                  const val = values[f.name];
+                  return (
+                    <div className="field" key={f.name}>
+                      <label>
+                        {f.label} {f.required ? <span className="req">*</span> : null}
+                      </label>
+                      <input
+                        className="kv-input"
+                        type={f.type || "text"}
+                        value={val === null || val === undefined ? "" : String(val)}
+                        placeholder={f.placeholder || ""}
+                        onChange={(e) => onChangeField(f.name, e.target.value)}
+                        disabled={!!f.readOnly}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="field" style={{ marginTop: 16 }}>
+                <label>File *</label>
+                <input
+                  className="kv-input"
+                  type="file"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+
+                {file ? (
+                  <div className="file-info">
+                    <div>
+                      <strong>minio.bucket</strong>: {DEFAULT_BUCKET}
+                    </div>
+                    <div>
+                      <strong>minio.object_key</strong>: {objectKeyPreview}
+                    </div>
+                    <div>
+                      <strong>minio.url</strong>: {urlPreview}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            <div className="modal-note">
-              <strong>Lưu ý:</strong> Metadata này chỉ dùng để demo UI. Sau này sẽ tích hợp API để
-              lưu metadata và upload file thực tế.
+            <div className="modal-footer">
+              <button type="button" className="btn" onClick={onClose}>
+                Đóng
+              </button>
+              <button className="btn btn-primary" type="submit">
+                Insert
+              </button>
             </div>
           </form>
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn" onClick={onClose}>
-            Huỷ
-          </button>
-          <button className="btn btn-primary" onClick={submit}>
-            Thêm metadata
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
