@@ -1,5 +1,5 @@
 // pages/admin/MongoDB.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react"; // ✅ thêm useRef
 import "../../styles/admin/page.css";
 import "../../styles/admin/modal.css";
 import DataTable from "../../components/DataTable";
@@ -16,7 +16,6 @@ function docTitle(doc = {}) {
     doc.keyword_name ||
     doc.image_name ||
     doc.video_name ||
-    doc.table_name ||
     doc.username ||
     doc.name ||
     ""
@@ -47,8 +46,7 @@ function parseValue(v) {
 
 function defaultPairsForCollection(col) {
   // mặc định minio dùng bucket data-edu
-  const minioPrefix = { k: "minio", v: '{"bucket":"data-edu","prefix":""}' };
-  const minioFile = { k: "minio", v: '{"bucket":"data-edu","object_key":"","url":""}' };
+  const minioNull = { k: "minio", v: "null" }; // ✅ mặc định null
 
   switch (col) {
     case "class":
@@ -59,7 +57,7 @@ function defaultPairsForCollection(col) {
         { k: "class_id", v: "" },
         { k: "subject_name", v: "" },
         { k: "subject_type", v: "" },
-        minioPrefix,
+        minioNull, // ✅
       ];
 
     case "topic":
@@ -67,7 +65,7 @@ function defaultPairsForCollection(col) {
         { k: "subject_id", v: "" },
         { k: "topic_num", v: "" },
         { k: "topic_name", v: "" },
-        minioPrefix,
+        minioNull, // ✅
       ];
 
     case "lesson":
@@ -76,7 +74,7 @@ function defaultPairsForCollection(col) {
         { k: "lesson_num", v: "" },
         { k: "lesson_name", v: "" },
         { k: "lesson_type", v: "ly thuyet" },
-        minioPrefix,
+        minioNull, // ✅
       ];
 
     case "chunk":
@@ -85,40 +83,28 @@ function defaultPairsForCollection(col) {
         { k: "chunk_label", v: "1" },
         { k: "chunk_name", v: "" },
         { k: "chunk_des", v: "" },
-        { k: "images", v: "[]" },
-        { k: "tables", v: "[]" },
-        minioPrefix,
-      ];
 
-    case "keyword":
-      return [
-        { k: "chunk_id", v: "" },
-        { k: "keyword_name", v: "" },
-        { k: "keyword_des", v: "" },
+        // ✅ bạn muốn mặc định null
+        { k: "images", v: "null" },
+        { k: "videos", v: "null" }, // ✅ THÊM DÒNG NÀY
+
+        { k: "minio", v: "null" },
       ];
 
     case "image":
       return [
         { k: "chunk_id", v: "" },
         { k: "image_name", v: "" },
-        { k: "image_url", v: "[]" },
-        minioFile,
+        { k: "image_url", v: "null" }, // ✅
+        minioNull, // ✅
       ];
 
     case "video":
       return [
         { k: "chunk_id", v: "" },
         { k: "video_name", v: "" },
-        { k: "video_url", v: "[]" },
-        minioFile,
-      ];
-
-    case "table":
-      return [
-        { k: "chunk_id", v: "" },
-        { k: "table_name", v: "" },
-        { k: "table_url", v: "[]" },
-        minioFile,
+        { k: "video_url", v: "null" }, // ✅
+        minioNull, // ✅
       ];
 
     case "user":
@@ -127,6 +113,13 @@ function defaultPairsForCollection(col) {
         { k: "password", v: "" },
         { k: "user_role", v: "user" },
         { k: "is_active", v: "true" },
+      ];
+
+    case "keyword":
+      return [
+        { k: "chunk_id", v: "" },
+        { k: "keyword_name", v: "" },
+        { k: "keyword_des", v: "" },
       ];
 
     default:
@@ -205,6 +198,21 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
 
   if (!open) return null;
 
+  function valuePlaceholder(keyName) {
+    const k = (keyName || "").trim();
+    if (!k) return "Nhập giá trị...";
+
+    if (k === "minio")
+      return '{"bucket":"data-edu","prefix":""} hoặc {"bucket":"data-edu","object_key":"","url":""}';
+    if (k.endsWith("_id")) return "Nhập ID (vd: class_id/subject_id...)";
+    if (k === "images" || k === "tables" || k.endsWith("_url")) return "[]";
+    if (k === "is_deleted" || k === "is_active") return "true / false";
+    if (k.endsWith("_num") || k.endsWith("_label")) return "Số (vd: 1)";
+    if (k.endsWith("_name")) return `Nhập ${k}`;
+
+    return `Nhập ${k}`;
+  }
+
   function change(i, key, value) {
     setPairs((prev) => prev.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
   }
@@ -219,14 +227,12 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
 
   function submit(e) {
     e.preventDefault();
-
     const obj = {};
     for (const p of pairs) {
       const k = (p.k || "").trim();
       if (!k) continue;
       obj[k] = parseValue(p.v);
     }
-
     onSave(obj);
   }
 
@@ -235,10 +241,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <p className="modal-subtitle">
-            Tip: nhập <code>[]</code>/<code>{"{}"}</code> để lưu array/object. Field{" "}
-            <code>minio</code> nên là JSON object.
-          </p>
+          {/* ✅ xoá hẳn modal-subtitle tip */}
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -263,7 +266,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                   >
                     <input
                       className="kv-input"
-                      placeholder="field (vd: class_name, minio...)"
+                      placeholder="Tên trường (vd: class_name)"
                       value={p.k}
                       onChange={(e) => change(i, "k", e.target.value)}
                     />
@@ -280,7 +283,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                     ) : (
                       <input
                         className="kv-input"
-                        placeholder='value (vd: "abc" hoặc [] hoặc {"bucket":"data-edu"...})'
+                        placeholder={valuePlaceholder(keyName)} // ✅ placeholder theo label
                         value={p.v}
                         onChange={(e) => change(i, "v", e.target.value)}
                       />
@@ -338,6 +341,7 @@ export default function MongoDB() {
   const isRoot = current === "";
   const currentCollection = current;
   const isDocDetail = !!currentDocId;
+  const importRef = useRef(null);
 
   // modals
   const [openCreateCol, setOpenCreateCol] = useState(false);
@@ -345,8 +349,7 @@ export default function MongoDB() {
   const [renameTarget, setRenameTarget] = useState(null); // {name}
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
-  const [openEditDoc, setOpenEditDoc] = useState(false);
-  const [editDocTarget, setEditDocTarget] = useState(null); // doc
+  const [importing, setImporting] = useState(false);
 
   async function reloadCollections() {
     setErr("");
@@ -678,28 +681,35 @@ export default function MongoDB() {
     }));
   }
 
+  async function onPickImportFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // ✅ để lần sau chọn lại cùng file vẫn trigger onChange
+    if (!file) return;
+
+    try {
+      setImporting(true);
+
+      // ✅ Mode 1: đang ở ROOT => import workbook (nhiều sheet)
+      if (isRoot) {
+        await mongoApi.importExcelWorkbook(file);
+        await reloadCollections();
+        return;
+      }
+
+      // ✅ Mode 2: đang ở trong 1 collection => import vào collection đó
+      await mongoApi.importExcelToCollection(currentCollection, file);
+      await reloadDocs(currentCollection);
+    } catch (err) {
+      alert(String(err?.message || err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function createDoc(dataObj) {
     try {
       await mongoApi.createDocument(currentCollection, dataObj);
       setOpenCreateDoc(false);
-      await reloadDocs(currentCollection);
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
-  }
-
-  function openEditDocModal(row) {
-    setEditDocTarget(row);
-    setOpenEditDoc(true);
-  }
-
-  async function saveEditDoc(dataObj) {
-    if (!editDocTarget) return;
-
-    try {
-      await mongoApi.updateDocument(currentCollection, String(editDocTarget._id), dataObj);
-      setOpenEditDoc(false);
-      setEditDocTarget(null);
       await reloadDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
@@ -802,14 +812,45 @@ export default function MongoDB() {
 
           <div className="header-actions">
             {isRoot ? (
-              <button className="btn btn-primary" onClick={() => setOpenCreateCol(true)}>
-                + Collection
-              </button>
+              <>
+                {/* ✅ IMPORT WORKBOOK */}
+                <button
+                  className="btn"
+                  disabled={importing}
+                  onClick={() => importRef.current?.click()}
+                >
+                  {importing ? "Importing..." : "Import Excel"}
+                </button>
+
+                <button className="btn btn-primary" onClick={() => setOpenCreateCol(true)}>
+                  + Collection
+                </button>
+              </>
             ) : (
-              <button className="btn btn-primary" onClick={() => setOpenCreateDoc(true)}>
-                + Document
-              </button>
+              <>
+                {/* ✅ IMPORT INTO CURRENT COLLECTION */}
+                <button
+                  className="btn"
+                  disabled={importing}
+                  onClick={() => importRef.current?.click()}
+                >
+                  {importing ? "Importing..." : "Import Excel"}
+                </button>
+
+                <button className="btn btn-primary" onClick={() => setOpenCreateDoc(true)}>
+                  + Document
+                </button>
+              </>
             )}
+
+            {/* ✅ hidden file input */}
+            <input
+              ref={importRef}
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: "none" }}
+              onChange={onPickImportFile}
+            />
           </div>
         </div>
       </div>
@@ -908,9 +949,6 @@ export default function MongoDB() {
             }}
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
-                <button className="btn" onClick={() => openEditDocModal(row)}>
-                  Sửa
-                </button>
                 <button className="btn" onClick={() => deleteDoc(row)}>
                   Xoá
                 </button>
@@ -944,22 +982,6 @@ export default function MongoDB() {
         title={`Tạo document mới (${currentCollection})`}
         initialDoc={null}
         onSave={createDoc}
-        collectionName={currentCollection}
-      />
-
-      <DocumentModal
-        open={openEditDoc}
-        onClose={() => {
-          setOpenEditDoc(false);
-          setEditDocTarget(null);
-        }}
-        title={`Sửa document (${currentCollection})`}
-        initialDoc={
-          editDocTarget
-            ? { _id: String(editDocTarget._id), fields: docToModalFields(editDocTarget) }
-            : null
-        }
-        onSave={saveEditDoc}
         collectionName={currentCollection}
       />
     </div>

@@ -35,9 +35,13 @@ def _require_bucket():
 
 def get_actor(request: Optional[Request]) -> str:
     if request is None:
-        return "system"
-    # ✅ chỉ lấy user_id
-    return request.headers.get("x-actor-id") or "system"
+        raise HTTPException(status_code=401, detail="Missing request/actor")
+
+    actor_id = (request.headers.get("x-actor-id") or "").strip()
+    if not actor_id:
+        raise HTTPException(status_code=401, detail="Missing x-actor-id")
+    return actor_id
+
 
 
 

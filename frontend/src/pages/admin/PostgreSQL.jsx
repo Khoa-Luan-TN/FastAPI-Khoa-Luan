@@ -311,7 +311,6 @@ export default function PostgreSQL() {
           <DataTable
             columns={tableColumns}
             rows={tableRows}
-            pageSize={10}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => openTable(row)}
             renderActions={null}
@@ -322,7 +321,6 @@ export default function PostgreSQL() {
           <DataTable
             columns={dataColumns}
             rows={dataRows}
-            pageSize={10}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => setCurrentPk(String(row._pk))}
             renderActions={null}

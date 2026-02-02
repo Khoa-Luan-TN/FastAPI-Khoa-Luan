@@ -71,3 +71,34 @@ export function deleteDocument(collectionName, oid) {
   const id = encodeURIComponent(oid);
   return httpJson(`${API_BASE}/admin/mongo/documents/${c}/${id}`, { method: "DELETE" });
 }
+
+// ✅ NEW: upload multipart/form-data (KHÔNG set Content-Type)
+async function httpUpload(url, formData) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "x-actor-id": getActorId(), // ✅ vẫn gửi actor
+    },
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Upload failed");
+  return data;
+}
+
+// ✅ Import workbook: backend tự đọc nhiều sheet và insert nhiều collection
+export function importExcelWorkbook(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return httpUpload(`${API_BASE}/admin/mongo/import/excel`, fd);
+}
+
+// ✅ Import vào 1 collection cụ thể (nếu bạn muốn mode đơn giản)
+export function importExcelToCollection(collectionName, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const url = new URL(`${API_BASE}/admin/mongo/import/excel-one`);
+  url.searchParams.set("collection_name", collectionName);
+  return httpUpload(url.toString(), fd);
+}

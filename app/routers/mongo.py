@@ -1,5 +1,5 @@
 # app/routers/mongo.py
-from fastapi import APIRouter, Query, Path, HTTPException, status, Body, Request
+from fastapi import APIRouter, Query, Path, HTTPException, status, Body, Request, UploadFile, File
 from app.services.mongo_client import get_mongo_client
 from typing import Any, Dict, Tuple, Optional
 from fastapi.encoders import jsonable_encoder
@@ -8,6 +8,9 @@ from bson.errors import InvalidId
 from pymongo.errors import CollectionInvalid, OperationFailure
 import re
 from datetime import datetime, timezone
+import os, time
+from app.services.mongo_import_service import import_excel_to_mongo
+from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
 
 router = APIRouter(prefix="/admin/mongo", tags=["Mongo"])
 
@@ -30,6 +33,7 @@ def _normalize_collection_name(name: str) -> str:
             detail="collection_name chỉ nên gồm chữ/số/_/- và dài 1-64 ký tự",
         )
     return name
+
 
 
 def _check_collection_exist(collection_name: str):
@@ -366,6 +370,7 @@ import app.models.model_postgre as pg_models
 
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "user"}
 
+NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}
 # ===== helpers for sync =====
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
@@ -493,6 +498,7 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
     Return info dict.
     """
     mongo_id = str(doc.get("_id"))
+
     if col == "class":
         name = (doc.get("class_name") or doc.get("name") or "").strip()
         if not name:
@@ -501,10 +507,19 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
         obj = _pg_get_by_mongo_id(pg, pg_models.Class, mongo_id)
         if obj:
             obj.class_name = name
-            return {"op": "update", "pg_id": obj.class_id}
+            return {
+                "op": "update",
+                "pg_id": obj.class_id,
+                "neo_payload": {"id": obj.class_id, "name": name},
+            }
+
         obj = pg_models.Class(class_name=name, mongo_id=mongo_id)
         pg.add(obj); pg.flush(); pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.class_id}
+        return {
+            "op": "insert",
+            "pg_id": obj.class_id,
+            "neo_payload": {"id": obj.class_id, "name": name},
+        }
 
     if col == "subject":
         subject_name = (doc.get("subject_name") or doc.get("name") or "").strip()
@@ -524,7 +539,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             obj.class_id = class_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            return {"op": "update", "pg_id": obj.subject_id}
+            return {
+                "op": "update",
+                "pg_id": obj.subject_id,
+                "neo_payload": {"id": obj.subject_id, "name": subject_name, "parent_id": class_id},
+            }
 
         obj = pg_models.Subject(
             subject_name=subject_name,
@@ -534,7 +553,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             minio_url=minio_url,
         )
         pg.add(obj); pg.flush(); pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.subject_id}
+        return {
+            "op": "insert",
+            "pg_id": obj.subject_id,
+            "neo_payload": {"id": obj.subject_id, "name": subject_name, "parent_id": class_id},
+        }
 
     if col == "topic":
         topic_name = (doc.get("topic_name") or doc.get("name") or "").strip()
@@ -554,7 +577,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             obj.subject_id = subject_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            return {"op": "update", "pg_id": obj.topic_id}
+            return {
+                "op": "update",
+                "pg_id": obj.topic_id,
+                "neo_payload": {"id": obj.topic_id, "name": topic_name, "parent_id": subject_id},
+            }
 
         obj = pg_models.Topic(
             topic_name=topic_name,
@@ -564,7 +591,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             minio_url=minio_url,
         )
         pg.add(obj); pg.flush(); pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.topic_id}
+        return {
+            "op": "insert",
+            "pg_id": obj.topic_id,
+            "neo_payload": {"id": obj.topic_id, "name": topic_name, "parent_id": subject_id},
+        }
 
     if col == "lesson":
         lesson_name = (doc.get("lesson_name") or doc.get("name") or "").strip()
@@ -586,7 +617,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             obj.topic_id = topic_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            return {"op": "update", "pg_id": obj.lesson_id}
+            return {
+                "op": "update",
+                "pg_id": obj.lesson_id,
+                "neo_payload": {"id": obj.lesson_id, "name": lesson_name, "parent_id": topic_id},
+            }
 
         obj = pg_models.Lesson(
             lesson_name=lesson_name,
@@ -597,8 +632,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             minio_url=minio_url,
         )
         pg.add(obj); pg.flush(); pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.lesson_id}
-
+        return {
+            "op": "insert",
+            "pg_id": obj.lesson_id,
+            "neo_payload": {"id": obj.lesson_id, "name": lesson_name, "parent_id": topic_id},
+        }
 
     if col == "chunk":
         chunk_name = (doc.get("chunk_name") or doc.get("name") or "").strip()
@@ -618,7 +656,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             obj.lesson_id = lesson_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            return {"op": "update", "pg_id": obj.chunk_id}
+            return {
+                "op": "update",
+                "pg_id": obj.chunk_id,
+                "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id},
+            }
 
         obj = pg_models.Chunk(
             chunk_name=chunk_name,
@@ -628,8 +670,11 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
             minio_url=minio_url,
         )
         pg.add(obj); pg.flush(); pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.chunk_id}
-
+        return {
+            "op": "insert",
+            "pg_id": obj.chunk_id,
+            "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id},
+        }
 
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
@@ -639,7 +684,9 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
         if not keyword_name or not chunk_id:
             raise ValueError(f"keyword missing fields or chunk_ref not mapped (chunk_ref={chunk_ref})")
 
-        # keyword pk = (chunk_id, keyword_name). nhưng vẫn tìm theo mongo_id trước cho dễ update
+        # ✅ keyword_key dùng cho Neo (và cũng là pg_id dạng composite)
+        keyword_key = f"{chunk_id}::{keyword_name}"
+
         existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if existing:
             # Nếu pk thay đổi => delete + insert
@@ -647,15 +694,31 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
                 pg.delete(existing)
                 pg.flush()
                 obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
-                pg.add(obj); pg.flush()
-                return {"op": "recreate", "pg_id": f"{chunk_id}::{keyword_name}"}
+                pg.add(obj)
+                pg.flush()
+                return {
+                    "op": "recreate",
+                    "pg_id": keyword_key,
+                    "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+                }
+
             existing.chunk_id = chunk_id
             existing.keyword_name = keyword_name
-            return {"op": "update", "pg_id": f"{existing.chunk_id}::{existing.keyword_name}"}
+            return {
+                "op": "update",
+                "pg_id": keyword_key,
+                "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+            }
 
         obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
-        pg.add(obj); pg.flush()
-        return {"op": "insert", "pg_id": f"{chunk_id}::{keyword_name}"}
+        pg.add(obj)
+        pg.flush()
+        return {
+            "op": "insert",
+            "pg_id": keyword_key,
+            "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+        }
+
 
     if col == "user":
         def _s(v) -> str:
@@ -692,7 +755,7 @@ def _upsert_one_to_pg(pg, col: str, doc: dict) -> dict:
 
         obj = pg_models.User(**obj_kwargs)
         pg.add(obj); pg.flush(); pg.refresh(obj)
-    return {"op": "insert", "pg_id": getattr(obj, "user_id", username)}
+        return {"op": "insert", "pg_id": getattr(obj, "user_id", username)}
 
     raise ValueError(f"Unsupported col: {col}")
 
@@ -815,10 +878,12 @@ def _delete_one_in_pg(pg, col: str, mongo_id: str) -> dict:
     pg.delete(obj)
     return {"deleted": 1}
 
+
 def _sync_doc_to_postgres(col: str, doc: dict) -> dict:
     """
     Wrapper: open PG session, upsert one doc.
     Never raise to break Mongo CRUD; return sync status.
+    Flow: Mongo -> PG -> (PG ok) -> Neo
     """
     if col not in SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
@@ -827,12 +892,27 @@ def _sync_doc_to_postgres(col: str, doc: dict) -> dict:
     try:
         with pg.begin():
             info = _upsert_one_to_pg(pg, col, doc)
-        return {"ok": True, **info}
+
+        # ✅ PG ok -> Neo sync (không sync user)
+        neo_res = {"ok": True, "skipped": True}
+        if col in NEO_SYNCABLE_COLS:
+            neo_payload = None
+            if isinstance(info, dict):
+                neo_payload = info.pop("neo_payload", None)
+
+            if not isinstance(neo_payload, dict):
+                neo_res = {"ok": False, "error": "missing neo_payload"}
+            else:
+                neo_res = neo_sync_upsert(col, neo_payload)
+
+        return {"ok": True, **(info or {}), "neo": neo_res}
+
     except Exception as e:
         pg.rollback()
         return {"ok": False, "error": str(e)}
     finally:
         pg.close()
+
 
 def _sync_delete_to_postgres(col: str, mongo_id: str) -> dict:
     if col not in SYNCABLE_COLS:
@@ -848,3 +928,75 @@ def _sync_delete_to_postgres(col: str, mongo_id: str) -> dict:
         return {"ok": False, "error": str(e)}
     finally:
         pg.close()
+
+
+# app/routers/mongo.py  (dán gần cuối file, sau _sync_doc_to_postgres)
+import tempfile
+
+@router.post("/import/excel", summary="Import Excel workbook (multi-sheet) -> Mongo -> PG -> Neo")
+async def import_excel_workbook(
+    file: UploadFile = File(...),
+    request: Request = None,
+):
+    actor = _get_actor(request)
+
+    fn = (file.filename or "").lower()
+    if not fn.endswith((".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="Only .xlsx/.xlsm is supported (openpyxl không đọc .xls)")
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        report = import_excel_to_mongo(
+            db,
+            tmp_path,
+            actor=actor,
+            sync_one=lambda c, d: _sync_doc_to_postgres(c, d),
+        )
+        return {"ok": True, "report": report}
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+
+@router.post("/import/excel-one", summary="Import Excel -> 1 collection -> Mongo -> PG -> Neo")
+async def import_excel_one_collection(
+    collection_name: str = Query(...),
+    file: UploadFile = File(...),
+    request: Request = None,
+):
+    actor = _get_actor(request)
+    col = _normalize_collection_name(collection_name)
+    _check_collection_exist(col)
+
+    fn = (file.filename or "").lower()
+    if not fn.endswith((".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="Only .xlsx/.xlsm is supported (openpyxl không đọc .xls)")
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        # ✅ chỉ import sheet = tên collection hiện tại
+        report = import_excel_to_mongo(
+            db,
+            tmp_path,
+            actor=actor,
+            sync_one=lambda c, d: _sync_doc_to_postgres(c, d),
+            only_cols=[col],
+        )
+        return {"ok": True, "report": report}
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass

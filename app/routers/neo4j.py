@@ -129,9 +129,10 @@ def list_nodes(
     cypher = f"""
     MATCH (n:{label})
     RETURN elementId(n) AS id, properties(n) AS p
-    ORDER BY coalesce(toString(n.updated_at), "") DESC
+    ORDER BY elementId(n) DESC
     SKIP $skip LIMIT $limit
     """
+
     rs = session.run(cypher, skip=skip, limit=limit)
 
     nodes = []
