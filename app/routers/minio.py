@@ -7,24 +7,26 @@ import time
 from typing import List, Optional
 from urllib.parse import quote
 
+
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Request
 from minio.commonconfig import CopySource
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
-from pydantic import BaseModel, Field
+from app.schemas.minio_schemas import CreateFolderBody, RenameFolderBody, RenameObjectBody
 
 from app.services.minio_client import get_minio_client
 from app.services.mongo_minio_service import (
     on_minio_insert_to_mongo,
     on_minio_rename_object,
-    on_minio_unlink_object,   # ✅ mới
+    on_minio_unlink_object,  
 )
+
 
 router = APIRouter(prefix="/admin/minio", tags=["Minio"])
 
+
 BUCKET = (os.getenv("MINIO_BUCKET") or "").strip()
 MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
-
 
 # ===================== HELPERS =====================
 
@@ -41,7 +43,6 @@ def get_actor(request: Optional[Request]) -> str:
     if not actor_id:
         raise HTTPException(status_code=401, detail="Missing x-actor-id")
     return actor_id
-
 
 
 
@@ -97,22 +98,6 @@ def _ensure_minio_bucket_in_meta(meta: dict) -> dict:
     return meta
 
 
-# ===================== MODELS =====================
-
-class CreateFolderBody(BaseModel):
-    full_path: str = Field(..., min_length=1)
-
-
-class RenameFolderBody(BaseModel):
-    old_path: str = Field(..., min_length=1)
-    new_path: str = Field(..., min_length=1)
-
-
-class RenameObjectBody(BaseModel):
-    object_key: str = Field(..., min_length=1)
-    new_name: str = Field(..., min_length=1)
-
-
 # ===================== GET =====================
 
 @router.get("/list", summary="Lấy ra cấu trúc list trong MinIO")
@@ -161,7 +146,7 @@ def list_structure(path: str = Query("", description="VD: documents, documents/c
 
 # ===================== POST =====================
 
-@router.post("/folders", summary="Tạo folder (marker)")
+@router.post("/folders", summary="Tạo folder")
 def create_folder(body: CreateFolderBody):
     _require_bucket()
     client = get_minio_client()
@@ -192,6 +177,7 @@ def create_folder(body: CreateFolderBody):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
+# ==================== CẦN CẢI THIỆN KHI TẢI ẢNH THÌ THÊM ID THAM CHIẾU ĐỂ NÓ TỰ ĐỘNG LOAD LÊN MONGO KHÔNG CẦN GÁN TAY========= #
 @router.post("/files/", summary="Upload nhiều file vào folder path + sync Mongo/PG")
 async def upload_files_to_path(
     request: Request,
@@ -284,7 +270,7 @@ async def upload_files_to_path(
     }
 
 
-@router.post("/objects/", summary="Insert 1 item (có thể có file hoặc không) + sync Mongo/PG")
+@router.post("/objects/", summary="Insert dữ liệu để nó tự động SYNC")
 async def insert_item(
     request: Request,
     path: str = Form(...),
