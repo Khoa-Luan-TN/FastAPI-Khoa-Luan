@@ -391,13 +391,41 @@ export default function MongoDB() {
     return docs.find((d) => String(d._id) === String(currentDocId)) || null;
   }, [docs, currentDocId]);
 
+  function parseDateAssumeUTC(v) {
+    if (v == null) return null;
+    if (v instanceof Date) return v;
+    if (typeof v === "number") return new Date(v);
+
+    const s0 = String(v).trim();
+    if (!s0) return null;
+
+    // có timezone rồi (Z hoặc +07:00, +00:00...)
+    const hasTz = /([zZ]|[+-]\d{2}:\d{2})$/.test(s0);
+    if (hasTz) return new Date(s0);
+
+    // ISO nhưng thiếu timezone => coi là UTC
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s0)) return new Date(s0 + "Z");
+
+    // dạng "YYYY-MM-DD HH:mm:ss" => đổi sang ISO + UTC
+    if (/^\d{4}-\d{2}-\d{2}\s/.test(s0)) return new Date(s0.replace(" ", "T") + "Z");
+
+    // fallback
+    return new Date(s0);
+  }
+
   function formatVal(k, val) {
     if (val == null) return "";
-    // nếu là field *_at thì format
+
     if (k.endsWith("_at")) {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) return d.toLocaleString("vi-VN", { hour12: false });
+      const d = parseDateAssumeUTC(val);
+      if (d && !isNaN(d.getTime())) {
+        return d.toLocaleString("vi-VN", {
+          hour12: false,
+          timeZone: "Asia/Ho_Chi_Minh", // ✅ ép timezone VN cho chắc
+        });
+      }
     }
+
     return typeof val === "string" ? val : JSON.stringify(val);
   }
 

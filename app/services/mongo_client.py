@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timezone
 
 from pymongo import MongoClient
 
@@ -21,7 +22,7 @@ def get_mongo_client():
 
     if missing:
         raise RuntimeError(f"Missing env vars: {', '.join(missing)} (check your config.env file)")
-
-    client = MongoClient(URI)
+    client = MongoClient(URI, tz_aware=True, tzinfo=timezone.utc)
+    
     db = client[DB]
     return {"client": client, "db": db}

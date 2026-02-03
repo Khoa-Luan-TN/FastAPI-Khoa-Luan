@@ -144,9 +144,9 @@ def import_excel_to_mongo(
 ) -> Dict[str, Any]:
     wb = load_workbook(xlsx_path, data_only=True)
 
-    cols = only_cols or IMPORT_ORDER  # ✅ thêm
-
-    id_map: Dict[str, Dict[str, str]] = {c: {} for c in IMPORT_ORDER}
+    cols = only_cols or IMPORT_ORDER
+    all_cols = set(IMPORT_ORDER) | set(cols)
+    id_map: Dict[str, Dict[str, str]] = {c: {} for c in all_cols}
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
