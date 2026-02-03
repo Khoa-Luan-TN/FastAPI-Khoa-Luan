@@ -1,97 +1,58 @@
-# app/services/neo_sync_service.py
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional, Callable
 
 from neo4j import Session as NeoSession
-from app.services.neo_client import get_neo4j_session
+from app.services.neo_client import neo4j_driver, _neo4j_database  # hoặc import helper riêng nếu bạn muốn public API
 
-
-# ---------- helper: dùng get_neo4j_session (generator) như context manager ----------
-@contextmanager
-def neo_session() -> NeoSession:
-    gen = get_neo4j_session()
-    session = next(gen)
-    try:
-        yield session
-    finally:
-        try:
-            next(gen)
-        except StopIteration:
-            pass
-
-
-# ---------- core ----------
 ROOT_THING_ID = "thing"
-
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user
 
 
+@contextmanager
+def neo_session() -> NeoSession:
+    driver = neo4j_driver()
+    db = _neo4j_database()
+    session = driver.session(database=db)
+    try:
+        yield session
+    finally:
+        session.close()
+
+
 def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    payload tối thiểu:
-      - class   : {id, name}
-      - subject : {id, name, parent_id=class_id}
-      - topic   : {id, name, parent_id=subject_id}
-      - lesson  : {id, name, parent_id=topic_id}
-      - chunk   : {id, name, parent_id=lesson_id}
-      - keyword : {id(keyword_key), name(keyword_name), parent_id=chunk_id}
-    """
     if col not in NEO_SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
 
+    handlers: Dict[str, Callable[[NeoSession, Dict[str, Any]], None]] = {
+        "class": lambda s, p: _upsert_class(s, class_id=p["id"], class_name=p.get("name", "")),
+        "subject": lambda s, p: _upsert_subject(
+            s, subject_id=p["id"], subject_name=p.get("name", ""), class_id=p.get("parent_id")
+        ),
+        "topic": lambda s, p: _upsert_topic(
+            s, topic_id=p["id"], topic_name=p.get("name", ""), subject_id=p.get("parent_id")
+        ),
+        "lesson": lambda s, p: _upsert_lesson(
+            s, lesson_id=p["id"], lesson_name=p.get("name", ""), topic_id=p.get("parent_id")
+        ),
+        "chunk": lambda s, p: _upsert_chunk(
+            s, chunk_id=p["id"], chunk_name=p.get("name", ""), lesson_id=p.get("parent_id")
+        ),
+        "keyword": lambda s, p: _upsert_keyword(
+            s, keyword_key=p["id"], keyword_name=p.get("name", ""), chunk_id=p.get("parent_id")
+        ),
+    }
+
     try:
         with neo_session() as s:
-            if col == "class":
-                _upsert_class(s, class_id=payload["id"], class_name=payload.get("name", ""))
-            elif col == "subject":
-                _upsert_subject(
-                    s,
-                    subject_id=payload["id"],
-                    subject_name=payload.get("name", ""),
-                    class_id=payload.get("parent_id"),
-                )
-            elif col == "topic":
-                _upsert_topic(
-                    s,
-                    topic_id=payload["id"],
-                    topic_name=payload.get("name", ""),
-                    subject_id=payload.get("parent_id"),
-                )
-            elif col == "lesson":
-                _upsert_lesson(
-                    s,
-                    lesson_id=payload["id"],
-                    lesson_name=payload.get("name", ""),
-                    topic_id=payload.get("parent_id"),
-                )
-            elif col == "chunk":
-                _upsert_chunk(
-                    s,
-                    chunk_id=payload["id"],
-                    chunk_name=payload.get("name", ""),
-                    lesson_id=payload.get("parent_id"),
-                )
-            elif col == "keyword":
-                _upsert_keyword(
-                    s,
-                    keyword_key=payload["id"],
-                    keyword_name=payload.get("name", ""),
-                    chunk_id=payload.get("parent_id"),
-                )
-
+            handlers[col](s, payload)
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 
-# ---------- cyphers (idempotent + re-parent safe) ----------
-
-
-# ---------- cyphers (idempotent + re-parent safe) ----------
-
-def _ensure_thing(session: NeoSession):
+def _ensure_thing(session: NeoSession) -> None:
     session.run(
         """
         MERGE (t:Thing {id:$id})
@@ -101,9 +62,8 @@ def _ensure_thing(session: NeoSession):
     )
 
 
-def _upsert_class(session: NeoSession, *, class_id: str, class_name: str):
+def _upsert_class(session: NeoSession, *, class_id: str, class_name: str) -> None:
     _ensure_thing(session)
-
     session.run(
         """
         MERGE (c:Class {class_id:$class_id})
@@ -125,7 +85,7 @@ def _upsert_class(session: NeoSession, *, class_id: str, class_name: str):
     )
 
 
-def _upsert_subject(session: NeoSession, *, subject_id: str, subject_name: str, class_id: Optional[str]):
+def _upsert_subject(session: NeoSession, *, subject_id: str, subject_name: str, class_id: Optional[str]) -> None:
     if not class_id:
         session.run(
             """
@@ -158,7 +118,7 @@ def _upsert_subject(session: NeoSession, *, subject_id: str, subject_name: str, 
     )
 
 
-def _upsert_topic(session: NeoSession, *, topic_id: str, topic_name: str, subject_id: Optional[str]):
+def _upsert_topic(session: NeoSession, *, topic_id: str, topic_name: str, subject_id: Optional[str]) -> None:
     if not subject_id:
         session.run(
             """
@@ -191,7 +151,7 @@ def _upsert_topic(session: NeoSession, *, topic_id: str, topic_name: str, subjec
     )
 
 
-def _upsert_lesson(session: NeoSession, *, lesson_id: str, lesson_name: str, topic_id: Optional[str]):
+def _upsert_lesson(session: NeoSession, *, lesson_id: str, lesson_name: str, topic_id: Optional[str]) -> None:
     if not topic_id:
         session.run(
             """
@@ -224,7 +184,7 @@ def _upsert_lesson(session: NeoSession, *, lesson_id: str, lesson_name: str, top
     )
 
 
-def _upsert_chunk(session: NeoSession, *, chunk_id: str, chunk_name: str, lesson_id: Optional[str]):
+def _upsert_chunk(session: NeoSession, *, chunk_id: str, chunk_name: str, lesson_id: Optional[str]) -> None:
     if not lesson_id:
         session.run(
             """
@@ -256,16 +216,15 @@ def _upsert_chunk(session: NeoSession, *, chunk_id: str, chunk_name: str, lesson
         chunk_name=chunk_name or "",
     )
 
-def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str, chunk_id: Optional[str]):
+
+def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str, chunk_id: Optional[str]) -> None:
     keyword_key = (keyword_key or "").strip()
     keyword_name = (keyword_name or "").strip()
 
-    # ✅ fallback: nếu thiếu chunk_id thì parse từ keyword_key "chunkKey::keyword"
     ck = (chunk_id or "").strip()
     if not ck and keyword_key and "::" in keyword_key:
         ck = keyword_key.split("::", 1)[0].strip()
 
-    # 1) upsert Keyword (set chunk_id nếu có)
     session.run(
         """
         MERGE (k:Keyword {keyword_key:$keyword_key})
@@ -281,22 +240,21 @@ def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str,
         chunk_key=ck,
     )
 
-    # 2) nếu vẫn không có chunk key => thôi (không thể link)
     if not ck:
         return
 
-    # 3) tìm Chunk theo nhiều key (giống query bạn chạy tay)
+    chunk_where = "c.chunk_id = $ck OR c.postgre_id = $ck OR c.import_key = $ck"
+
     found = session.run(
-        """
+        f"""
         MATCH (c:Chunk)
-        WHERE c.chunk_id = $ck OR c.postgre_id = $ck OR c.import_key = $ck
+        WHERE {chunk_where}
         RETURN elementId(c) AS id
         LIMIT 1
         """,
         ck=ck,
     ).single()
 
-    # 4) nếu không tìm thấy Chunk thì tạo placeholder (để không mất link)
     if not found:
         session.run(
             """
@@ -306,12 +264,10 @@ def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str,
             ck=ck,
         )
 
-    # 5) link lại quan hệ HAS_KEYWORD (re-parent safe)
     session.run(
-        """
-        MATCH (c:Chunk)
-        WHERE c.chunk_id = $ck OR c.postgre_id = $ck OR c.import_key = $ck
-        MATCH (k:Keyword {keyword_key:$keyword_key})
+        f"""
+        MATCH (c:Chunk) WHERE {chunk_where}
+        MATCH (k:Keyword {{keyword_key:$keyword_key}})
 
         WITH c, k
         OPTIONAL MATCH (old:Chunk)-[r:HAS_KEYWORD]->(k)

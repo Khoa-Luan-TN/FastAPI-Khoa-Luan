@@ -1,4 +1,4 @@
-# app/routers/admin_postgre.py
+# app/routers/postgre.py
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
