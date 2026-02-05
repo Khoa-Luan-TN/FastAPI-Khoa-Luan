@@ -7,9 +7,12 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 from typing import Any, Dict, List, Tuple, Annotated
 from pydantic import BaseModel
+from sqlalchemy import text as sql_text
 
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as models
+from app.services.embedder import embed_query
+
 
 router = APIRouter(prefix="/admin/postgre", tags=["PostgreSQL"])
 
@@ -165,3 +168,68 @@ def get_row(
     model = _get_model(table_name)
     obj = _get_one_by_pk(db, model, pk)
     return {"table_name": table_name, "row": _row_to_dict(model, obj)}
+
+
+@router.get("/search/keyword", summary="Semantic search keyword (pgvector cosine)")
+def search_keyword(
+    q: str = Query(..., min_length=1),
+    k: int = Query(10, ge=1, le=50),
+    db: db_dependency = None,
+):
+    vec = embed_query(q)
+    if not vec:
+        raise HTTPException(status_code=422, detail="q is empty")
+
+    vec_lit = "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
+
+    sql = sql_text("""
+        SELECT
+          chunk_id,
+          keyword_name,
+          1 - (embedding <=> (:v)::vector) AS cosine_sim
+        FROM keyword_embedding
+        ORDER BY embedding <=> (:v)::vector
+        LIMIT :k
+    """)
+
+    rows = db.execute(sql, {"v": vec_lit, "k": k}).mappings().all()
+    return {"q": q, "k": k, "results": [dict(r) for r in rows]}
+
+@router.get("/search/keyword-context", summary="Semantic search keyword + full context")
+def search_keyword_context(
+    q: str = Query(..., min_length=1),
+    k: int = Query(10, ge=1, le=50),
+    db: db_dependency = None,
+):
+    vec = embed_query(q)
+    if not vec:
+        raise HTTPException(status_code=422, detail="q is empty")
+
+    vec_lit = "[" + ",".join(f"{x:.6f}" for x in vec) + "]"
+
+    sql = sql_text("""
+        SELECT
+          ke.chunk_id,
+          ke.keyword_name,
+          1 - (ke.embedding <=> (:v)::vector) AS cosine_sim,
+
+          ch.chunk_name,
+          ch.minio_url  AS chunk_minio_url,
+          ch.mongo_id   AS chunk_mongo_id,
+
+          l.lesson_id, l.lesson_name,
+          t.topic_id,  t.topic_name,
+          s.subject_id, s.subject_name, s.subject_type,
+          cl.class_id, cl.class_name
+        FROM keyword_embedding ke
+        LEFT JOIN chunk   ch ON ch.chunk_id = ke.chunk_id
+        LEFT JOIN lesson  l  ON l.lesson_id = ch.lesson_id
+        LEFT JOIN topic   t  ON t.topic_id = l.topic_id
+        LEFT JOIN subject s  ON s.subject_id = t.subject_id
+        LEFT JOIN "class" cl ON cl.class_id = s.class_id
+        ORDER BY ke.embedding <=> (:v)::vector
+        LIMIT :k
+    """)
+
+    rows = db.execute(sql, {"v": vec_lit, "k": k}).mappings().all()
+    return {"q": q, "k": k, "results": [dict(r) for r in rows]}
