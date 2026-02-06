@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Optional
+import os
 
 from app.services.mongo_client import get_mongo_client
 from app.routers.mongo_documents import create_document_core
@@ -10,6 +11,48 @@ from app.routers.mongo_sync import sync_doc_to_postgres
 
 mongo = get_mongo_client()
 db = mongo["db"]
+
+DOC_ROOTS = {"documents", "document"}
+DOC_KINDS = {"sgk", "topic", "lesson", "chunk"}
+
+def _split(p: str) -> list[str]:
+    return [x for x in (p or "").strip("/").split("/") if x]
+
+def _stem(filename: str) -> str:
+    return os.path.splitext(filename or "")[0]
+
+def _parse_file_no(filename: str) -> int | None:
+    base = _stem(filename)
+    if not base.isdigit():
+        return None
+    return int(base)
+
+def parse_doc_key(object_key: str) -> dict | None:
+    parts = _split(object_key)
+    # documents/type/class/subject/kind/file.pdf  => len >= 6
+    if len(parts) < 6 or parts[0] not in DOC_ROOTS:
+        return None
+
+    subject_type, class_id, subject_slug, kind = parts[1], parts[2], parts[3], parts[4]
+    if kind not in DOC_KINDS:
+        return None
+
+    filename = parts[-1]
+    if kind == "sgk":
+        # sgk/sgk.pdf (không cần file_no)
+        return {"kind": "sgk", "subject_type": subject_type, "class_id": class_id, "subject_slug": subject_slug}
+
+    file_no = _parse_file_no(filename)
+    if not file_no:
+        return None
+
+    return {
+        "kind": kind,  # topic|lesson|chunk
+        "file_no": file_no,
+        "subject_type": subject_type,
+        "class_id": class_id,
+        "subject_slug": subject_slug,
+    }
 
 def _now():
     return datetime.now(timezone.utc)
