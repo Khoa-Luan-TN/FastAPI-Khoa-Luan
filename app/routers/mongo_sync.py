@@ -6,6 +6,8 @@ from bson import ObjectId
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
+from app.services.keyword_embedding_service import ensure_keyword_embedding
+
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
@@ -295,6 +297,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         pg.refresh(obj)
         return {"op": "insert", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id}}
 
+   
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
         chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid", "chunkRef", "chunk"])
@@ -313,16 +316,35 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
                 pg.add(obj)
                 pg.flush()
-                return {"op": "recreate", "pg_id": keyword_key, "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id}}
+                return {
+                    "op": "recreate",
+                    "pg_id": keyword_key,
+                    "chunk_id": chunk_id,
+                    "keyword_name": keyword_name,
+                    "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+                }
 
             existing.chunk_id = chunk_id
             existing.keyword_name = keyword_name
-            return {"op": "update", "pg_id": keyword_key, "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id}}
+            return {
+                "op": "update",
+                "pg_id": keyword_key,
+                "chunk_id": chunk_id,
+                "keyword_name": keyword_name,
+                "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+            }
 
         obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
         pg.add(obj)
         pg.flush()
-        return {"op": "insert", "pg_id": keyword_key, "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id}}
+        return {
+            "op": "insert",
+            "pg_id": keyword_key,
+            "chunk_id": chunk_id,
+            "keyword_name": keyword_name,
+            "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+        }
+
 
     if col == "user":
         def _s(v) -> str:
@@ -378,6 +400,26 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
     try:
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
+
+            if col == "keyword" and isinstance(info, dict):
+                cid = info.get("chunk_id")
+                kn = info.get("keyword_name")
+                if cid and kn:
+                    emb = ensure_keyword_embedding(pg, cid, kn)
+
+                    vec = None
+                    model_name = "multilingual-e5-base"
+                    if isinstance(emb, dict):
+                        vec = emb.get("embedding")
+                        model_name = emb.get("model_name") or model_name
+
+                    if isinstance(vec, (list, tuple)) and len(vec) == 768:
+                        vec = [float(x) for x in vec]  # ✅ ép về python float cho Neo driver
+                        # neo_payload vốn đã có id/name/parent_id => chỉ update thêm field
+                        neo_payload = info.get("neo_payload") or {}
+                        neo_payload["embedding"] = vec
+                        neo_payload["model_name"] = model_name
+                        info["neo_payload"] = neo_payload
 
         neo_res = {"ok": True, "skipped": True}
         if col in NEO_SYNCABLE_COLS:

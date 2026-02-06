@@ -4,11 +4,19 @@ from typing import Any, Dict, List, Tuple, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from neo4j import Session as NeoSession
+from sqlalchemy import bindparam
+from sqlalchemy import text as sql_text
+from bson import ObjectId
 
 from app.services.neo_client import get_neo4j_session
+from app.services.embedder import embed_query
+from app.services.postgre_client import SessionLocal
+from app.services.mongo_client import get_mongo_client
+from app.services.embedder import embed_query
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
 
+VECTOR_INDEX_NAME = "keyword_embedding_idx"
 ALLOWED_LABELS: Tuple[str, ...] = ("Thing", "Class", "Subject", "Topic", "Lesson", "Chunk", "Keyword")
 LABEL_PRIORITY: Tuple[str, ...] = ("Keyword", "Chunk", "Lesson", "Topic", "Subject", "Class", "Thing")
 
@@ -98,6 +106,12 @@ REL_CFG: Dict[str, Dict[str, Any]] = {
     },
 }
 
+def _is_oid_24(s: Any) -> bool:
+    try:
+        ss = str(s).strip()
+        return len(ss) == 24 and all(c in "0123456789abcdefABCDEF" for c in ss)
+    except Exception:
+        return False
 
 def _pick_label(labels: List[str]) -> str:
     for lb in LABEL_PRIORITY:
@@ -282,3 +296,135 @@ def get_node_detail(
         "relation": _relation_for_node(session, label, node_id),
     }
     return {"node": node}  # ✅ giữ đúng FE: data.node
+
+
+@router.get("/search/keyword-context", summary="Semantic search keyword + context + minio (Neo->PG->Mongo)")
+def search_keyword_context_neo(
+    q: str = Query(..., min_length=1),
+    k: int = Query(10, ge=1, le=50),
+    neo: Annotated[NeoSession, Depends(get_neo4j_session)] = None,
+):
+    # 1) embed query
+    vec = embed_query(q)
+    if not vec:
+        raise HTTPException(status_code=422, detail="q is empty")
+    vec = [float(x) for x in vec]
+
+    # 2) Neo4j vector search: lấy keyword + chunk_id + score
+    cypher = """
+    CALL db.index.vector.queryNodes($index_name, $k, $vec)
+    YIELD node, score
+    RETURN
+      node.keyword_key      AS keyword_key,
+      node.keyword_name     AS keyword_name,
+      node.chunk_id         AS chunk_id,
+      node.embedding_model  AS model_name,
+      score                 AS cosine_sim
+    ORDER BY cosine_sim DESC
+    """
+    try:
+        neo_rows = neo.run(cypher, index_name=VECTOR_INDEX_NAME, k=k, vec=vec).data()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Neo4j vector query failed. Check index '{VECTOR_INDEX_NAME}'. Error: {e}",
+        )
+
+    if not neo_rows:
+        return {"q": q, "k": k, "results": []}
+
+    chunk_ids = sorted({str(r.get("chunk_id") or "").strip() for r in neo_rows if str(r.get("chunk_id") or "").strip()})
+    # (chunk_id của bạn là PG chunk_id, vì keyword_key = f"{chunk_id}::{keyword_name}")
+
+    # 3) PG: lấy context theo chunk_id (kèm minio_url + chunk.mongo_id)
+    pg = SessionLocal()
+    try:
+        # SQL dùng bindparam(expanding=True) để IN list an toàn
+        sql = sql_text("""
+            SELECT
+              ch.chunk_id,
+              ch.chunk_name,
+              ch.minio_url  AS chunk_minio_url,
+              ch.mongo_id   AS chunk_mongo_id,
+
+              l.lesson_id, l.lesson_name,
+              t.topic_id,  t.topic_name,
+              s.subject_id, s.subject_name, s.subject_type,
+              cl.class_id, cl.class_name
+            FROM chunk ch
+            LEFT JOIN lesson  l  ON l.lesson_id = ch.lesson_id
+            LEFT JOIN topic   t  ON t.topic_id = l.topic_id
+            LEFT JOIN subject s  ON s.subject_id = t.subject_id
+            LEFT JOIN "class" cl ON cl.class_id = s.class_id
+            WHERE ch.chunk_id IN :ids
+        """).bindparams(bindparam("ids", expanding=True))
+
+        pg_rows = pg.execute(sql, {"ids": chunk_ids}).mappings().all()
+        pg_map: Dict[str, Dict[str, Any]] = {str(r["chunk_id"]): dict(r) for r in pg_rows}
+    finally:
+        pg.close()
+
+    # 4) Mongo: lấy metadata chi tiết từ chunk_mongo_id
+    mongo = get_mongo_client()
+    mdb = mongo["db"]
+
+    mongo_ids = []
+    for cid, ctx in pg_map.items():
+        mid = (ctx.get("chunk_mongo_id") or "").strip()
+        if mid:
+            mongo_ids.append(mid)
+    mongo_ids = sorted(set(mongo_ids))
+
+    mongo_map: Dict[str, Dict[str, Any]] = {}
+    if mongo_ids:
+        # chỉ query những id là ObjectId 24-hex
+        obj_ids = [ObjectId(x) for x in mongo_ids if _is_oid_24(x)]
+        if obj_ids:
+            docs = list(mdb["chunk"].find({"_id": {"$in": obj_ids}}))
+            for d in docs:
+                mongo_map[str(d["_id"])] = d
+
+    # 5) Merge: Neo score + PG context + Mongo minio/meta
+    results: List[Dict[str, Any]] = []
+    for r in neo_rows:
+        cid = str(r.get("chunk_id") or "").strip()
+        ctx = pg_map.get(cid) or {}
+
+        mid = str(ctx.get("chunk_mongo_id") or "").strip()
+        mdoc = mongo_map.get(mid) if mid else None
+
+        # ưu tiên minio url: Mongo > PG
+        minio_obj = (mdoc or {}).get("minio") if isinstance(mdoc, dict) else None
+        mongo_minio_url = (minio_obj or {}).get("url") if isinstance(minio_obj, dict) else None
+
+        out = {
+            "keyword_key": r.get("keyword_key"),
+            "keyword_name": r.get("keyword_name"),
+            "chunk_id": cid,
+            "cosine_sim": float(r.get("cosine_sim") or 0.0),
+            "model_name": r.get("model_name") or "",
+
+            # context từ PG
+            "chunk_name": ctx.get("chunk_name") or "",
+            "chunk_minio_url": (mongo_minio_url or ctx.get("chunk_minio_url") or "").strip(),
+
+            "lesson_id": ctx.get("lesson_id") or "",
+            "lesson_name": ctx.get("lesson_name") or "",
+            "topic_id": ctx.get("topic_id") or "",
+            "topic_name": ctx.get("topic_name") or "",
+            "subject_id": ctx.get("subject_id") or "",
+            "subject_name": ctx.get("subject_name") or "",
+            "subject_type": ctx.get("subject_type") or "",
+            "class_id": ctx.get("class_id") or "",
+            "class_name": ctx.get("class_name") or "",
+
+            # metadata từ Mongo (nếu cần cho FE)
+            "chunk_mongo_id": mid,
+            "minio": minio_obj if isinstance(minio_obj, dict) else None,
+        }
+        results.append(out)
+
+    # đảm bảo sort theo score giảm dần
+    results.sort(key=lambda x: x.get("cosine_sim", 0.0), reverse=True)
+
+    return {"q": q, "k": k, "results": results}

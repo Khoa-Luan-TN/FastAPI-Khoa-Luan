@@ -40,7 +40,12 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             s, chunk_id=p["id"], chunk_name=p.get("name", ""), lesson_id=p.get("parent_id")
         ),
         "keyword": lambda s, p: _upsert_keyword(
-            s, keyword_key=p["id"], keyword_name=p.get("name", ""), chunk_id=p.get("parent_id")
+            s,
+            keyword_key=p["id"],
+            keyword_name=p.get("name", ""),
+            chunk_id=p.get("parent_id"),
+            embedding=p.get("embedding"),
+            model_name=p.get("model_name"),
         ),
     }
 
@@ -217,7 +222,15 @@ def _upsert_chunk(session: NeoSession, *, chunk_id: str, chunk_name: str, lesson
     )
 
 
-def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str, chunk_id: Optional[str]) -> None:
+def _upsert_keyword(
+    session: NeoSession,
+    *,
+    keyword_key: str,
+    keyword_name: str,
+    chunk_id: Optional[str],
+    embedding: Optional[list[float]] = None,
+    model_name: Optional[str] = None,
+) -> None:
     keyword_key = (keyword_key or "").strip()
     keyword_name = (keyword_name or "").strip()
 
@@ -231,14 +244,25 @@ def _upsert_keyword(session: NeoSession, *, keyword_key: str, keyword_name: str,
         SET k.keyword_name = $keyword_name,
             k.updated_at = datetime(),
             k.chunk_id = CASE
-              WHEN $chunk_key IS NULL OR trim($chunk_key) = "" THEN coalesce(k.chunk_id, "")
-              ELSE $chunk_key
+            WHEN $chunk_key IS NULL OR trim($chunk_key) = "" THEN coalesce(k.chunk_id, "")
+            ELSE $chunk_key
+            END,
+            k.embedding = CASE
+            WHEN $embedding IS NULL THEN k.embedding
+            ELSE $embedding
+            END,
+            k.embedding_model = CASE
+            WHEN $model_name IS NULL THEN coalesce(k.embedding_model, "")
+            ELSE $model_name
             END
         """,
         keyword_key=keyword_key,
         keyword_name=keyword_name,
         chunk_key=ck,
+        embedding=embedding,
+        model_name=model_name,
     )
+
 
     if not ck:
         return
