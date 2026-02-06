@@ -5,14 +5,13 @@ function getActorId() {
   return localStorage.getItem("user_id") || "system";
 }
 
-/** JSON requests */
 async function httpJson(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
       "Content-Type": "application/json",
-      "x-actor-id": getActorId(), // ✅ only id
+      "x-actor-id": getActorId(),
     },
   });
 
@@ -29,6 +28,7 @@ async function httpForm(url, options = {}) {
       "x-actor-id": getActorId(),
     },
   });
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.detail || JSON.stringify(data) || "Request failed");
   return data;
@@ -66,19 +66,6 @@ export async function uploadFiles(path, files) {
   for (const f of files) fd.append("files", f);
 
   return httpForm(`${API_BASE}/admin/minio/files/`, {
-    method: "POST",
-    body: fd,
-  });
-}
-
-export async function insertItem(path, meta, file) {
-  const fd = new FormData();
-  fd.append("path", path);
-  fd.append("name", meta?.name || "");
-  fd.append("meta_json", JSON.stringify(meta || {}));
-  if (file) fd.append("file", file);
-
-  return httpForm(`${API_BASE}/admin/minio/objects/`, {
     method: "POST",
     body: fd,
   });

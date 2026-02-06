@@ -1,32 +1,32 @@
 # app/routers/minio.py
-
 import io
-import json
 import os
-import time
-from typing import List, Optional
+import json
+from typing import List, Optional, Tuple
 from urllib.parse import quote
-
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Request
 from minio.commonconfig import CopySource
 from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
-from app.schemas.minio_schemas import CreateFolderBody, RenameFolderBody, RenameObjectBody
 
+from app.schemas.minio_schemas import CreateFolderBody, RenameFolderBody, RenameObjectBody
 from app.services.minio_client import get_minio_client
 from app.services.mongo_minio_service import (
     on_minio_insert_to_mongo,
     on_minio_rename_object,
-    on_minio_unlink_object,  
+    on_minio_unlink_object,
 )
-
 
 router = APIRouter(prefix="/admin/minio", tags=["Minio"])
 
-
 BUCKET = (os.getenv("MINIO_BUCKET") or "").strip()
 MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
+
+# ====== FIXED STRUCTURE ======
+ROOT_FOLDERS = ("documents", "videos", "images")
+DOC_FIXED_FOLDERS = ("sgk", "topic", "lesson", "chunk")
+
 
 # ===================== HELPERS =====================
 
@@ -38,12 +38,10 @@ def _require_bucket():
 def get_actor(request: Optional[Request]) -> str:
     if request is None:
         raise HTTPException(status_code=401, detail="Missing request/actor")
-
     actor_id = (request.headers.get("x-actor-id") or "").strip()
     if not actor_id:
         raise HTTPException(status_code=401, detail="Missing x-actor-id")
     return actor_id
-
 
 
 def clean_path(path: str) -> str:
@@ -55,6 +53,10 @@ def clean_path(path: str) -> str:
     if ".." in p.split("/"):
         raise HTTPException(status_code=400, detail="Invalid path (contains ..)")
     return p.strip("/")
+
+
+def _parts(path: str) -> List[str]:
+    return [x for x in clean_path(path).split("/") if x]
 
 
 def folder_marker(path: str) -> str:
@@ -75,38 +77,120 @@ def prefix_has_anything(client, prefix: str) -> bool:
     return False
 
 
-def _safe_json_load(s: str) -> dict:
-    s = (s or "").strip()
-    if not s:
-        return {}
+def _put_marker_if_missing(client, full_path: str) -> None:
+    """Create folder marker if not exists (idempotent)."""
+    marker = folder_marker(full_path)
+    if not marker:
+        return
     try:
-        v = json.loads(s)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"meta_json invalid JSON: {e}")
-    if not isinstance(v, dict):
-        raise HTTPException(status_code=422, detail="meta_json must be a JSON object")
-    return v
+        client.stat_object(BUCKET, marker)
+        return
+    except S3Error:
+        pass
+
+    client.put_object(
+        BUCKET,
+        marker,
+        data=io.BytesIO(b""),
+        length=0,
+        content_type="application/octet-stream",
+    )
 
 
-def _ensure_minio_bucket_in_meta(meta: dict) -> dict:
-    meta = dict(meta or {})
-    meta.setdefault("minio", {})
-    if isinstance(meta["minio"], dict):
-        meta["minio"].setdefault("bucket", BUCKET)
-    else:
-        meta["minio"] = {"bucket": BUCKET}
-    return meta
+def _is_docs_subject(parts: List[str]) -> bool:
+    # documents/<type>/<class>/<subject>
+    return len(parts) == 4 and parts[0] == "documents"
+
+
+def _is_docs_leaf(parts: List[str]) -> bool:
+    # documents/<type>/<class>/<subject>/<fixed>
+    return len(parts) == 5 and parts[0] == "documents" and parts[4] in DOC_FIXED_FOLDERS
+
+
+def _ensure_docs_fixed_folders(client, subject_path: str) -> None:
+    # subject_path = documents/<type>/<class>/<subject>
+    for cat in DOC_FIXED_FOLDERS:
+        _put_marker_if_missing(client, f"{subject_path}/{cat}")
+
+
+def _assert_can_create_folder(full_path: str) -> None:
+    ps = _parts(full_path)
+    if not ps:
+        raise HTTPException(status_code=400, detail="full_path is required")
+
+    # disallow creating root fixed folders (documents/videos/images)
+    if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
+        raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be created")
+
+    # Only allow under documents: create type/class/subject
+    # documents/<type> (len 2) => create type
+    # documents/<type>/<class> (len 3) => create class
+    # documents/<type>/<class>/<subject> (len 4) => create subject
+    if ps[0] != "documents":
+        raise HTTPException(status_code=400, detail="Only documents/* supports creating folders right now")
+
+    if len(ps) not in (2, 3, 4):
+        raise HTTPException(
+            status_code=400,
+            detail="You can only create folders at documents/<type>, documents/<type>/<class>, documents/<type>/<class>/<subject>",
+        )
+
+    # never allow creating fixed folders manually
+    if len(ps) == 5 and ps[4] in DOC_FIXED_FOLDERS:
+        raise HTTPException(status_code=400, detail="Fixed folders (sgk/topic/lesson/chunk) are auto-created")
+
+
+def _assert_can_rename_or_delete_folder(path: str) -> None:
+    ps = _parts(path)
+    if not ps:
+        raise HTTPException(status_code=400, detail="path is required")
+
+    # block root fixed folders
+    if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
+        raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be renamed/deleted")
+
+    # block docs fixed leaf folders
+    if _is_docs_leaf(ps):
+        raise HTTPException(status_code=400, detail="Fixed folders (sgk/topic/lesson/chunk) cannot be renamed/deleted")
+
+    # allow rename/delete only type/class/subject levels under documents
+    if ps[0] != "documents" or len(ps) not in (2, 3, 4):
+        raise HTTPException(status_code=400, detail="Only documents/<type>/<class>/<subject> folders can be renamed/deleted")
+
+
+def _assert_can_upload_to_path(path: str) -> None:
+    ps = _parts(path)
+    if not ps:
+        raise HTTPException(status_code=400, detail="path is required")
+
+    # images/videos: currently flat upload
+    if len(ps) == 1 and ps[0] in ("images", "videos"):
+        return
+
+    # documents leaf only
+    if _is_docs_leaf(ps):
+        return
+
+    raise HTTPException(
+        status_code=400,
+        detail="Upload is only allowed in images/, videos/, or documents/<type>/<class>/<subject>/{sgk,topic,lesson,chunk}/",
+    )
 
 
 # ===================== GET =====================
 
-@router.get("/list", summary="Lấy ra cấu trúc list trong MinIO")
-def list_structure(path: str = Query("", description="VD: documents, documents/class-10, ...")):
+@router.get("/list", summary="List folder/files in MinIO by path")
+def list_structure(path: str = Query("", description="VD: documents, documents/type, ...")):
     _require_bucket()
     client = get_minio_client()
 
     p = clean_path(path or "")
+    ps = _parts(p)
     prefix = f"{p}/" if p else ""
+
+    # If listing a subject folder => ensure fixed folders exist
+    if _is_docs_subject(ps):
+        _ensure_docs_fixed_folders(client, p)
 
     try:
         objects = client.list_objects(BUCKET, prefix=prefix, recursive=False)
@@ -126,14 +210,28 @@ def list_structure(path: str = Query("", description="VD: documents, documents/c
             else:
                 object_key = obj.object_name
                 name = object_key.split("/")[-1]
-                files.append({
-                    "object_key": object_key,
-                    "name": name,
-                    "size": obj.size,
-                    "etag": obj.etag,
-                    "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
-                    "url": public_url(object_key),
-                })
+                files.append(
+                    {
+                        "object_key": object_key,
+                        "name": name,
+                        "size": obj.size,
+                        "etag": obj.etag,
+                        "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
+                        "url": public_url(object_key),
+                    }
+                )
+
+        # Enforce fixed folders at subject level (only show sgk/topic/lesson/chunk)
+        if _is_docs_subject(ps):
+            fixed = []
+            for cat in DOC_FIXED_FOLDERS:
+                fixed.append({"name": cat, "fullPath": f"{p}/{cat}"})
+            folders = fixed
+            files = []  # subject level is folder-only
+
+        # Enforce leaf level: files only (ignore nested folders)
+        if _is_docs_leaf(ps) or (len(ps) == 1 and ps[0] in ("images", "videos")):
+            folders = []
 
         folders.sort(key=lambda x: x["name"].lower())
         files.sort(key=lambda x: x["name"].lower())
@@ -146,14 +244,13 @@ def list_structure(path: str = Query("", description="VD: documents, documents/c
 
 # ===================== POST =====================
 
-@router.post("/folders", summary="Tạo folder")
+@router.post("/folders", summary="Create folder (only documents/type/class/subject)")
 def create_folder(body: CreateFolderBody):
     _require_bucket()
     client = get_minio_client()
 
     full_path = clean_path(body.full_path)
-    if not full_path:
-        raise HTTPException(status_code=400, detail="full_path is required")
+    _assert_can_create_folder(full_path)
 
     marker = folder_marker(full_path)
 
@@ -161,6 +258,7 @@ def create_folder(body: CreateFolderBody):
         if prefix_has_anything(client, marker):
             raise HTTPException(status_code=409, detail="Folder already exists")
 
+        # create marker
         client.put_object(
             BUCKET,
             marker,
@@ -168,6 +266,11 @@ def create_folder(body: CreateFolderBody):
             length=0,
             content_type="application/octet-stream",
         )
+
+        # if created subject => auto create fixed subfolders
+        ps = _parts(full_path)
+        if _is_docs_subject(ps):
+            _ensure_docs_fixed_folders(client, full_path)
 
         return {"status": "created", "bucket": BUCKET, "folder": {"fullPath": full_path, "marker": marker}}
 
@@ -177,8 +280,7 @@ def create_folder(body: CreateFolderBody):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-# ==================== CẦN CẢI THIỆN KHI TẢI ẢNH THÌ THÊM ID THAM CHIẾU ĐỂ NÓ TỰ ĐỘNG LOAD LÊN MONGO KHÔNG CẦN GÁN TAY========= #
-@router.post("/files/", summary="Upload nhiều file vào folder path + sync Mongo/PG")
+@router.post("/files/", summary="Upload MANY files to a leaf folder + sync Mongo/PG")
 async def upload_files_to_path(
     request: Request,
     path: str = Form(...),
@@ -189,10 +291,22 @@ async def upload_files_to_path(
     actor = get_actor(request)
 
     p = clean_path(path)
-    prefix = folder_marker(p)
+    _assert_can_upload_to_path(p)
 
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
+
+    # ensure fixed folders exist if uploading to docs leaf
+    ps = _parts(p)
+    if _is_docs_leaf(ps):
+        subject_path = "/".join(ps[:4])
+        _ensure_docs_fixed_folders(client, subject_path)
+
+    # ensure root markers for images/videos (nice-to-have)
+    if p in ("images", "videos"):
+        _put_marker_if_missing(client, p)
+
+    prefix = folder_marker(p)
 
     uploaded, failed = [], []
     seen = set()
@@ -211,6 +325,7 @@ async def upload_files_to_path(
                 continue
             seen.add(object_key)
 
+            # prevent overwrite
             try:
                 client.stat_object(BUCKET, object_key)
                 failed.append({"filename": filename, "object_key": object_key, "error": "Already exists"})
@@ -218,6 +333,7 @@ async def upload_files_to_path(
             except S3Error:
                 pass
 
+            # upload
             result = client.put_object(
                 bucket_name=BUCKET,
                 object_name=object_key,
@@ -236,24 +352,44 @@ async def upload_files_to_path(
             except Exception:
                 size_val = None
 
+            # auto sync mongo/pg (no meta_json anymore)
+            # meta minimal: you can expand later
+            try:
+                mongo_res = on_minio_insert_to_mongo(
+                    bucket=BUCKET,
+                    folder_path=p,           # important for mapping
+                    object_key=object_key,
+                    url=url,
+                    meta={
+                        "filename": filename,
+                        "path": p,
+                    },
+                    actor=actor,
+                    content_type=f.content_type or "application/octet-stream",
+                    size=size_val,
+                    sync_pg=True,
+                )
+            except Exception as e:
+                mongo_res = {"ok": False, "error": str(e)}
 
-
-            uploaded.append({
-                "filename": filename,
-                "object_key": object_key,
-                "etag": getattr(result, "etag", None),
-                "url": url,
-                "content_type": f.content_type or "application/octet-stream",
-                "size": size_val,
-                "minio": {
-                    "bucket": BUCKET,
+            uploaded.append(
+                {
+                    "filename": filename,
                     "object_key": object_key,
+                    "etag": getattr(result, "etag", None),
                     "url": url,
                     "content_type": f.content_type or "application/octet-stream",
                     "size": size_val,
+                    "mongo": mongo_res,
+                    "minio": {
+                        "bucket": BUCKET,
+                        "object_key": object_key,
+                        "url": url,
+                        "content_type": f.content_type or "application/octet-stream",
+                        "size": size_val,
+                    },
                 }
-            })
-
+            )
 
         except S3Error as e:
             failed.append({"filename": getattr(f, "filename", None), "error": str(e)})
@@ -270,93 +406,9 @@ async def upload_files_to_path(
     }
 
 
-@router.post("/objects/", summary="Insert dữ liệu để nó tự động SYNC")
-async def insert_item(
-    request: Request,
-    path: str = Form(...),
-    name: str = Form(""),
-    meta_json: str = Form(""),
-    file: UploadFile | None = File(None),
-):
-    _require_bucket()
-    client = get_minio_client()
-    actor = get_actor(request)
-
-    p = clean_path(path)
-    prefix = folder_marker(p)
-
-    if file and file.filename:
-        filename = os.path.basename(file.filename)
-    else:
-        filename = (name or "").strip() or f"item-{int(time.time())}.txt"
-        if "/" in filename or "\\" in filename:
-            raise HTTPException(status_code=400, detail="name must not contain '/' or '\\'")
-
-    object_key = prefix + filename
-
-    try:
-        client.stat_object(BUCKET, object_key)
-        raise HTTPException(status_code=409, detail="Object already exists")
-    except S3Error:
-        pass
-
-    try:
-        if file:
-            client.put_object(
-                BUCKET,
-                object_key,
-                data=file.file,
-                length=-1,
-                part_size=10 * 1024 * 1024,
-                content_type=file.content_type or "application/octet-stream",
-            )
-            await file.close()
-        else:
-            client.put_object(
-                BUCKET,
-                object_key,
-                data=io.BytesIO(b""),
-                length=0,
-                content_type="text/plain",
-            )
-
-        url = public_url(object_key)
-
-        meta = _safe_json_load(meta_json)
-        meta = _ensure_minio_bucket_in_meta(meta)
-
-        size_val = None
-        if file:
-            try:
-                st = client.stat_object(BUCKET, object_key)
-                size_val = getattr(st, "size", None)
-            except Exception:
-                size_val = None
-
-        mongo_res = on_minio_insert_to_mongo(
-            bucket=BUCKET,          # ✅ thêm
-            folder_path=p,
-            object_key=object_key,
-            url=url,
-            meta=meta,
-            actor=actor,
-            content_type=(file.content_type if file else None),
-            size=size_val,
-            sync_pg=True,
-        )
-
-
-        return {"status": "inserted", "bucket": BUCKET, "path": p, "object_key": object_key, "url": url, "mongo": mongo_res}
-
-    except HTTPException:
-        raise
-    except S3Error as e:
-        raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
-
-
 # ===================== PUT =====================
 
-@router.put("/objects/", summary="Đổi tên file + sync Mongo/PG")
+@router.put("/objects/", summary="Rename file + sync Mongo/PG")
 def rename_object(body: RenameObjectBody, request: Request):
     _require_bucket()
     client = get_minio_client()
@@ -400,7 +452,14 @@ def rename_object(body: RenameObjectBody, request: Request):
             sync_pg=True,
         )
 
-        return {"status": "renamed", "bucket": BUCKET, "old_object_key": old_key, "new_object_key": new_key, "url": public_url(new_key), "mongo": mongo_res}
+        return {
+            "status": "renamed",
+            "bucket": BUCKET,
+            "old_object_key": old_key,
+            "new_object_key": new_key,
+            "url": public_url(new_key),
+            "mongo": mongo_res,
+        }
 
     except HTTPException:
         raise
@@ -408,7 +467,7 @@ def rename_object(body: RenameObjectBody, request: Request):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-@router.put("/folders/", summary="Đổi tên folder (cascade) + sync Mongo/PG")
+@router.put("/folders/", summary="Rename folder (cascade) + sync Mongo/PG")
 def rename_folder(body: RenameFolderBody, request: Request):
     _require_bucket()
     client = get_minio_client()
@@ -416,6 +475,9 @@ def rename_folder(body: RenameFolderBody, request: Request):
 
     old_path = clean_path(body.old_path)
     new_path = clean_path(body.new_path)
+
+    _assert_can_rename_or_delete_folder(old_path)
+    _assert_can_rename_or_delete_folder(new_path)
 
     if old_path == new_path:
         raise HTTPException(status_code=400, detail="new_path is the same as old_path")
@@ -435,7 +497,6 @@ def rename_folder(body: RenameFolderBody, request: Request):
         objs = list(client.list_objects(BUCKET, prefix=old_prefix, recursive=True))
         keys = [o.object_name for o in objs]
 
-        # nếu có marker riêng (có thể list_objects không ra), add vào
         try:
             client.stat_object(BUCKET, old_prefix)
             if old_prefix not in keys:
@@ -455,7 +516,6 @@ def rename_folder(body: RenameFolderBody, request: Request):
             client.copy_object(BUCKET, new_key, CopySource(BUCKET, old_key))
             copied += 1
 
-            # sync Mongo/PG cho FILE, bỏ marker/folder
             if not old_key.endswith("/"):
                 mongo_updates.append(
                     on_minio_rename_object(
@@ -468,7 +528,6 @@ def rename_folder(body: RenameFolderBody, request: Request):
                     )
                 )
 
-        # delete cũ (dedupe để tránh lỗi)
         del_keys = set(keys)
         to_delete = [DeleteObject(k) for k in del_keys]
         errors = list(client.remove_objects(BUCKET, to_delete))
@@ -492,13 +551,15 @@ def rename_folder(body: RenameFolderBody, request: Request):
 
 # ===================== DELETE =====================
 
-@router.delete("/folders", summary="Xoá folder (cascade) + sync Mongo/PG")
+@router.delete("/folders", summary="Delete folder (cascade) + sync Mongo/PG")
 def delete_folder(request: Request, path: str = Query(..., min_length=1)):
     _require_bucket()
     client = get_minio_client()
     actor = get_actor(request)
 
     p = clean_path(path)
+    _assert_can_rename_or_delete_folder(p)
+
     prefix = folder_marker(p)
 
     try:
@@ -535,7 +596,6 @@ def delete_folder(request: Request, path: str = Query(..., min_length=1)):
                 )
             )
 
-
         return {"status": "deleted", "bucket": BUCKET, "path": p, "mongo_updates_count": len(mongo_updates)}
 
     except HTTPException:
@@ -544,7 +604,7 @@ def delete_folder(request: Request, path: str = Query(..., min_length=1)):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-@router.delete("/files", summary="Xoá 1 file + sync Mongo/PG")
+@router.delete("/files", summary="Delete 1 file + sync Mongo/PG")
 def delete_file(request: Request, object_key: str = Query(..., min_length=1)):
     _require_bucket()
     client = get_minio_client()
@@ -566,7 +626,6 @@ def delete_file(request: Request, object_key: str = Query(..., min_length=1)):
             actor=actor,
             sync_pg=True,
         )
-
 
         return {"status": "deleted", "bucket": BUCKET, "object_key": key, "mongo": mongo_res}
 
