@@ -5,6 +5,8 @@ import "../../styles/admin/minio.css";
 import CreateFolderModal from "../../components/CreateFolderModal";
 import UploadFileModal from "../../components/UploadFileModal";
 import FilterModal from "../../components/FilterModal";
+import RenameModal from "../../components/RenameModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 // ---- helpers ----
 function openFile(row) {
@@ -54,93 +56,93 @@ const DOC_FIXED = ["sgk", "topic", "lesson", "chunk"];
 // ---- SVG icons ----
 const FolderIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
   </svg>
 );
 
 const FileIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
   </svg>
 );
 
 const VideoIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
   </svg>
 );
 
 const ImageIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
   </svg>
 );
 
 const EditIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 
 const TrashIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
   </svg>
 );
 
 const SearchIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
 const StorageIcon = ({ size = 24 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="2" y="2" width="20" height="8" rx="2"/>
-    <rect x="2" y="14" width="20" height="8" rx="2"/>
-    <circle cx="6" cy="6" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="6" cy="18" r="1" fill="currentColor" stroke="none"/>
+    <rect x="2" y="2" width="20" height="8" rx="2" />
+    <rect x="2" y="14" width="20" height="8" rx="2" />
+    <circle cx="6" cy="6" r="1" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="18" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const ChevronIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <polyline points="9 18 15 12 9 6"/>
+    <polyline points="9 18 15 12 9 6" />
   </svg>
 );
 
 const UploadIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-    <polyline points="17 8 12 3 7 8"/>
-    <line x1="12" y1="3" x2="12" y2="15"/>
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
   </svg>
 );
 
 const FilterIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <line x1="4" y1="6" x2="20" y2="6"/>
-    <line x1="7" y1="12" x2="17" y2="12"/>
-    <line x1="10" y1="18" x2="14" y2="18"/>
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="7" y1="12" x2="17" y2="12" />
+    <line x1="10" y1="18" x2="14" y2="18" />
   </svg>
 );
 
 const FolderPlusIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
-    <line x1="12" y1="11" x2="12" y2="17"/>
-    <line x1="9" y1="14" x2="15" y2="14"/>
+    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+    <line x1="12" y1="11" x2="12" y2="17" />
+    <line x1="9" y1="14" x2="15" y2="14" />
   </svg>
 );
 
 // ---- Section label + icon mapping ----
 const SECTION_LABELS = { documents: "Tài liệu", videos: "Videos", images: "Hình ảnh" };
-const SECTION_ICONS  = { documents: FolderIcon, videos: VideoIcon, images: ImageIcon };
+const SECTION_ICONS = { documents: FolderIcon, videos: VideoIcon, images: ImageIcon };
 function getPartLabel(part) { return SECTION_LABELS[part] || part; }
 function getCrumbIcon(part, idx) {
   if (idx === 0) return SECTION_ICONS[part] || FolderIcon;
@@ -149,9 +151,9 @@ function getCrumbIcon(part, idx) {
 
 // ---- Root sections ----
 const ROOT_SECTIONS = [
-  { id: "r-doc", name: "documents", label: "Tài liệu",   desc: "Sách giáo khoa, bài học, chunk", bg: "#EFF6FF", color: "#2563EB", Icon: FolderIcon },
-  { id: "r-vid", name: "videos",    label: "Videos",     desc: "Video bài giảng",                bg: "#FFF7ED", color: "#EA580C", Icon: VideoIcon  },
-  { id: "r-img", name: "images",    label: "Hình ảnh",   desc: "Ảnh minh hoạ",                  bg: "#F0FDF4", color: "#16A34A", Icon: ImageIcon  },
+  { id: "r-doc", name: "documents", label: "Tài liệu", desc: "Sách giáo khoa, bài học, chunk", bg: "#EFF6FF", color: "#2563EB", Icon: FolderIcon },
+  { id: "r-vid", name: "videos", label: "Videos", desc: "Video bài giảng", bg: "#FFF7ED", color: "#EA580C", Icon: VideoIcon },
+  { id: "r-img", name: "images", label: "Hình ảnh", desc: "Ảnh minh hoạ", bg: "#F0FDF4", color: "#16A34A", Icon: ImageIcon },
 ];
 
 export default function MinIO() {
@@ -165,16 +167,20 @@ export default function MinIO() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  const parts       = splitPath(currentPath);
-  const section     = parts[0] || "";
-  const isRoot      = currentPath === "";
+  // Modal states
+  const [renameModal, setRenameModal] = useState({ open: false, initialName: "", onConfirm: null });
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null });
+
+  const parts = splitPath(currentPath);
+  const section = parts[0] || "";
+  const isRoot = currentPath === "";
   const isDocuments = section === "documents";
-  const isImages    = currentPath === "images";
-  const isVideos    = currentPath === "videos";
+  const isImages = currentPath === "images";
+  const isVideos = currentPath === "videos";
   const isDocsSubject = isDocuments && parts.length === 4;
-  const isDocsLeaf    = isDocuments && parts.length === 5 && DOC_FIXED.includes(parts[4]);
-  const isFileView    = isImages || isVideos || isDocsLeaf;
-  const isFolderView  = isRoot || (isDocuments && !isDocsLeaf);
+  const isDocsLeaf = isDocuments && parts.length === 5 && DOC_FIXED.includes(parts[4]);
+  const isFileView = isImages || isVideos || isDocsLeaf;
+  const isFolderView = isRoot || (isDocuments && !isDocsLeaf);
 
   useEffect(() => {
     let alive = true;
@@ -209,8 +215,8 @@ export default function MinIO() {
   const fileRows = useMemo(() => {
     if (!isFileView) return [];
     const list = (remote.files || []).map((x) => ({ id: x.object_key, name: x.name, size: x.size || 0, updatedAt: x.last_modified ? (() => { const d = x.last_modified.slice(0, 10).split("-"); return d.length === 3 ? `${d[2]}/${d[1]}/${d[0]}` : x.last_modified.slice(0, 10); })() : "", object_key: x.object_key, url: x.url }));
-    const byType   = filters.type === "all" ? list : list.filter((r) => getFileType(r.name) === filters.type);
-    const s        = q.trim().toLowerCase();
+    const byType = filters.type === "all" ? list : list.filter((r) => getFileType(r.name) === filters.type);
+    const s = q.trim().toLowerCase();
     return (!s ? byType : byType.filter((r) => r.name.toLowerCase().includes(s))).sort((a, b) => a.name.localeCompare(b.name));
   }, [remote.files, q, filters, isFileView]);
 
@@ -248,29 +254,43 @@ export default function MinIO() {
   async function editFolder(row, e) {
     e.stopPropagation();
     const oldPath = row.fullPath;
-    const n = window.prompt("Tên mới:", lastName(oldPath));
-    if (!n?.trim()) return;
-    const p = parentPath(oldPath);
-    const newPath = p ? `${p}/${n.trim()}` : n.trim();
-    try {
-      await minioApi.renameFolder(oldPath, newPath);
-      setCurrentPath((cp) => cp === oldPath ? newPath : cp.startsWith(oldPath + "/") ? newPath + cp.slice(oldPath.length) : cp);
-      const parent = parentPath(newPath) || parentPath(oldPath);
-      const data   = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
-      setRemote({ folders: data.folders || [], files: data.files || [] });
-    } catch (e) { alert(String(e?.message || e)); }
+    const oldName = lastName(oldPath);
+
+    setRenameModal({
+      open: true,
+      initialName: oldName,
+      onConfirm: async (newName) => {
+        setRenameModal({ open: false });
+        const p = parentPath(oldPath);
+        const newPath = p ? `${p}/${newName}` : newName;
+        try {
+          await minioApi.renameFolder(oldPath, newPath);
+          setCurrentPath((cp) => cp === oldPath ? newPath : cp.startsWith(oldPath + "/") ? newPath + cp.slice(oldPath.length) : cp);
+          const parent = parentPath(newPath) || parentPath(oldPath);
+          const data = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
+          setRemote({ folders: data.folders || [], files: data.files || [] });
+        } catch (err) { alert(String(err?.message || err)); }
+      }
+    });
   }
 
   async function deleteFolderCascade(row, e) {
     e.stopPropagation();
-    if (!confirm(`Xoá folder "${lastName(row.fullPath)}" và toàn bộ dữ liệu con?`)) return;
-    try {
-      await minioApi.deleteFolder(row.fullPath);
-      setCurrentPath((cp) => cp === row.fullPath || cp.startsWith(row.fullPath + "/") ? parentPath(row.fullPath) : cp);
-      const parent = parentPath(row.fullPath);
-      const data   = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
-      setRemote({ folders: data.folders || [], files: data.files || [] });
-    } catch (e) { alert(String(e?.message || e)); }
+    setConfirmModal({
+      open: true,
+      title: "Xoá thư mục",
+      message: `Bạn có chắc chắn muốn xoá folder "${lastName(row.fullPath)}" và toàn bộ dữ liệu bên trong không?`,
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        try {
+          await minioApi.deleteFolder(row.fullPath);
+          setCurrentPath((cp) => cp === row.fullPath || cp.startsWith(row.fullPath + "/") ? parentPath(row.fullPath) : cp);
+          const parent = parentPath(row.fullPath);
+          const data = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
+          setRemote({ folders: data.folders || [], files: data.files || [] });
+        } catch (err) { alert(String(err?.message || err)); }
+      }
+    });
   }
 
   async function uploadManyFiles(files) {
@@ -285,26 +305,38 @@ export default function MinIO() {
 
   async function editFile(row, e) {
     e.stopPropagation();
-    const input = window.prompt("Đổi tên file:", row.name);
-    if (!input?.trim()) return;
-    let newName = input.trim();
-    const oldExt = row.name.includes(".") ? row.name.split(".").pop() : "";
-    if (oldExt && !newName.includes(".")) newName = `${newName}.${oldExt}`;
-    try {
-      await minioApi.renameObject(row.object_key, newName);
-      const data = await minioApi.minioList(currentPath);
-      setRemote({ folders: data.folders || [], files: data.files || [] });
-    } catch (e) { alert(String(e?.message || e)); }
+    setRenameModal({
+      open: true,
+      initialName: row.name,
+      onConfirm: async (newName) => {
+        setRenameModal({ open: false });
+        let finalName = newName;
+        const oldExt = row.name.includes(".") ? row.name.split(".").pop() : "";
+        if (oldExt && !finalName.includes(".")) finalName = `${finalName}.${oldExt}`;
+        try {
+          await minioApi.renameObject(row.object_key, finalName);
+          const data = await minioApi.minioList(currentPath);
+          setRemote({ folders: data.folders || [], files: data.files || [] });
+        } catch (err) { alert(String(err?.message || err)); }
+      }
+    });
   }
 
   async function deleteFile(row, e) {
     e.stopPropagation();
-    if (!confirm(`Xoá "${row.name}"?`)) return;
-    try {
-      await minioApi.deleteObject(row.object_key);
-      const data = await minioApi.minioList(currentPath);
-      setRemote({ folders: data.folders || [], files: data.files || [] });
-    } catch (e) { alert(String(e?.message || e)); }
+    setConfirmModal({
+      open: true,
+      title: "Xoá tệp tin",
+      message: `Bạn có chắc chắn muốn xoá tệp tin "${row.name}" không?`,
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        try {
+          await minioApi.deleteObject(row.object_key);
+          const data = await minioApi.minioList(currentPath);
+          setRemote({ folders: data.folders || [], files: data.files || [] });
+        } catch (err) { alert(String(err?.message || err)); }
+      }
+    });
   }
 
   const breadcrumbParts = isRoot ? [] : parts;
@@ -330,9 +362,9 @@ export default function MinIO() {
             <span className="mci-text">MinIO</span>
           </span>
           {breadcrumbParts.map((part, idx) => {
-            const path   = breadcrumbParts.slice(0, idx + 1).join("/");
+            const path = breadcrumbParts.slice(0, idx + 1).join("/");
             const isLast = idx === breadcrumbParts.length - 1;
-            const CIcon  = getCrumbIcon(part, idx);
+            const CIcon = getCrumbIcon(part, idx);
             return (
               <span key={idx} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span className="mci-chevron"><ChevronIcon /></span>
@@ -349,7 +381,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* NON-ROOT bar 2: search + count + actions */}
+      {/* NON-ROOT bar 2: search + actions */}
       {!isRoot && (
         <div className="minio-action-bar">
           <div className="minio-search">
@@ -360,22 +392,19 @@ export default function MinIO() {
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <span className="mab-count">
-            {isFileView ? `${fileRows.length} file` : `${folderRows.length} thư mục`}
-          </span>
           {(canCreateFolderHere() || isFileView) && (
             <div className="minio-actions">
               {canCreateFolderHere() && (
-                <button className="btn btn-primary mab-btn" onClick={() => setOpenCreateFolder(true)}>
+                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateFolder(true)}>
                   <FolderPlusIcon /> Tạo thư mục
                 </button>
               )}
               {isFileView && (
                 <>
-                  <button className="btn btn-primary mab-btn" onClick={() => setOpenUpload(true)}>
+                  <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenUpload(true)}>
                     <UploadIcon /> Upload
                   </button>
-                  <button className="btn mab-btn" onClick={() => setOpenFilter(true)}>
+                  <button className="minio-btn minio-btn-secondary mab-btn" onClick={() => setOpenFilter(true)}>
                     <FilterIcon /> Lọc
                   </button>
                 </>
@@ -448,32 +477,34 @@ export default function MinIO() {
           </div>
         ) : (
           <div className="minio-file-list">
-            <div className="minio-file-header">
-              <span className="mfl-th">Tên file</span>
-              <span className="mfl-th">Loại</span>
-              <span className="mfl-th">Kích thước</span>
-              <span className="mfl-th">Ngày</span>
-              <span className="mfl-th"></span>
+            <div className="minio-file-list-inner">
+              <div className="minio-file-header">
+                <span className="mfl-th mfl-th-name">Tên file</span>
+                <span className="mfl-th mfl-th-type">Loại</span>
+                <span className="mfl-th mfl-th-size">Kích thước</span>
+                <span className="mfl-th mfl-th-date">Ngày</span>
+                <span className="mfl-th mfl-th-actions"></span>
+              </div>
+              {fileRows.map((row) => {
+                const type = getFileType(row.name);
+                const TypeIcon = type === "video" ? VideoIcon : type === "image" ? ImageIcon : FileIcon;
+                return (
+                  <div key={row.id} className={`minio-file-item type-${type}`} onDoubleClick={() => openFile(row)} title="Double-click để mở">
+                    <div className="mfi-name-cell">
+                      <div className={`mfi-icon ${type}`}><TypeIcon /></div>
+                      <span className="mfi-name">{row.name}</span>
+                    </div>
+                    <span className={`mfi-type-badge ${type}`}>{getExt(row.name) || type}</span>
+                    <span className="mfi-size">{formatBytes(row.size)}</span>
+                    <span className="mfi-date">{row.updatedAt}</span>
+                    <div className="mfi-actions-cell">
+                      <button className="mfi-action-btn" onClick={(e) => editFile(row, e)}><EditIcon /> Sửa</button>
+                      <button className="mfi-action-btn danger" onClick={(e) => deleteFile(row, e)}><TrashIcon /> Xoá</button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {fileRows.map((row) => {
-              const type     = getFileType(row.name);
-              const TypeIcon = type === "video" ? VideoIcon : type === "image" ? ImageIcon : FileIcon;
-              return (
-                <div key={row.id} className="minio-file-item" onDoubleClick={() => openFile(row)} title="Double-click để mở">
-                  <div className="mfi-name-cell">
-                    <div className={`mfi-icon ${type}`}><TypeIcon /></div>
-                    <span className="mfi-name">{row.name}</span>
-                  </div>
-                  <span className={`mfi-type-badge ${type}`}>{getExt(row.name) || type}</span>
-                  <span className="mfi-size">{formatBytes(row.size)}</span>
-                  <span className="mfi-date">{row.updatedAt}</span>
-                  <div className="mfi-actions-cell">
-                    <button className="mfi-action-btn" onClick={(e) => editFile(row, e)}><EditIcon /> Sửa</button>
-                    <button className="mfi-action-btn danger" onClick={(e) => deleteFile(row, e)}><TrashIcon /> Xoá</button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )
       )}
@@ -481,6 +512,20 @@ export default function MinIO() {
       <CreateFolderModal open={openCreateFolder} onClose={() => setOpenCreateFolder(false)} onCreate={createFolder} />
       <UploadFileModal open={openUpload} onClose={() => setOpenUpload(false)} folderName={currentPath} onUpload={uploadManyFiles} />
       <FilterModal open={openFilter} onClose={() => setOpenFilter(false)} initialValue={filters} onApply={(v) => setFilters(v)} />
+
+      <RenameModal
+        open={renameModal.open}
+        initialName={renameModal.initialName}
+        onRename={renameModal.onConfirm}
+        onClose={() => setRenameModal({ open: false })}
+      />
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal({ open: false })}
+      />
     </div>
   );
 }

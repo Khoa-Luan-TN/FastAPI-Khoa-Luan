@@ -1,295 +1,387 @@
 /* =====================================================
-   MINIO PAGE - Card-based file browser
+   MINIO PAGE - Card-based pastel file browser
    ===================================================== */
 
-/* ---- Root page header (gradient banner) ---- */
+/* ---- Root page header (pastel gradient banner) ---- */
 .minio-root-header {
   display: flex;
   align-items: center;
   gap: 18px;
   margin-bottom: 24px;
-  padding: 22px 28px;
-  background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
-  border-radius: var(--radius-lg);
-  color: white;
-  box-shadow: 0 4px 20px rgba(29,78,216,0.25);
+  padding: 28px 32px;
+  background: linear-gradient(135deg, #A1C4FD 0%, #C2E9FB 100%);
+  border-radius: 24px;
+  color: #1E3A8A;
+  /* Soft dark blue for good contrast */
+  box-shadow: 0 10px 30px rgba(161, 196, 253, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.minio-root-header::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .mrh-icon {
-  width: 54px;
-  height: 54px;
-  background: rgba(255,255,255,0.15);
-  border-radius: var(--radius);
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  color: #3B82F6;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+}
+
+.minio-root-header>div {
+  z-index: 1;
 }
 
 .mrh-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1E3A8A;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
 }
 
 .mrh-subtitle {
-  font-size: 13px;
-  color: rgba(255,255,255,0.72);
+  font-size: 14px;
+  color: rgba(30, 58, 138, 0.75);
   margin: 0;
+  font-weight: 500;
 }
 
 /* ---- Bar 1: Breadcrumb with icons ---- */
 .minio-crumb-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
-  padding: 10px 16px;
-  margin-bottom: 8px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-xs);
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 100px;
+  /* Pill shape */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
 }
 
 .minio-crumb-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: background 0.12s, color 0.12s;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
 .minio-crumb-item:hover {
-  background: var(--bg);
-  color: var(--text);
+  background: #F8FAFC;
+  color: #334155;
+  transform: translateY(-1px);
 }
 
 .minio-crumb-item.active {
-  color: var(--primary);
-  font-weight: 600;
+  color: #1D4ED8;
+  font-weight: 700;
   cursor: default;
-  background: var(--primary-light);
+  background: #EFF6FF;
 }
 
 .mci-icon {
   display: flex;
   align-items: center;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
-.minio-crumb-item.active .mci-icon { opacity: 1; }
+.minio-crumb-item.active .mci-icon {
+  opacity: 1;
+}
 
-.mci-text { line-height: 1; }
+.mci-text {
+  line-height: 1;
+}
 
 .mci-chevron {
   display: flex;
   align-items: center;
-  color: var(--text-muted);
+  color: #CBD5E1;
 }
 
 /* ---- Bar 2: Action bar (search + count + buttons) ---- */
 .minio-action-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px 6px 4px;
-  margin-bottom: 16px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-xs);
-  min-height: 46px;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  margin-bottom: 20px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 100px;
+  /* Pill shape */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  min-height: 54px;
 }
 
 .minio-search {
   flex: 1;
-  min-width: 120px;
+  min-width: 140px;
   position: relative;
 }
 
 .minio-search-icon {
   position: absolute;
-  left: 12px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted);
+  color: #94A3B8;
   display: flex;
   pointer-events: none;
 }
 
 .minio-search input {
   width: 100%;
-  padding: 9px 12px 9px 36px;
-  border: none;
-  font-size: 13px;
-  background: transparent;
-  color: var(--text);
+  padding: 12px 16px 12px 42px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  font-size: 14px;
+  background: #F8FAFC;
+  color: #334155;
   outline: none;
-  font-family: var(--font);
+  font-family: var(--font, inherit);
+  transition: all 0.2s;
 }
 
-.minio-search input::placeholder { color: var(--text-muted); }
-
-.abar-sep {
-  width: 1px;
-  height: 20px;
-  background: var(--border);
-  flex-shrink: 0;
+.minio-search input:focus {
+  background: #FFFFFF;
+  border-color: #BAE6FD;
+  box-shadow: 0 0 0 3px rgba(186, 230, 253, 0.3);
 }
 
-.abar-sep-vertical {
-  width: 1px;
-  height: 20px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-.mab-count {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-  padding: 0 6px;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  min-height: 46px;
-  padding: 0 16px;
+.minio-search input::placeholder {
+  color: #94A3B8;
+  font-weight: 500;
 }
 
 .minio-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   flex-shrink: 0;
 }
 
-.mab-btn {
+/* ---- Button Styles (Replacing defaults) ---- */
+.minio-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 100px;
+  /* Pill mapped */
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.minio-btn-primary {
+  background: #DBEAFE;
+  /* Pastel blue */
+  color: #1E40AF;
+  /* Dark blue text */
+  box-shadow: 0 2px 10px rgba(219, 234, 254, 0.5);
+}
+
+.minio-btn-primary:hover {
+  background: #BFDBFE;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(219, 234, 254, 0.8);
+}
+
+.minio-btn-secondary {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.minio-btn-secondary:hover {
+  background: #E2E8F0;
+  transform: translateY(-1px);
 }
 
 /* ---- ROOT: 3 section cards ---- */
 .minio-root-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
 }
 
 .minio-root-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  border-radius: 24px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
-  box-shadow: var(--shadow-xs);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.02);
 }
 
 .minio-root-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-3px);
-  border-color: var(--primary);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+  border-color: #E2E8F0;
 }
 
 .mrc-banner {
-  height: 130px;
+  height: 140px;
   display: grid;
   place-items: center;
+  transition: background 0.3s;
 }
 
 .mrc-banner-icon {
-  width: 68px;
-  height: 68px;
-  background: rgba(255,255,255,0.35);
-  border-radius: var(--radius);
+  width: 76px;
+  height: 76px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
   display: grid;
   place-items: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(4px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.minio-root-card:hover .mrc-banner-icon {
+  transform: scale(1.08);
 }
 
 .mrc-body {
-  padding: 16px 20px 18px;
+  padding: 20px 24px 22px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-top: 1px solid rgba(0,0,0,0.05);
+  gap: 16px;
+  background: #FFFFFF;
 }
 
-.mrc-info { flex: 1; min-width: 0; }
+.mrc-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .mrc-name {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 3px;
+  color: #1E293B;
+  margin-bottom: 4px;
 }
 
 .mrc-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
+  font-size: 13px;
+  color: #64748B;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .mrc-arrow {
-  font-size: 20px;
-  color: var(--text-muted);
+  font-size: 24px;
+  color: #CBD5E1;
   line-height: 1;
+  transition: transform 0.2s, color 0.2s;
 }
 
-/* ---- FOLDER list (replaces grid) ---- */
+.minio-root-card:hover .mrc-arrow {
+  transform: translateX(4px);
+  color: #94A3B8;
+}
+
+/* ---- FOLDER list (floating rows) ---- */
 .minio-folder-list {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 2px;
+  min-width: 600px;
 }
 
 .minio-folder-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border-light);
+  gap: 16px;
+  padding: 16px 24px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 16px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
 }
 
-.minio-folder-row:last-child { border-bottom: none; }
+.minio-folder-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #3B82F6;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
 
-.minio-folder-row:hover { background: var(--bg); }
+.minio-folder-row:hover {
+  background: #F8FAFC;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.08);
+  border-color: #BAE6FD;
+}
+
+.minio-folder-row:hover::before {
+  opacity: 1;
+}
 
 .mfr-icon {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   background: #EFF6FF;
-  border-radius: var(--radius-sm);
+  /* Pastel blue */
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  color: var(--primary);
+  color: #3B82F6;
   flex-shrink: 0;
 }
 
 .mfr-name {
   flex: 1;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  color: #1E293B;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -297,90 +389,220 @@
 }
 
 .mfr-actions {
-  display: none;
-  gap: 6px;
+  display: flex;
+  opacity: 0;
+  gap: 8px;
   align-items: center;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
 }
 
-.minio-folder-row:hover .mfr-actions { display: flex; }
+.minio-folder-row:hover .mfr-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
 
 .mfr-arrow {
-  font-size: 18px;
-  color: var(--text-muted);
+  font-size: 20px;
+  color: #CBD5E1;
   line-height: 1;
   flex-shrink: 0;
-  margin-left: 4px;
+  margin-left: 8px;
+  transition: transform 0.2s, color 0.2s;
 }
 
-/* ---- FILE list ---- */
+.minio-folder-row:hover .mfr-arrow {
+  transform: translateX(4px);
+  color: #94A3B8;
+}
+
+/* ---- FILE list (floating rows) ---- */
 .minio-file-list {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 280px);
+  /* Allow wrapper to scroll */
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 4px;
+  /* Give some breathing room to avoid cutting off dropshadows or borders */
+  margin: -4px -4px 0 -4px;
+  /* Adjust margin to offset padding */
+  padding-top: 4px;
+  /* Bring back top padding inside */
+}
+
+/* Ensure the wrapper respects min-width for very narrow screens but doesn't force clipping */
+.minio-file-list-inner {
+  min-width: 650px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  /* important context for sticky children */
+  padding-top: 4px;
+  /* Add small padding top to separate from top border */
+}
+
+.minio-folder-list::-webkit-scrollbar,
+.minio-file-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.minio-folder-list::-webkit-scrollbar-thumb,
+.minio-file-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.minio-folder-list::-webkit-scrollbar-track,
+.minio-file-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .minio-file-header {
   display: grid;
-  grid-template-columns: 1fr 72px 110px 100px 130px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  gap: 12px;
+  grid-template-columns: minmax(150px, 1fr) 96px 120px 128px 152px;
+  padding: 14px 24px;
+  /* Increase padding to match item height better */
+  gap: 16px;
+  margin-top: -4px;
+  /* Pull header up to cover inner padding gap */
+  margin-bottom: 2px;
+  /* Give gap strictly here to replace flex column gap which pushes everything */
+  position: sticky;
+  top: -4px;
+  /* Stick perfectly to the top of the scroll container */
+  z-index: 10;
+  background: #f0f4ff;
+  /* Maintain solid background */
+  border-radius: 8px;
+  /* Optional slight rounding so it looks nicer floating */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* Slight shadow to separate header from content visually when scrolling */
 }
 
 .mfl-th {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #94A3B8;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 1.2px;
 }
 
-.mfl-th:last-child { display: none; }
+.mfl-th-type,
+.mfl-th-size,
+.mfl-th-date {
+  justify-self: center;
+  text-align: center;
+}
+
+.mfl-th-actions {
+  display: none;
+}
+
+/* Empty header for actions */
 
 .minio-file-item {
   display: grid;
-  grid-template-columns: 1fr 72px 110px 100px 130px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border-light);
-  gap: 12px;
+  grid-template-columns: minmax(150px, 1fr) 96px 120px 128px 152px;
+  padding: 14px 24px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 16px;
+  gap: 16px;
+  margin-top: 10px;
+  /* Use margin-top to explicitly push items down */
   align-items: center;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  /* Remove overflow: hidden so shadows and accents aren't clipped */
 }
 
-.minio-file-item:last-child { border-bottom: none; }
+/* File type accents */
+.minio-file-item::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  /* Adjust to sit explicitly on the border */
+  top: -1px;
+  bottom: -1px;
+  width: 5px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
 
-.minio-file-item:hover { background: var(--bg); }
+.minio-file-item.type-pdf::before {
+  background: #E11D48;
+}
+
+.minio-file-item.type-video::before {
+  background: #4F46E5;
+}
+
+.minio-file-item.type-image::before {
+  background: #16A34A;
+}
+
+.minio-file-item.type-other::before {
+  background: #64748B;
+}
+
+.minio-file-item:hover {
+  background: #FDFDFD;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: #E2E8F0;
+}
+
+.minio-file-item:hover::before {
+  opacity: 1;
+}
 
 .mfi-name-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
 .mfi-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
-.mfi-icon.pdf   { background: #FEF2F2; color: #DC2626; }
-.mfi-icon.video { background: #EFF6FF; color: #2563EB; }
-.mfi-icon.image { background: #F0FDF4; color: #16A34A; }
-.mfi-icon.other { background: var(--bg); color: var(--text-secondary); }
+/* Custom pastel colors for file icons */
+.mfi-icon.pdf {
+  background: #FFE4E6;
+  color: #E11D48;
+}
+
+.mfi-icon.video {
+  background: #E0E7FF;
+  color: #4F46E5;
+}
+
+.mfi-icon.image {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.mfi-icon.other {
+  background: #F1F5F9;
+  color: #64748B;
+}
 
 .mfi-name {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1E293B;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -389,105 +611,172 @@
 .mfi-type-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  justify-content: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
+  justify-self: center;
 }
 
-.mfi-type-badge.pdf   { background: #FEF2F2; color: #DC2626; }
-.mfi-type-badge.video { background: #EFF6FF; color: #2563EB; }
-.mfi-type-badge.image { background: #F0FDF4; color: #16A34A; }
-.mfi-type-badge.other { background: var(--bg); color: var(--text-secondary); }
+.mfi-type-badge.pdf {
+  background: #FFE4E6;
+  color: #E11D48;
+}
+
+.mfi-type-badge.video {
+  background: #E0E7FF;
+  color: #4F46E5;
+}
+
+.mfi-type-badge.image {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.mfi-type-badge.other {
+  background: #F1F5F9;
+  color: #64748B;
+}
 
 .mfi-size {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 13.5px;
+  color: #64748B;
+  font-weight: 500;
+  justify-self: center;
+  text-align: center;
 }
 
 .mfi-date {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: #94A3B8;
   white-space: nowrap;
+  font-weight: 500;
+  justify-self: center;
+  text-align: center;
 }
 
 .mfi-actions-cell {
-  display: none;
-  gap: 6px;
+  display: flex;
+  opacity: 0;
+  gap: 8px;
   justify-content: flex-end;
   align-items: center;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
+  justify-self: end;
 }
 
-.minio-file-item:hover .mfi-actions-cell { display: flex; }
+.minio-file-item:hover .mfi-actions-cell {
+  opacity: 1;
+  transform: translateX(0);
+}
 
 .mfi-action-btn {
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  background: var(--white);
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: 500;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  /* Removes harsh border */
+  background: #F1F5F9;
+  /* Pastel surface */
+  border-radius: 100px;
+  /* Pill */
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  color: var(--text-secondary);
-  font-family: var(--font);
-  transition: all 0.12s;
+  color: #475569;
+  font-family: inherit;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
-.mfi-action-btn:hover { background: var(--bg); }
+.mfi-action-btn:hover {
+  background: #E2E8F0;
+  color: #334155;
+  transform: translateY(-1px);
+}
+
+.mfi-action-btn.danger {
+  color: #E11D48;
+  background: #FFE4E6;
+}
 
 .mfi-action-btn.danger:hover {
-  background: #FEF2F2;
-  color: #DC2626;
-  border-color: #FECACA;
+  background: #FECDD3;
+  color: #BE123C;
 }
 
 /* ---- Empty state ---- */
 .minio-empty {
-  padding: 60px 20px;
+  padding: 80px 20px;
   text-align: center;
-  color: var(--text-muted);
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  color: #94A3B8;
+  background: #FFFFFF;
+  border: 1px dashed #CBD5E1;
+  border-radius: 24px;
 }
 
 .minio-empty-icon {
-  margin-bottom: 12px;
-  color: var(--border);
+  margin-bottom: 16px;
+  color: #CBD5E1;
   display: flex;
   justify-content: center;
+  transform: scale(1.2);
 }
 
-.minio-empty p { font-size: 14px; }
+.minio-empty p {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
 
 /* ---- Loading ---- */
 .minio-loading {
-  padding: 48px;
+  padding: 60px;
   text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
+  color: #94A3B8;
+  font-size: 15px;
+  font-weight: 500;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .minio-root-grid { grid-template-columns: 1fr; }
-  .minio-nav-bar { flex-wrap: wrap; }
+  .minio-root-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .minio-folder-list,
+  .minio-file-list {
+    max-height: calc(100vh - 240px);
+  }
 
   .minio-file-header,
   .minio-file-item {
-    grid-template-columns: 1fr 70px;
+    grid-template-columns: minmax(100px, 1fr) 70px;
   }
 
   .mfl-th:nth-child(3),
   .mfl-th:nth-child(4),
-  .minio-file-item > *:nth-child(3),
-  .minio-file-item > *:nth-child(4) {
+  .minio-file-item>*:nth-child(3),
+  .minio-file-item>*:nth-child(4),
+  .minio-file-item>*:nth-child(5) {
     display: none;
   }
 }
