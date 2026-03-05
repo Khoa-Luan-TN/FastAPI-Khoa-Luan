@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import RequireRole from "./components/RequireRole";
 
 import Dashboard from "./pages/admin/Dashboard";
+
 import MinIO from "./pages/admin/MinIO";
 import MongoDB from "./pages/admin/MongoDB";
 import PostgreSQL from "./pages/admin/PostgreSQL";
@@ -45,8 +46,8 @@ export default function App() {
             </RequireRole>
           }
         >
-          {/* Vào /admin thì tự chuyển qua /admin/minio */}
-          <Route index element={<Navigate to="minio" replace />} />
+          {/* Vào /admin thì hiển thị Dashboard */}
+          <Route index element={<Dashboard />} />
 
           <Route path="minio" element={<MinIO />} />
           <Route path="mongo" element={<MongoDB />} />
