@@ -155,51 +155,7 @@
 
 /* --- Sidebar Footer --- */
 .sidebar-footer {
-  padding: 12px 10px;
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.sidebar-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 6px;
-}
-
-.sidebar-avatar {
-  width: 34px;
-  height: 34px;
-  background: var(--primary);
-  color: white;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.sidebar-username {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-role {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 2px 7px;
-  border-radius: 20px;
   flex-shrink: 0;
 }
 
@@ -210,30 +166,24 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--text-secondary);
-  font-size: 13.5px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   font-family: inherit;
-  line-height: 1;
-  /* Căn chỉnh thẳng hàng */
 }
 
 .logout-btn svg {
   margin-top: -1px;
-  /* Căn nút SVG nhích lên một tí ti nếu bị lệch */
 }
 
 .logout-btn:hover {
-  background: #FEF2F2;
-  color: #DC2626;
-  border-color: #FECACA;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+  background: #FFF1F2;
+  color: #E11D48;
 }
 
 /* =====================================================
@@ -269,93 +219,23 @@
 .topbar-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  max-width: fit-content;
 }
 
 .topbar-breadcrumb-root {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.topbar-breadcrumb-sep {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.topbar-breadcrumb-current {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 16px 6px 6px;
-  /* Bọc nó trong một khung như pill */
-  background: #F8FAFC;
-  border-radius: 100px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  transition: background 0.2s;
-  cursor: pointer;
-  /* Clickable look */
-}
-
-.topbar-right:hover {
-  background: #F1F5F9;
-}
-
-.topbar-avatar {
-  width: 34px;
-  height: 34px;
-  background: var(--primary);
-  color: white;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   font-size: 14px;
-  font-weight: 700;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
-  /* Tạo chiều sâu nhẹ */
-}
-
-.topbar-username {
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-}
-
-/* sidebar-user-info fix */
-.sidebar-user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar-user-info .sidebar-username {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-user-info .sidebar-role {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 1px 6px;
-  border-radius: 20px;
-  display: inline-block;
-  width: fit-content;
+  color: #64748B;
+  font-weight: 500;
 }
 
 /* =====================================================
