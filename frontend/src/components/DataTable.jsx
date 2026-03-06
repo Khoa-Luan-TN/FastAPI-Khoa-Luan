@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "../styles/admin/table.css";
+import "../styles/admin/minio.css";
 
 export default function DataTable({
   columns,
@@ -8,6 +9,7 @@ export default function DataTable({
   onRowDoubleClick,
   getRowClassName,
   pageSize, // nếu không truyền => auto
+  actionsWidth = "160px",
 }) {
   const total = rows.length;
 
@@ -74,67 +76,48 @@ export default function DataTable({
   return (
     <div className="table-container">
       <div className="table-scroll" ref={scrollRef}>
-        <table className="table">
-          <thead>
-            <tr>
-              {columns.map((c) => (
-                <th key={c.key} style={{ width: c.width || "auto" }}>
-                  {c.label}
-                </th>
-              ))}
-              {renderActions ? (
-                <th style={{ textAlign: "right", width: "150px" }}>THAO TÁC</th>
-              ) : null}
-            </tr>
-          </thead>
+        <div className="table-list">
+          <div className="table-header">
+            {columns.map((c) => (
+              <div key={c.key} className="table-th" style={{ flex: c.width ? `0 0 ${c.width}` : 1 }}>
+                {c.label}
+              </div>
+            ))}
+            {renderActions ? (
+              <div className="table-th" style={{ textAlign: "right", flex: `0 0 ${actionsWidth}` }}>THAO TÁC</div>
+            ) : null}
+          </div>
 
-          <tbody>
+          <div className="table-body">
             {visibleRows.map((row) => (
-              <tr
+              <div
                 key={row.id}
-                className={getRowClassName ? getRowClassName(row) : undefined}
+                className={`table-row ${getRowClassName ? getRowClassName(row) : ""}`}
                 onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
               >
                 {columns.map((c) => (
-                  <td key={c.key}>{c.render ? c.render(row) : row[c.key]}</td>
+                  <div key={c.key} className="table-td" style={{ flex: c.width ? `0 0 ${c.width}` : 1 }}>
+                    {c.render ? c.render(row) : row[c.key]}
+                  </div>
                 ))}
                 {renderActions ? (
-                  <td style={{ textAlign: "right" }}>{renderActions(row)}</td>
+                  <div className="table-td table-td-actions" style={{ flex: `0 0 ${actionsWidth}`, textAlign: "right" }}>
+                    {renderActions(row)}
+                  </div>
                 ) : null}
-              </tr>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
 
       {size > 0 && total > size ? (
         <div className="table-pagination">
-          <div className="table-pagination__info">
-            Hiển thị {startIdx}-{endIdx} / {total}
-          </div>
-
-          <div className="table-pagination__controls">
-            <button
-              type="button"
-              className="btn"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              ← Trước
-            </button>
-
-            <div className="table-pagination__page">
-              Trang {page}/{totalPages}
-            </div>
-
-            <button
-              type="button"
-              className="btn"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Sau →
-            </button>
+          <span className="tpg-info">{startIdx}–{endIdx} / {total}</span>
+          <div className="tpg-controls">
+            <button type="button" className="tpg-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
+            <span className="tpg-pages">{page} / {totalPages}</span>
+            <button type="button" className="tpg-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
           </div>
         </div>
       ) : null}

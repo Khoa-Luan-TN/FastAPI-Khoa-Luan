@@ -227,6 +227,12 @@
   transform: translateY(-1px);
 }
 
+.minio-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 /* ---- ROOT: 3 section cards ---- */
 .minio-root-grid {
   display: grid;

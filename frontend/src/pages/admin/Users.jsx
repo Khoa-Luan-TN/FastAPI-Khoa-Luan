@@ -5,6 +5,20 @@ import "../../styles/admin/modal.css";
 import DataTable from "../../components/DataTable";
 import * as userApi from "../../services/userMongoApi";
 
+// ---- SVG icons ----
+const UserIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const BanIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M4.93 4.93l14.14 14.14" />
+  </svg>
+);
+
 function nowStr() {
   return new Date().toISOString().slice(0, 16).replace("T", " ");
 }
@@ -139,11 +153,11 @@ export default function Users() {
     const list = !s
       ? users
       : users.filter(
-          (u) =>
-            (u.username || "").toLowerCase().includes(s) ||
-            (u.role || "").toLowerCase().includes(s) ||
-            (u.id || "").toLowerCase().includes(s)
-        );
+        (u) =>
+          (u.username || "").toLowerCase().includes(s) ||
+          (u.role || "").toLowerCase().includes(s) ||
+          (u.id || "").toLowerCase().includes(s)
+      );
 
     return list.slice().sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   }, [users, q]);
@@ -161,9 +175,8 @@ export default function Users() {
         <div className="file-cell">
           <div className="file-left">
             <div className={`file-icon ${r.active ? "file-other" : "file-pdf"}`}>
-              {r.active ? "👤" : "🚫"}
+              {r.active ? <UserIcon /> : <BanIcon />}
             </div>
-            <div className="file-divider" />
             <div className="file-name" title={r.username}>
               {r.username}
             </div>
@@ -242,7 +255,7 @@ export default function Users() {
   }
 
   return (
-    <div>
+    <div className="page-root">
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">

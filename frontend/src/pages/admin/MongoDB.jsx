@@ -2,8 +2,60 @@
 import { useEffect, useMemo, useRef, useState } from "react"; // ✅ thêm useRef
 import "../../styles/admin/page.css";
 import "../../styles/admin/modal.css";
+import "../../styles/admin/minio.css";
 import DataTable from "../../components/DataTable";
 import * as mongoApi from "../../services/mongoAdminApi";
+
+// ---- SVG icons ----
+const DocIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+const EditIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const ChevronIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const MongoIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2c-1.5 3-4 5.5-4 9a4 4 0 008 0c0-3.5-2.5-6-4-9z" />
+    <line x1="12" y1="11" x2="12" y2="22" />
+  </svg>
+);
+
+const GridIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
 
 /** ===== Helpers ===== */
 function docTitle(doc = {}) {
@@ -168,10 +220,10 @@ function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
         </div>
 
         <div className="modal-footer">
-          <button className="btn" onClick={onClose}>
+          <button className="minio-btn minio-btn-secondary" onClick={onClose}>
             Huỷ
           </button>
-          <button className="btn btn-primary" onClick={submit}>
+          <button className="minio-btn minio-btn-primary" onClick={submit}>
             Lưu
           </button>
         </div>
@@ -291,10 +343,9 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
 
                     <button
                       type="button"
-                      className="btn"
+                      className="mfi-action-btn danger"
                       onClick={() => removeRow(i)}
                       title="Xoá field"
-                      style={{ height: 38 }}
                     >
                       ✕
                     </button>
@@ -304,7 +355,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
             </div>
 
             <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-              <button type="button" className="btn" onClick={addRow}>
+              <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
                 + Thêm field
               </button>
             </div>
@@ -312,10 +363,10 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
         </div>
 
         <div className="modal-footer">
-          <button className="btn" onClick={onClose}>
+          <button className="minio-btn minio-btn-secondary" onClick={onClose}>
             Huỷ
           </button>
-          <button className="btn btn-primary" onClick={submit}>
+          <button className="minio-btn minio-btn-primary" onClick={submit}>
             Lưu document
           </button>
         </div>
@@ -432,23 +483,34 @@ export default function MongoDB() {
   function buildPairsFromDoc(doc) {
     if (!doc) return [];
 
-    const keys = Object.keys(doc).sort((a, b) => a.localeCompare(b));
+    const LOCK_FIELDS = new Set(["_id", "created_at", "created_by", "updated_at", "updated_by", "deleted_at"]);
+    const contentPairs = [];
+    const minioPairs = [];
+    const metaPairs = [];
 
-    const LOCK_FIELDS = new Set([
-      "_id",
-      "created_at",
-      "created_by",
-      "updated_at",
-      "updated_by",
-      "deleted_at",
-    ]);
+    for (const k of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
+      const val = doc[k];
+      if (k === "minio" && val && typeof val === "object" && !Array.isArray(val) &&
+          ("bucket" in val || "object_key" in val || "url" in val)) {
+        minioPairs.push({ id: "minio.bucket", k: "minio.bucket", v: String(val.bucket ?? ""), locked: false, _isMinioSub: true, _minioField: "bucket" });
+        minioPairs.push({ id: "minio.object_key", k: "minio.object_key", v: String(val.object_key ?? ""), locked: false, _isMinioSub: true, _minioField: "object_key" });
+        minioPairs.push({ id: "minio.url", k: "minio.url", v: String(val.url ?? ""), locked: false, _isMinioSub: true, _minioField: "url" });
+        continue;
+      }
+      if (LOCK_FIELDS.has(k)) {
+        metaPairs.push({ id: k, k, v: formatVal(k, val), locked: true });
+      } else {
+        contentPairs.push({ id: k, k, v: formatVal(k, val), locked: false });
+      }
+    }
 
-    return keys.map((k) => ({
-      id: k,
-      k,
-      v: formatVal(k, doc[k]),
-      locked: LOCK_FIELDS.has(k),
-    }));
+    metaPairs.sort((a, b) => {
+      if (a.k === "_id") return -1;
+      if (b.k === "_id") return 1;
+      return a.k.localeCompare(b.k);
+    });
+
+    return [...contentPairs, ...minioPairs, ...metaPairs];
   }
 
   useEffect(() => {
@@ -494,37 +556,52 @@ export default function MongoDB() {
       const minio = d?.minio || {};
       const title = docTitle(d);
 
-      const displayMinio =
-        minio.url ||
-        (minio.bucket && minio.object_key ? `${minio.bucket}/${minio.object_key}` : "") ||
-        (minio.bucket && minio.prefix ? `${minio.bucket}/${minio.prefix}` : "") ||
-        minio.object_key ||
-        minio.prefix ||
-        "";
+      // Parse minio: extract file name after collection segment in object_key
+      const key = minio.object_key || minio.prefix || "";
+      let displayMinio = "";
+      if (key) {
+        const parts = key.split("/");
+        const idx = parts.lastIndexOf(currentCollection);
+        if (idx >= 0 && idx < parts.length - 1) {
+          displayMinio = parts.slice(idx + 1).join("/");
+        } else {
+          displayMinio = parts[parts.length - 1] || key;
+        }
+      }
+
+      // Date: created_at → dd/mm/yyyy
+      let createdDate = "-";
+      if (d.created_at) {
+        const parsed = new Date(d.created_at);
+        if (!isNaN(parsed.getTime())) {
+          const dd = String(parsed.getDate()).padStart(2, "0");
+          const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+          createdDate = `${dd}/${mm}/${parsed.getFullYear()}`;
+        }
+      }
 
       return {
         ...d,
         id: String(d._id),
         _title: title,
         _minio_display: displayMinio,
+        _minio_raw: key,
+        _created_date: createdDate,
+        _created_by: d.created_by || "-",
       };
     });
 
     const filtered = !s
       ? list
       : list.filter(
-          (d) =>
-            String(d._id || "").includes(s) ||
-            String(d._title || "")
-              .toLowerCase()
-              .includes(s) ||
-            String(d._minio_display || "")
-              .toLowerCase()
-              .includes(s)
-        );
+        (d) =>
+          String(d._id || "").includes(s) ||
+          String(d._title || "").toLowerCase().includes(s) ||
+          String(d._minio_display || "").toLowerCase().includes(s)
+      );
 
     return filtered.slice();
-  }, [docs, q]);
+  }, [docs, q, currentCollection]);
 
   const collectionColumns = [
     {
@@ -533,7 +610,7 @@ export default function MongoDB() {
       render: (r) => (
         <div className="folder-cell">
           <div className="folder-left">
-            <div className="folder-icon">🧺</div>
+            <div className="folder-icon"><GridIcon /></div>
             <div className="folder-divider" />
             <div className="folder-name" title={r.name}>
               {r.name}
@@ -545,24 +622,17 @@ export default function MongoDB() {
     },
   ];
 
+  const HIDE_MINIO_COLS = new Set(["user", "keyword", "class"]);
+  const showMinioCol = !HIDE_MINIO_COLS.has(currentCollection);
+
   const docColumns = [
-    {
-      key: "_id",
-      label: "OBJECTID",
-      render: (r) => (
-        <span className="crumb" title={String(r._id)}>
-          {String(r._id).slice(0, 10)}…
-        </span>
-      ),
-    },
     {
       key: "_title",
       label: "NAME",
       render: (r) => (
         <div className="file-cell">
           <div className="file-left">
-            <div className="file-icon file-other">📄</div>
-            <div className="file-divider" />
+            <div className="file-icon file-other"><DocIcon /></div>
             <div className="file-name" title={r._title || ""}>
               {r._title || "(no name field)"}
             </div>
@@ -570,87 +640,30 @@ export default function MongoDB() {
         </div>
       ),
     },
-    {
+    ...(showMinioCol ? [{
       key: "_minio_display",
       label: "MINIO",
-      render: (r) => (
-        <span title={r._minio_display || ""} style={{ whiteSpace: "nowrap" }}>
-          {r._minio_display
-            ? String(r._minio_display).slice(0, 48) +
-              (String(r._minio_display).length > 48 ? "…" : "")
-            : ""}
-        </span>
+      width: "200px",
+      render: (r) => r._minio_display ? (
+        <span className="mongo-path-cell" title={r._minio_raw || ""}>{r._minio_display}</span>
+      ) : (
+        <span className="mongo-empty-dash">—</span>
       ),
+    }] : []),
+    {
+      key: "_created_date",
+      label: "NGÀY TẠO",
+      width: "106px",
+      render: (r) => <span className="mongo-meta-cell">{r._created_date}</span>,
+    },
+    {
+      key: "_created_by",
+      label: "TẠO BỞI",
+      width: "100px",
+      render: (r) => <span className="mongo-meta-cell">{r._created_by}</span>,
     },
   ];
 
-  const detailViewColumns = [
-    { key: "k", label: "FIELD", render: (r) => <span className="crumb">{r.k}</span> },
-    {
-      key: "v",
-      label: "VALUE",
-      render: (r) => (
-        <span
-          title={r.v}
-          style={{
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "block",
-            maxWidth: 560,
-          }}
-        >
-          {r.v}
-        </span>
-      ),
-    },
-  ];
-
-  const detailEditColumns = [
-    {
-      key: "k",
-      label: "FIELD",
-      render: (r) => (
-        <input
-          className="kv-input"
-          value={r.k}
-          disabled={r.locked}
-          onChange={(e) => changePair(r.id, "k", e.target.value)}
-        />
-      ),
-    },
-    {
-      key: "v",
-      label: "VALUE",
-      render: (r) => {
-        const keyName = (r.k || "").trim();
-        const isBoolField = keyName === "is_deleted" || keyName === "is_active";
-
-        if (isBoolField) {
-          return (
-            <select
-              className="kv-input"
-              value={String(r.v ?? "false")}
-              disabled={r.locked} // nếu field locked thì disable luôn
-              onChange={(e) => changePair(r.id, "v", e.target.value)}
-            >
-              <option value="false">false</option>
-              <option value="true">true</option>
-            </select>
-          );
-        }
-
-        return (
-          <input
-            className="kv-input"
-            value={r.v}
-            disabled={r.locked} // lock cả value nếu cần
-            onChange={(e) => changePair(r.id, "v", e.target.value)}
-          />
-        );
-      },
-    },
-  ];
 
   function openCollection(row) {
     setCurrent(row.name);
@@ -756,7 +769,27 @@ export default function MongoDB() {
   }
 
   function changePair(id, key, value) {
-    setDetailPairs((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
+    setDetailPairs((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, [key]: value } : p));
+
+      // Auto-derive minio.url when bucket or object_key changes
+      if (id === "minio.bucket" || id === "minio.object_key") {
+        const bucket = updated.find((p) => p.id === "minio.bucket")?.v ?? "";
+        const objKey = updated.find((p) => p.id === "minio.object_key")?.v ?? "";
+        const urlPair = updated.find((p) => p.id === "minio.url");
+        if (urlPair && bucket && objKey) {
+          const currentUrl = urlPair.v;
+          const oldBucket = prev.find((p) => p.id === "minio.bucket")?.v ?? bucket;
+          const markerIdx = currentUrl.indexOf("/" + oldBucket + "/");
+          const newUrl = markerIdx >= 0
+            ? currentUrl.slice(0, markerIdx + 1) + bucket + "/" + objKey
+            : currentUrl;
+          return updated.map((p) => (p.id === "minio.url" ? { ...p, v: newUrl } : p));
+        }
+      }
+
+      return updated;
+    });
   }
 
   function removePair(id) {
@@ -776,11 +809,20 @@ export default function MongoDB() {
     if (!selectedDoc) return;
 
     const patch = {};
+    const minioSubs = {};
+    let hasMinioSubs = false;
+
     for (const p of detailPairs) {
       const k = (p.k || "").trim();
       if (!k || k === "_id") continue;
-      patch[k] = parseValue(p.v);
+      if (p._isMinioSub && p._minioField) {
+        minioSubs[p._minioField] = p.v;
+        hasMinioSubs = true;
+      } else {
+        patch[k] = parseValue(p.v);
+      }
     }
+    if (hasMinioSubs) patch.minio = minioSubs;
 
     try {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
@@ -805,91 +847,114 @@ export default function MongoDB() {
 
   return (
     <div>
-      <div className="page-header">
-        <div className="page-header-top">
-          <div className="title-row">
-            <h2 className="page-title">{headerTitle}</h2>
-
-            {!isRoot && (
-              <button className="back-btn back-btn-right" onClick={goBack}>
-                Back →
-              </button>
-            )}
+      {/* ROOT: gradient header banner */}
+      {isRoot && (
+        <div className="minio-root-header" style={{ background: "linear-gradient(135deg, #6EE7B7 0%, #A7F3D0 100%)", boxShadow: "0 10px 30px rgba(110, 231, 183, 0.4)" }}>
+          <div className="mrh-icon" style={{ color: "#059669" }}>
+            <MongoIcon size={26} />
           </div>
+          <div>
+            <h2 className="mrh-title" style={{ color: "#065F46" }}>MongoDB</h2>
+            <p className="mrh-subtitle" style={{ color: "rgba(6, 95, 70, 0.75)" }}>Quản lý collections và documents</p>
+          </div>
+        </div>
+      )}
 
-          {!isRoot && (
-            <div className="breadcrumb">
-              {breadcrumbParts.map((p, idx, arr) => (
-                <span key={idx} className="crumb">
-                  {p}
-                  {idx < arr.length - 1 ? <span className="sep">/</span> : null}
+      {/* NON-ROOT: breadcrumb bar */}
+      {!isRoot && (
+        <div className="minio-crumb-bar">
+          <span className="minio-crumb-item" onClick={() => { setCurrent(""); setCurrentDocId(""); setIsEditingDoc(false); setQ(""); }}>
+            <span className="mci-icon"><MongoIcon size={14} /></span>
+            <span className="mci-text">MongoDB</span>
+          </span>
+          {currentCollection && (
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span className="mci-chevron"><ChevronIcon /></span>
+              <span
+                className={`minio-crumb-item${!isDocDetail ? " active" : ""}`}
+                onClick={isDocDetail ? () => { setCurrentDocId(""); setIsEditingDoc(false); setQ(""); } : undefined}
+              >
+                <span className="mci-icon"><GridIcon size={14} /></span>
+                <span className="mci-text">{currentCollection}</span>
+              </span>
+            </span>
+          )}
+          {isDocDetail && (
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span className="mci-chevron"><ChevronIcon /></span>
+              <span className="minio-crumb-item active">
+                <span className="mci-icon"><DocIcon size={14} /></span>
+                <span className="mci-text" title={selectedDoc ? (docTitle(selectedDoc) || currentDocId) : currentDocId}>
+                  {selectedDoc
+                    ? (docTitle(selectedDoc)
+                        ? (docTitle(selectedDoc).length > 28 ? docTitle(selectedDoc).slice(0, 28) + "…" : docTitle(selectedDoc))
+                        : String(currentDocId).slice(0, 10) + "…")
+                    : String(currentDocId).slice(0, 10) + "…"}
                 </span>
-              ))}
-            </div>
+              </span>
+            </span>
           )}
         </div>
+      )}
 
-        <div className="page-header-bottom">
-          <div className="search-box">
-            <input
-              placeholder={isRoot ? "Tìm collection..." : "Tìm document (name/_id/minio)..."}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
-
-          <div className="header-actions">
-            {isRoot ? (
-              <>
-                {/* ✅ IMPORT WORKBOOK */}
-                <button
-                  className="btn"
-                  disabled={importing}
-                  onClick={() => importRef.current?.click()}
-                >
-                  {importing ? "Importing..." : "Import Excel"}
-                </button>
-
-                <button className="btn btn-primary" onClick={() => setOpenCreateCol(true)}>
-                  + Collection
-                </button>
-              </>
-            ) : (
-              <>
-                {/* ✅ IMPORT INTO CURRENT COLLECTION */}
-                <button
-                  className="btn"
-                  disabled={importing}
-                  onClick={() => importRef.current?.click()}
-                >
-                  {importing ? "Importing..." : "Import Excel"}
-                </button>
-
-                <button className="btn btn-primary" onClick={() => setOpenCreateDoc(true)}>
-                  + Document
-                </button>
-              </>
-            )}
-
-            {/* ✅ hidden file input */}
-            <input
-              ref={importRef}
-              type="file"
-              accept=".xlsx,.xls"
-              style={{ display: "none" }}
-              onChange={onPickImportFile}
-            />
-          </div>
+      {/* Action bar: search + buttons */}
+      <div className="minio-action-bar">
+        <div className="minio-search">
+          <span className="minio-search-icon"><SearchIcon /></span>
+          <input
+            placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id/minio)..."}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            disabled={isDocDetail}
+          />
+        </div>
+        <div className="minio-actions">
+          {isRoot ? (
+            <>
+              <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
+                {importing ? "Importing..." : "Import Excel"}
+              </button>
+              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateCol(true)}>
+                + Collection
+              </button>
+            </>
+          ) : !isDocDetail ? (
+            <>
+              <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
+                {importing ? "Importing..." : "Import Excel"}
+              </button>
+              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
+                + Document
+              </button>
+            </>
+          ) : !isEditingDoc ? (
+            <>
+              <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
+                <TrashIcon /> Xoá
+              </button>
+              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setIsEditingDoc(true)}>
+                <EditIcon /> Sửa
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="minio-btn minio-btn-secondary mab-btn" onClick={addFieldRow}>+ Field</button>
+              <button className="minio-btn minio-btn-secondary mab-btn" onClick={cancelEditDoc}>Huỷ bỏ</button>
+              <button className="minio-btn minio-btn-primary mab-btn" onClick={updateDocFromDetail}>Cập nhật</button>
+            </>
+          )}
+          <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={onPickImportFile} />
         </div>
       </div>
 
-      {err ? (
-        <div className="empty-state" style={{ marginBottom: 16 }}>
-          <div className="empty-state-icon">⚠️</div>
-          <p>{err}</p>
+      {/* Error */}
+      {err && (
+        <div className="minio-empty" style={{ borderColor: "#FECACA", marginBottom: 16 }}>
+          <p style={{ color: "#DC2626" }}>{err}</p>
         </div>
-      ) : null}
+      )}
 
+      {/* Table */}
       <div className="table-wrapper">
         {isRoot ? (
           <DataTable
@@ -900,85 +965,118 @@ export default function MongoDB() {
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
                 <button
-                  className="btn"
+                  className="mfi-action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setRenameTarget({ name: row.name });
                     setOpenRenameCol(true);
                   }}
                 >
-                  Sửa
+                  <EditIcon /> Sửa
                 </button>
                 <button
-                  className="btn"
+                  className="mfi-action-btn danger"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteCollection(row);
                   }}
                 >
-                  Xoá
+                  <TrashIcon /> Xoá
                 </button>
               </div>
             )}
           />
         ) : isDocDetail ? (
-          <>
+          <div className="doc-card">
             {!isEditingDoc ? (
+              /* ===== VIEW MODE ===== */
               <>
-                <DataTable columns={detailViewColumns} rows={detailPairs} renderActions={null} />
-                <div className="detail-footer">
-                  <button className="btn" onClick={deleteDocFromDetail}>
-                    Xoá
-                  </button>
-                  <div className="spacer" />
-                  <button className="btn btn-primary" onClick={() => setIsEditingDoc(true)}>
-                    Sửa
-                  </button>
-                </div>
+                {detailPairs.filter(p => !p.locked && !p._isMinioSub).length > 0 && (
+                  <div className="doc-props">
+                    {detailPairs.filter(p => !p.locked && !p._isMinioSub).map((p) => (
+                      <div key={p.id} className="doc-prop-row">
+                        <span className="doc-prop-key">{p.k}</span>
+                        <span className="doc-prop-val">{p.v || <span className="doc-prop-empty">—</span>}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {detailPairs.some(p => p._isMinioSub) && (
+                  <div className="doc-minio-card">
+                    <div className="doc-minio-header">MinIO</div>
+                    <div className="doc-minio-props">
+                      {detailPairs.filter(p => p._isMinioSub).map((p) => (
+                        <div key={p.id} className="doc-minio-prop">
+                          <span className="doc-minio-key">{p._minioField}</span>
+                          <span className="doc-minio-val">{p.v || <span className="doc-prop-empty">—</span>}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
+              /* ===== EDIT MODE ===== */
               <>
-                <DataTable
-                  columns={detailEditColumns}
-                  rows={detailPairs}
-                  renderActions={(row) =>
-                    row.locked ? null : (
-                      <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
-                        <button className="btn" onClick={() => removePair(row.id)}>
-                          ✕
-                        </button>
+                {detailPairs.filter(p => !p.locked && !p._isMinioSub).length > 0 && (
+                  <div className="doc-form-fields">
+                    {detailPairs.filter(p => !p.locked && !p._isMinioSub).map((p) => {
+                      const isBool = p.k === "is_deleted" || p.k === "is_active";
+                      return (
+                        <div key={p.id} className="doc-form-row">
+                          <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
+                          <div className="doc-form-val-col">
+                            {isBool ? (
+                              <select className="kv-input" value={String(p.v ?? "false")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
+                                <option value="false">false</option>
+                                <option value="true">true</option>
+                              </select>
+                            ) : (
+                              <input className="kv-input" value={p.v} placeholder="value" onChange={(e) => changePair(p.id, "v", e.target.value)} />
+                            )}
+                          </div>
+                          <button className="doc-form-del" onClick={() => removePair(p.id)}>✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {detailPairs.some(p => p._isMinioSub) && (
+                  <div className="doc-minio-form">
+                    <div className="doc-minio-form-header">MinIO</div>
+                    {detailPairs.filter(p => p._isMinioSub).map((p) => (
+                      <div key={p.id} className="doc-minio-form-row">
+                        <span className="doc-minio-form-key">{p._minioField}</span>
+                        {p._minioField === "url" ? (
+                          <span className="doc-minio-url-derived">{p.v || <span className="doc-prop-empty">—</span>}</span>
+                        ) : (
+                          <input className="kv-input" value={p.v} placeholder={p._minioField} onChange={(e) => changePair(p.id, "v", e.target.value)} />
+                        )}
                       </div>
-                    )
-                  }
-                />
-                <div className="detail-footer">
-                  <button className="btn" onClick={addFieldRow}>
-                    + Field
-                  </button>
-                  <div className="spacer" />
-                  <button className="btn" onClick={cancelEditDoc}>
-                    Huỷ bỏ
-                  </button>
-                  <button className="btn btn-primary" onClick={updateDocFromDetail}>
-                    Cập nhật
-                  </button>
-                </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
-          </>
+          </div>
         ) : (
           <DataTable
             columns={docColumns}
             rows={docRows}
             getRowClassName={() => "row-click"}
+            actionsWidth="156px"
+            pageSize={9999}
             onRowDoubleClick={(row) => {
               setCurrentDocId(String(row._id));
               setIsEditingDoc(false);
             }}
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
-                <button className="btn" onClick={() => deleteDoc(row)}>
-                  Xoá
+                <button className="mfi-action-btn" onClick={(e) => { e.stopPropagation(); const doc = docs.find(d => String(d._id) === String(row._id)); setCurrentDocId(String(row._id)); setIsEditingDoc(true); if (doc) setDetailPairs(buildPairsFromDoc(doc)); }}>
+                  <EditIcon /> Sửa
+                </button>
+                <button className="mfi-action-btn danger" onClick={(e) => { e.stopPropagation(); deleteDoc(row); }}>
+                  <TrashIcon /> Xoá
                 </button>
               </div>
             )}

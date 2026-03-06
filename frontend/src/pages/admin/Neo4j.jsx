@@ -4,6 +4,20 @@ import "../../styles/admin/page.css";
 import DataTable from "../../components/DataTable";
 import * as neoApi from "../../services/neoAdminApi";
 
+// ---- SVG icons ----
+const NodeIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2l8.66 5v10L12 22l-8.66-5V7z" />
+  </svg>
+);
+
+const DocIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
 export default function Neo4j() {
   const [currentLabel, setCurrentLabel] = useState("");
   const [currentNodeId, setCurrentNodeId] = useState("");
@@ -99,14 +113,14 @@ export default function Neo4j() {
     const list = !s
       ? nodes
       : nodes.filter(
-          (n) =>
-            String(n.postgreId ?? "")
-              .toLowerCase()
-              .includes(s) ||
-            String(n.name || "")
-              .toLowerCase()
-              .includes(s)
-        );
+        (n) =>
+          String(n.postgreId ?? "")
+            .toLowerCase()
+            .includes(s) ||
+          String(n.name || "")
+            .toLowerCase()
+            .includes(s)
+      );
 
     return list
       .slice()
@@ -133,8 +147,7 @@ export default function Neo4j() {
       render: (r) => (
         <div className="folder-cell">
           <div className="folder-left">
-            <div className="folder-icon">⬢</div>
-            <div className="folder-divider" />
+            <div className="folder-icon"><NodeIcon /></div>
             <div className="folder-name" title={r.name}>
               {r.name}
             </div>
@@ -158,8 +171,7 @@ export default function Neo4j() {
       render: (r) => (
         <div className="file-cell">
           <div className="file-left">
-            <div className="file-icon file-other">◉</div>
-            <div className="file-divider" />
+            <div className="file-icon file-other"><DocIcon /></div>
             <div className="file-name" title={r.name || ""}>
               {r.name || "(no name)"}
             </div>
@@ -192,7 +204,7 @@ export default function Neo4j() {
   ];
 
   return (
-    <div>
+    <div className="page-root">
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">

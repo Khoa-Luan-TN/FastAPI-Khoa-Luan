@@ -4,6 +4,22 @@ import "../../styles/admin/page.css";
 import DataTable from "../../components/DataTable";
 import * as pgApi from "../../services/postgreAdminApi";
 
+// ---- SVG icons ----
+const TableIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M4 6h16M4 12h16M4 18h16" />
+    <path d="M8 6v12M16 6v12" />
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+  </svg>
+);
+
+const DocIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
 function truncate(s = "", n = 48) {
   const str = String(s ?? "");
   return str.length > n ? str.slice(0, n) + "…" : str;
@@ -132,12 +148,12 @@ export default function PostgreSQL() {
     const filtered = !s
       ? list
       : list.filter((r) => {
-          const a = String(r._pk || "").toLowerCase();
-          const b = String(r._title || "").toLowerCase();
-          const c = String(r._mongo_display || "").toLowerCase();
-          const d = String(r._minio_display || "").toLowerCase();
-          return a.includes(s) || b.includes(s) || c.includes(s) || d.includes(s);
-        });
+        const a = String(r._pk || "").toLowerCase();
+        const b = String(r._title || "").toLowerCase();
+        const c = String(r._mongo_display || "").toLowerCase();
+        const d = String(r._minio_display || "").toLowerCase();
+        return a.includes(s) || b.includes(s) || c.includes(s) || d.includes(s);
+      });
 
     return filtered;
   }, [rows, q]);
@@ -169,7 +185,7 @@ export default function PostgreSQL() {
       render: (r) => (
         <div className="folder-cell">
           <div className="folder-left">
-            <div className="folder-icon">🗃️</div>
+            <div className="folder-icon"><TableIcon /></div>
             <div className="folder-divider" />
             <div className="folder-name" title={r.name}>
               {r.name}
@@ -198,7 +214,7 @@ export default function PostgreSQL() {
       render: (r) => (
         <div className="file-cell">
           <div className="file-left">
-            <div className="file-icon file-other">📄</div>
+            <div className="file-icon file-other"><DocIcon /></div>
             <div className="file-divider" />
             <div className="file-name" title={r._title || ""}>
               {r._title || "(no name field)"}
@@ -250,7 +266,7 @@ export default function PostgreSQL() {
   ];
 
   return (
-    <div>
+    <div className="page-root">
       <div className="page-header">
         <div className="page-header-top">
           <div className="title-row">
