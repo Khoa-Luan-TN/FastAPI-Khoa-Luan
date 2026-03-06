@@ -1,6 +1,8 @@
 // pages/admin/PostgreSQL.jsx
 import { useEffect, useMemo, useState } from "react";
 import "../../styles/admin/page.css";
+import "../../styles/admin/minio.css";
+import "../../styles/admin/table.css";
 import DataTable from "../../components/DataTable";
 import * as pgApi from "../../services/postgreAdminApi";
 
@@ -38,6 +40,27 @@ function rowTitle(row = {}) {
     ""
   );
 }
+
+// ---- PostgreSQL-specific icons ----
+const PgIcon = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="6" rx="8" ry="3" />
+    <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
+    <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const ChevronIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
 
 export default function PostgreSQL() {
   // root -> table -> row detail
@@ -186,10 +209,7 @@ export default function PostgreSQL() {
         <div className="folder-cell">
           <div className="folder-left">
             <div className="folder-icon"><TableIcon /></div>
-            <div className="folder-divider" />
-            <div className="folder-name" title={r.name}>
-              {r.name}
-            </div>
+            <div className="folder-name" title={r.name}>{r.name}</div>
           </div>
           <div className="folder-right">›</div>
         </div>
@@ -197,14 +217,14 @@ export default function PostgreSQL() {
     },
   ];
 
-  // View-only: hiển thị 4 cột chuẩn cho mọi table
   const dataColumns = [
     {
       key: "_pk",
-      label: "PK",
+      label: "ID",
+      width: "180px",
       render: (r) => (
-        <span className="crumb" title={String(r._pk || "")}>
-          {truncate(String(r._pk || ""), 24)}
+        <span className="mongo-meta-cell" title={String(r._pk || "")}>
+          {truncate(String(r._pk || ""), 22)}
         </span>
       ),
     },
@@ -212,131 +232,153 @@ export default function PostgreSQL() {
       key: "_title",
       label: "NAME",
       render: (r) => (
-        <div className="file-cell">
-          <div className="file-left">
+        <div className="file-cell" style={{ minWidth: 0 }}>
+          <div className="file-left" style={{ minWidth: 0 }}>
             <div className="file-icon file-other"><DocIcon /></div>
-            <div className="file-divider" />
-            <div className="file-name" title={r._title || ""}>
+            <div
+              className="file-name"
+              title={r._title || ""}
+              style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
               {r._title || "(no name field)"}
             </div>
           </div>
         </div>
       ),
     },
-    {
-      key: "mongo_id",
-      label: "MONGO ID",
-      render: (r) => (
-        <span className="crumb" title={String(r.mongo_id || "")}>
-          {r.mongo_id ? String(r.mongo_id).slice(0, 10) + "…" : ""}
-        </span>
-      ),
-    },
-    {
-      key: "minio_url",
-      label: "MINIO URL",
-      render: (r) => (
-        <span title={r.minio_url || ""} style={{ whiteSpace: "nowrap" }}>
-          {truncate(r.minio_url || "", 46)}
-        </span>
-      ),
-    },
   ];
 
-  const detailColumns = [
-    { key: "k", label: "FIELD", render: (r) => <span className="crumb">{r.k}</span> },
-    {
-      key: "v",
-      label: "VALUE",
-      render: (r) => (
-        <span
-          title={r.v}
-          style={{
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "block",
-            maxWidth: 560,
-          }}
-        >
-          {r.v}
-        </span>
-      ),
-    },
-  ];
+  // ===== Detail view as doc-card (matches MongoDB exactly) =====
+  const detailPairs = fieldRows;
 
   return (
-    <div className="page-root">
-      <div className="page-header">
-        <div className="page-header-top">
-          <div className="title-row">
-            <h2 className="page-title">{headerTitle}</h2>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
 
-            {!isRoot && (
-              <button className="back-btn back-btn-right" onClick={goBack}>
-                Back →
-              </button>
+      {/* Hero banner — scrolls away normally */}
+      {isRoot && (
+        <div
+          className="minio-root-header"
+          style={{
+            background: "linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%)",
+            boxShadow: "0 10px 30px rgba(99,102,241,0.18)",
+            marginBottom: 14,
+          }}
+        >
+          <div className="mrh-icon" style={{ color: "#4F46E5" }}>
+            <PgIcon size={26} />
+          </div>
+          <div>
+            <h2 className="mrh-title" style={{ color: "#312E81" }}>PostgreSQL</h2>
+            <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.72)" }}>Xem dữ liệu các bảng (read-only)</p>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky: breadcrumb + action bar */}
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg, #f0f4ff)", paddingBottom: 0 }}>
+
+        {!isRoot && (
+          <div className="minio-crumb-bar" style={{ marginBottom: 10 }}>
+            <span className="minio-crumb-item" onClick={() => { setCurrentTable(""); setCurrentPk(""); setQ(""); }}>
+              <span className="mci-icon"><PgIcon size={14} /></span>
+              <span className="mci-text">PostgreSQL</span>
+            </span>
+
+            {currentTable && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="mci-chevron"><ChevronIcon /></span>
+                <span
+                  className={`minio-crumb-item${!isRowDetail ? " active" : ""}`}
+                  onClick={isRowDetail ? () => { setCurrentPk(""); setQ(""); } : undefined}
+                >
+                  <span className="mci-icon"><TableIcon size={14} /></span>
+                  <span className="mci-text">{currentTable}</span>
+                </span>
+              </span>
+            )}
+
+            {isRowDetail && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="mci-chevron"><ChevronIcon /></span>
+                <span className="minio-crumb-item active">
+                  <span className="mci-icon"><DocIcon size={14} /></span>
+                  <span className="mci-text">
+                    {(() => {
+                      const r = rows.find((x) => String(x._pk) === String(currentPk)) || null;
+                      const t = rowTitle(r) || String(currentPk);
+                      return t.length > 28 ? t.slice(0, 28) + "…" : t;
+                    })()}
+                  </span>
+                </span>
+              </span>
             )}
           </div>
+        )}
 
-          {!isRoot && (
-            <div className="breadcrumb">
-              {breadcrumbParts.map((p, idx, arr) => (
-                <span key={idx} className="crumb">
-                  {p}
-                  {idx < arr.length - 1 ? <span className="sep">/</span> : null}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="page-header-bottom">
-          <div className="search-box">
+        <div className="minio-action-bar">
+          <div className="minio-search">
+            <span className="minio-search-icon"><SearchIcon /></span>
             <input
-              placeholder={
-                isRoot
-                  ? "Tìm bảng..."
-                  : isRowDetail
-                    ? "Đang xem chi tiết (read-only)"
-                    : `Tìm dữ liệu (${totalRows} rows) (pk/name/mongo/minio)...`
-              }
+              placeholder="Tìm kiếm"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               disabled={isRowDetail}
             />
           </div>
-
-          <span className="crumb" style={{ opacity: 0.7 }}>
-            View only
-          </span>
-
-          <div className="header-actions" />
+          <div className="minio-actions">
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#6366F1",
+                background: "#EEF2FF",
+                borderRadius: 100,
+                padding: "5px 14px",
+                letterSpacing: "0.03em",
+                whiteSpace: "nowrap",
+                fontFamily: "var(--doc-font, inherit)",
+              }}
+            >
+              View only
+            </span>
+          </div>
         </div>
       </div>
 
-      {err ? (
-        <div className="empty-state" style={{ marginBottom: 16 }}>
-          <div className="empty-state-icon">⚠️</div>
-          <p>{err}</p>
+      {err && (
+        <div className="minio-empty" style={{ borderColor: "#FECACA", marginBottom: 16, marginTop: 8 }}>
+          <p style={{ color: "#DC2626" }}>{err}</p>
         </div>
-      ) : null}
+      )}
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" style={{ marginTop: 6 }}>
         {isRoot ? (
           <DataTable
             columns={tableColumns}
             rows={tableRows}
+            pageSize={9999}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => openTable(row)}
             renderActions={null}
           />
         ) : isRowDetail ? (
-          <DataTable columns={detailColumns} rows={fieldRows} renderActions={null} />
+          <div className="doc-card">
+            <div className="doc-props">
+              {detailPairs.map((p) => (
+                <div key={p.id} className="doc-prop-row">
+                  <span className="doc-prop-key">{p.k}</span>
+                  <span className="doc-prop-val">
+                    {p.v || <span className="doc-prop-empty">—</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <DataTable
             columns={dataColumns}
             rows={dataRows}
+            pageSize={9999}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => setCurrentPk(String(row._pk))}
             renderActions={null}
