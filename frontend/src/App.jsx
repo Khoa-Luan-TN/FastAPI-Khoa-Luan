@@ -7,7 +7,6 @@ import Login from "./pages/Login";
 import RequireRole from "./components/RequireRole";
 
 import Dashboard from "./pages/admin/Dashboard";
-
 import MinIO from "./pages/admin/MinIO";
 import MongoDB from "./pages/admin/MongoDB";
 import PostgreSQL from "./pages/admin/PostgreSQL";
@@ -15,14 +14,15 @@ import Neo4j from "./pages/admin/Neo4j";
 import Users from "./pages/admin/Users";
 
 import UserHome from "./pages/user/UserHome";
+import History from "./pages/user/History";
+import Saved from "./pages/user/Saved";
+import Profile from "./pages/user/Profile";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* vào / thì chuyển sang /login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
         <Route path="/login" element={<Login />} />
 
         {/* USER */}
@@ -35,6 +35,9 @@ export default function App() {
           }
         >
           <Route index element={<UserHome />} />
+          <Route path="history" element={<History />} />
+          <Route path="saved" element={<Saved />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* ADMIN */}
@@ -46,15 +49,14 @@ export default function App() {
             </RequireRole>
           }
         >
-          {/* Vào /admin thì hiển thị Dashboard */}
           <Route index element={<Dashboard />} />
-
           <Route path="minio" element={<MinIO />} />
           <Route path="mongo" element={<MongoDB />} />
           <Route path="postgres" element={<PostgreSQL />} />
           <Route path="neo4j" element={<Neo4j />} />
           <Route path="users" element={<Users />} />
         </Route>
+
         <Route path="*" element={<h1>404 - Not Found</h1>} />
       </Routes>
     </BrowserRouter>
