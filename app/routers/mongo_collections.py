@@ -12,8 +12,6 @@ db = mongo["db"]
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 def _normalize_collection_name(name: str) -> str:
-    if name is None:
-        raise HTTPException(status_code=422, detail="collection_name is required")
     name = name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="collection_name is required")

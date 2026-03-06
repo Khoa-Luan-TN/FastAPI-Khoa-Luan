@@ -12,7 +12,6 @@ from app.services.neo_client import get_neo4j_session
 from app.services.embedder import embed_query
 from app.services.postgre_client import SessionLocal
 from app.services.mongo_client import get_mongo_client
-from app.services.embedder import embed_query
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
 
@@ -177,10 +176,10 @@ def list_labels(session: Annotated[NeoSession, Depends(get_neo4j_session)]):
 
 @router.get("/nodes", summary="List nodes by label (view-only)")
 def list_nodes(
+    session: Annotated[NeoSession, Depends(get_neo4j_session)],
     label: str = Query(...),
     limit: int = Query(200, ge=1, le=2000),
     skip: int = Query(0, ge=0),
-    session: Annotated[NeoSession, Depends(get_neo4j_session)] = None,
 ):
     label = _require_allowed_label(label)
 
@@ -270,8 +269,8 @@ def _relation_for_node(session: NeoSession, label: str, node_id: str) -> str:
 
 @router.get("/nodes/{node_id}", summary="Get node detail (view-only, includes relation)")
 def get_node_detail(
+    session: Annotated[NeoSession, Depends(get_neo4j_session)],
     node_id: str = Path(...),
-    session: Annotated[NeoSession, Depends(get_neo4j_session)] = None,
 ):
     cypher = """
     MATCH (n)
@@ -300,9 +299,9 @@ def get_node_detail(
 
 @router.get("/search/keyword-context", summary="Semantic search keyword + context + minio (Neo->PG->Mongo)")
 def search_keyword_context_neo(
+    neo: Annotated[NeoSession, Depends(get_neo4j_session)],
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
-    neo: Annotated[NeoSession, Depends(get_neo4j_session)] = None,
 ):
     # 1) embed query
     vec = embed_query(q)

@@ -4,7 +4,6 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
 
 from app.routers.minio import router as minio_router
 from app.routers.postgre import router as postgre_router

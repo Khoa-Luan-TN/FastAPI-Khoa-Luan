@@ -18,8 +18,6 @@ db = mongo["db"]
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 def _normalize_collection_name(name: str) -> str:
-    if name is None:
-        raise HTTPException(status_code=422, detail="collection_name is required")
     name = name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="collection_name is required")
@@ -34,9 +32,7 @@ def _check_collection_exist(collection_name: str):
 def _now():
     return datetime.now(timezone.utc)
 
-def _get_actor(request: Optional[Request]) -> str:
-    if request is None:
-        raise HTTPException(status_code=401, detail="Missing request/actor")
+def _get_actor(request: Request) -> str:
     actor_id = (request.headers.get("x-actor-id") or "").strip()
     if not actor_id:
         raise HTTPException(status_code=401, detail="Missing x-actor-id")
@@ -143,15 +139,21 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if sync_pg and inserted_doc:
         sync = sync_doc_to_postgres(db, col, inserted_doc)
 
+        # Write the PG-assigned user_id back to the MongoDB document
+        # so the frontend can read it directly from the user collection
+        if col == "user" and sync.get("ok") and sync.get("pg_id"):
+            pg_user_id = str(sync["pg_id"])
+            db[col].update_one({"_id": result.inserted_id}, {"$set": {"user_id": pg_user_id}})
+
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
 
 @router.post("/documents/{collection_name}", summary="Thêm document vào collection (generic)")
-def create_document(collection_name: str, body: Dict[str, Any] = Body(...), request: Request = None):
+def create_document(collection_name: str, request: Request, body: Dict[str, Any] = Body(...)):
     actor = _get_actor(request)
     return create_document_core(collection_name, body, actor=actor, sync_pg=True)
 
 @router.put("/documents/{collection_name}/{oid}", summary="Update document (generic)")
-def update_document(collection_name: str, oid: str, body: Dict[str, Any] = Body(...), request: Request = None):
+def update_document(collection_name: str, oid: str, request: Request, body: Dict[str, Any] = Body(...)):
     col = _normalize_collection_name(collection_name)
     _check_collection_exist(col)
 
@@ -184,10 +186,16 @@ def update_document(collection_name: str, oid: str, body: Dict[str, Any] = Body(
     updated_doc = db[col].find_one(id_filter)
     sync = sync_doc_to_postgres(db, col, updated_doc) if updated_doc else {"ok": False, "error": "updated_doc missing"}
 
+    # Back-fill user_id in MongoDB if it was missing
+    if col == "user" and sync.get("ok") and sync.get("pg_id"):
+        if not (updated_doc or {}).get("user_id"):
+            pg_user_id = str(sync["pg_id"])
+            db[col].update_one(id_filter, {"$set": {"user_id": pg_user_id}})
+
     return {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
 
 @router.delete("/documents/{collection_name}/{oid}", summary="Soft delete document (generic)")
-def delete_document(collection_name: str = Path(...), oid: str = Path(...), request: Request = None):
+def delete_document(request: Request, collection_name: str = Path(...), oid: str = Path(...)):
     col = _normalize_collection_name(collection_name)
     _check_collection_exist(col)
 
@@ -198,6 +206,7 @@ def delete_document(collection_name: str = Path(...), oid: str = Path(...), requ
     if not exist or not id_filter:
         raise HTTPException(status_code=404, detail=f"_id: '{oid}' not exist")
 
+    assert exist is not None  # guaranteed by the guard above; satisfies static analysis
     if exist.get("is_deleted") is True:
         updated_doc = db[col].find_one(id_filter)
         sync = sync_doc_to_postgres(db, col, updated_doc) if updated_doc else {"ok": True, "skipped": True}

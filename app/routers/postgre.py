@@ -7,9 +7,7 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 from typing import Any, Dict, List, Tuple, Annotated
 from pydantic import BaseModel
-from sqlalchemy import text as sql_text
-
-from app.services.postgre_client import SessionLocal
+from app.services.postgre_client import SessionLocal, engine
 import app.models.model_postgre as models
 from app.services.embedder import embed_query
 
@@ -122,24 +120,24 @@ def _get_one_by_pk(db: Session, model, pk: str):
 
 @router.get("/tables", summary="List allowed tables")
 def list_tables(db: db_dependency):
-    inspector = inspect(db.bind)
+    inspector = inspect(engine)
     existing = set(inspector.get_table_names(schema="public"))
     tables = sorted([t for t in TABLE_MODEL_MAP.keys() if t in existing])
     return {"tables": tables}
 
 
 @router.get("/tables/{table_name}/columns", summary="Get columns of a table")
-def table_columns(table_name: str = Path(...), db: db_dependency = None):
+def table_columns(db: db_dependency, table_name: str = Path(...)):
     model = _get_model(table_name)
     return {"table_name": table_name, "columns": [c.name for c in model.__table__.columns]}
 
 
 @router.get("/tables/{table_name}/rows", summary="List rows with paging (read-only)")
 def list_rows(
+    db: db_dependency,
     table_name: str = Path(...),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    db: db_dependency = None,
 ):
     model = _get_model(table_name)
 
@@ -161,9 +159,9 @@ def list_rows(
 
 @router.get("/tables/{table_name}/rows/{pk}", summary="Get one row by PK (read-only)")
 def get_row(
+    db: db_dependency,
     table_name: str = Path(...),
     pk: str = Path(..., description="PK string. For keyword use chunk_id::keyword_name"),
-    db: db_dependency = None,
 ):
     model = _get_model(table_name)
     obj = _get_one_by_pk(db, model, pk)

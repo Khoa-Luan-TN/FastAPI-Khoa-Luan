@@ -41,3 +41,11 @@ export function updateUser(oid, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+/** Fetch all users from PostgreSQL — returns rows with user_id and mongo_id for cross-referencing */
+export function listPgUsers({ limit = 500, offset = 0 } = {}) {
+  const url = new URL(`${API_BASE}/admin/postgre/tables/user/rows`);
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
+  return httpJson(url.toString(), { method: "GET" });
+}

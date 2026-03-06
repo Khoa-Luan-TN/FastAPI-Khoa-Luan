@@ -297,7 +297,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         pg.refresh(obj)
         return {"op": "insert", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id}}
 
-   
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
         chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid", "chunkRef", "chunk"])

@@ -2,7 +2,7 @@
 import io
 import os
 import json
-from typing import List, Optional, Tuple
+from typing import List
 from urllib.parse import quote
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Request
@@ -35,9 +35,7 @@ def _require_bucket():
         raise HTTPException(status_code=500, detail="MINIO_BUCKET is not configured")
 
 
-def get_actor(request: Optional[Request]) -> str:
-    if request is None:
-        raise HTTPException(status_code=401, detail="Missing request/actor")
+def get_actor(request: Request) -> str:
     actor_id = (request.headers.get("x-actor-id") or "").strip()
     if not actor_id:
         raise HTTPException(status_code=401, detail="Missing x-actor-id")

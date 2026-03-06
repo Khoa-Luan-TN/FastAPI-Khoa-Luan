@@ -16,8 +16,6 @@ _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 
 def _normalize_collection_name(name: str) -> str:
-    if name is None:
-        raise HTTPException(status_code=422, detail="collection_name is required")
     name = name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="collection_name is required")
@@ -32,8 +30,6 @@ def _check_collection_exist(collection_name: str):
 
 
 def _get_actor(request: Request) -> str:
-    if request is None:
-        raise HTTPException(status_code=401, detail="Missing request/actor")
     actor_id = (request.headers.get("x-actor-id") or "").strip()
     if not actor_id:
         raise HTTPException(status_code=401, detail="Missing x-actor-id")
@@ -41,7 +37,7 @@ def _get_actor(request: Request) -> str:
 
 
 @router.post("/import/excel", summary="Import Excel workbook (multi-sheet) -> Mongo -> PG -> Neo")
-async def import_excel_workbook(file: UploadFile = File(...), request: Request = None):
+async def import_excel_workbook(request: Request, file: UploadFile = File(...)):
     actor = _get_actor(request)
 
     fn = (file.filename or "").lower()
@@ -71,9 +67,9 @@ async def import_excel_workbook(file: UploadFile = File(...), request: Request =
 
 @router.post("/import/excel-one", summary="Import Excel -> 1 collection -> Mongo -> PG -> Neo")
 async def import_excel_one_collection(
+    request: Request,
     collection_name: str = Query(...),
     file: UploadFile = File(...),
-    request: Request = None,
 ):
     actor = _get_actor(request)
 
