@@ -491,7 +491,7 @@ export default function MongoDB() {
     for (const k of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
       const val = doc[k];
       if (k === "minio" && val && typeof val === "object" && !Array.isArray(val) &&
-          ("bucket" in val || "object_key" in val || "url" in val)) {
+        ("bucket" in val || "object_key" in val || "url" in val)) {
         minioPairs.push({ id: "minio.bucket", k: "minio.bucket", v: String(val.bucket ?? ""), locked: false, _isMinioSub: true, _minioField: "bucket" });
         minioPairs.push({ id: "minio.object_key", k: "minio.object_key", v: String(val.object_key ?? ""), locked: false, _isMinioSub: true, _minioField: "object_key" });
         minioPairs.push({ id: "minio.url", k: "minio.url", v: String(val.url ?? ""), locked: false, _isMinioSub: true, _minioField: "url" });
@@ -846,10 +846,11 @@ export default function MongoDB() {
   }
 
   return (
-    <div>
-      {/* ROOT: gradient header banner */}
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+
+      {/* ROOT: gradient header banner — scrolls away normally */}
       {isRoot && (
-        <div className="minio-root-header" style={{ background: "linear-gradient(135deg, #6EE7B7 0%, #A7F3D0 100%)", boxShadow: "0 10px 30px rgba(110, 231, 183, 0.4)" }}>
+        <div className="minio-root-header" style={{ background: "linear-gradient(135deg, #6EE7B7 0%, #A7F3D0 100%)", boxShadow: "0 10px 30px rgba(110, 231, 183, 0.4)", marginBottom: 14 }}>
           <div className="mrh-icon" style={{ color: "#059669" }}>
             <MongoIcon size={26} />
           </div>
@@ -860,92 +861,95 @@ export default function MongoDB() {
         </div>
       )}
 
-      {/* NON-ROOT: breadcrumb bar */}
-      {!isRoot && (
-        <div className="minio-crumb-bar">
-          <span className="minio-crumb-item" onClick={() => { setCurrent(""); setCurrentDocId(""); setIsEditingDoc(false); setQ(""); }}>
-            <span className="mci-icon"><MongoIcon size={14} /></span>
-            <span className="mci-text">MongoDB</span>
-          </span>
-          {currentCollection && (
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span className="mci-chevron"><ChevronIcon /></span>
-              <span
-                className={`minio-crumb-item${!isDocDetail ? " active" : ""}`}
-                onClick={isDocDetail ? () => { setCurrentDocId(""); setIsEditingDoc(false); setQ(""); } : undefined}
-              >
-                <span className="mci-icon"><GridIcon size={14} /></span>
-                <span className="mci-text">{currentCollection}</span>
-              </span>
+      {/* Sticky: breadcrumb (non-root) + action bar */}
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg, #f0f4ff)", paddingBottom: 0 }}>
+        {/* NON-ROOT: breadcrumb bar */}
+        {!isRoot && (
+          <div className="minio-crumb-bar" style={{ marginBottom: 10 }}>
+            <span className="minio-crumb-item" onClick={() => { setCurrent(""); setCurrentDocId(""); setIsEditingDoc(false); setQ(""); }}>
+              <span className="mci-icon"><MongoIcon size={14} /></span>
+              <span className="mci-text">MongoDB</span>
             </span>
-          )}
-          {isDocDetail && (
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span className="mci-chevron"><ChevronIcon /></span>
-              <span className="minio-crumb-item active">
-                <span className="mci-icon"><DocIcon size={14} /></span>
-                <span className="mci-text" title={selectedDoc ? (docTitle(selectedDoc) || currentDocId) : currentDocId}>
-                  {selectedDoc
-                    ? (docTitle(selectedDoc)
-                        ? (docTitle(selectedDoc).length > 28 ? docTitle(selectedDoc).slice(0, 28) + "…" : docTitle(selectedDoc))
-                        : String(currentDocId).slice(0, 10) + "…")
-                    : String(currentDocId).slice(0, 10) + "…"}
+            {currentCollection && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="mci-chevron"><ChevronIcon /></span>
+                <span
+                  className={`minio-crumb-item${!isDocDetail ? " active" : ""}`}
+                  onClick={isDocDetail ? () => { setCurrentDocId(""); setIsEditingDoc(false); setQ(""); } : undefined}
+                >
+                  <span className="mci-icon"><GridIcon size={14} /></span>
+                  <span className="mci-text">{currentCollection}</span>
                 </span>
               </span>
-            </span>
-          )}
-        </div>
-      )}
+            )}
+            {isDocDetail && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="mci-chevron"><ChevronIcon /></span>
+                <span className="minio-crumb-item active">
+                  <span className="mci-icon"><DocIcon size={14} /></span>
+                  <span className="mci-text" title={selectedDoc ? (docTitle(selectedDoc) || currentDocId) : currentDocId}>
+                    {selectedDoc
+                      ? (docTitle(selectedDoc)
+                        ? (docTitle(selectedDoc).length > 28 ? docTitle(selectedDoc).slice(0, 28) + "…" : docTitle(selectedDoc))
+                        : String(currentDocId).slice(0, 10) + "…")
+                      : String(currentDocId).slice(0, 10) + "…"}
+                  </span>
+                </span>
+              </span>
+            )}
+          </div>
+        )}
 
-      {/* Action bar: search + buttons */}
-      <div className="minio-action-bar">
-        <div className="minio-search">
-          <span className="minio-search-icon"><SearchIcon /></span>
-          <input
-            placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id/minio)..."}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            disabled={isDocDetail}
-          />
+        {/* Action bar: search + buttons */}
+        <div className="minio-action-bar">
+          <div className="minio-search">
+            <span className="minio-search-icon"><SearchIcon /></span>
+            <input
+              placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id/minio)..."}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              disabled={isDocDetail}
+            />
+          </div>
+          <div className="minio-actions">
+            {isRoot ? (
+              <>
+                <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
+                  {importing ? "Importing..." : "Import Excel"}
+                </button>
+                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateCol(true)}>
+                  + Collection
+                </button>
+              </>
+            ) : !isDocDetail ? (
+              <>
+                <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
+                  {importing ? "Importing..." : "Import Excel"}
+                </button>
+                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
+                  + Document
+                </button>
+              </>
+            ) : !isEditingDoc ? (
+              <>
+                <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
+                  <TrashIcon /> Xoá
+                </button>
+                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setIsEditingDoc(true)}>
+                  <EditIcon /> Sửa
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="minio-btn minio-btn-secondary mab-btn" onClick={addFieldRow}>+ Field</button>
+                <button className="minio-btn minio-btn-secondary mab-btn" onClick={cancelEditDoc}>Huỷ bỏ</button>
+                <button className="minio-btn minio-btn-primary mab-btn" onClick={updateDocFromDetail}>Cập nhật</button>
+              </>
+            )}
+            <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={onPickImportFile} />
+          </div>
         </div>
-        <div className="minio-actions">
-          {isRoot ? (
-            <>
-              <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
-                {importing ? "Importing..." : "Import Excel"}
-              </button>
-              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateCol(true)}>
-                + Collection
-              </button>
-            </>
-          ) : !isDocDetail ? (
-            <>
-              <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
-                {importing ? "Importing..." : "Import Excel"}
-              </button>
-              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
-                + Document
-              </button>
-            </>
-          ) : !isEditingDoc ? (
-            <>
-              <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
-                <TrashIcon /> Xoá
-              </button>
-              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setIsEditingDoc(true)}>
-                <EditIcon /> Sửa
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="minio-btn minio-btn-secondary mab-btn" onClick={addFieldRow}>+ Field</button>
-              <button className="minio-btn minio-btn-secondary mab-btn" onClick={cancelEditDoc}>Huỷ bỏ</button>
-              <button className="minio-btn minio-btn-primary mab-btn" onClick={updateDocFromDetail}>Cập nhật</button>
-            </>
-          )}
-          <input ref={importRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={onPickImportFile} />
-        </div>
-      </div>
+      </div> {/* end sticky */}
 
       {/* Error */}
       {err && (
@@ -955,11 +959,13 @@ export default function MongoDB() {
       )}
 
       {/* Table */}
-      <div className="table-wrapper">
+      <div className="table-wrapper" style={{ marginTop: 6 }}>
+
         {isRoot ? (
           <DataTable
             columns={collectionColumns}
             rows={collectionRows}
+            pageSize={9999}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => openCollection(row)}
             renderActions={(row) => (

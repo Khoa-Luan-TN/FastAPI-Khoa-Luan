@@ -2,6 +2,10 @@
    MINIO PAGE - Card-based pastel file browser
    ===================================================== */
 
+:root {
+  --minio-font: "Segoe UI", Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
 /* ---- Root page header (pastel gradient banner) ---- */
 .minio-root-header {
   display: flex;
@@ -53,6 +57,7 @@
   color: #1E3A8A;
   margin: 0 0 6px;
   letter-spacing: -0.5px;
+  font-family: var(--minio-font);
 }
 
 .mrh-subtitle {
@@ -60,6 +65,7 @@
   color: rgba(30, 58, 138, 0.75);
   margin: 0;
   font-weight: 500;
+  font-family: var(--minio-font);
 }
 
 /* ---- Bar 1: Breadcrumb with icons ---- */
@@ -89,6 +95,7 @@
   color: #64748B;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  font-family: var(--minio-font);
 }
 
 .minio-crumb-item:hover {
@@ -130,11 +137,10 @@
   align-items: center;
   gap: 12px;
   padding: 8px 12px 8px 8px;
-  margin-bottom: 20px;
+  margin-bottom: 6px;
   background: #FFFFFF;
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 100px;
-  /* Pill shape */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
   min-height: 54px;
 }
@@ -164,7 +170,7 @@
   background: #F8FAFC;
   color: #334155;
   outline: none;
-  font-family: var(--font, inherit);
+  font-family: var(--minio-font);
   transition: all 0.2s;
 }
 
@@ -195,11 +201,10 @@
   font-weight: 600;
   padding: 10px 18px;
   border-radius: 100px;
-  /* Pill mapped */
   border: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: var(--minio-font);
   white-space: nowrap;
 }
 
@@ -325,6 +330,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 14px;
   margin-bottom: 24px;
   max-height: calc(100vh - 280px);
   overflow-y: auto;
@@ -392,6 +398,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--minio-font);
 }
 
 .mfr-actions {
@@ -427,15 +434,10 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 280px);
-  /* Allow wrapper to scroll */
   overflow-y: auto;
   overflow-x: auto;
-  padding: 4px;
-  /* Give some breathing room to avoid cutting off dropshadows or borders */
-  margin: -4px -4px 0 -4px;
-  /* Adjust margin to offset padding */
-  padding-top: 4px;
-  /* Bring back top padding inside */
+  padding: 0 4px 4px 4px;
+  margin-top: 14px;
 }
 
 /* Ensure the wrapper respects min-width for very narrow screens but doesn't force clipping */
@@ -444,9 +446,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  /* important context for sticky children */
-  padding-top: 4px;
-  /* Add small padding top to separate from top border */
+  padding-top: 0;
 }
 
 .minio-folder-list::-webkit-scrollbar,
@@ -469,22 +469,15 @@
   display: grid;
   grid-template-columns: minmax(150px, 1fr) 96px 120px 128px 152px;
   padding: 14px 24px;
-  /* Increase padding to match item height better */
   gap: 16px;
-  margin-top: -4px;
-  /* Pull header up to cover inner padding gap */
   margin-bottom: 2px;
-  /* Give gap strictly here to replace flex column gap which pushes everything */
   position: sticky;
-  top: -4px;
-  /* Stick perfectly to the top of the scroll container */
+  top: 0;
   z-index: 10;
   background: #f0f4ff;
-  /* Maintain solid background */
   border-radius: 8px;
-  /* Optional slight rounding so it looks nicer floating */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  /* Slight shadow to separate header from content visually when scrolling */
+  font-family: var(--minio-font);
 }
 
 .mfl-th {
@@ -493,6 +486,7 @@
   color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: 1.2px;
+  font-family: var(--minio-font);
 }
 
 .mfl-th-type,
@@ -516,8 +510,7 @@
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 16px;
   gap: 16px;
-  margin-top: 10px;
-  /* Use margin-top to explicitly push items down */
+  margin-top: 8px;
   align-items: center;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -612,6 +605,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--minio-font);
 }
 
 .mfi-type-badge {
@@ -653,6 +647,7 @@
   font-weight: 500;
   justify-self: center;
   text-align: center;
+  font-family: var(--minio-font);
 }
 
 .mfi-date {
@@ -662,6 +657,7 @@
   font-weight: 500;
   justify-self: center;
   text-align: center;
+  font-family: var(--minio-font);
 }
 
 .mfi-actions-cell {
@@ -684,16 +680,13 @@
   height: 32px;
   padding: 0 12px;
   border: 1px solid transparent;
-  /* Removes harsh border */
   background: #F1F5F9;
-  /* Pastel surface */
   border-radius: 100px;
-  /* Pill */
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   color: #475569;
-  font-family: inherit;
+  font-family: var(--minio-font);
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -738,6 +731,7 @@
   font-size: 15px;
   font-weight: 500;
   margin: 0;
+  font-family: var(--minio-font);
 }
 
 /* ---- Loading ---- */
@@ -747,6 +741,7 @@
   color: #94A3B8;
   font-size: 15px;
   font-weight: 500;
+  font-family: var(--minio-font);
   animation: pulse 1.5s infinite ease-in-out;
 }
 
