@@ -168,9 +168,19 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     if not body:
         raise HTTPException(status_code=422, detail="Not field change to updated")
 
-    exist, id_filter = _find_one_by_any_key(col, oid, {"_id": 1, "is_deleted": 1, "username": 1})
+    exist, id_filter = _find_one_by_any_key(col, oid, {"_id": 1, "is_deleted": 1, "username": 1, "user_id": 1})
     if not exist or not id_filter:
         raise HTTPException(status_code=404, detail=f"_id: '{oid}' not exist")
+
+    # Prevent self-modification of role or active status
+    if col == "user":
+        target_pg_id = str(exist.get("user_id") or "").strip()
+        if target_pg_id and target_pg_id == actor:
+            if any(f in body for f in ("user_role", "is_active")):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Không thể thay đổi vai trò hoặc trạng thái của chính mình.",
+                )
 
     _user_normalize_and_validate(col, body, is_create=False)
 

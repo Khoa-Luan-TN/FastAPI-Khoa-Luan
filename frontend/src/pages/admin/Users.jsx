@@ -49,6 +49,19 @@ const WarnIcon = () => (
     <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
+const InfoIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+const LockIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
 
 // ---- Date formatter ----
 function fmtDate(s) {
@@ -72,6 +85,7 @@ function friendlyError(raw = "") {
     if (s.includes("user_id")) return "Xung đột ID người dùng trong cơ sở dữ liệu. Vui lòng thử lại.";
     return "Dữ liệu đã tồn tại (trùng lặp). Vui lòng kiểm tra lại thông tin.";
   }
+  if (s.includes("không thể thay đổi")) return raw;
   if (s.includes("password")) return "Mật khẩu không hợp lệ. Vui lòng thử lại.";
   if (s.includes("username")) return "Tên đăng nhập không hợp lệ.";
   if (s.includes("not found")) return "Không tìm thấy tài khoản.";
@@ -203,10 +217,27 @@ function ToggleGroup({ options, value, onChange }) {
   );
 }
 
+// Read-only locked field display
+function LockedField({ value, color, bg, border }) {
+  return (
+    <div style={{
+      height: 40, borderRadius: 9, padding: "0 14px",
+      border: `1.5px solid ${border || "#E2E8F0"}`,
+      background: bg || "#F8FAFC",
+      color: color || "#64748B",
+      display: "flex", alignItems: "center", gap: 8,
+      fontFamily: "var(--doc-font, sans-serif)", fontSize: 13.5, fontWeight: 600,
+    }}>
+      <span style={{ opacity: 0.5 }}><LockIcon size={13} /></span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
 // ===========================================================
 // ---- User Create/Edit Modal ----
 // ===========================================================
-function UserModal({ open, onClose, title, initial, onSave, isEdit = false }) {
+function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSelf = false }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
@@ -268,8 +299,11 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false }) {
         const pw = password.trim();
         if (u && u !== (initial?.username || "")) patch.username = u;
         if (pw) patch.password = pw;
-        if ((role || "user") !== (initial?.role || "user")) patch.user_role = role;
-        if ((active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
+        // Never send role/active changes when editing own account
+        if (!isSelf) {
+          if ((role || "user") !== (initial?.role || "user")) patch.user_role = role;
+          if ((active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
+        }
         if (Object.keys(patch).length === 0) {
           setSubmitError("Không có thay đổi nào để cập nhật.");
           setSubmitting(false);
@@ -330,6 +364,18 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false }) {
         {/* Body */}
         <form onSubmit={submit} style={{ padding: "22px 28px 8px", display: "flex", flexDirection: "column", gap: 16 }}>
 
+          {/* Self-edit info banner */}
+          {isSelf && (
+            <div style={{
+              display: "flex", alignItems: "flex-start", gap: 8,
+              background: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: 9, padding: "11px 14px",
+              fontFamily: "var(--doc-font, sans-serif)", fontSize: 13, color: "#1D4ED8",
+            }}>
+              <span style={{ flexShrink: 0, marginTop: 1 }}><InfoIcon /></span>
+              <span>Bạn đang chỉnh sửa tài khoản của chính mình. Không thể thay đổi vai trò hoặc trạng thái.</span>
+            </div>
+          )}
+
           {/* Submit-level error */}
           {submitError && (
             <div style={{
@@ -366,12 +412,30 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false }) {
           <div style={{ borderTop: "1px solid #F1F5F9" }} />
 
           <FormField label="Vai trò (Role)">
-            <ToggleGroup options={roleOptions} value={role} onChange={setRole} />
+            {isSelf ? (
+              <LockedField
+                value={role === "admin" ? "Admin" : "User"}
+                color={role === "admin" ? "#7C3AED" : "#2563EB"}
+                bg={role === "admin" ? "#F3E8FF" : "#EFF6FF"}
+                border={role === "admin" ? "#DDD6FE" : "#BFDBFE"}
+              />
+            ) : (
+              <ToggleGroup options={roleOptions} value={role} onChange={setRole} />
+            )}
           </FormField>
 
           <FormField label="Trạng thái (Status)">
-            <ToggleGroup options={statusOptions} value={active ? "active" : "disabled"}
-              onChange={(v) => setActive(v === "active")} />
+            {isSelf ? (
+              <LockedField
+                value={active ? "Active" : "Disabled"}
+                color={active ? "#15803D" : "#DC2626"}
+                bg={active ? "#F0FDF4" : "#FFF1F2"}
+                border={active ? "#BBF7D0" : "#FECDD3"}
+              />
+            ) : (
+              <ToggleGroup options={statusOptions} value={active ? "active" : "disabled"}
+                onChange={(v) => setActive(v === "active")} />
+            )}
           </FormField>
         </form>
 
@@ -411,6 +475,7 @@ export default function Users() {
   const [editTarget, setEditTarget] = useState(null);
 
   const toast = useToast();
+  const currentUserId = localStorage.getItem("user_id") || "";
 
   async function reloadUsers() {
     // Fetch Mongo docs and PG user rows in parallel
@@ -470,23 +535,34 @@ export default function Users() {
     },
     {
       key: "username", label: "USERNAME",
-      render: (r) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 9, flexShrink: 0,
-            background: r.active ? "#EFF6FF" : "#FFF1F2",
-            color: r.active ? "#2563EB" : "#DC2626",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            border: `1px solid ${r.active ? "#BFDBFE" : "#FECDD3"}`,
-          }}>
-            {r.active ? <UserIcon size={15} /> : <BanIcon size={15} />}
+      render: (r) => {
+        const isSelf = currentUserId && r.userId === currentUserId;
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+              background: r.active ? "#EFF6FF" : "#FFF1F2",
+              color: r.active ? "#2563EB" : "#DC2626",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              border: `1px solid ${r.active ? "#BFDBFE" : "#FECDD3"}`,
+            }}>
+              {r.active ? <UserIcon size={15} /> : <BanIcon size={15} />}
+            </div>
+            <span style={{
+              fontFamily: "var(--doc-font, sans-serif)", fontSize: 14, fontWeight: 600, color: "#1E293B",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }} title={r.username}>{r.username}</span>
+            {isSelf && (
+              <span style={{
+                display: "inline-block", borderRadius: 100, padding: "2px 9px",
+                fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+                background: "#EEF2FF", color: "#4F46E5", border: "1px solid #C7D2FE",
+                fontFamily: "var(--doc-font, sans-serif)", flexShrink: 0,
+              }}>Bạn</span>
+            )}
           </div>
-          <span style={{
-            fontFamily: "var(--doc-font, sans-serif)", fontSize: 14, fontWeight: 600, color: "#1E293B",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }} title={r.username}>{r.username}</span>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "role", label: "ROLE", width: "110px",
@@ -523,6 +599,10 @@ export default function Users() {
   ];
 
   async function toggleDisable(row) {
+    if (currentUserId && row.userId === currentUserId) {
+      toast.error("Không thể thay đổi trạng thái của chính mình.");
+      return;
+    }
     const nextActive = !row.active;
     if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"?`)) return;
     try {
@@ -549,6 +629,8 @@ export default function Users() {
     setOpenCreate(false);
     toast.success(`Tài khoản "${data.username}" đã được tạo thành công.`);
   }
+
+  const editIsSelf = !!(currentUserId && editTarget?.userId === currentUserId);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -602,31 +684,38 @@ export default function Users() {
           rows={rows}
           getRowClassName={() => "row-click"}
           actionsWidth="180px"
-          renderActions={(row) => (
-            <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}
-              style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleDisable(row); }}
-                style={{
-                  height: 32, borderRadius: 7, padding: "0 14px", cursor: "pointer",
-                  border: row.active ? "1.5px solid #FECDD3" : "1.5px solid #BBF7D0",
-                  background: row.active ? "#FFF1F2" : "#F0FDF4",
-                  color: row.active ? "#DC2626" : "#15803D",
-                  fontFamily: "var(--doc-font, inherit)", fontSize: 12.5, fontWeight: 600,
-                }}>
-                {row.active ? "Vô hiệu" : "Kích hoạt"}
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); openEditUser(row); }}
-                style={{
-                  height: 32, borderRadius: 7, padding: "0 14px", cursor: "pointer",
-                  border: "1.5px solid #E0E7FF", background: "#EEF2FF",
-                  color: "#4F46E5", fontFamily: "var(--doc-font, inherit)", fontSize: 12.5, fontWeight: 600,
-                }}>
-                Sửa
-              </button>
-            </div>
-          )}
+          renderActions={(row) => {
+            const isSelf = currentUserId && row.userId === currentUserId;
+            return (
+              <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}
+                style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleDisable(row); }}
+                  disabled={!!isSelf}
+                  title={isSelf ? "Không thể thay đổi trạng thái của chính mình" : undefined}
+                  style={{
+                    height: 32, borderRadius: 7, padding: "0 14px",
+                    cursor: isSelf ? "not-allowed" : "pointer",
+                    opacity: isSelf ? 0.38 : 1,
+                    border: row.active ? "1.5px solid #FECDD3" : "1.5px solid #BBF7D0",
+                    background: row.active ? "#FFF1F2" : "#F0FDF4",
+                    color: row.active ? "#DC2626" : "#15803D",
+                    fontFamily: "var(--doc-font, inherit)", fontSize: 12.5, fontWeight: 600,
+                  }}>
+                  {row.active ? "Vô hiệu" : "Kích hoạt"}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); openEditUser(row); }}
+                  style={{
+                    height: 32, borderRadius: 7, padding: "0 14px", cursor: "pointer",
+                    border: "1.5px solid #E0E7FF", background: "#EEF2FF",
+                    color: "#4F46E5", fontFamily: "var(--doc-font, inherit)", fontSize: 12.5, fontWeight: 600,
+                  }}>
+                  Sửa
+                </button>
+              </div>
+            );
+          }}
         />
       </div>
 
@@ -637,6 +726,7 @@ export default function Users() {
         initial={{ username: "", role: "user", active: true }}
         onSave={saveCreateUser}
         isEdit={false}
+        isSelf={false}
       />
       <UserModal
         open={openEdit}
@@ -645,6 +735,7 @@ export default function Users() {
         initial={editTarget}
         onSave={saveEditUser}
         isEdit={true}
+        isSelf={editIsSelf}
       />
     </div>
   );

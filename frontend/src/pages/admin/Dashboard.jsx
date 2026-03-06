@@ -1,9 +1,77 @@
 import { useNavigate } from "react-router-dom";
 import "../../styles/admin/dashboard.css";
 
+// ---- SVG Icons (matching layout system) ----
+const StorageIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="8" rx="2" />
+    <rect x="2" y="14" width="20" height="8" rx="2" />
+    <circle cx="6" cy="6" r="1" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="18" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const DatabaseIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
+
+const TableIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 9h18M3 15h18M9 3v18" />
+  </svg>
+);
+
+const GraphIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="5" cy="19" r="2" />
+    <circle cx="19" cy="19" r="2" />
+    <path d="M12 7v3M10.5 17.5l-4-7M13.5 17.5l4-7" />
+  </svg>
+);
+
+const UsersIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </svg>
+);
+
+const ShieldIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const ArrowRightIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const BoltIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+  </svg>
+);
+
+const CodeIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
+  </svg>
+);
+
+// ---- Data ----
 const DB_CARDS = [
   {
-    icon: "📁",
+    Icon: StorageIcon,
     label: "MinIO",
     desc: "Lưu trữ file & media",
     color: "#F59E0B",
@@ -11,7 +79,7 @@ const DB_CARDS = [
     to: "/admin/minio",
   },
   {
-    icon: "🗄️",
+    Icon: DatabaseIcon,
     label: "MongoDB",
     desc: "Dữ liệu tài liệu học",
     color: "#10B981",
@@ -19,7 +87,7 @@ const DB_CARDS = [
     to: "/admin/mongo",
   },
   {
-    icon: "📊",
+    Icon: TableIcon,
     label: "PostgreSQL",
     desc: "Người dùng & phân quyền",
     color: "#3B82F6",
@@ -27,7 +95,7 @@ const DB_CARDS = [
     to: "/admin/postgres",
   },
   {
-    icon: "🕸️",
+    Icon: GraphIcon,
     label: "Neo4j",
     desc: "Đồ thị tri thức",
     color: "#8B5CF6",
@@ -36,11 +104,11 @@ const DB_CARDS = [
   },
 ];
 
-const QUICK_LINKS = [
-  { icon: "👥", label: "Quản lý tài khoản", to: "/admin/users", color: "#C8102E" },
-  { icon: "📁", label: "File Storage",       to: "/admin/minio",    color: "#F59E0B" },
-  { icon: "🗄️", label: "Collections",        to: "/admin/mongo",    color: "#10B981" },
-  { icon: "🕸️", label: "Knowledge Graph",    to: "/admin/neo4j",    color: "#8B5CF6" },
+const STACK_ITEMS = [
+  { Icon: BoltIcon,    label: "Backend",  value: "FastAPI",      color: "#10B981", colorBg: "#ECFDF5" },
+  { Icon: CodeIcon,    label: "Frontend", value: "React + Vite", color: "#3B82F6", colorBg: "#EFF6FF" },
+  { Icon: StorageIcon, label: "Storage",  value: "MinIO",        color: "#F59E0B", colorBg: "#FFFBEB" },
+  { Icon: GraphIcon,   label: "Graph DB", value: "Neo4j",        color: "#8B5CF6", colorBg: "#F5F3FF" },
 ];
 
 export default function Dashboard() {
@@ -49,25 +117,35 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
+
       {/* Welcome Banner */}
       <div className="dash-welcome">
         <div className="dash-welcome-left">
           <h1 className="dash-welcome-title">
-            Xin chào, <span className="dash-welcome-name">{username}</span> 👋
+            Xin chào, <span className="dash-welcome-name">{username}</span>
           </h1>
           <p className="dash-welcome-sub">
             Hệ thống quản trị — Khoá luận tốt nghiệp
           </p>
         </div>
-        <div className="dash-welcome-badge">
-          <span className="dash-welcome-badge-icon">🔐</span>
-          <span>Quản trị viên</span>
+        <div className="dash-welcome-right">
+          <div className="dash-welcome-badge">
+            <span className="dash-welcome-badge-icon"><ShieldIcon size={15} /></span>
+            <span>Quản trị viên</span>
+          </div>
+          <button className="dash-welcome-action-btn" onClick={() => navigate("/admin/users")}>
+            <UsersIcon size={14} />
+            <span>Tài khoản</span>
+          </button>
         </div>
       </div>
 
-      {/* DB Cards */}
+      {/* DB Services */}
       <section className="dash-section">
-        <h2 className="dash-section-title">Cơ sở dữ liệu</h2>
+        <div className="dash-section-header">
+          <h2 className="dash-section-title">Cơ sở dữ liệu</h2>
+          <span className="dash-section-meta">4 services</span>
+        </div>
         <div className="dash-db-grid">
           {DB_CARDS.map((card) => (
             <button
@@ -76,71 +154,64 @@ export default function Dashboard() {
               onClick={() => navigate(card.to)}
               style={{ "--card-color": card.color, "--card-bg": card.colorBg }}
             >
-              <div className="dash-db-icon-wrap">
-                <span className="dash-db-icon">{card.icon}</span>
+              <div className="dash-db-card-top">
+                <div className="dash-db-icon-wrap">
+                  <card.Icon size={22} />
+                </div>
+                <span className="dash-db-arrow"><ArrowRightIcon size={13} /></span>
               </div>
-              <div className="dash-db-info">
-                <div className="dash-db-name">{card.label}</div>
-                <div className="dash-db-desc">{card.desc}</div>
-              </div>
-              <span className="dash-db-arrow">›</span>
+              <div className="dash-db-name">{card.label}</div>
+              <div className="dash-db-desc">{card.desc}</div>
             </button>
           ))}
         </div>
       </section>
 
-      {/* Quick Access */}
-      <section className="dash-section">
-        <h2 className="dash-section-title">Truy cập nhanh</h2>
-        <div className="dash-quick-grid">
-          {QUICK_LINKS.map((link) => (
-            <button
-              key={link.label}
-              className="dash-quick-card"
-              onClick={() => navigate(link.to)}
-              style={{ "--q-color": link.color }}
-            >
-              <span className="dash-quick-icon">{link.icon}</span>
-              <span className="dash-quick-label">{link.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* Bottom row */}
+      <div className="dash-bottom-row">
 
-      {/* Info cards */}
-      <section className="dash-section">
-        <h2 className="dash-section-title">Thông tin hệ thống</h2>
-        <div className="dash-info-grid">
-          <div className="dash-info-card">
-            <div className="dash-info-icon" style={{ background: "#EFF6FF", color: "#3B82F6" }}>🖥️</div>
-            <div>
-              <div className="dash-info-label">Backend</div>
-              <div className="dash-info-value">FastAPI</div>
-            </div>
+        {/* Management */}
+        <section className="dash-section">
+          <div className="dash-section-header">
+            <h2 className="dash-section-title">Quản lý</h2>
           </div>
-          <div className="dash-info-card">
-            <div className="dash-info-icon" style={{ background: "#F0FDF4", color: "#10B981" }}>⚛️</div>
-            <div>
-              <div className="dash-info-label">Frontend</div>
-              <div className="dash-info-value">React + Vite</div>
+          <button className="dash-mgmt-card" onClick={() => navigate("/admin/users")}>
+            <div className="dash-mgmt-icon">
+              <UsersIcon size={20} />
             </div>
-          </div>
-          <div className="dash-info-card">
-            <div className="dash-info-icon" style={{ background: "#FFFBEB", color: "#F59E0B" }}>💾</div>
-            <div>
-              <div className="dash-info-label">Storage</div>
-              <div className="dash-info-value">MinIO</div>
+            <div className="dash-mgmt-info">
+              <div className="dash-mgmt-name">Quản lý tài khoản</div>
+              <div className="dash-mgmt-desc">Thêm, sửa, phân quyền người dùng</div>
             </div>
+            <span className="dash-mgmt-arrow"><ArrowRightIcon size={13} /></span>
+          </button>
+        </section>
+
+        {/* Tech Stack */}
+        <section className="dash-section">
+          <div className="dash-section-header">
+            <h2 className="dash-section-title">Công nghệ</h2>
           </div>
-          <div className="dash-info-card">
-            <div className="dash-info-icon" style={{ background: "#F5F3FF", color: "#8B5CF6" }}>🔗</div>
-            <div>
-              <div className="dash-info-label">Graph DB</div>
-              <div className="dash-info-value">Neo4j</div>
-            </div>
+          <div className="dash-stack-grid">
+            {STACK_ITEMS.map((item) => (
+              <div
+                key={item.label}
+                className="dash-stack-card"
+                style={{ "--si-color": item.color, "--si-bg": item.colorBg }}
+              >
+                <div className="dash-stack-icon-wrap">
+                  <item.Icon size={18} />
+                </div>
+                <div>
+                  <div className="dash-stack-label">{item.label}</div>
+                  <div className="dash-stack-value">{item.value}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+
+      </div>
     </div>
   );
 }
