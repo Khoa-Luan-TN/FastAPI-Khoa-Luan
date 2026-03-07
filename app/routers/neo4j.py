@@ -12,6 +12,8 @@ from app.services.neo_client import get_neo4j_session
 from app.services.embedder import embed_query
 from app.services.postgre_client import SessionLocal
 from app.services.mongo_client import get_mongo_client
+from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
+import app.models.model_postgre as pg_models
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
 
@@ -427,3 +429,75 @@ def search_keyword_context_neo(
     results.sort(key=lambda x: x.get("cosine_sim", 0.0), reverse=True)
 
     return {"q": q, "k": k, "results": results}
+
+
+@router.post(
+    "/backfill/numeric-fields",
+    summary="Backfill topic_num / lesson_num / chunk_label onto existing Neo4j nodes from PostgreSQL",
+)
+def backfill_numeric_fields():
+    """
+    Re-syncs Topic, Lesson, and Chunk nodes in Neo4j with the numeric fields
+    (topic_num, lesson_num, chunk_label) sourced from PostgreSQL.
+
+    Safe to run multiple times — uses MERGE + CASE so existing values are only
+    overwritten when the PG value is non-null.
+
+    Returns a summary: total processed per entity and any per-row errors.
+    """
+    pg = SessionLocal()
+    stats: Dict[str, Any] = {
+        "topic":  {"ok": 0, "error": 0, "errors": []},
+        "lesson": {"ok": 0, "error": 0, "errors": []},
+        "chunk":  {"ok": 0, "error": 0, "errors": []},
+    }
+
+    try:
+        topics  = pg.query(pg_models.Topic).all()
+        lessons = pg.query(pg_models.Lesson).all()
+        chunks  = pg.query(pg_models.Chunk).all()
+    finally:
+        pg.close()
+
+    for row in topics:
+        res = neo_sync_upsert("topic", {
+            "id": row.topic_id,
+            "name": row.topic_name,
+            "parent_id": row.subject_id,
+            "topic_num": row.topic_num,
+        })
+        if res.get("ok"):
+            stats["topic"]["ok"] += 1
+        else:
+            stats["topic"]["error"] += 1
+            stats["topic"]["errors"].append({"id": row.topic_id, "error": res.get("error")})
+
+    for row in lessons:
+        res = neo_sync_upsert("lesson", {
+            "id": row.lesson_id,
+            "name": row.lesson_name,
+            "parent_id": row.topic_id,
+            "lesson_num": row.lesson_num,
+        })
+        if res.get("ok"):
+            stats["lesson"]["ok"] += 1
+        else:
+            stats["lesson"]["error"] += 1
+            stats["lesson"]["errors"].append({"id": row.lesson_id, "error": res.get("error")})
+
+    for row in chunks:
+        res = neo_sync_upsert("chunk", {
+            "id": row.chunk_id,
+            "name": row.chunk_name,
+            "parent_id": row.lesson_id,
+            "chunk_label": row.chunk_label,
+        })
+        if res.get("ok"):
+            stats["chunk"]["ok"] += 1
+        else:
+            stats["chunk"]["error"] += 1
+            stats["chunk"]["errors"].append({"id": row.chunk_id, "error": res.get("error")})
+
+    total_ok    = sum(stats[e]["ok"]    for e in stats)
+    total_error = sum(stats[e]["error"] for e in stats)
+    return {"ok": total_error == 0, "total_ok": total_ok, "total_error": total_error, "details": stats}
