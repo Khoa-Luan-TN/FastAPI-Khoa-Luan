@@ -11,6 +11,7 @@ from fastapi import APIRouter, Query
 from app.services.query_parser import parse_query
 from app.services.search_plan_builder import build_search_plan
 from app.services.search_scope_builder import build_search_scope
+from app.services.search_strategy_builder import build_search_strategy
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -41,4 +42,19 @@ def debug_scope(q: str = Query(..., min_length=1, description="Raw Vietnamese qu
         "parsed": parsed.to_dict(),
         "plan": plan.to_dict(),
         "scope": scope.to_dict(),
+    }
+
+
+@router.get("/debug/strategy", summary="Debug: classify search strategy from parsed query")
+def debug_strategy(q: str = Query(..., min_length=1, description="Raw Vietnamese query")):
+    parsed = parse_query(q)
+    plan = build_search_plan(parsed)
+    scope = build_search_scope(plan)
+    strategy = build_search_strategy(scope)
+
+    return {
+        "parsed": parsed.to_dict(),
+        "plan": plan.to_dict(),
+        "scope": scope.to_dict(),
+        "strategy": strategy.to_dict(),
     }
