@@ -12,6 +12,8 @@ from app.services.query_parser import parse_query
 from app.services.search_plan_builder import build_search_plan
 from app.services.search_scope_builder import build_search_scope
 from app.services.search_strategy_builder import build_search_strategy
+from app.services.search_executor import execute_search
+from app.services.postgre_client import SessionLocal
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -57,4 +59,26 @@ def debug_strategy(q: str = Query(..., min_length=1, description="Raw Vietnamese
         "plan": plan.to_dict(),
         "scope": scope.to_dict(),
         "strategy": strategy.to_dict(),
+    }
+
+
+@router.get("/debug/execute", summary="Debug: execute search pipeline end-to-end")
+def debug_execute(q: str = Query(..., min_length=1, description="Raw Vietnamese query")):
+    parsed = parse_query(q)
+    plan = build_search_plan(parsed)
+    scope = build_search_scope(plan)
+    strategy = build_search_strategy(scope)
+
+    pg = SessionLocal()
+    try:
+        execution = execute_search(pg, scope, strategy)
+    finally:
+        pg.close()
+
+    return {
+        "parsed": parsed.to_dict(),
+        "plan": plan.to_dict(),
+        "scope": scope.to_dict(),
+        "strategy": strategy.to_dict(),
+        "execution": execution.to_dict(),
     }
