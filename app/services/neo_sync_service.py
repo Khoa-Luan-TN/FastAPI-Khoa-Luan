@@ -1,3 +1,4 @@
+#services/neo_sync_service.py
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -32,15 +33,15 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "topic": lambda s, p: _upsert_topic(
             s, topic_id=p["id"], topic_name=p.get("name", ""), subject_id=p.get("parent_id"),
-            topic_num=p.get("topic_num"),
+            topic_num=p.get("topic_num"), embedding=p.get("embedding"),
         ),
         "lesson": lambda s, p: _upsert_lesson(
             s, lesson_id=p["id"], lesson_name=p.get("name", ""), topic_id=p.get("parent_id"),
-            lesson_num=p.get("lesson_num"),
+            lesson_num=p.get("lesson_num"), embedding=p.get("embedding"),
         ),
         "chunk": lambda s, p: _upsert_chunk(
             s, chunk_id=p["id"], chunk_name=p.get("name", ""), lesson_id=p.get("parent_id"),
-            chunk_label=p.get("chunk_label"),
+            chunk_label=p.get("chunk_label"), embedding=p.get("embedding"),
         ),
         "keyword": lambda s, p: _upsert_keyword(
             s,
@@ -133,6 +134,7 @@ def _upsert_topic(
     topic_name: str,
     subject_id: Optional[str],
     topic_num: Optional[int] = None,
+    embedding: Optional[list[float]] = None,
 ) -> None:
     if not subject_id:
         session.run(
@@ -140,11 +142,13 @@ def _upsert_topic(
             MERGE (t:Topic {topic_id:$topic_id})
             SET t.topic_name = $topic_name,
                 t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
+                t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
                 t.updated_at = datetime()
             """,
             topic_id=topic_id,
             topic_name=topic_name or "",
             topic_num=topic_num,
+            embedding=embedding,
         )
         return
 
@@ -154,6 +158,7 @@ def _upsert_topic(
         MERGE (t:Topic {topic_id:$topic_id})
         SET t.topic_name = $topic_name,
             t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
+            t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
             t.updated_at = datetime()
 
         WITH s, t
@@ -167,6 +172,7 @@ def _upsert_topic(
         topic_id=topic_id,
         topic_name=topic_name or "",
         topic_num=topic_num,
+        embedding=embedding,
     )
 
 
@@ -177,6 +183,7 @@ def _upsert_lesson(
     lesson_name: str,
     topic_id: Optional[str],
     lesson_num: Optional[int] = None,
+    embedding: Optional[list[float]] = None,
 ) -> None:
     if not topic_id:
         session.run(
@@ -184,11 +191,13 @@ def _upsert_lesson(
             MERGE (l:Lesson {lesson_id:$lesson_id})
             SET l.lesson_name = $lesson_name,
                 l.lesson_num = CASE WHEN $lesson_num IS NOT NULL THEN $lesson_num ELSE l.lesson_num END,
+                l.embedding = CASE WHEN $embedding IS NULL THEN l.embedding ELSE $embedding END,
                 l.updated_at = datetime()
             """,
             lesson_id=lesson_id,
             lesson_name=lesson_name or "",
             lesson_num=lesson_num,
+            embedding=embedding,
         )
         return
 
@@ -198,6 +207,7 @@ def _upsert_lesson(
         MERGE (l:Lesson {lesson_id:$lesson_id})
         SET l.lesson_name = $lesson_name,
             l.lesson_num = CASE WHEN $lesson_num IS NOT NULL THEN $lesson_num ELSE l.lesson_num END,
+            l.embedding = CASE WHEN $embedding IS NULL THEN l.embedding ELSE $embedding END,
             l.updated_at = datetime()
 
         WITH t, l
@@ -211,6 +221,7 @@ def _upsert_lesson(
         lesson_id=lesson_id,
         lesson_name=lesson_name or "",
         lesson_num=lesson_num,
+        embedding=embedding,
     )
 
 
@@ -221,6 +232,7 @@ def _upsert_chunk(
     chunk_name: str,
     lesson_id: Optional[str],
     chunk_label: Optional[int] = None,
+    embedding: Optional[list[float]] = None,
 ) -> None:
     if not lesson_id:
         session.run(
@@ -228,11 +240,13 @@ def _upsert_chunk(
             MERGE (c:Chunk {chunk_id:$chunk_id})
             SET c.chunk_name = $chunk_name,
                 c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
+                c.embedding = CASE WHEN $embedding IS NULL THEN c.embedding ELSE $embedding END,
                 c.updated_at = datetime()
             """,
             chunk_id=chunk_id,
             chunk_name=chunk_name or "",
             chunk_label=chunk_label,
+            embedding=embedding,
         )
         return
 
@@ -242,6 +256,7 @@ def _upsert_chunk(
         MERGE (c:Chunk {chunk_id:$chunk_id})
         SET c.chunk_name = $chunk_name,
             c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
+            c.embedding = CASE WHEN $embedding IS NULL THEN c.embedding ELSE $embedding END,
             c.updated_at = datetime()
 
         WITH l, c
@@ -255,6 +270,7 @@ def _upsert_chunk(
         chunk_id=chunk_id,
         chunk_name=chunk_name or "",
         chunk_label=chunk_label,
+        embedding=embedding,
     )
 
 
@@ -339,3 +355,36 @@ def _upsert_keyword(
         ck=ck,
         keyword_key=keyword_key,
     )
+
+
+_NEO_NAME_EMBEDDING_INDEXES = [
+    ("topic_embedding_idx",  "Topic",  "embedding"),
+    ("lesson_embedding_idx", "Lesson", "embedding"),
+    ("chunk_embedding_idx",  "Chunk",  "embedding"),
+]
+
+
+def ensure_neo_name_embedding_indexes() -> dict:
+    """
+    Create vector indexes for Topic / Lesson / Chunk embedding property in Neo4j.
+    Uses `IF NOT EXISTS` — safe to call repeatedly.
+    Returns status per index.
+    """
+    results = {}
+    with neo_session() as s:
+        for idx_name, label, prop in _NEO_NAME_EMBEDDING_INDEXES:
+            try:
+                s.run(
+                    f"""
+                    CREATE VECTOR INDEX {idx_name} IF NOT EXISTS
+                    FOR (n:{label}) ON (n.{prop})
+                    OPTIONS {{indexConfig: {{
+                        `vector.dimensions`: 768,
+                        `vector.similarity_function`: 'cosine'
+                    }}}}
+                    """
+                )
+                results[idx_name] = "ok"
+            except Exception as e:
+                results[idx_name] = f"error: {e}"
+    return results

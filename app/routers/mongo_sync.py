@@ -7,12 +7,24 @@ from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
 from app.services.keyword_embedding_service import ensure_keyword_embedding
+from app.services.name_embedding_service import ensure_name_embedding
 
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}
+
+
+def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] = None) -> None:
+    """Normalize vec and attach to info['neo_payload']. No-op if vec is invalid."""
+    if not (isinstance(vec, (list, tuple)) and len(vec) == 768):
+        return
+    payload = info.get("neo_payload") or {}
+    payload["embedding"] = [float(x) for x in vec]
+    if model_name is not None:
+        payload["model_name"] = model_name
+    info["neo_payload"] = payload
 
 
 def _to_int(v, default=None):
@@ -400,25 +412,25 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
+            if col in {"topic", "lesson", "chunk"} and isinstance(info, dict):
+                pg_id = info.get("pg_id")
+                if pg_id:
+                    emb = ensure_name_embedding(pg, col, pg_id)
+                    _attach_vec_to_neo_payload(
+                        info,
+                        emb.get("embedding") if isinstance(emb, dict) else None,
+                    )
+
             if col == "keyword" and isinstance(info, dict):
                 cid = info.get("chunk_id")
                 kn = info.get("keyword_name")
                 if cid and kn:
                     emb = ensure_keyword_embedding(pg, cid, kn)
-
-                    vec = None
-                    model_name = "multilingual-e5-base"
-                    if isinstance(emb, dict):
-                        vec = emb.get("embedding")
-                        model_name = emb.get("model_name") or model_name
-
-                    if isinstance(vec, (list, tuple)) and len(vec) == 768:
-                        vec = [float(x) for x in vec]  # ✅ ép về python float cho Neo driver
-                        # neo_payload vốn đã có id/name/parent_id => chỉ update thêm field
-                        neo_payload = info.get("neo_payload") or {}
-                        neo_payload["embedding"] = vec
-                        neo_payload["model_name"] = model_name
-                        info["neo_payload"] = neo_payload
+                    _attach_vec_to_neo_payload(
+                        info,
+                        emb.get("embedding") if isinstance(emb, dict) else None,
+                        model_name=emb.get("model_name") if isinstance(emb, dict) else None,
+                    )
 
         neo_res = {"ok": True, "skipped": True}
         if col in NEO_SYNCABLE_COLS:

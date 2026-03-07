@@ -12,7 +12,8 @@ from app.services.neo_client import get_neo4j_session
 from app.services.embedder import embed_query
 from app.services.postgre_client import SessionLocal
 from app.services.mongo_client import get_mongo_client
-from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
+from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, ensure_neo_name_embedding_indexes
+from app.services.name_embedding_service import ensure_name_embedding
 import app.models.model_postgre as pg_models
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
@@ -497,6 +498,159 @@ def backfill_numeric_fields():
         else:
             stats["chunk"]["error"] += 1
             stats["chunk"]["errors"].append({"id": row.chunk_id, "error": res.get("error")})
+
+    total_ok    = sum(stats[e]["ok"]    for e in stats)
+    total_error = sum(stats[e]["error"] for e in stats)
+    return {"ok": total_error == 0, "total_ok": total_ok, "total_error": total_error, "details": stats}
+
+
+@router.post(
+    "/create-embedding-indexes",
+    summary="Create vector indexes for Topic / Lesson / Chunk embedding property in Neo4j",
+)
+def create_neo_embedding_indexes():
+    """
+    Idempotent — uses `CREATE VECTOR INDEX … IF NOT EXISTS`.
+    Creates topic_embedding_idx, lesson_embedding_idx, chunk_embedding_idx (dim=768, cosine).
+    """
+    results = ensure_neo_name_embedding_indexes()
+    ok = all(v == "ok" for v in results.values())
+    return {"ok": ok, "indexes": results}
+
+
+@router.post(
+    "/backfill/neo-name-embeddings",
+    summary="Backfill embedding property onto existing Topic / Lesson / Chunk Neo4j nodes",
+)
+def backfill_neo_name_embeddings():
+    """
+    Queries all Topic / Lesson / Chunk rows from PostgreSQL (with parent JOIN for context),
+    computes passage embeddings, and upserts the `embedding` property onto Neo4j nodes.
+
+    Safe to run multiple times — CASE guard preserves existing embeddings only when new
+    value is NULL. This run always provides a non-null value, so all nodes are updated.
+    """
+    pg = SessionLocal()
+    stats: Dict[str, Any] = {
+        "topic":  {"ok": 0, "error": 0, "errors": []},
+        "lesson": {"ok": 0, "error": 0, "errors": []},
+        "chunk":  {"ok": 0, "error": 0, "errors": []},
+    }
+
+    try:
+        topics  = pg.query(pg_models.Topic).all()
+        lessons = pg.query(pg_models.Lesson).all()
+        chunks  = pg.query(pg_models.Chunk).all()
+    except Exception as e:
+        pg.close()
+        return {"ok": False, "error": str(e)}
+
+    _ENTITY_META = {
+        "topic":  [(r, "topic",  r.topic_id,  r.topic_name,  r.subject_id, {"topic_num": r.topic_num})   for r in topics],
+        "lesson": [(r, "lesson", r.lesson_id, r.lesson_name, r.topic_id,   {"lesson_num": r.lesson_num}) for r in lessons],
+        "chunk":  [(r, "chunk",  r.chunk_id,  r.chunk_name,  r.lesson_id,  {"chunk_label": r.chunk_label}) for r in chunks],
+    }
+
+    try:
+        for entity, rows in _ENTITY_META.items():
+            for row, col, eid, ename, parent_id, extra in rows:
+                try:
+                    with pg.begin_nested():
+                        emb = ensure_name_embedding(pg, col, eid)
+                    vec = emb.get("embedding") if isinstance(emb, dict) and emb.get("ok") else None
+                    if not (isinstance(vec, (list, tuple)) and len(vec) == 768):
+                        raise ValueError(emb.get("error") if isinstance(emb, dict) else "embedding failed")
+                    vec = [float(x) for x in vec]
+                    res = neo_sync_upsert(col, {"id": eid, "name": ename, "parent_id": parent_id, "embedding": vec, **extra})
+                    if res.get("ok"):
+                        stats[entity]["ok"] += 1
+                    else:
+                        stats[entity]["error"] += 1
+                        stats[entity]["errors"].append({"id": eid, "error": res.get("error")})
+                except Exception as e:
+                    stats[entity]["error"] += 1
+                    stats[entity]["errors"].append({"id": eid, "error": str(e)})
+
+        pg.commit()
+    finally:
+        pg.close()
+
+    total_ok    = sum(stats[e]["ok"]    for e in stats)
+    total_error = sum(stats[e]["error"] for e in stats)
+    return {"ok": total_error == 0, "total_ok": total_ok, "total_error": total_error, "details": stats}
+
+
+@router.post(
+    "/backfill/name-embeddings",
+    summary="Rebuild topic/lesson/chunk name embeddings in PostgreSQL",
+)
+def backfill_name_embeddings():
+    """
+    Iterates all Topic, Lesson, and Chunk rows in PostgreSQL, builds contextual
+    search text for each, embeds with multilingual-e5-base, and upserts into
+    topic_embedding / lesson_embedding / chunk_embedding tables.
+
+    Safe to run multiple times — uses ON CONFLICT DO UPDATE.
+    Returns per-entity counts and any per-row errors.
+    """
+    pg = SessionLocal()
+    stats: Dict[str, Any] = {
+        "topic":  {"ok": 0, "error": 0, "errors": []},
+        "lesson": {"ok": 0, "error": 0, "errors": []},
+        "chunk":  {"ok": 0, "error": 0, "errors": []},
+    }
+
+    try:
+        topics  = pg.query(pg_models.Topic).all()
+        lessons = pg.query(pg_models.Lesson).all()
+        chunks  = pg.query(pg_models.Chunk).all()
+    except Exception as e:
+        pg.close()
+        return {"ok": False, "error": str(e)}
+
+    try:
+        for row in topics:
+            try:
+                with pg.begin_nested():
+                    res = ensure_name_embedding(pg, "topic", row.topic_id)
+                if res.get("ok"):
+                    stats["topic"]["ok"] += 1
+                else:
+                    stats["topic"]["error"] += 1
+                    stats["topic"]["errors"].append({"id": row.topic_id, "error": res.get("error")})
+            except Exception as e:
+                stats["topic"]["error"] += 1
+                stats["topic"]["errors"].append({"id": row.topic_id, "error": str(e)})
+
+        for row in lessons:
+            try:
+                with pg.begin_nested():
+                    res = ensure_name_embedding(pg, "lesson", row.lesson_id)
+                if res.get("ok"):
+                    stats["lesson"]["ok"] += 1
+                else:
+                    stats["lesson"]["error"] += 1
+                    stats["lesson"]["errors"].append({"id": row.lesson_id, "error": res.get("error")})
+            except Exception as e:
+                stats["lesson"]["error"] += 1
+                stats["lesson"]["errors"].append({"id": row.lesson_id, "error": str(e)})
+
+        for row in chunks:
+            try:
+                with pg.begin_nested():
+                    res = ensure_name_embedding(pg, "chunk", row.chunk_id)
+                if res.get("ok"):
+                    stats["chunk"]["ok"] += 1
+                else:
+                    stats["chunk"]["error"] += 1
+                    stats["chunk"]["errors"].append({"id": row.chunk_id, "error": res.get("error")})
+            except Exception as e:
+                stats["chunk"]["error"] += 1
+                stats["chunk"]["errors"].append({"id": row.chunk_id, "error": str(e)})
+
+        pg.commit()
+    finally:
+        pg.close()
 
     total_ok    = sum(stats[e]["ok"]    for e in stats)
     total_error = sum(stats[e]["error"] for e in stats)
