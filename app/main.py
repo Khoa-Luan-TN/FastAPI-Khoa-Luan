@@ -9,6 +9,7 @@ from app.routers.minio import router as minio_router
 from app.routers.postgre import router as postgre_router
 from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
+from app.routers.search import router as search_router
 
 from app.services.postgre_client import engine, Base
 import app.models.model_postgre  
@@ -46,3 +47,4 @@ app.include_router(minio_router)
 app.include_router(postgre_router)
 app.include_router(mongo_router)
 app.include_router(neo_router)
+app.include_router(search_router)
