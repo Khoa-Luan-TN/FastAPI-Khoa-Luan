@@ -14,12 +14,15 @@ class SearchPlan:
 
     topic_num: Optional[int] = None
     topic_name: Optional[str] = None
+    topic_requested: bool = False
 
     lesson_num: Optional[int] = None
     lesson_name: Optional[str] = None
+    lesson_requested: bool = False
 
     chunk_num: Optional[int] = None
     chunk_name: Optional[str] = None
+    chunk_requested: bool = False
 
     semantic_query: str = ""
     keyword_terms: List[str] = field(default_factory=list)
@@ -44,10 +47,13 @@ def build_search_plan(parsed: ParsedQuery) -> SearchPlan:
         class_hint=parsed.class_hint,
         topic_num=parsed.topic_num,
         topic_name=parsed.topic_name,
+        topic_requested=parsed.topic_requested,
         lesson_num=parsed.lesson_num,
         lesson_name=parsed.lesson_name,
+        lesson_requested=parsed.lesson_requested,
         chunk_num=parsed.chunk_num,
         chunk_name=parsed.chunk_name,
+        chunk_requested=parsed.chunk_requested,
         semantic_query=semantic_query,
         keyword_terms=terms,
     )

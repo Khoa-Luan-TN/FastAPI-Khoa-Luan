@@ -1,4 +1,6 @@
+// frontend/src/pages/user/UserHome.jsx
 import { useState, useRef, useCallback } from "react";
+import { executeSearch } from "../../services/searchApi";
 
 // ---- Icons ----
 const SearchIcon = ({ size = 18 }) => (
@@ -21,134 +23,92 @@ const ArrowRightIcon = ({ size = 12 }) => (
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
-const CalendarIcon = ({ size = 11 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-const FileIcon = ({ size = 11 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
-  </svg>
-);
-const UserIcon = ({ size = 11 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
-);
 const CloseIcon = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+const AttachIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+  </svg>
+);
 
-// ---- Mock data ----
-const CAT_MAP = {
-  "Toán học": "math", "Hoá học": "chem", "Văn học": "lit",
-  "Vật lý": "phys", "Địa lý": "geo", "Tin học": "cs", "Kinh tế học": "econ",
+// ---- Search suggestions ----
+const SUGGESTIONS = [
+  "Phương trình vi phân",
+  "Lý thuyết tập hợp",
+  "Phản ứng oxi hoá khử",
+  "Văn học Việt Nam",
+  "Cơ học lượng tử",
+  "Lập trình Python",
+];
+
+// ---- Description fallback (used until topic_des / lesson_des / chunk_des arrive from MongoDB) ----
+const MOCK_DESC = {
+  topic: "Chủ đề này tổng hợp các kiến thức lý thuyết và thực hành quan trọng. Nội dung được trình bày theo cấu trúc rõ ràng, hỗ trợ học sinh nắm vững nền tảng và phát triển tư duy phân tích.",
+  lesson: "Bài học cung cấp kiến thức lý thuyết kết hợp bài tập minh hoạ phong phú. Nội dung được sắp xếp theo từng bước tiến logic, phù hợp với học sinh ở mọi trình độ.",
+  chunk: "Phần này trình bày chi tiết một khái niệm hoặc kỹ năng cụ thể, bao gồm định nghĩa, ví dụ minh hoạ và các lưu ý quan trọng giúp học sinh hiểu sâu và ghi nhớ lâu hơn.",
+  class: "Tổng hợp các môn học và chủ đề thuộc lớp học này.",
 };
 
-const MOCK_DOCS = [
-  {
-    id: "doc_001",
-    title: "Phương trình vi phân và ứng dụng trong vật lý",
-    desc: "Tài liệu trình bày phương pháp giải phương trình vi phân bậc nhất và bậc hai, kèm ứng dụng trong các bài toán vật lý cơ học như dao động điều hoà và mạch điện RLC. Phù hợp sinh viên năm 2–3 ngành Toán – Lý.",
-    descShort: "Giải phương trình vi phân bậc nhất và bậc hai với ứng dụng trong cơ học và điện học.",
-    category: "Toán học", subject: "Giải tích nâng cao",
-    tags: ["vi phân", "phương trình", "dao động", "cơ học"],
-    date: "12/02/2025", pages: 42, author: "GS. Nguyễn Văn Hùng", relevance: 97,
-    keywords: ["vi phân", "phương trình", "tích phân", "toán", "giải tích"],
-  },
-  {
-    id: "doc_002",
-    title: "Lý thuyết tập hợp và ánh xạ – Cơ sở toán học",
-    desc: "Giới thiệu toàn diện lý thuyết tập hợp Cantor, các phép toán tập hợp, quan hệ nhị phân, ánh xạ đơn ánh, toàn ánh và song ánh. Trình bày kỹ lưỡng các định lý nền tảng với chứng minh chi tiết.",
-    descShort: "Lý thuyết tập hợp, quan hệ nhị phân và các loại ánh xạ cơ bản trong toán học.",
-    category: "Toán học", subject: "Đại số đại cương",
-    tags: ["tập hợp", "ánh xạ", "quan hệ", "đại số"],
-    date: "08/01/2025", pages: 58, author: "TS. Trần Thị Lan", relevance: 94,
-    keywords: ["tập hợp", "ánh xạ", "toán", "đại số", "quan hệ"],
-  },
-  {
-    id: "doc_003",
-    title: "Phản ứng oxi hoá khử và ứng dụng trong điện hoá",
-    desc: "Phân tích cơ chế phản ứng oxi hoá khử, cân bằng phương trình theo phương pháp thăng bằng electron và ion-electron. Bao gồm pin điện hoá, điện phân, ăn mòn kim loại và bài tập minh hoạ.",
-    descShort: "Phản ứng oxi hoá khử, cân bằng phương trình và ứng dụng trong điện hoá học.",
-    category: "Hoá học", subject: "Hoá học vô cơ",
-    tags: ["oxi hoá", "khử", "điện hoá", "pin điện"],
-    date: "20/03/2025", pages: 36, author: "ThS. Phạm Quốc Toản", relevance: 91,
-    keywords: ["oxi hoá", "khử", "hoá học", "điện hoá", "phản ứng"],
-  },
-  {
-    id: "doc_004",
-    title: "Văn học Việt Nam hiện đại – Giai đoạn 1945–1975",
-    desc: "Phân tích các tác phẩm văn học tiêu biểu giai đoạn 1945–1975 trong bối cảnh kháng chiến. Bao gồm thơ Tố Hữu, văn xuôi Nguyễn Trung Thành và tiểu thuyết sử thi của Nguyên Hồng.",
-    descShort: "Phân tích văn học Việt Nam thời kỳ kháng chiến 1945–1975 qua các tác phẩm tiêu biểu.",
-    category: "Văn học", subject: "Văn học Việt Nam",
-    tags: ["văn học", "kháng chiến", "thơ", "tiểu thuyết"],
-    date: "05/04/2025", pages: 64, author: "PGS. Lê Minh Châu", relevance: 88,
-    keywords: ["văn học", "việt nam", "thơ", "tiểu thuyết", "kháng chiến"],
-  },
-  {
-    id: "doc_005",
-    title: "Địa lý kinh tế – Xã hội Việt Nam thế kỷ 21",
-    desc: "Tổng quan cơ cấu kinh tế, phân bố dân cư và các vùng kinh tế trọng điểm của Việt Nam trong giai đoạn hội nhập. Phân tích theo 6 vùng địa lý kinh tế với dữ liệu cập nhật đến 2024.",
-    descShort: "Cơ cấu kinh tế và phân bố dân cư theo các vùng kinh tế trọng điểm tại Việt Nam.",
-    category: "Địa lý", subject: "Địa lý kinh tế",
-    tags: ["kinh tế", "vùng", "dân cư", "hội nhập"],
-    date: "18/03/2025", pages: 80, author: "TS. Võ Thanh Sơn", relevance: 85,
-    keywords: ["địa lý", "kinh tế", "vùng", "dân cư", "việt nam"],
-  },
-  {
-    id: "doc_006",
-    title: "Cơ học lượng tử – Phương trình Schrödinger",
-    desc: "Giới thiệu cơ học lượng tử từ nền tảng: hàm sóng, nguyên lý chồng chất, phương trình Schrödinger phụ thuộc và không phụ thuộc thời gian, nguyên lý bất định Heisenberg và bài toán nguyên tử hydro.",
-    descShort: "Cơ học lượng tử cơ bản: hàm sóng, phương trình Schrödinger và nguyên lý bất định.",
-    category: "Vật lý", subject: "Vật lý lý thuyết",
-    tags: ["lượng tử", "Schrödinger", "hàm sóng", "Heisenberg"],
-    date: "27/01/2025", pages: 52, author: "GS. Đặng Văn Khoa", relevance: 82,
-    keywords: ["lượng tử", "vật lý", "schrödinger", "hàm sóng", "heisenberg"],
-  },
-  {
-    id: "doc_007",
-    title: "Lập trình Python cho Khoa học dữ liệu",
-    desc: "Hướng dẫn từ cơ bản đến nâng cao về Python trong phân tích dữ liệu: NumPy, Pandas, Matplotlib và Scikit-learn. Bao gồm bài tập thực hành và dự án mẫu về Machine Learning với bộ dữ liệu thực tế.",
-    descShort: "Hướng dẫn Python cho khoa học dữ liệu: NumPy, Pandas và Machine Learning cơ bản.",
-    category: "Tin học", subject: "Khoa học dữ liệu",
-    tags: ["Python", "Data Science", "ML", "Pandas"],
-    date: "10/04/2025", pages: 96, author: "ThS. Nguyễn Minh Tuấn", relevance: 79,
-    keywords: ["python", "lập trình", "machine learning", "dữ liệu", "tin học"],
-  },
-  {
-    id: "doc_008",
-    title: "Kinh tế vĩ mô – Lý thuyết và Chính sách",
-    desc: "Phân tích các mô hình kinh tế vĩ mô: IS-LM, AD-AS, lý thuyết Keynes và mô hình Solow. Bao gồm chính sách tiền tệ, tài khoá và ứng dụng thực tiễn cho nền kinh tế Việt Nam.",
-    descShort: "Mô hình IS-LM, AD-AS và chính sách kinh tế vĩ mô trong bối cảnh Việt Nam.",
-    category: "Kinh tế học", subject: "Kinh tế vĩ mô",
-    tags: ["IS-LM", "AD-AS", "Keynes", "tiền tệ"],
-    date: "22/02/2025", pages: 74, author: "PGS. Hoàng Thị Hoa", relevance: 76,
-    keywords: ["kinh tế", "vĩ mô", "is-lm", "ad-as", "chính sách"],
-  },
-];
+const LEVEL_LABEL = {
+  topic: "Chủ đề",
+  lesson: "Bài học",
+  chunk: "Phần nội dung",
+  class: "Lớp học",
+};
 
-const SUGGESTIONS = [
-  "Phương trình vi phân bậc nhất",
-  "Lý thuyết tập hợp và ánh xạ",
-  "Phản ứng oxi hoá khử",
-  "Văn học Việt Nam hiện đại",
-  "Cơ học lượng tử",
-  "Python cho khoa học dữ liệu",
-];
+// ---- Hierarchy formatters ----
+function fmtTopic(num, name) {
+  if (!name) return null;
+  return num != null ? `Chủ đề ${num}. ${name}` : name;
+}
+function fmtLesson(num, name) {
+  if (!name) return null;
+  return num != null ? `Bài ${num}. ${name}` : name;
+}
+function fmtChunk(label, name) {
+  if (!name) return null;
+  return label != null ? `Mục ${label}. ${name}` : name;
+}
 
-function filterDocs(q) {
-  const s = q.toLowerCase().trim();
-  if (!s) return MOCK_DOCS;
-  return MOCK_DOCS.filter((d) =>
-    d.keywords.some((k) => s.includes(k) || k.includes(s)) ||
-    d.title.toLowerCase().includes(s) ||
-    d.tags.some((t) => t.toLowerCase().includes(s)) ||
-    d.category.toLowerCase().includes(s)
-  ).sort((a, b) => b.relevance - a.relevance);
+// ---- View model mapper ----
+// Maps a backend ResultItem (from /search?q=...) into a UI-ready card object.
+// Backend fields: result_type, id, title, class_name, subject_name,
+//                 topic_name, topic_num, lesson_name, lesson_num,
+//                 chunk_name, chunk_label, description, minio_url,
+//                 keywords, score_display, source
+function resultItemToViewModel(item, status) {
+  const level = item.result_type || "topic";
+  const descFull = item.description || MOCK_DESC[level] || "Mô tả đang được cập nhật.";
+  const relevance = parseInt(item.score_display) || 0;
+  const classBadge = item.class_name || null;
+
+  const topicContext = fmtTopic(item.topic_num, item.topic_name);
+  const lessonContext = fmtLesson(item.lesson_num, item.lesson_name);
+
+  return {
+    id: item.id,
+    level,
+    title: item.title || item.id,
+    descShort: descFull,
+    descFull,
+    subjectBadge: item.subject_name || null,
+    classBadge,
+    topicContext,                              // "Chủ đề 2. Mạng máy tính và Internet"
+    lessonContext,                             // "Bài 8. Mạng máy tính trong cuộc sống"
+    chunkContext: fmtChunk(item.chunk_label, item.chunk_name),
+    topicNum: item.topic_num ?? null,
+    topicName: item.topic_name || null,
+    lessonNum: item.lesson_num ?? null,
+    lessonName: item.lesson_name || null,
+    relevance,
+    score: item.score_display,
+    keywords: item.keywords || [],
+    minioUrl: item.minio_url || null,
+    isLowConfidence: status === "low_confidence",
+  };
 }
 
 // ---- Skeleton card ----
@@ -156,8 +116,8 @@ function SkeletonCard() {
   return (
     <div className="u-skeleton-card">
       <div style={{ display: "flex", gap: 8 }}>
-        <div className="u-skeleton" style={{ height: 20, width: 72 }} />
-        <div className="u-skeleton" style={{ height: 20, width: 36 }} />
+        <div className="u-skeleton" style={{ height: 20, width: 80 }} />
+        <div className="u-skeleton" style={{ height: 20, width: 100 }} />
       </div>
       <div className="u-skeleton" style={{ height: 17, width: "78%" }} />
       <div className="u-skeleton" style={{ height: 17, width: "55%" }} />
@@ -168,11 +128,11 @@ function SkeletonCard() {
   );
 }
 
-// ---- Detail modal ----
-function DetailModal({ doc, savedIds, onToggleSave, onClose }) {
+// ---- SearchResultDetailModal ----
+function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
   if (!doc) return null;
-  const catClass = CAT_MAP[doc.category] || "";
   const isSaved = savedIds.has(doc.id);
+  const levelLabel = LEVEL_LABEL[doc.level] || doc.level;
 
   return (
     <div className="u-modal-overlay" onClick={onClose}>
@@ -184,44 +144,75 @@ function DetailModal({ doc, savedIds, onToggleSave, onClose }) {
             <button className="u-modal-close" onClick={onClose}><CloseIcon /></button>
           </div>
           <div className="u-modal-badges">
-            <span className={`u-cat ${catClass}`}>{doc.category}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "#F1F5F9", color: "#475569", border: "1px solid #E2E8F0" }}>{doc.subject}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 100, background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}>{doc.relevance}% phù hợp</span>
+            <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
+            {doc.subjectBadge && (
+              <span className="u-modal-badge-subject">{doc.subjectBadge}</span>
+            )}
+            {doc.classBadge && (
+              <span className="u-modal-badge-class">{doc.classBadge}</span>
+            )}
+            <span className="u-modal-badge-relevance">
+              {doc.relevance}% phù hợp
+            </span>
           </div>
         </div>
 
         <div className="u-modal-body">
+
+          {/* Context panel for lesson / chunk */}
+          {(doc.topicName && doc.level !== "topic" || doc.lessonName) && (
+            <div className="u-ctx-panel">
+              {doc.topicName && doc.level !== "topic" && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">
+                    {doc.topicNum != null ? `Chủ đề ${doc.topicNum}` : "Chủ đề"}
+                  </span>
+                  <span className="u-ctx-value">{doc.topicName}</span>
+                </div>
+              )}
+              {doc.lessonName && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">
+                    {doc.lessonNum != null ? `Bài ${doc.lessonNum}` : "Bài học"}
+                  </span>
+                  <span className="u-ctx-value">{doc.lessonName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
           <div>
-            <p className="u-modal-section-label">Mô tả tài liệu</p>
-            <p className="u-modal-desc">{doc.desc}</p>
+            <p className="u-modal-section-label">Mô tả</p>
+            {doc.isLowConfidence && (
+              <p style={{ fontSize: 12.5, color: "#92400E", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, padding: "9px 13px", margin: "0 0 10px", fontWeight: 600 }}>
+                Kết quả có độ tin cậy thấp — mô tả có thể chưa chính xác hoàn toàn.
+              </p>
+            )}
+            <p className="u-modal-desc">{doc.descFull}</p>
           </div>
+
+          {/* Attachment */}
           <div>
-            <p className="u-modal-section-label">Thông tin</p>
-            <div className="u-modal-meta-grid">
-              <div className="u-modal-meta-item">
-                <div className="u-modal-meta-label">Tác giả</div>
-                <div className="u-modal-meta-value">{doc.author}</div>
-              </div>
-              <div className="u-modal-meta-item">
-                <div className="u-modal-meta-label">Cập nhật</div>
-                <div className="u-modal-meta-value">{doc.date}</div>
-              </div>
-              <div className="u-modal-meta-item">
-                <div className="u-modal-meta-label">Số trang</div>
-                <div className="u-modal-meta-value">{doc.pages} trang</div>
-              </div>
-              <div className="u-modal-meta-item">
-                <div className="u-modal-meta-label">Môn học</div>
-                <div className="u-modal-meta-value">{doc.subject}</div>
+            <p className="u-modal-section-label">Tài liệu đính kèm</p>
+            {doc.minioUrl ? (
+              <a href={doc.minioUrl} target="_blank" rel="noopener noreferrer" className="u-attach-btn">
+                <AttachIcon /> Tải tài liệu
+              </a>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>Chưa có tài liệu đính kèm.</p>
+            )}
+          </div>
+
+          {/* Keywords */}
+          {doc.keywords && doc.keywords.length > 0 && (
+            <div>
+              <p className="u-modal-section-label">Từ khoá</p>
+              <div className="u-doc-tags">
+                {doc.keywords.map((k) => <span key={k} className="u-tag">{k}</span>)}
               </div>
             </div>
-          </div>
-          <div>
-            <p className="u-modal-section-label">Từ khoá</p>
-            <div className="u-doc-tags">
-              {doc.tags.map((t) => <span key={t} className="u-tag">{t}</span>)}
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="u-modal-footer">
@@ -239,16 +230,23 @@ function DetailModal({ doc, savedIds, onToggleSave, onClose }) {
   );
 }
 
-// ---- Doc card ----
-function DocCard({ doc, savedIds, onToggleSave, onOpen }) {
-  const catClass = CAT_MAP[doc.category] || "";
+// ---- SearchResultCard ----
+function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
   const isSaved = savedIds.has(doc.id);
+  const levelLabel = LEVEL_LABEL[doc.level] || doc.level;
 
   return (
-    <div className="u-doc-card u-fadein" onClick={() => onOpen(doc)}>
+    <div
+      className={`u-doc-card u-fadein${doc.isLowConfidence ? " u-card-dim" : ""}`}
+      style={{ animationDelay: `${index * 0.05}s` }}
+      onClick={() => onOpen(doc)}
+    >
       <div className="u-doc-card-top">
         <div className="u-doc-badges">
-          <span className={`u-cat ${catClass}`}>{doc.category}</span>
+          <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
+          {doc.subjectBadge && (
+            <span className="u-subject-badge">{doc.subjectBadge}</span>
+          )}
           <span className="u-relevance">{doc.relevance}%</span>
         </div>
         <button
@@ -265,9 +263,22 @@ function DocCard({ doc, savedIds, onToggleSave, onOpen }) {
 
       <div className="u-doc-divider" />
       <div className="u-doc-meta">
-        <span className="u-meta-item"><UserIcon /> {doc.author}</span>
-        <span className="u-meta-item"><CalendarIcon /> {doc.date}</span>
-        <span className="u-meta-item"><FileIcon /> {doc.pages} tr.</span>
+        {doc.classBadge && (
+          <span className="u-meta-item u-meta-class-pill">{doc.classBadge}</span>
+        )}
+        {doc.topicContext && doc.level !== "topic" && (
+          <span className="u-meta-item u-meta-breadcrumb" title={doc.topicContext}>
+            {doc.topicContext.length > 28 ? doc.topicContext.slice(0, 28) + "…" : doc.topicContext}
+          </span>
+        )}
+        {doc.lessonContext && doc.level === "chunk" && (
+          <span className="u-meta-item u-meta-breadcrumb" title={doc.lessonContext}>
+            {doc.lessonContext.length > 28 ? doc.lessonContext.slice(0, 28) + "…" : doc.lessonContext}
+          </span>
+        )}
+        {doc.isLowConfidence && (
+          <span className="u-meta-item u-low-confidence-tag">Tin cậy thấp</span>
+        )}
         <button
           className="u-detail-btn"
           onClick={(e) => { e.stopPropagation(); onOpen(doc); }}
@@ -282,8 +293,10 @@ function DocCard({ doc, savedIds, onToggleSave, onOpen }) {
 // ---- Main ----
 export default function UserHome() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState(null);  // null = idle, [] = searched
+  const [results, setResults] = useState(null);       // null = idle, [] = searched
+  const [searchMeta, setSearchMeta] = useState(null); // { status, reason, notes }
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [savedIds, setSavedIds] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("u_saved") || "[]")); }
@@ -302,26 +315,61 @@ export default function UserHome() {
     const willSave = !next.has(doc.id);
     if (willSave) next.add(doc.id); else next.delete(doc.id);
     persistSaved(next);
+
     const existing = JSON.parse(localStorage.getItem("u_saved_docs") || "[]");
     const filtered = existing.filter((d) => d.id !== doc.id);
-    if (willSave) filtered.push(doc);
+    if (willSave) {
+      filtered.push({
+        id: doc.id,
+        title: doc.title,
+        descShort: doc.descShort,
+        desc: doc.descFull,
+        category: doc.subjectBadge || "Tài liệu",
+        subject: doc.subjectBadge || "Tài liệu",
+        tags: doc.keywords || [],
+        author: "—",
+        date: "—",
+        pages: "—",
+        relevance: doc.relevance,
+      });
+    }
     localStorage.setItem("u_saved_docs", JSON.stringify(filtered));
   }
 
-  const doSearch = useCallback((q) => {
+  const doSearch = useCallback(async (q) => {
     const trimmed = (q ?? query).trim();
     if (!trimmed) return;
     setQuery(trimmed);
     setLoading(true);
     setResults(null);
-    setTimeout(() => {
-      const res = filterDocs(trimmed);
+    setSearchMeta(null);
+    setError(null);
+
+    try {
+      const data = await executeSearch(trimmed);
+      const { items = [], status = "no_match", message = "", mode = "" } = data;
+
+      const cards = items.map((item) => resultItemToViewModel(item, status));
+
+      setResults(cards);
+      setSearchMeta({ status, reason: message, mode });
+
       const hist = JSON.parse(localStorage.getItem("u_history") || "[]");
-      const entry = { id: Date.now(), query: trimmed, count: res.length, date: new Date().toLocaleString("vi-VN") };
+      const entry = {
+        id: Date.now(),
+        query: trimmed,
+        count: cards.length,
+        date: new Date().toLocaleString("vi-VN"),
+      };
       localStorage.setItem("u_history", JSON.stringify([entry, ...hist.slice(0, 19)]));
-      setResults(res);
+
+    } catch (err) {
+      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+      setResults([]);
+      setSearchMeta({ status: "no_match", reason: "Lỗi kết nối.", notes: [] });
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   }, [query]);
 
   function handleKey(e) {
@@ -330,9 +378,14 @@ export default function UserHome() {
 
   function clearResults() {
     setResults(null);
+    setSearchMeta(null);
+    setError(null);
     setQuery("");
     setTimeout(() => textareaRef.current?.focus(), 40);
   }
+
+  const isLowConfidence = searchMeta?.status === "low_confidence";
+  const isNoMatch = searchMeta?.status === "no_match";
 
   return (
     <div className="u-home-wrap">
@@ -375,8 +428,15 @@ export default function UserHome() {
         </div>
       )}
 
+      {/* Connection error */}
+      {error && !loading && (
+        <div className="u-confidence-banner u-banner-error">
+          {error}
+        </div>
+      )}
+
       {/* Idle state */}
-      {!loading && results === null && (
+      {!loading && results === null && !error && (
         <div className="u-idle-state">
           <div className="u-idle-icon"><SearchIcon size={52} /></div>
           <p className="u-idle-title">Nhập từ khoá để bắt đầu</p>
@@ -387,28 +447,39 @@ export default function UserHome() {
       {/* Results */}
       {!loading && results !== null && (
         <>
+          {/* Low-confidence banner */}
+          {isLowConfidence && (
+            <div className="u-confidence-banner">
+              <span className="u-banner-icon">⚠</span>
+              Kết quả có độ tin cậy thấp — có thể không khớp hoàn toàn với yêu cầu của bạn.
+            </div>
+          )}
+
           <div className="u-results-header">
             <span className="u-results-label">
               Kết quả cho <strong>"{query}"</strong>
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="u-results-count">{results.length} tài liệu</span>
+              <span className="u-results-count">{results.length} kết quả</span>
               <button className="u-clear-btn" onClick={clearResults}>Xoá kết quả</button>
             </div>
           </div>
 
-          {results.length === 0 ? (
+          {results.length === 0 || isNoMatch ? (
             <div className="u-empty">
               <div className="u-empty-icon"><SearchIcon size={42} /></div>
-              <p className="u-empty-title">Không tìm thấy tài liệu phù hợp</p>
-              <p className="u-empty-desc">Thử điều chỉnh từ khoá hoặc chọn một gợi ý.</p>
+              <p className="u-empty-title">Không tìm thấy kết quả phù hợp</p>
+              <p className="u-empty-desc">
+                {searchMeta?.reason || "Thử điều chỉnh từ khoá hoặc chọn một gợi ý."}
+              </p>
             </div>
           ) : (
             <div className="u-doc-grid">
               {results.map((doc, i) => (
-                <DocCard
+                <SearchResultCard
                   key={doc.id}
                   doc={doc}
+                  index={i}
                   savedIds={savedIds}
                   onToggleSave={toggleSave}
                   onOpen={setSelectedDoc}
@@ -421,7 +492,7 @@ export default function UserHome() {
 
       {/* Detail modal */}
       {selectedDoc && (
-        <DetailModal
+        <SearchResultDetailModal
           doc={selectedDoc}
           savedIds={savedIds}
           onToggleSave={toggleSave}

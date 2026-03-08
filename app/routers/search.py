@@ -8,6 +8,7 @@ from app.services.postgre_client import SessionLocal
 from app.services.query_parser import parse_query
 from app.services.search_executor import execute_search
 from app.services.search_plan_builder import build_search_plan
+from app.services.search_result_builder import ResultItem, build_results
 from app.services.search_scope_builder import build_search_scope
 from app.services.search_strategy_builder import build_search_strategy, SearchStrategy
 
@@ -197,6 +198,7 @@ def _build_public_response(
     scope: Any,
     strategy: SearchStrategy,
     execution: Any,
+    items: List[ResultItem],
     limit: int,
     debug: bool,
 ) -> Dict[str, Any]:
@@ -213,6 +215,7 @@ def _build_public_response(
     response: Dict[str, Any] = {
         "q": q,
         "status": execution_dict.get("status"),
+        "mode": execution_dict.get("mode"),
         "message": _build_message(strategy, execution_dict, results),
         "strategy": {
             "mode": strategy.mode,
@@ -220,6 +223,7 @@ def _build_public_response(
         },
         "best_name_score": execution_dict.get("best_name_score"),
         "best_keyword_score": execution_dict.get("best_keyword_score"),
+        "items": [item.to_dict() for item in items],
         "results": results,
         "resolved_structure": execution_dict.get("resolved_structure", {}),
     }
@@ -254,6 +258,7 @@ def search(
     pg = SessionLocal()
     try:
         execution = execute_search(pg, scope, strategy)
+        items = build_results(pg, execution, strategy.target_level)
     finally:
         pg.close()
 
@@ -264,6 +269,7 @@ def search(
         scope=scope,
         strategy=strategy,
         execution=execution,
+        items=items,
         limit=limit,
         debug=debug,
     )

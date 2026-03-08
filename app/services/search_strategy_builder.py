@@ -38,9 +38,9 @@ def _build_structure_stage_order(
 
 
 def build_search_strategy(scope: SearchScope) -> SearchStrategy:
-    has_chunk = scope.chunk_num is not None or bool(scope.chunk_name)
-    has_lesson = scope.lesson_num is not None or bool(scope.lesson_name)
-    has_topic = scope.topic_num is not None or bool(scope.topic_name)
+    has_chunk = scope.chunk_num is not None or bool(scope.chunk_name) or scope.chunk_requested
+    has_lesson = scope.lesson_num is not None or bool(scope.lesson_name) or scope.lesson_requested
+    has_topic = scope.topic_num is not None or bool(scope.topic_name) or scope.topic_requested
     has_class = scope.class_hint is not None
     has_keyword = bool((scope.semantic_query or "").strip())
 
@@ -59,7 +59,7 @@ def build_search_strategy(scope: SearchScope) -> SearchStrategy:
     elif has_topic:
         target_level = "topic"
     elif has_class:
-        target_level = "class"
+        target_level = "topic"
     elif has_keyword:
         target_level = "keyword"
     else:

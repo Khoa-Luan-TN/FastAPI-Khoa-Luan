@@ -1,3 +1,5 @@
+/* frontend/src/styles/user.css */
+
 /* =====================================================
    USER AREA — Sidebar Layout Design System
    ===================================================== */
@@ -399,20 +401,20 @@
    ===================================================== */
 .u-doc-card {
   background: var(--us-white);
-  border: 1px solid var(--us-border);
+  border: 1px solid #E2E8F0;
   border-radius: var(--us-radius-lg);
   padding: 20px 20px 16px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.18s, border-color 0.2s;
-  box-shadow: var(--us-shadow-xs);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
 .u-doc-card:hover {
-  box-shadow: var(--us-shadow-md);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.1), 0 2px 6px rgba(0,0,0,0.06);
   transform: translateY(-2px);
-  border-color: #BFDBFE;
+  border-color: #93C5FD;
 }
 
 .u-doc-card-top {
@@ -453,9 +455,9 @@
   font-weight: 700;
   padding: 3px 9px;
   border-radius: 100px;
-  background: #F8FAFC;
-  color: var(--us-text-muted);
-  border: 1px solid var(--us-border);
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
 }
 
 /* Save button */
@@ -477,20 +479,21 @@
 .u-save-btn.saved { color: #7C3AED; }
 
 .u-doc-title {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--us-text);
+  color: #0F172A;
   line-height: 1.4;
   margin: 0 0 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.1px;
 }
 
 .u-doc-desc {
   font-size: 13px;
-  color: var(--us-text-2);
+  color: #475569;
   line-height: 1.65;
   margin: 0;
   display: -webkit-box;
@@ -518,7 +521,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11.5px;
-  color: var(--us-text-muted);
+  color: #64748B;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -653,9 +656,9 @@
 }
 
 .u-modal-header {
-  padding: 22px 26px 18px;
-  border-bottom: 1px solid var(--us-border-light);
-  background: linear-gradient(135deg, #F8FAFF 0%, #F0F4FF 100%);
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #E2E8F0;
+  background: linear-gradient(160deg, #F8FAFF 0%, #EEF2FF 100%);
 }
 
 .u-modal-header-top {
@@ -669,9 +672,10 @@
 .u-modal-title {
   font-size: 17px;
   font-weight: 800;
-  color: var(--us-text);
+  color: #0F172A;
   line-height: 1.35;
   margin: 0;
+  letter-spacing: -0.2px;
 }
 
 .u-modal-close {
@@ -706,14 +710,14 @@
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
-  color: var(--us-text-muted);
-  margin: 0 0 8px;
+  letter-spacing: 0.8px;
+  color: #64748B;
+  margin: 0 0 10px;
 }
 
 .u-modal-desc {
   font-size: 13.5px;
-  color: var(--us-text-2);
+  color: #475569;
   line-height: 1.75;
   margin: 0;
 }
@@ -746,15 +750,15 @@
   color: var(--us-text);
 }
 
-.u-doc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.u-doc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .u-tag {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--us-text-muted);
-  background: var(--us-bg);
-  border: 1px solid var(--us-border);
-  padding: 3px 10px;
+  color: #334155;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  padding: 4px 11px;
   border-radius: 100px;
 }
 
@@ -1088,4 +1092,196 @@
   .u-sidebar { width: 180px; }
   .u-main { margin-left: 180px; }
   :root { --us-sidebar: 180px; }
+}
+
+/* =====================================================
+   SEARCH RESULT — LEVEL BADGES
+   ===================================================== */
+.u-cat.topic  { background: #EDE9FE; color: #5B21B6; border: 1px solid #C4B5FD; }
+.u-cat.lesson { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+.u-cat.chunk  { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+
+/* Subject badge next to level badge on card */
+.u-subject-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+/* Low-confidence inline tag in card meta row */
+.u-low-confidence-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+  white-space: nowrap;
+}
+
+/* Dim card for low-confidence results */
+.u-card-dim { opacity: 0.82; }
+
+/* Breadcrumb pill in card meta row */
+.u-meta-breadcrumb {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  padding: 2px 9px;
+  border-radius: 100px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Class pill in card meta row */
+.u-meta-class-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E40AF;
+  background: #DBEAFE;
+  border: 1px solid #93C5FD;
+  padding: 2px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   CONFIDENCE BANNER
+   ===================================================== */
+.u-confidence-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.u-banner-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
+
+.u-confidence-banner.u-banner-error {
+  background: #FFF1F2;
+  border-color: #FECDD3;
+  color: #BE123C;
+}
+
+/* =====================================================
+   MODAL — CONTEXT PANEL (vertical stacked rows)
+   ===================================================== */
+.u-ctx-panel {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.u-ctx-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.u-ctx-row:last-child {
+  border-bottom: none;
+}
+
+.u-ctx-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94A3B8;
+  min-width: 68px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.u-ctx-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E293B;
+  line-height: 1.45;
+}
+
+/* =====================================================
+   MODAL — BADGE VARIANTS
+   ===================================================== */
+.u-modal-badge-subject {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  white-space: nowrap;
+}
+
+.u-modal-badge-class {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #DBEAFE;
+  color: #1E40AF;
+  border: 1px solid #93C5FD;
+  white-space: nowrap;
+}
+
+.u-modal-badge-relevance {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   ATTACHMENT BUTTON
+   ===================================================== */
+.u-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1.5px solid #BFDBFE;
+  background: var(--us-primary-light);
+  color: var(--us-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  font-family: var(--us-font);
+  transition: all 0.15s;
+}
+
+.u-attach-btn:hover {
+  background: var(--us-primary);
+  border-color: var(--us-primary);
+  color: #fff;
 }

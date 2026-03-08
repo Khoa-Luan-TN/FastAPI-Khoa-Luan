@@ -17,12 +17,15 @@ class ParsedQuery:
 
     topic_num: Optional[int]
     topic_name: Optional[str]
+    topic_requested: bool          # True when "chủ đề/chương" keyword appeared, even without num/name
 
     lesson_num: Optional[int]
     lesson_name: Optional[str]
+    lesson_requested: bool         # True when "bài/bài học" keyword appeared, even without num/name
 
     chunk_num: Optional[int]
     chunk_name: Optional[str]
+    chunk_requested: bool          # True when "mục" keyword appeared, even without num/name
 
     primary_keyword: str
     secondary_keywords: List[str]
@@ -150,9 +153,9 @@ _ENTITY_WRAPPERS = sorted(set(_ENTITY_WRAPPERS), key=lambda x: len(x[0]), revers
 # Segment-based parsing to avoid greedy swallowing.
 # -------------------------------------------------------
 _SEGMENT_RE = re.compile(
-    r"(?<!\S)(?P<topic>chủ\s+đề|chương)(?=\s+\S)"
-    r"|(?<!\S)(?P<lesson>bài\s+học|bài)(?=\s+\S)"
-    r"|(?<!thư )(?<!\S)(?P<chunk>mục)(?=\s+\S)",
+    r"(?<!\S)(?P<topic>chủ\s+đề|chương)(?=\s|$)"
+    r"|(?<!\S)(?P<lesson>bài\s+học|bài)(?=\s|$)"
+    r"|(?<!thư )(?<!\S)(?P<chunk>mục)(?=\s|$)",
     re.IGNORECASE,
 )
 
@@ -259,11 +262,11 @@ def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optiona
         "mục abc"   -> (None, "abc")
     """
     if kind == "topic":
-        body = re.sub(r"^(?:chủ\s+đề|chương)\s+", "", segment_text, flags=re.IGNORECASE)
+        body = re.sub(r"^(?:chủ\s+đề|chương)\s*", "", segment_text, flags=re.IGNORECASE)
     elif kind == "lesson":
-        body = re.sub(r"^(?:bài(?:\s+học)?)\s+", "", segment_text, flags=re.IGNORECASE)
+        body = re.sub(r"^(?:bài(?:\s+học)?)\s*", "", segment_text, flags=re.IGNORECASE)
     else:
-        body = re.sub(r"^(?:mục)\s+", "", segment_text, flags=re.IGNORECASE)
+        body = re.sub(r"^(?:mục)\s*", "", segment_text, flags=re.IGNORECASE)
 
     body = _strip_fillers(_ws(body))
     if not body:
@@ -310,12 +313,15 @@ def parse_query(raw: str) -> ParsedQuery:
     # 4) Initialize outputs
     topic_num: Optional[int] = None
     topic_name: Optional[str] = None
+    topic_requested: bool = False
 
     lesson_num: Optional[int] = None
     lesson_name: Optional[str] = None
+    lesson_requested: bool = False
 
     chunk_num: Optional[int] = None
     chunk_name: Optional[str] = None
+    chunk_requested: bool = False
 
     # 5) Segment-based structural parsing
     segments, leftover = _find_structural_segments(s)
@@ -324,18 +330,21 @@ def parse_query(raw: str) -> ParsedQuery:
         num, name = _parse_segment(kind, text)
 
         if kind == "topic":
+            topic_requested = True
             if topic_num is None:
                 topic_num = num
             if topic_name is None:
                 topic_name = name
 
         elif kind == "lesson":
+            lesson_requested = True
             if lesson_num is None:
                 lesson_num = num
             if lesson_name is None:
                 lesson_name = name
 
         else:  # chunk
+            chunk_requested = True
             if chunk_num is None:
                 chunk_num = num
             if chunk_name is None:
@@ -353,10 +362,13 @@ def parse_query(raw: str) -> ParsedQuery:
         class_hint=class_hint,
         topic_num=topic_num,
         topic_name=topic_name,
+        topic_requested=topic_requested,
         lesson_num=lesson_num,
         lesson_name=lesson_name,
+        lesson_requested=lesson_requested,
         chunk_num=chunk_num,
         chunk_name=chunk_name,
+        chunk_requested=chunk_requested,
         primary_keyword=primary_keyword,
         secondary_keywords=secondary_keywords,
     )

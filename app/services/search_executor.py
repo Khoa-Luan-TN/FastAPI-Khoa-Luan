@@ -12,10 +12,10 @@ from app.services.search_strategy_builder import SearchStrategy
 
 _TOP_K = 5
 
-# Confidence thresholds (tune here)
-_NAME_CONFIDENT_THRESHOLD    = 0.88  # rerank_score to call a name hit "confident"
-_KEYWORD_CONFIDENT_THRESHOLD = 0.90  # rerank_score to call a keyword hit "confident"
-_LOW_CONFIDENCE_FLOOR        = 0.70  # below this and lexical_boost == 0 → low_confidence
+# Confidence thresholds
+_NAME_CONFIDENT_THRESHOLD = 0.88
+_KEYWORD_CONFIDENT_THRESHOLD = 0.90
+_LOW_CONFIDENCE_FLOOR = 0.70
 
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ _LOW_CONFIDENCE_FLOOR        = 0.70  # below this and lexical_boost == 0 → low
 @dataclass
 class ExecutionResult:
     mode: str
-    status: str                          # "confident_match" | "low_confidence" | "no_match"
+    status: str  # "confident_match" | "low_confidence" | "no_match"
     reason: str
     best_name_score: float | None
     best_keyword_score: float | None
@@ -47,39 +47,61 @@ class ExecutionResult:
 def _evaluate_confidence(
     name_hits: List[Dict[str, Any]],
     keyword_hits: List[Dict[str, Any]],
-) -> Tuple[str, str, float | None, float | None, Dict | None, Dict | None]:
+) -> Tuple[str, str, float | None, float | None, Dict[str, Any] | None, Dict[str, Any] | None]:
     """
-    Return (status, reason, best_name_score, best_keyword_score, best_name_hit, best_keyword_hit).
-    status: "confident_match" | "low_confidence" | "no_match"
+    Return:
+    (status, reason, best_name_score, best_keyword_score, best_name_hit, best_keyword_hit)
     """
-    best_name    = name_hits[0]    if name_hits    else None
+    best_name = name_hits[0] if name_hits else None
     best_keyword = keyword_hits[0] if keyword_hits else None
 
-    bns = best_name["rerank_score"]    if best_name    else None
+    bns = best_name["rerank_score"] if best_name else None
     bks = best_keyword["rerank_score"] if best_keyword else None
 
     if best_name is None and best_keyword is None:
         return "no_match", "No hits returned for this query.", bns, bks, best_name, best_keyword
 
-    # A hit is "confident" when it clears its threshold
-    name_confident    = bns is not None and bns >= _NAME_CONFIDENT_THRESHOLD
+    name_confident = bns is not None and bns >= _NAME_CONFIDENT_THRESHOLD
     keyword_confident = bks is not None and bks >= _KEYWORD_CONFIDENT_THRESHOLD
 
     if name_confident or keyword_confident:
         top_score = max(s for s in (bns, bks) if s is not None)
-        return "confident_match", f"Top rerank_score={top_score:.4f} meets confidence threshold.", bns, bks, best_name, best_keyword
+        return (
+            "confident_match",
+            f"Top rerank_score={top_score:.4f} meets confidence threshold.",
+            bns,
+            bks,
+            best_name,
+            best_keyword,
+        )
 
-    # Below threshold: distinguish low_confidence from no_match
-    # low_confidence = hits exist but are weak (no lexical signal either)
-    top_name_lexical    = best_name.get("lexical_boost", 0.0)    if best_name    else 0.0
+    top_name_lexical = best_name.get("lexical_boost", 0.0) if best_name else 0.0
     top_keyword_lexical = best_keyword.get("lexical_boost", 0.0) if best_keyword else 0.0
-    has_any_lexical     = top_name_lexical > 0.0 or top_keyword_lexical > 0.0
+    has_any_lexical = top_name_lexical > 0.0 or top_keyword_lexical > 0.0
 
     top = max(s for s in (bns, bks) if s is not None)
     if top >= _LOW_CONFIDENCE_FLOOR or has_any_lexical:
-        return "low_confidence", f"Top rerank_score={top:.4f} below confident threshold; lexical_boost={has_any_lexical}.", bns, bks, best_name, best_keyword
+        return (
+            "low_confidence",
+            f"Top rerank_score={top:.4f} below confident threshold; lexical_boost={has_any_lexical}.",
+            bns,
+            bks,
+            best_name,
+            best_keyword,
+        )
 
-    return "low_confidence", f"Top rerank_score={top:.4f} is weak and no lexical match found.", bns, bks, best_name, best_keyword
+    return (
+        "low_confidence",
+        f"Top rerank_score={top:.4f} is weak and no lexical match found.",
+        bns,
+        bks,
+        best_name,
+        best_keyword,
+    )
+
+
+def _has_any_resolved_structure(resolved: Dict[str, Any]) -> bool:
+    return any(resolved.get(level) for level in ("class", "topic", "lesson", "chunk"))
 
 
 def execute_search(pg: Session, scope: SearchScope, strategy: SearchStrategy) -> ExecutionResult:
@@ -111,8 +133,40 @@ def execute_search(pg: Session, scope: SearchScope, strategy: SearchStrategy) ->
         name_hits, keyword_hits, sem_notes = _run_semantic_search(pg, scope, resolved)
         notes.extend(sem_notes)
 
+    # structure_only phải đánh giá bằng resolved_structure, không phải semantic hits
+    if strategy.mode == "structure_only":
+        if _has_any_resolved_structure(resolved):
+            return ExecutionResult(
+                mode=strategy.mode,
+                status="confident_match",
+                reason="Resolved structural result from query.",
+                best_name_score=None,
+                best_keyword_score=None,
+                best_name_hit=None,
+                best_keyword_hit=None,
+                resolved_structure=resolved,
+                name_hits=[],
+                keyword_hits=[],
+                notes=notes,
+            )
+
+        return ExecutionResult(
+            mode=strategy.mode,
+            status="no_match",
+            reason="No structural result matched this query.",
+            best_name_score=None,
+            best_keyword_score=None,
+            best_name_hit=None,
+            best_keyword_hit=None,
+            resolved_structure=resolved,
+            name_hits=[],
+            keyword_hits=[],
+            notes=notes,
+        )
+
     status, reason, bns, bks, best_name_hit, best_keyword_hit = _evaluate_confidence(
-        name_hits, keyword_hits
+        name_hits,
+        keyword_hits,
     )
 
     return ExecutionResult(
@@ -139,15 +193,15 @@ def _requested_class(scope: SearchScope) -> bool:
 
 
 def _requested_topic(scope: SearchScope) -> bool:
-    return scope.topic_num is not None or bool(scope.topic_name)
+    return scope.topic_num is not None or bool(scope.topic_name) or scope.topic_requested
 
 
 def _requested_lesson(scope: SearchScope) -> bool:
-    return scope.lesson_num is not None or bool(scope.lesson_name)
+    return scope.lesson_num is not None or bool(scope.lesson_name) or scope.lesson_requested
 
 
 def _requested_chunk(scope: SearchScope) -> bool:
-    return scope.chunk_num is not None or bool(scope.chunk_name)
+    return scope.chunk_num is not None or bool(scope.chunk_name) or scope.chunk_requested
 
 
 def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any], List[str]]:
@@ -155,6 +209,8 @@ def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any],
     Resolve structure in PostgreSQL with strict parent-scope behavior:
     - if a parent level was explicitly requested but resolves to 0 rows,
       child levels do NOT fall back to global search.
+    - child queries should still respect any available parent scope
+      (class/topic/lesson), even if an intermediate level is not present.
     """
     resolved: Dict[str, Any] = {}
     notes: List[str] = []
@@ -230,12 +286,20 @@ def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any],
             resolved["lesson"] = []
             notes.append("lesson skipped because topic scope was requested but no topic matched")
         else:
+            lesson_joins = ""
             conds: List[str] = []
             params: Dict[str, Any] = {}
 
             if topic_ids:
                 conds.append("l.topic_id = ANY(:topic_ids)")
                 params["topic_ids"] = topic_ids
+            elif class_ids:
+                lesson_joins = """
+                    JOIN topic t ON t.topic_id = l.topic_id
+                    JOIN subject s ON s.subject_id = t.subject_id
+                """
+                conds.append("s.class_id = ANY(:class_ids)")
+                params["class_ids"] = class_ids
 
             if scope.lesson_num is not None:
                 conds.append("l.lesson_num = :lesson_num")
@@ -255,6 +319,7 @@ def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any],
                         l.lesson_num,
                         l.topic_id
                     FROM lesson l
+                    {lesson_joins}
                     {where}
                     LIMIT 5
                 """),
@@ -272,12 +337,25 @@ def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any],
             resolved["chunk"] = []
             notes.append("chunk skipped because lesson scope was requested but no lesson matched")
         else:
+            chunk_joins = ""
             conds: List[str] = []
             params: Dict[str, Any] = {}
 
             if lesson_ids:
                 conds.append("c.lesson_id = ANY(:lesson_ids)")
                 params["lesson_ids"] = lesson_ids
+            elif topic_ids:
+                chunk_joins = "JOIN lesson l ON l.lesson_id = c.lesson_id"
+                conds.append("l.topic_id = ANY(:topic_ids)")
+                params["topic_ids"] = topic_ids
+            elif class_ids:
+                chunk_joins = """
+                    JOIN lesson l ON l.lesson_id = c.lesson_id
+                    JOIN topic t ON t.topic_id = l.topic_id
+                    JOIN subject s ON s.subject_id = t.subject_id
+                """
+                conds.append("s.class_id = ANY(:class_ids)")
+                params["class_ids"] = class_ids
 
             if scope.chunk_num is not None:
                 conds.append("c.chunk_label = :chunk_label")
@@ -297,6 +375,7 @@ def _resolve_structure(pg: Session, scope: SearchScope) -> Tuple[Dict[str, Any],
                         c.chunk_label,
                         c.lesson_id
                     FROM chunk c
+                    {chunk_joins}
                     {where}
                     LIMIT 5
                 """),
@@ -322,10 +401,6 @@ def _norm_text(s: str) -> str:
 
 
 def _lexical_boost(query: str, text: str) -> float:
-    """
-    Small lexical rerank boost on top of semantic score.
-    Keeps semantic search as the base signal, but rewards obvious text matches.
-    """
     q = _norm_text(query)
     t = _norm_text(text)
 
@@ -631,8 +706,6 @@ def _run_semantic_search(
     # --- Keyword hits --------------------------------------------------------
     scoped_chunk_ids = _scope_chunk_ids_for_keyword_search(pg, resolved)
 
-    # Nếu có scope cấu trúc rồi mà không suy ra được chunk nào trong scope,
-    # thì KHÔNG được fallback về global keyword search.
     has_resolved_structure_scope = bool(class_ids or topic_ids or lesson_ids or chunk_ids)
     if has_resolved_structure_scope and not scoped_chunk_ids:
         notes.append("Keyword search skipped: structural scope resolved but produced no chunk ids")
