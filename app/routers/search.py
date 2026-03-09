@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Query
 
+from app.services.neo_client import neo4j_driver
 from app.services.postgre_client import SessionLocal
 from app.services.query_parser import parse_query
 from app.services.search_executor import execute_search
@@ -255,10 +256,12 @@ def search(
     scope = build_search_scope(plan)
     strategy = build_search_strategy(scope)
 
+    driver = neo4j_driver()
     pg = SessionLocal()
     try:
-        execution = execute_search(pg, scope, strategy)
-        items = build_results(pg, execution, strategy.target_level)
+        with driver.session() as neo:
+            execution = execute_search(neo, scope, strategy)
+        items = build_results(pg, execution, strategy.target_level, scope=scope)
     finally:
         pg.close()
 
@@ -330,11 +333,9 @@ def debug_execute(q: str = Query(..., min_length=1, description="Raw Vietnamese 
     scope = build_search_scope(plan)
     strategy = build_search_strategy(scope)
 
-    pg = SessionLocal()
-    try:
-        execution = execute_search(pg, scope, strategy)
-    finally:
-        pg.close()
+    driver = neo4j_driver()
+    with driver.session() as neo:
+        execution = execute_search(neo, scope, strategy)
 
     return {
         "parsed": parsed.to_dict(),

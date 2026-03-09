@@ -1,3 +1,4 @@
+#services/search_result_builder.py
 """
 search_result_builder.py
 
@@ -21,6 +22,7 @@ from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
 from app.services.search_executor import ExecutionResult
+from app.services.search_scope_builder import SearchScope
 
 # ---------------------------------------------------------------------------
 # Fallback descriptions (replace with MongoDB *_des fields when available)
@@ -73,19 +75,65 @@ def build_results(
     pg: Session,
     execution: ExecutionResult,
     target_level: str = "chunk",
+    scope: Optional[SearchScope] = None,
 ) -> List[ResultItem]:
     """Convert an ExecutionResult into a list of frontend-ready ResultItems."""
     if execution.mode == "empty" or execution.status == "no_match":
         return []
 
     if execution.mode == "structure_only":
-        return _from_structure(pg, execution.resolved_structure, target_level)
+        items = _from_structure(pg, execution.resolved_structure, target_level, scope)
+        return _apply_name_validation_penalty(items, execution.name_validation_penalty)
 
-    if execution.mode == "keyword_only":
+    # keyword_only OR hybrid — all semantic hits are keyword_hits (chunk_id)
+    if execution.keyword_hits:
         return _from_keyword_only(pg, execution)
 
-    # hybrid
-    return _from_semantic_hits(pg, execution)
+    # hybrid with resolved structure but no keyword hits
+    if _has_resolved_structure(execution.resolved_structure):
+        items = _from_structure(pg, execution.resolved_structure, target_level, scope)
+        return _apply_name_validation_penalty(items, execution.name_validation_penalty)
+
+    return []
+
+
+def _has_resolved_structure(resolved: Dict[str, Any]) -> bool:
+    return any(resolved.get(level) for level in ("class", "topic", "lesson", "chunk"))
+
+
+def _apply_name_validation_penalty(
+    items: List[ResultItem], penalty: float
+) -> List[ResultItem]:
+    """Adjust score_display on structure items when a name validation penalty exists."""
+    if penalty <= 0.0 or not items:
+        return items
+    display_pct = f"{max(60, round((1.0 - penalty) * 100))}%"
+    for item in items:
+        item.score_display = display_pct
+    return items
+
+
+# ---------------------------------------------------------------------------
+# Strict-request helpers
+# ---------------------------------------------------------------------------
+
+def _is_specific_topic_request(scope: Optional[SearchScope]) -> bool:
+    """True when user asked for a specific topic (num or name), not a broad listing."""
+    if scope is None:
+        return False
+    return scope.topic_num is not None or bool(scope.topic_name)
+
+
+def _is_specific_lesson_request(scope: Optional[SearchScope]) -> bool:
+    if scope is None:
+        return False
+    return scope.lesson_num is not None or bool(scope.lesson_name)
+
+
+def _is_specific_chunk_request(scope: Optional[SearchScope]) -> bool:
+    if scope is None:
+        return False
+    return scope.chunk_num is not None or bool(scope.chunk_name)
 
 
 # ---------------------------------------------------------------------------
@@ -96,8 +144,14 @@ def _from_structure(
     pg: Session,
     resolved: Dict[str, Any],
     target_level: str,
+    scope: Optional[SearchScope] = None,
 ) -> List[ResultItem]:
-    """Use target_level to determine output, with scope-fetch fallbacks."""
+    """
+    Use target_level to determine output.
+    Scope-fetch fallbacks (listing all entities in parent scope) are only
+    allowed when the user made a broad request (*_requested with no num/name).
+    Specific requests (num or name given) that resolved to nothing → return [].
+    """
     class_ids  = [r["class_id"]  for r in resolved.get("class",  [])]
     topic_ids  = [r["topic_id"]  for r in resolved.get("topic",  [])]
     lesson_ids = [r["lesson_id"] for r in resolved.get("lesson", [])]
@@ -106,19 +160,25 @@ def _from_structure(
     if target_level == "chunk":
         if chunk_ids:
             return _enrich_chunks(pg, chunk_ids)
+        if _is_specific_chunk_request(scope):
+            return []
         return _fetch_chunks_by_scope(pg, lesson_ids, topic_ids, class_ids)
 
     if target_level == "lesson":
         if lesson_ids:
             return _enrich_lessons(pg, lesson_ids)
+        if _is_specific_lesson_request(scope):
+            return []
         return _fetch_lessons_by_scope(pg, topic_ids, class_ids)
 
     if target_level == "topic":
         if topic_ids:
             return _enrich_topics(pg, topic_ids)
+        if _is_specific_topic_request(scope):
+            return []
         return _fetch_topics_by_scope(pg, class_ids)
 
-    # Fallback: deepest resolved (used for legacy / keyword targets)
+    # Fallback: deepest resolved
     if chunk_ids:
         return _enrich_chunks(pg, chunk_ids)
     if lesson_ids:
@@ -570,81 +630,3 @@ def _from_keyword_only(pg: Session, execution: ExecutionResult) -> List[ResultIt
 
     return items
 
-
-# ---------------------------------------------------------------------------
-# Semantic path — hybrid
-# ---------------------------------------------------------------------------
-
-def _parse_search_text(text: str) -> Dict[str, Any]:
-    """
-    Parse stored search_text back into name + metadata dict.
-    Format: "level | name | key: value | key: value ..."
-    """
-    parts = (text or "").split(" | ")
-    name = parts[1] if len(parts) > 1 else ""
-    meta: Dict[str, str] = {}
-    for p in parts[2:]:
-        idx = p.find(": ")
-        if idx > 0:
-            meta[p[:idx].strip()] = p[idx + 2:].strip()
-    return {"name": name, "meta": meta}
-
-
-def _fetch_chunk_minio(pg: Session, chunk_ids: List[str]) -> Dict[str, Optional[str]]:
-    """Return chunk_id -> minio_url map for the given ids."""
-    if not chunk_ids:
-        return {}
-    rows = pg.execute(
-        sql_text("SELECT chunk_id, minio_url FROM chunk WHERE chunk_id = ANY(:ids)"),
-        {"ids": chunk_ids},
-    ).all()
-    return {cid: url for cid, url in rows}
-
-
-def _from_semantic_hits(pg: Session, execution: ExecutionResult) -> List[ResultItem]:
-    """Map name_hits (+ keyword_hits) into ResultItems."""
-    # Build keyword map from keyword_hits: chunk_id -> [keyword_name]
-    kw_map: Dict[str, List[str]] = {}
-    for kh in execution.keyword_hits:
-        kw_map.setdefault(kh["chunk_id"], []).append(kh["keyword_name"])
-
-    # Identify chunk-level hits so we can batch-fetch minio_url
-    chunk_hit_ids = [h["id"] for h in execution.name_hits if h.get("level") == "chunk"]
-    chunk_minio = _fetch_chunk_minio(pg, chunk_hit_ids)
-
-    items: List[ResultItem] = []
-    seen: set = set()
-
-    for hit in execution.name_hits:
-        eid = hit["id"]
-        if eid in seen:
-            continue
-        seen.add(eid)
-
-        level = hit.get("level", "")
-        parsed = _parse_search_text(hit.get("search_text", ""))
-        name = parsed["name"] or eid
-        meta = parsed["meta"]
-
-        score_pct = min(100, round(hit.get("rerank_score", 0) * 100))
-
-        items.append(ResultItem(
-            result_type=level,
-            id=eid,
-            title=name,
-            class_name=meta.get("class"),
-            subject_name=meta.get("subject"),
-            topic_name=meta.get("topic") if level in ("lesson", "chunk") else None,
-            topic_num=None,
-            lesson_name=meta.get("lesson") if level == "chunk" else None,
-            lesson_num=None,
-            chunk_name=name if level == "chunk" else None,
-            chunk_label=None,
-            description=_FALLBACK_DESC.get(level, ""),  # TODO: *_des from MongoDB
-            minio_url=chunk_minio.get(eid) if level == "chunk" else None,
-            keywords=kw_map.get(eid, []) if level == "chunk" else [],
-            score_display=f"{score_pct}%",
-            source="semantic",
-        ))
-
-    return items
