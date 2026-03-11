@@ -1,4 +1,4 @@
-#services/search_strategy_builder.py
+# search_strategy_builder.py
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -39,13 +39,28 @@ def _build_structure_stage_order(
 
 
 def build_search_strategy(scope: SearchScope) -> SearchStrategy:
-    has_chunk = scope.chunk_num is not None or bool(scope.chunk_name) or scope.chunk_requested
-    has_lesson = scope.lesson_num is not None or bool(scope.lesson_name) or scope.lesson_requested
-    has_topic = scope.topic_num is not None or bool(scope.topic_name) or scope.topic_requested
+    has_chunk_num = scope.chunk_num is not None
+    has_chunk_name = bool(scope.chunk_name)
+    has_chunk_requested = scope.chunk_requested
+
+    has_lesson_num = scope.lesson_num is not None
+    has_lesson_name = bool(scope.lesson_name)
+    has_lesson_requested = scope.lesson_requested
+
+    has_topic_num = scope.topic_num is not None
+    has_topic_name = bool(scope.topic_name)
+    has_topic_requested = scope.topic_requested
+
     has_class = scope.class_hint is not None
     has_keyword = bool((scope.semantic_query or "").strip())
 
+    has_chunk = has_chunk_num or has_chunk_name or has_chunk_requested
+    has_lesson = has_lesson_num or has_lesson_name or has_lesson_requested
+    has_topic = has_topic_num or has_topic_name or has_topic_requested
+
     has_structure = has_chunk or has_lesson or has_topic or has_class
+    has_soft_structure = has_chunk_name or has_lesson_name or has_topic_name
+
     structure_stage_order = _build_structure_stage_order(
         has_class=has_class,
         has_topic=has_topic,
@@ -66,26 +81,19 @@ def build_search_strategy(scope: SearchScope) -> SearchStrategy:
     else:
         target_level = "none"
 
-    if has_chunk:
-        return SearchStrategy(
-            mode="structure_only",
-            target_level=target_level,
-            use_structure_filters=True,
-            use_semantic_search=False,
-            stage_order=structure_stage_order,
-            notes="Chunk is the final structural target; navigate by structure only.",
-        )
-
-    if has_structure and has_keyword:
+    # Có cấu trúc nhưng xuất hiện _name ở bất kỳ tầng nào -> hybrid
+    # Hoặc có keyword -> hybrid
+    if has_structure and (has_soft_structure or has_keyword):
         return SearchStrategy(
             mode="hybrid",
             target_level=target_level,
             use_structure_filters=True,
             use_semantic_search=True,
             stage_order=structure_stage_order + ["semantic_search"],
-            notes="Structural context narrows scope; semantic search runs inside that scope.",
+            notes="Structure narrows scope; soft-name and/or keyword signals require semantic refinement.",
         )
 
+    # Chỉ còn structure cứng / listing thuần
     if has_structure:
         return SearchStrategy(
             mode="structure_only",
@@ -93,7 +101,7 @@ def build_search_strategy(scope: SearchScope) -> SearchStrategy:
             use_structure_filters=True,
             use_semantic_search=False,
             stage_order=structure_stage_order,
-            notes="Only structural signals are present.",
+            notes="Only hard structural signals are present.",
         )
 
     if has_keyword:

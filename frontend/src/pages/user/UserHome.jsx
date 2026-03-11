@@ -108,6 +108,7 @@ function resultItemToViewModel(item, status) {
     keywords: item.keywords || [],
     minioUrl: item.minio_url || null,
     isLowConfidence: status === "low_confidence",
+    matchNote: item.match_note || null,
   };
 }
 
@@ -179,6 +180,11 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Name note — shown when embedding similarity < 0.80 */}
+          {doc.matchNote && (
+            <p className="u-name-note u-name-note-modal">{doc.matchNote}</p>
           )}
 
           {/* Description */}
@@ -259,6 +265,9 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
       </div>
 
       <h3 className="u-doc-title">{doc.title}</h3>
+      {doc.matchNote && (
+        <p className="u-name-note">{doc.matchNote}</p>
+      )}
       <p className="u-doc-desc">{doc.descShort}</p>
 
       <div className="u-doc-divider" />

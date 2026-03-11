@@ -9,6 +9,7 @@ from app.services.query_parser import ParsedQuery
 
 @dataclass
 class SearchPlan:
+    # câu hỏi gốc của người dùng
     original_query: str
 
     class_hint: Optional[int] = None

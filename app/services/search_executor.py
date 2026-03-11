@@ -1,7 +1,7 @@
-# app/services/search_executor.py
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+import re
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from neo4j import Session
@@ -16,6 +16,9 @@ from app.services.neo_search_service import (
 # Confidence thresholds
 _KEYWORD_CONFIDENT_THRESHOLD = 0.90
 _LOW_CONFIDENCE_FLOOR = 0.70
+
+# Note shown when attached name does not match strongly enough
+_NAME_NOTE = "Tên tìm kiếm chưa khớp hoàn toàn với kết quả này."
 
 
 # ---------------------------------------------------------------------------
@@ -35,92 +38,131 @@ class ExecutionResult:
     name_hits: List[Dict[str, Any]]
     keyword_hits: List[Dict[str, Any]]
     notes: List[str]
-    # Penalty applied when a numeric structure resolves but the attached name conflicts.
-    # 0.0 = full confidence, 0.15 = partial match, 0.30 = conflict.
-    name_validation_penalty: float = 0.0
+
+    name_similarity_score: Optional[float] = None
+    name_note: Optional[str] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 # ---------------------------------------------------------------------------
-# Name validation — compare provided name text with actual resolved name
+# Rule-based name validation for numeric-resolved structure entities
 # ---------------------------------------------------------------------------
 
-def _norm_text(s: str) -> str:
-    return " ".join(str(s or "").lower().strip().split())
+def _norm_title(s: str) -> str:
+    """Lowercase, strip punctuation, collapse spaces."""
+    s = str(s or "").lower()
+    s = re.sub(r"[,.:;!?\"'()\[\]{}\-_/]+", " ", s)
+    return " ".join(s.split())
 
 
-def validate_struct_name(provided: str, actual: str) -> Tuple[str, float, str]:
+def _is_contiguous_subsequence(small: List[str], big: List[str]) -> bool:
+    """True if 'small' appears as one contiguous token phrase inside 'big'."""
+    if not small or len(small) > len(big):
+        return False
+
+    window = len(small)
+    for i in range(len(big) - window + 1):
+        if big[i:i + window] == small:
+            return True
+    return False
+
+
+def _title_match_score(inp: str, actual: str) -> Tuple[float, Optional[str]]:
     """
-    Compare provided name text against actual resolved entity name.
+    Core rule-based matcher (both inputs already normalised).
+    Returns (score, note).
 
-    Returns (match_level, penalty, note):
-      exact    → 0.00  (identical)
-      strong   → 0.00  (one contains the other)
-      partial  → 0.15  (≥ 40% word overlap)
-      conflict → 0.30  (< 40% word overlap or no overlap)
+    Rules:
+    - exact normalized match                           -> 1.00
+    - strong phrase match (>= 2 contiguous tokens)    -> 0.95
+    - strong unordered overlap (>= 2 common tokens,
+      ratio >= 0.50)                                  -> 0.95
+    - partial overlap                                 -> 0.90 + note
+    - weak / no overlap                               -> 0.85 + note
     """
-    p = _norm_text(provided)
-    a = _norm_text(actual)
+    if inp == actual:
+        return 1.00, None
 
-    if not p or not a:
-        return "exact", 0.0, ""
+    p_tokens = inp.split()
+    a_tokens = actual.split()
 
-    if p == a:
-        return "exact", 0.0, ""
+    if not p_tokens or not a_tokens:
+        return 1.00, None
 
-    if p in a or a in p:
-        return "strong", 0.0, ""
+    # Strong phrase match only when there are at least 2 tokens.
+    # This prevents single short words like "mạng" from jumping to 95%.
+    if len(p_tokens) >= 2 and _is_contiguous_subsequence(p_tokens, a_tokens):
+        return 0.95, None
 
-    p_words = set(p.split())
-    a_words = set(a.split())
-    overlap = len(p_words & a_words)
-    ratio = overlap / max(len(p_words), len(a_words), 1)
+    # Count overlap by exact token equality only.
+    common = set(p_tokens) & set(a_tokens)
+    common_count = len(common)
 
-    if ratio >= 0.4:
-        return (
-            "partial",
-            0.15,
-            f"Tên khớp một phần: cung cấp '{provided}', thực tế '{actual}'.",
-        )
+    if common_count == 0:
+        return 0.85, _NAME_NOTE
 
-    return (
-        "conflict",
-        0.30,
-        f"Tên không khớp: cung cấp '{provided}', thực tế '{actual}'.",
-    )
+    ratio = common_count / max(len(p_tokens), len(a_tokens))
+
+    # Strong unordered overlap
+    if common_count >= 2 and ratio >= 0.50:
+        return 0.95, None
+
+    # Partial overlap
+    return 0.90, _NAME_NOTE
 
 
-def _validate_attached_name(
+def _validate_name_text(
     scope: SearchScope,
     resolved: Dict[str, Any],
-) -> Tuple[str, float, str]:
+) -> Tuple[float, Optional[str]]:
     """
-    Validate the deepest resolved level where both a numeric signal AND a
-    name text are present (chunk > lesson > topic priority).
+    Rule-based name validation for numeric-resolved structure entities.
+    Only fires when both *_num AND *_name are present (chunk > lesson > topic priority).
 
-    Returns (match_level, penalty, note).
-    Only fires when a hard *_num was used for resolution AND a same-level name
-    text was also provided — that name is then validated for confidence, not
-    used for retrieval.
+    Returns:
+    - *_num only / no *_name              -> 1.00, None
+    - exact normalized text match         -> 1.00, None
+    - strong phrase / strong overlap      -> 0.95, None
+    - partial overlap                     -> 0.90, note
+    - weak / no overlap                   -> 0.85, note
     """
-    # Chunk: validate if chunk_num resolved AND chunk_name provided
+    input_name: Optional[str] = None
+    actual_name: Optional[str] = None
+
     if resolved.get("chunk") and scope.chunk_num is not None and scope.chunk_name:
-        actual = resolved["chunk"][0].get("chunk_name", "")
-        return validate_struct_name(scope.chunk_name, actual)
+        input_name = scope.chunk_name
+        actual_name = resolved["chunk"][0].get("chunk_name", "")
+    elif resolved.get("lesson") and scope.lesson_num is not None and scope.lesson_name:
+        input_name = scope.lesson_name
+        actual_name = resolved["lesson"][0].get("lesson_name", "")
+    elif resolved.get("topic") and scope.topic_num is not None and scope.topic_name:
+        input_name = scope.topic_name
+        actual_name = resolved["topic"][0].get("topic_name", "")
 
-    # Lesson: validate if lesson_num resolved AND lesson_name provided
-    if resolved.get("lesson") and scope.lesson_num is not None and scope.lesson_name:
-        actual = resolved["lesson"][0].get("lesson_name", "")
-        return validate_struct_name(scope.lesson_name, actual)
+    # Numeric-only query -> full score
+    if not input_name:
+        return 1.00, None
 
-    # Topic: validate if topic_num resolved AND topic_name provided
-    if resolved.get("topic") and scope.topic_num is not None and scope.topic_name:
-        actual = resolved["topic"][0].get("topic_name", "")
-        return validate_struct_name(scope.topic_name, actual)
+    p = _norm_title(input_name)
+    a = _norm_title(actual_name or "")
 
-    return "exact", 0.0, ""
+    if not p or not a:
+        return 1.00, None
+
+    return _title_match_score(p, a)
+
+
+def _has_numeric_resolution(scope: SearchScope, resolved: Dict[str, Any]) -> bool:
+    """True when any *_num was given and successfully resolved to entities."""
+    if resolved.get("chunk") and scope.chunk_num is not None:
+        return True
+    if resolved.get("lesson") and scope.lesson_num is not None:
+        return True
+    if resolved.get("topic") and scope.topic_num is not None:
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +225,66 @@ def _semantic_scope_failure_reason(scope: SearchScope, resolved: Dict[str, Any])
 
 
 # ---------------------------------------------------------------------------
+# Structure-result fallback builder
+# ---------------------------------------------------------------------------
+
+def _build_structure_result(
+    *,
+    mode: str,
+    scope: SearchScope,
+    resolved: Dict[str, Any],
+    notes: List[str],
+    reason_if_confident: str,
+    reason_if_no_match: str,
+) -> ExecutionResult:
+    if not _has_any_resolved_structure(resolved):
+        return ExecutionResult(
+            mode=mode,
+            status="no_match",
+            reason=reason_if_no_match,
+            best_name_score=None,
+            best_keyword_score=None,
+            best_name_hit=None,
+            best_keyword_hit=None,
+            resolved_structure=resolved,
+            name_hits=[],
+            keyword_hits=[],
+            notes=notes,
+        )
+
+    name_score: Optional[float] = None
+    name_note_val: Optional[str] = None
+
+    if _has_numeric_resolution(scope, resolved):
+        name_score, name_note_val = _validate_name_text(scope, resolved)
+        if name_note_val:
+            notes.append(name_note_val)
+
+    if name_score is not None and name_score < 0.90:
+        status = "low_confidence"
+        reason = name_note_val or "Đã khớp theo số thứ tự nhưng tên đi kèm chưa khớp."
+    else:
+        status = "confident_match"
+        reason = reason_if_confident
+
+    return ExecutionResult(
+        mode=mode,
+        status=status,
+        reason=reason,
+        best_name_score=None,
+        best_keyword_score=None,
+        best_name_hit=None,
+        best_keyword_hit=None,
+        resolved_structure=resolved,
+        name_hits=[],
+        keyword_hits=[],
+        notes=notes,
+        name_similarity_score=name_score,
+        name_note=name_note_val,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -224,55 +326,47 @@ def execute_search(
             _, keyword_hits, sem_notes = run_semantic_search_neo(neo, scope, resolved)
             notes.extend(sem_notes)
 
-    # --- Structure-only: validate attached name and set confidence -----------
+    # --- Structure-only ------------------------------------------------------
     if strategy.mode == "structure_only":
-        if _has_any_resolved_structure(resolved):
-            match_level, penalty, val_note = _validate_attached_name(scope, resolved)
+        return _build_structure_result(
+            mode=strategy.mode,
+            scope=scope,
+            resolved=resolved,
+            notes=notes,
+            reason_if_confident="Resolved structural result from query.",
+            reason_if_no_match="No structural result matched this query.",
+        )
 
-            if val_note:
-                notes.append(val_note)
-
-            # Determine status from validation
-            if penalty >= 0.25:
-                status = "low_confidence"
-                reason = val_note or "Đã khớp theo số thứ tự nhưng tên không khớp."
-            elif penalty > 0.0:
-                status = "confident_match"
-                reason = val_note or "Đã khớp theo cấu trúc; tên khớp một phần."
-            else:
-                status = "confident_match"
-                reason = "Resolved structural result from query."
-
-            return ExecutionResult(
+    # --- Hybrid --------------------------------------------------------------
+    if strategy.mode == "hybrid":
+        # Nếu semantic không ra hit nhưng structure đã resolve được,
+        # fallback về structure thay vì trả no_match sai.
+        if not keyword_hits and _has_any_resolved_structure(resolved):
+            return _build_structure_result(
                 mode=strategy.mode,
-                status=status,
-                reason=reason,
-                best_name_score=None,
-                best_keyword_score=None,
-                best_name_hit=None,
-                best_keyword_hit=None,
-                resolved_structure=resolved,
-                name_hits=[],
-                keyword_hits=[],
+                scope=scope,
+                resolved=resolved,
                 notes=notes,
-                name_validation_penalty=penalty,
+                reason_if_confident="Resolved structural result from query.",
+                reason_if_no_match="No structural result matched this query.",
             )
 
+        status, reason, bks, best_keyword_hit = _evaluate_confidence(keyword_hits)
         return ExecutionResult(
             mode=strategy.mode,
-            status="no_match",
-            reason="No structural result matched this query.",
+            status=status,
+            reason=reason,
             best_name_score=None,
-            best_keyword_score=None,
+            best_keyword_score=bks,
             best_name_hit=None,
-            best_keyword_hit=None,
+            best_keyword_hit=best_keyword_hit,
             resolved_structure=resolved,
             name_hits=[],
-            keyword_hits=[],
+            keyword_hits=keyword_hits,
             notes=notes,
         )
 
-    # --- Hybrid / keyword_only: evaluate by keyword hits --------------------
+    # --- Keyword-only --------------------------------------------------------
     status, reason, bks, best_keyword_hit = _evaluate_confidence(keyword_hits)
 
     return ExecutionResult(

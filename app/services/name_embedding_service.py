@@ -1,4 +1,3 @@
-# app/services/name_embedding_service.py
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -12,66 +11,29 @@ def _vec_to_pg(vec: list[float]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Pure text builders (no DB required — used when parent names are already known)
+# Pure text builders (name only)
 # ---------------------------------------------------------------------------
 
-def topic_search_text(topic_name: str, subject_name: str = "", class_name: str = "") -> str:
-    parts = ["topic", topic_name.strip()]
-    if subject_name.strip():
-        parts.append(f"subject: {subject_name.strip()}")
-    if class_name.strip():
-        parts.append(f"class: {class_name.strip()}")
-    return " | ".join(p for p in parts if p)
+def topic_search_text(topic_name: str) -> str:
+    return topic_name.strip()
 
 
-def lesson_search_text(
-    lesson_name: str,
-    topic_name: str = "",
-    subject_name: str = "",
-    class_name: str = "",
-) -> str:
-    parts = ["lesson", lesson_name.strip()]
-    if topic_name.strip():
-        parts.append(f"topic: {topic_name.strip()}")
-    if subject_name.strip():
-        parts.append(f"subject: {subject_name.strip()}")
-    if class_name.strip():
-        parts.append(f"class: {class_name.strip()}")
-    return " | ".join(p for p in parts if p)
+def lesson_search_text(lesson_name: str) -> str:
+    return lesson_name.strip()
 
 
-def chunk_search_text(
-    chunk_name: str,
-    lesson_name: str = "",
-    topic_name: str = "",
-    subject_name: str = "",
-    class_name: str = "",
-) -> str:
-    parts = ["chunk", chunk_name.strip()]
-    if lesson_name.strip():
-        parts.append(f"lesson: {lesson_name.strip()}")
-    if topic_name.strip():
-        parts.append(f"topic: {topic_name.strip()}")
-    if subject_name.strip():
-        parts.append(f"subject: {subject_name.strip()}")
-    if class_name.strip():
-        parts.append(f"class: {class_name.strip()}")
-    return " | ".join(p for p in parts if p)
+def chunk_search_text(chunk_name: str) -> str:
+    return chunk_name.strip()
 
 
 # ---------------------------------------------------------------------------
-# DB-assisted text builders (SQL join to get parent chain)
+# DB-assisted text builders (fetch own name only)
 # ---------------------------------------------------------------------------
 
 def build_topic_search_text(pg: Session, topic_id: str) -> str:
     sql = sql_text("""
-        SELECT
-            t.topic_name,
-            s.subject_name,
-            cl.class_name
+        SELECT t.topic_name
         FROM topic t
-        LEFT JOIN subject s  ON s.subject_id = t.subject_id
-        LEFT JOIN "class" cl ON cl.class_id = s.class_id
         WHERE t.topic_id = :topic_id
         LIMIT 1
     """)
@@ -80,22 +42,13 @@ def build_topic_search_text(pg: Session, topic_id: str) -> str:
         return ""
     return topic_search_text(
         topic_name=row.get("topic_name") or "",
-        subject_name=row.get("subject_name") or "",
-        class_name=row.get("class_name") or "",
     )
 
 
 def build_lesson_search_text(pg: Session, lesson_id: str) -> str:
     sql = sql_text("""
-        SELECT
-            l.lesson_name,
-            t.topic_name,
-            s.subject_name,
-            cl.class_name
+        SELECT l.lesson_name
         FROM lesson l
-        LEFT JOIN topic   t  ON t.topic_id = l.topic_id
-        LEFT JOIN subject s  ON s.subject_id = t.subject_id
-        LEFT JOIN "class" cl ON cl.class_id = s.class_id
         WHERE l.lesson_id = :lesson_id
         LIMIT 1
     """)
@@ -104,25 +57,13 @@ def build_lesson_search_text(pg: Session, lesson_id: str) -> str:
         return ""
     return lesson_search_text(
         lesson_name=row.get("lesson_name") or "",
-        topic_name=row.get("topic_name") or "",
-        subject_name=row.get("subject_name") or "",
-        class_name=row.get("class_name") or "",
     )
 
 
 def build_chunk_search_text(pg: Session, chunk_id: str) -> str:
     sql = sql_text("""
-        SELECT
-            ch.chunk_name,
-            l.lesson_name,
-            t.topic_name,
-            s.subject_name,
-            cl.class_name
+        SELECT ch.chunk_name
         FROM chunk ch
-        LEFT JOIN lesson  l  ON l.lesson_id = ch.lesson_id
-        LEFT JOIN topic   t  ON t.topic_id = l.topic_id
-        LEFT JOIN subject s  ON s.subject_id = t.subject_id
-        LEFT JOIN "class" cl ON cl.class_id = s.class_id
         WHERE ch.chunk_id = :chunk_id
         LIMIT 1
     """)
@@ -131,10 +72,6 @@ def build_chunk_search_text(pg: Session, chunk_id: str) -> str:
         return ""
     return chunk_search_text(
         chunk_name=row.get("chunk_name") or "",
-        lesson_name=row.get("lesson_name") or "",
-        topic_name=row.get("topic_name") or "",
-        subject_name=row.get("subject_name") or "",
-        class_name=row.get("class_name") or "",
     )
 
 
@@ -154,7 +91,12 @@ def _upsert_topic_embedding(pg: Session, topic_id: str, search_text: str, vec: l
             model_name  = EXCLUDED.model_name,
             updated_at  = now()
     """)
-    pg.execute(sql, {"topic_id": topic_id, "search_text": search_text, "v": vec_lit, "model_name": MODEL_SHORT})
+    pg.execute(sql, {
+        "topic_id": topic_id,
+        "search_text": search_text,
+        "v": vec_lit,
+        "model_name": MODEL_SHORT,
+    })
 
 
 def _upsert_lesson_embedding(pg: Session, lesson_id: str, search_text: str, vec: list[float]) -> None:
@@ -169,7 +111,12 @@ def _upsert_lesson_embedding(pg: Session, lesson_id: str, search_text: str, vec:
             model_name  = EXCLUDED.model_name,
             updated_at  = now()
     """)
-    pg.execute(sql, {"lesson_id": lesson_id, "search_text": search_text, "v": vec_lit, "model_name": MODEL_SHORT})
+    pg.execute(sql, {
+        "lesson_id": lesson_id,
+        "search_text": search_text,
+        "v": vec_lit,
+        "model_name": MODEL_SHORT,
+    })
 
 
 def _upsert_chunk_embedding(pg: Session, chunk_id: str, search_text: str, vec: list[float]) -> None:
@@ -184,7 +131,12 @@ def _upsert_chunk_embedding(pg: Session, chunk_id: str, search_text: str, vec: l
             model_name  = EXCLUDED.model_name,
             updated_at  = now()
     """)
-    pg.execute(sql, {"chunk_id": chunk_id, "search_text": search_text, "v": vec_lit, "model_name": MODEL_SHORT})
+    pg.execute(sql, {
+        "chunk_id": chunk_id,
+        "search_text": search_text,
+        "v": vec_lit,
+        "model_name": MODEL_SHORT,
+    })
 
 
 # ---------------------------------------------------------------------------

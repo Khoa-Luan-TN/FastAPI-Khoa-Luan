@@ -1,4 +1,3 @@
-#services/query_parser.py
 from __future__ import annotations
 
 import re
@@ -6,9 +5,6 @@ from dataclasses import asdict, dataclass
 from typing import List, Optional
 
 
-# -------------------------------------------------------
-# Output type
-# -------------------------------------------------------
 @dataclass
 class ParsedQuery:
     original_query: str
@@ -18,15 +14,15 @@ class ParsedQuery:
 
     topic_num: Optional[int]
     topic_name: Optional[str]
-    topic_requested: bool          # True when "chủ đề/chương" keyword appeared, even without num/name
+    topic_requested: bool
 
     lesson_num: Optional[int]
     lesson_name: Optional[str]
-    lesson_requested: bool         # True when "bài/bài học" keyword appeared, even without num/name
+    lesson_requested: bool
 
     chunk_num: Optional[int]
     chunk_name: Optional[str]
-    chunk_requested: bool          # True when "mục" keyword appeared, even without num/name
+    chunk_requested: bool
 
     primary_keyword: str
     secondary_keywords: List[str]
@@ -36,11 +32,13 @@ class ParsedQuery:
 
 
 # -------------------------------------------------------
-# Filler phrases
-# Longest / most specific first
+# SAFE conversational fillers only
+# Không đưa các từ cấu trúc như: bài, chủ đề, chương, mục
+# Không đưa các từ nối như: và, hoặc
+# Không đưa các từ có thể mang nghĩa nội dung như: không, hay, biết, theo, trong...
 # -------------------------------------------------------
 _FILLERS: list[str] = [
-    # conversational wrappers
+    # dài và rõ nghĩa nhất
     "bạn có thể cho tôi xem",
     "bạn có thể cho tôi biết",
     "bạn có thể",
@@ -87,8 +85,10 @@ _FILLERS: list[str] = [
     "giải thích giúp tôi",
     "giải thích cho mình",
     "giải thích",
-    "được không",
-    # medium phrases
+    "thông tin về",
+    "nội dung về",
+
+    # ngắn nhưng vẫn khá an toàn
     "tôi muốn",
     "mình muốn",
     "cho mình",
@@ -98,22 +98,37 @@ _FILLERS: list[str] = [
     "xin hãy",
     "hỏi về",
     "tìm kiếm",
-    "tìm",
     "hãy",
-    "thông tin về",
-    "nội dung về",
-    "về",
     "xem",
-    "biết",
-    "là gì",
-    "là",
-    "không",
-    # bare pronouns / polite particles
+
+    # đại từ / hô ngữ an toàn
     "tôi",
     "mình",
+    "bạn",
+    "anh",
+    "chị",
+    "em",
     "xin",
 ]
 _FILLERS = sorted(set(_FILLERS), key=len, reverse=True)
+
+
+# -------------------------------------------------------
+# Tail noise: chỉ xoá ở cuối / đầu câu, không xoá giữa câu
+# -------------------------------------------------------
+_TAIL_NOISE: list[str] = [
+    "được không",
+    "đúng không",
+    "phải không",
+    "có được không",
+    "nhé",
+    "nhỉ",
+    "nha",
+    "ha",
+    "ạ",
+    "ơi",
+]
+_TAIL_NOISE = sorted(set(_TAIL_NOISE), key=len, reverse=True)
 
 
 # -------------------------------------------------------
@@ -161,6 +176,35 @@ _SEGMENT_RE = re.compile(
 )
 
 
+_WEAK_STRUCT_NAME_SUFFIX_PHRASES = sorted([
+    "thuộc về",
+    "ở trong",
+    "nằm trong",
+    "ở trên",
+    "ở dưới",
+], key=len, reverse=True)
+
+_WEAK_STRUCT_NAME_SUFFIX_TOKENS = {
+    "trong",
+    "của",
+    "ở",
+    "về",
+    "thuộc",
+    "trên",
+    "dưới",
+}
+
+_WEAK_ONLY_TOKENS = {
+    "trong",
+    "của",
+    "ở",
+    "về",
+    "thuộc",
+    "nằm",
+    "trên",
+    "dưới",
+}
+
 # -------------------------------------------------------
 # Helpers
 # -------------------------------------------------------
@@ -168,12 +212,19 @@ def _ws(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+def _normalize_text(s: str) -> str:
+    """
+    Chuẩn hoá nhẹ:
+    - lowercase
+    - đổi dấu câu phổ biến thành khoảng trắng
+    - giữ số và chữ tiếng Việt
+    """
+    s = str(s or "").lower()
+    s = re.sub(r"[,:;!?()\[\]{}\"'`~@#$%^&*_+=<>/\\|-]+", " ", s)
+    return _ws(s)
+
+
 def _strip_phrases_space_bounded(s: str, phrases: list[str]) -> str:
-    """
-    Remove phrases only when they appear as full whitespace-bounded tokens.
-    Uses (?<!\\S) / (?!\\S) instead of \\b because Vietnamese diacritics
-    do not behave well with Python word boundaries.
-    """
     for phrase in phrases:
         pattern = r"(?<!\S)" + re.escape(phrase) + r"(?!\S)"
         s = re.sub(pattern, " ", s, flags=re.IGNORECASE)
@@ -182,6 +233,64 @@ def _strip_phrases_space_bounded(s: str, phrases: list[str]) -> str:
 
 def _strip_fillers(s: str) -> str:
     return _strip_phrases_space_bounded(s, _FILLERS)
+
+def _strip_weak_struct_tail(name: str) -> str:
+    s = _ws((name or "").lower())
+    if not s:
+        return ""
+
+    changed = True
+    while changed:
+        changed = False
+
+        # cắt cụm yếu ở cuối trước
+        for phrase in _WEAK_STRUCT_NAME_SUFFIX_PHRASES:
+            pattern = r"(?<!\S)" + re.escape(phrase) + r"$"
+            new_s = _ws(re.sub(pattern, " ", s, flags=re.IGNORECASE))
+            if new_s != s:
+                s = new_s
+                changed = True
+                break
+
+        if changed:
+            continue
+
+        # cắt 1 token yếu ở cuối
+        tokens = s.split()
+        if tokens and tokens[-1] in _WEAK_STRUCT_NAME_SUFFIX_TOKENS:
+            tokens.pop()
+            s = " ".join(tokens)
+            changed = True
+
+    return _ws(s)
+
+
+def _strip_tail_noise(s: str) -> str:
+    """
+    Chỉ xoá các từ đệm ở đầu/cuối câu để tránh phá nghĩa giữa câu.
+    Ví dụ:
+      "mạng lan nhé" -> "mạng lan"
+      "ạ bài 8" -> "bài 8"
+    """
+    s = _ws(s)
+    if not s:
+        return s
+
+    changed = True
+    while changed:
+        changed = False
+        for phrase in _TAIL_NOISE:
+            head_pat = r"^(?:" + re.escape(phrase) + r")(?=\s|$)"
+            tail_pat = r"(?<!\S)(?:" + re.escape(phrase) + r")$"
+
+            new_s = re.sub(head_pat, " ", s, flags=re.IGNORECASE)
+            new_s = re.sub(tail_pat, " ", new_s, flags=re.IGNORECASE)
+            new_s = _ws(new_s)
+
+            if new_s != s:
+                s = new_s
+                changed = True
+    return s
 
 
 def _strip_entity_wrappers(s: str) -> str:
@@ -223,8 +332,6 @@ def _find_structural_segments(
         return [], _ws(s)
 
     segments: list[tuple[str, str]] = []
-
-    # Text before first trigger becomes leftover keyword space
     prefix = _ws(s[: matches[0].start()])
 
     for i, m in enumerate(matches):
@@ -244,24 +351,19 @@ def _find_structural_segments(
     return segments, prefix
 
 
-def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optional[str]]:
-    """
-    Parse one structural segment independently.
 
-    Rules:
-    - topic:
-        "chủ đề 2 dữ liệu" -> (2, "dữ liệu")
-        "chủ đề 2"         -> (2, None)
-        "chủ đề dữ liệu"   -> (None, "dữ liệu")
-    - lesson:
-        "bài 3 hệ điều hành" -> (3, "hệ điều hành")
-        "bài 3"              -> (3, None)
-        "bài hệ điều hành"   -> (None, "hệ điều hành")
-    - chunk:
-        "mục 1 abc" -> (1, "abc")
-        "mục 1"     -> (1, None)
-        "mục abc"   -> (None, "abc")
-    """
+def _drop_weak_struct_name(name: Optional[str]) -> Optional[str]:
+    s = _strip_weak_struct_tail(name or "")
+    if not s:
+        return None
+
+    tokens = s.split()
+    if len(tokens) <= 3 and all(tok in _WEAK_ONLY_TOKENS for tok in tokens):
+        return None
+
+    return s
+
+def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optional[str]]:
     if kind == "topic":
         body = re.sub(r"^(?:chủ\s+đề|chương)\s*", "", segment_text, flags=re.IGNORECASE)
     elif kind == "lesson":
@@ -270,6 +372,8 @@ def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optiona
         body = re.sub(r"^(?:mục)\s*", "", segment_text, flags=re.IGNORECASE)
 
     body = _strip_fillers(_ws(body))
+    body = _strip_tail_noise(body)
+
     if not body:
         return None, None
 
@@ -277,14 +381,16 @@ def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optiona
     if m:
         num = int(m.group(1))
         name = _ws(m.group(2) or "") or None
+        name = _drop_weak_struct_name(name)
         return num, name
 
-    return None, body
-
+    name = _drop_weak_struct_name(body)
+    return None, name
 
 def _split_keywords(cleaned: str) -> tuple[str, List[str]]:
     if not cleaned:
         return "", []
+
     parts = [
         p.strip()
         for p in re.split(r"\s*(?:,|và|hoặc)\s*", cleaned)
@@ -292,6 +398,7 @@ def _split_keywords(cleaned: str) -> tuple[str, List[str]]:
     ]
     if not parts:
         return "", []
+
     return parts[0], parts[1:]
 
 
@@ -300,10 +407,11 @@ def _split_keywords(cleaned: str) -> tuple[str, List[str]]:
 # -------------------------------------------------------
 def parse_query(raw: str) -> ParsedQuery:
     original = raw
-    s = _ws(raw.lower())
+    s = _normalize_text(raw)
 
     # 1) Strip general conversational fillers early
     s = _strip_fillers(s)
+    s = _strip_tail_noise(s)
 
     # 2) Extract class hint only from "lớp + số"
     class_hint, s = _extract_class_hint(s)
@@ -353,6 +461,7 @@ def parse_query(raw: str) -> ParsedQuery:
 
     # 6) Whatever remains outside structural segments becomes keyword space
     cleaned = _strip_fillers(_ws(leftover))
+    cleaned = _strip_tail_noise(cleaned)
 
     # 7) Build primary / secondary keywords from leftover free text only
     primary_keyword, secondary_keywords = _split_keywords(cleaned)

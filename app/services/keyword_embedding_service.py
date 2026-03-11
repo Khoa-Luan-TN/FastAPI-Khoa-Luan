@@ -17,15 +17,11 @@ def build_text_for_embedding(db: Session, chunk_id: str, keyword_name: str) -> s
             :keyword_name,
             ch.chunk_name,
             l.lesson_name,
-            t.topic_name,
-            s.subject_name,
-            cl.class_name
+            t.topic_name
         ) AS text_for_embedding
         FROM chunk ch
         LEFT JOIN lesson  l  ON l.lesson_id = ch.lesson_id
         LEFT JOIN topic   t  ON t.topic_id = l.topic_id
-        LEFT JOIN subject s  ON s.subject_id = t.subject_id
-        LEFT JOIN "class" cl ON cl.class_id = s.class_id
         WHERE ch.chunk_id = :chunk_id
         LIMIT 1
     """)

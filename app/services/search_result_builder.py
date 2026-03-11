@@ -60,8 +60,9 @@ class ResultItem:
     minio_url: Optional[str]
     keywords: List[str]
 
-    score_display: str             # "100%" for structure-only, "87%" for semantic
+    score_display: str             # "100%" for broad listing, "92%" etc. for numeric match
     source: str                    # "structure" | "semantic"
+    match_note: Optional[str] = None  # set when name similarity < 0.80 for numeric matches
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -82,8 +83,11 @@ def build_results(
         return []
 
     if execution.mode == "structure_only":
-        items = _from_structure(pg, execution.resolved_structure, target_level, scope)
-        return _apply_name_validation_penalty(items, execution.name_validation_penalty)
+        return _from_structure(
+            pg, execution.resolved_structure, target_level, scope,
+            name_score=execution.name_similarity_score,
+            name_note=execution.name_note,
+        )
 
     # keyword_only OR hybrid — all semantic hits are keyword_hits (chunk_id)
     if execution.keyword_hits:
@@ -91,8 +95,11 @@ def build_results(
 
     # hybrid with resolved structure but no keyword hits
     if _has_resolved_structure(execution.resolved_structure):
-        items = _from_structure(pg, execution.resolved_structure, target_level, scope)
-        return _apply_name_validation_penalty(items, execution.name_validation_penalty)
+        return _from_structure(
+            pg, execution.resolved_structure, target_level, scope,
+            name_score=execution.name_similarity_score,
+            name_note=execution.name_note,
+        )
 
     return []
 
@@ -101,15 +108,23 @@ def _has_resolved_structure(resolved: Dict[str, Any]) -> bool:
     return any(resolved.get(level) for level in ("class", "topic", "lesson", "chunk"))
 
 
-def _apply_name_validation_penalty(
-    items: List[ResultItem], penalty: float
+def _apply_struct_score(
+    items: List[ResultItem],
+    name_score: Optional[float],
+    name_note: Optional[str],
 ) -> List[ResultItem]:
-    """Adjust score_display on structure items when a name validation penalty exists."""
-    if penalty <= 0.0 or not items:
+    """
+    Apply numeric-match score and note to structure result items.
+    Only called when name_score is not None (numeric resolution happened).
+    Broad listings (name_score=None) keep the default "100%".
+    """
+    if name_score is None or not items:
         return items
-    display_pct = f"{max(60, round((1.0 - penalty) * 100))}%"
+    display_pct = f"{round(name_score * 100)}%"
     for item in items:
         item.score_display = display_pct
+        if name_note:
+            item.match_note = name_note
     return items
 
 
@@ -145,12 +160,15 @@ def _from_structure(
     resolved: Dict[str, Any],
     target_level: str,
     scope: Optional[SearchScope] = None,
+    name_score: Optional[float] = None,
+    name_note: Optional[str] = None,
 ) -> List[ResultItem]:
     """
     Use target_level to determine output.
     Scope-fetch fallbacks (listing all entities in parent scope) are only
     allowed when the user made a broad request (*_requested with no num/name).
     Specific requests (num or name given) that resolved to nothing → return [].
+    name_score/name_note are applied when a numeric match was validated.
     """
     class_ids  = [r["class_id"]  for r in resolved.get("class",  [])]
     topic_ids  = [r["topic_id"]  for r in resolved.get("topic",  [])]
@@ -159,32 +177,32 @@ def _from_structure(
 
     if target_level == "chunk":
         if chunk_ids:
-            return _enrich_chunks(pg, chunk_ids)
+            return _apply_struct_score(_enrich_chunks(pg, chunk_ids), name_score, name_note)
         if _is_specific_chunk_request(scope):
             return []
         return _fetch_chunks_by_scope(pg, lesson_ids, topic_ids, class_ids)
 
     if target_level == "lesson":
         if lesson_ids:
-            return _enrich_lessons(pg, lesson_ids)
+            return _apply_struct_score(_enrich_lessons(pg, lesson_ids), name_score, name_note)
         if _is_specific_lesson_request(scope):
             return []
         return _fetch_lessons_by_scope(pg, topic_ids, class_ids)
 
     if target_level == "topic":
         if topic_ids:
-            return _enrich_topics(pg, topic_ids)
+            return _apply_struct_score(_enrich_topics(pg, topic_ids), name_score, name_note)
         if _is_specific_topic_request(scope):
             return []
         return _fetch_topics_by_scope(pg, class_ids)
 
     # Fallback: deepest resolved
     if chunk_ids:
-        return _enrich_chunks(pg, chunk_ids)
+        return _apply_struct_score(_enrich_chunks(pg, chunk_ids), name_score, name_note)
     if lesson_ids:
-        return _enrich_lessons(pg, lesson_ids)
+        return _apply_struct_score(_enrich_lessons(pg, lesson_ids), name_score, name_note)
     if topic_ids:
-        return _enrich_topics(pg, topic_ids)
+        return _apply_struct_score(_enrich_topics(pg, topic_ids), name_score, name_note)
 
     return []
 

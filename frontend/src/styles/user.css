@@ -1225,6 +1225,27 @@
 }
 
 /* =====================================================
+   NAME NOTE — subtle info hint for partial name match
+   ===================================================== */
+.u-name-note {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #92400E;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 7px;
+  padding: 5px 10px;
+  margin: 4px 0 6px;
+  line-height: 1.4;
+}
+
+.u-name-note-modal {
+  font-size: 12.5px;
+  padding: 8px 12px;
+  margin: 0 0 4px;
+}
+
+/* =====================================================
    MODAL — BADGE VARIANTS
    ===================================================== */
 .u-modal-badge-subject {

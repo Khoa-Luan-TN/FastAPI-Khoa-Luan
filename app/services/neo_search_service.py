@@ -1,25 +1,4 @@
 # app/services/neo_search_service.py
-"""
-Neo4j-first search service.
-
-Graph schema:
-  (Class)-[:HAS_SUBJECT]->(Subject)-[:HAS_TOPIC]->(Topic)
-         -[:HAS_LESSON]->(Lesson)-[:HAS_CHUNK]->(Chunk)-[:HAS_KEYWORD]->(Keyword)
-
-Vector indexes (cosine, 768-dim):
-  topic_embedding_idx   · lesson_embedding_idx
-  chunk_embedding_idx   · keyword_embedding_idx
-
-Rules:
-  1. Hard signals  → Cypher exact match  (class_hint, topic_num, lesson_num, chunk_label)
-  2. Name signals  → vector index on the correct label's embedding
-       topic_name  → topic_embedding_idx
-       lesson_name → lesson_embedding_idx
-       chunk_name  → chunk_embedding_idx
-  3. *_requested   → list all entities in resolved parent scope
-  4. semantic_query → keyword_embedding_idx, normalized to chunk_id
-  5. PostgreSQL    → hydration only after final ids are found
-"""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple

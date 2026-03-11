@@ -13,15 +13,15 @@ class SearchScope:
 
     topic_num: Optional[int] = None
     topic_name: Optional[str] = None
-    topic_requested: bool = False    # "chủ đề/chương" mentioned, possibly without num/name
+    topic_requested: bool = False    
 
     lesson_num: Optional[int] = None
     lesson_name: Optional[str] = None
-    lesson_requested: bool = False   # "bài/bài học" mentioned, possibly without num/name
+    lesson_requested: bool = False  
 
     chunk_num: Optional[int] = None
     chunk_name: Optional[str] = None
-    chunk_requested: bool = False    # "mục" mentioned, possibly without num/name
+    chunk_requested: bool = False    
 
     semantic_query: str = ""
 
