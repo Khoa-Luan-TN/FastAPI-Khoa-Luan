@@ -776,3 +776,444 @@ def run_semantic_search_neo(
     keyword_hits.sort(key=lambda x: x["rerank_score"], reverse=True)
     notes.append(f"keyword_embedding_idx on '{q}': {len(keyword_hits)} hit(s)")
     return [], keyword_hits, notes
+
+
+# ---------------------------------------------------------------------------
+# Debug scoring helpers — used by /search/debug/score endpoint
+# ---------------------------------------------------------------------------
+
+def _vec_info(query_text: str) -> Tuple[List[float], Dict[str, Any]]:
+    t0 = perf_counter()
+    vec = embed_query(query_text)
+    embed_ms = round((perf_counter() - t0) * 1000, 2)
+    return vec, {
+        "query_text": query_text,
+        "has_vector": bool(vec),
+        "dimension": len(vec) if vec else 0,
+        "preview": vec[:8] if vec else [],
+        "embed_ms": embed_ms,
+    }
+
+
+def _score_and_rank(
+    candidates_raw: List[Dict[str, Any]],
+    query_vec: List[float],
+    query_text: str,
+    name_field: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Score raw candidates (with embedding field). Returns (scored_sorted_with_rank, no_embedding_list)."""
+    scored: List[Dict[str, Any]] = []
+    no_emb: List[Dict[str, Any]] = []
+
+    for row in candidates_raw:
+        emb = _to_float_vec(row.get("embedding"))
+        base = {k: v for k, v in row.items() if k != "embedding"}
+        if not emb:
+            base["has_embedding"] = False
+            base["cosine_score"] = None
+            base["lexical_adjustment"] = None
+            base["rerank_score"] = None
+            no_emb.append(base)
+            continue
+        cosine = _cosine_similarity(query_vec, emb)
+        lex_adj = _lexical_adjustment(query_text, str(row.get(name_field, "")))
+        base["has_embedding"] = True
+        base["cosine_score"] = round(cosine, 4)
+        base["lexical_adjustment"] = round(lex_adj, 4)
+        base["rerank_score"] = round(cosine + lex_adj, 4)
+        scored.append(base)
+
+    scored.sort(key=lambda x: x["rerank_score"], reverse=True)
+    for i, item in enumerate(scored):
+        item["rank"] = i + 1
+    return scored, no_emb
+
+
+def debug_topic_name_scores(
+    neo: Session,
+    scope: SearchScope,
+    class_ids: List[str],
+    k: int = _STRUCT_K,
+) -> Dict[str, Any]:
+    if not scope.topic_name:
+        return {"skipped": True, "reason": "no topic_name in scope"}
+
+    vec, vec_info = _vec_info(scope.topic_name)
+    if not vec:
+        return {
+            "skipped": False,
+            "embedding": vec_info,
+            "scope_ids": {"class_ids": class_ids},
+            "error": "embed_query returned empty vector",
+            "candidates": [],
+            "top_k": [],
+        }
+
+    t0 = perf_counter()
+    if class_ids:
+        rows = neo.run(
+            """
+            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t:Topic)
+            WHERE cls.class_id IN $class_ids
+            RETURN t.topic_id   AS topic_id,
+                   t.topic_name AS topic_name,
+                   t.topic_num  AS topic_num,
+                   cls.class_id   AS class_id,
+                   cls.class_name AS class_name,
+                   t.embedding  AS embedding
+            """,
+            class_ids=class_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_class"
+    else:
+        rows = neo.run(
+            """
+            CALL db.index.vector.queryNodes('topic_embedding_idx', $k, $vec)
+            YIELD node AS t, score
+            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t)
+            RETURN t.topic_id   AS topic_id,
+                   t.topic_name AS topic_name,
+                   t.topic_num  AS topic_num,
+                   cls.class_id   AS class_id,
+                   cls.class_name AS class_name,
+                   t.embedding  AS embedding
+            """,
+            k=k * 3, vec=vec,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "global_index"
+    fetch_ms = round((perf_counter() - t0) * 1000, 2)
+
+    scored, no_emb = _score_and_rank(raw, vec, scope.topic_name, "topic_name")
+    return {
+        "skipped": False,
+        "embedding": vec_info,
+        "scope_ids": {"class_ids": class_ids},
+        "index_mode": index_mode,
+        "candidate_count": len(raw),
+        "fetch_ms": fetch_ms,
+        "candidates": scored + no_emb,
+        "top_k": scored[:k],
+    }
+
+
+def debug_lesson_name_scores(
+    neo: Session,
+    scope: SearchScope,
+    topic_ids: List[str],
+    class_ids: List[str],
+    k: int = _STRUCT_K,
+) -> Dict[str, Any]:
+    if not scope.lesson_name:
+        return {"skipped": True, "reason": "no lesson_name in scope"}
+
+    vec, vec_info = _vec_info(scope.lesson_name)
+    if not vec:
+        return {
+            "skipped": False,
+            "embedding": vec_info,
+            "scope_ids": {"topic_ids": topic_ids, "class_ids": class_ids},
+            "error": "embed_query returned empty vector",
+            "candidates": [],
+            "top_k": [],
+        }
+
+    t0 = perf_counter()
+    if topic_ids:
+        rows = neo.run(
+            """
+            MATCH (t:Topic)-[:HAS_LESSON]->(l:Lesson)
+            WHERE t.topic_id IN $topic_ids
+            RETURN l.lesson_id   AS lesson_id,
+                   l.lesson_name AS lesson_name,
+                   l.lesson_num  AS lesson_num,
+                   t.topic_id    AS topic_id,
+                   l.embedding   AS embedding
+            """,
+            topic_ids=topic_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_topic"
+    elif class_ids:
+        rows = neo.run(
+            """
+            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t:Topic)-[:HAS_LESSON]->(l:Lesson)
+            WHERE cls.class_id IN $class_ids
+            RETURN l.lesson_id   AS lesson_id,
+                   l.lesson_name AS lesson_name,
+                   l.lesson_num  AS lesson_num,
+                   t.topic_id    AS topic_id,
+                   l.embedding   AS embedding
+            """,
+            class_ids=class_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_class"
+    else:
+        rows = neo.run(
+            """
+            CALL db.index.vector.queryNodes('lesson_embedding_idx', $k, $vec)
+            YIELD node AS l, score
+            MATCH (t:Topic)-[:HAS_LESSON]->(l)
+            RETURN l.lesson_id   AS lesson_id,
+                   l.lesson_name AS lesson_name,
+                   l.lesson_num  AS lesson_num,
+                   t.topic_id    AS topic_id,
+                   l.embedding   AS embedding
+            """,
+            k=k * 3, vec=vec,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "global_index"
+    fetch_ms = round((perf_counter() - t0) * 1000, 2)
+
+    scored, no_emb = _score_and_rank(raw, vec, scope.lesson_name, "lesson_name")
+    return {
+        "skipped": False,
+        "embedding": vec_info,
+        "scope_ids": {"topic_ids": topic_ids, "class_ids": class_ids},
+        "index_mode": index_mode,
+        "candidate_count": len(raw),
+        "fetch_ms": fetch_ms,
+        "candidates": scored + no_emb,
+        "top_k": scored[:k],
+    }
+
+
+def debug_chunk_name_scores(
+    neo: Session,
+    scope: SearchScope,
+    lesson_ids: List[str],
+    topic_ids: List[str],
+    class_ids: List[str],
+    k: int = _STRUCT_K,
+) -> Dict[str, Any]:
+    if not scope.chunk_name:
+        return {"skipped": True, "reason": "no chunk_name in scope"}
+
+    vec, vec_info = _vec_info(scope.chunk_name)
+    if not vec:
+        return {
+            "skipped": False,
+            "embedding": vec_info,
+            "scope_ids": {"lesson_ids": lesson_ids, "topic_ids": topic_ids, "class_ids": class_ids},
+            "error": "embed_query returned empty vector",
+            "candidates": [],
+            "top_k": [],
+        }
+
+    t0 = perf_counter()
+    if lesson_ids:
+        rows = neo.run(
+            """
+            MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            WHERE l.lesson_id IN $lesson_ids
+            RETURN c.chunk_id    AS chunk_id,
+                   c.chunk_name  AS chunk_name,
+                   c.chunk_label AS chunk_label,
+                   l.lesson_id   AS lesson_id,
+                   c.embedding   AS embedding
+            """,
+            lesson_ids=lesson_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_lesson"
+    elif topic_ids:
+        rows = neo.run(
+            """
+            MATCH (t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            WHERE t.topic_id IN $topic_ids
+            RETURN c.chunk_id    AS chunk_id,
+                   c.chunk_name  AS chunk_name,
+                   c.chunk_label AS chunk_label,
+                   l.lesson_id   AS lesson_id,
+                   c.embedding   AS embedding
+            """,
+            topic_ids=topic_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_topic"
+    elif class_ids:
+        rows = neo.run(
+            """
+            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            WHERE cls.class_id IN $class_ids
+            RETURN c.chunk_id    AS chunk_id,
+                   c.chunk_name  AS chunk_name,
+                   c.chunk_label AS chunk_label,
+                   l.lesson_id   AS lesson_id,
+                   c.embedding   AS embedding
+            """,
+            class_ids=class_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_class"
+    else:
+        rows = neo.run(
+            """
+            CALL db.index.vector.queryNodes('chunk_embedding_idx', $k, $vec)
+            YIELD node AS c, score
+            MATCH (l:Lesson)-[:HAS_CHUNK]->(c)
+            RETURN c.chunk_id    AS chunk_id,
+                   c.chunk_name  AS chunk_name,
+                   c.chunk_label AS chunk_label,
+                   l.lesson_id   AS lesson_id,
+                   c.embedding   AS embedding
+            """,
+            k=k * 3, vec=vec,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "global_index"
+    fetch_ms = round((perf_counter() - t0) * 1000, 2)
+
+    scored, no_emb = _score_and_rank(raw, vec, scope.chunk_name, "chunk_name")
+    return {
+        "skipped": False,
+        "embedding": vec_info,
+        "scope_ids": {"lesson_ids": lesson_ids, "topic_ids": topic_ids, "class_ids": class_ids},
+        "index_mode": index_mode,
+        "candidate_count": len(raw),
+        "fetch_ms": fetch_ms,
+        "candidates": scored + no_emb,
+        "top_k": scored[:k],
+    }
+
+
+def debug_keyword_scores(
+    neo: Session,
+    scope: SearchScope,
+    resolved: Dict[str, Any],
+    k: int = _SEM_K,
+) -> Dict[str, Any]:
+    q = (scope.semantic_query or "").strip()
+    if not q:
+        return {"skipped": True, "reason": "no semantic_query in scope"}
+
+    vec, vec_info = _vec_info(q)
+    if not vec:
+        return {
+            "skipped": False,
+            "semantic_query": q,
+            "embedding": vec_info,
+            "error": "embed_query returned empty vector",
+            "candidates": [],
+            "top_k": [],
+        }
+
+    class_ids  = [r["class_id"]  for r in resolved.get("class",  [])]
+    topic_ids  = [r["topic_id"]  for r in resolved.get("topic",  [])]
+    lesson_ids = [r["lesson_id"] for r in resolved.get("lesson", [])]
+    chunk_ids  = [r["chunk_id"]  for r in resolved.get("chunk",  [])]
+
+    scope_ids = {
+        "chunk_ids": chunk_ids,
+        "lesson_ids": lesson_ids,
+        "topic_ids": topic_ids,
+        "class_ids": class_ids,
+    }
+
+    t0 = perf_counter()
+    if chunk_ids:
+        rows = neo.run(
+            """
+            MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            WHERE c.chunk_id IN $chunk_ids
+            RETURN c.chunk_id      AS chunk_id,
+                   kw.keyword_name AS keyword_name,
+                   kw.embedding    AS embedding
+            """,
+            chunk_ids=chunk_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_chunk"
+    elif lesson_ids:
+        rows = neo.run(
+            """
+            MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            WHERE l.lesson_id IN $lesson_ids
+            RETURN c.chunk_id      AS chunk_id,
+                   kw.keyword_name AS keyword_name,
+                   kw.embedding    AS embedding
+            """,
+            lesson_ids=lesson_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_lesson"
+    elif topic_ids:
+        rows = neo.run(
+            """
+            MATCH (t:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            WHERE t.topic_id IN $topic_ids
+            RETURN c.chunk_id      AS chunk_id,
+                   kw.keyword_name AS keyword_name,
+                   kw.embedding    AS embedding
+            """,
+            topic_ids=topic_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_topic"
+    elif class_ids:
+        rows = neo.run(
+            """
+            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            WHERE cls.class_id IN $class_ids
+            RETURN c.chunk_id      AS chunk_id,
+                   kw.keyword_name AS keyword_name,
+                   kw.embedding    AS embedding
+            """,
+            class_ids=class_ids,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "scoped_by_class"
+    else:
+        rows = neo.run(
+            """
+            CALL db.index.vector.queryNodes('keyword_embedding_idx', $k, $vec)
+            YIELD node AS kw, score
+            MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw)
+            RETURN c.chunk_id      AS chunk_id,
+                   kw.keyword_name AS keyword_name,
+                   kw.embedding    AS embedding
+            """,
+            k=k * 3, vec=vec,
+        )
+        raw = [dict(r) for r in rows]
+        index_mode = "global_index"
+    fetch_ms = round((perf_counter() - t0) * 1000, 2)
+
+    scored: List[Dict[str, Any]] = []
+    no_emb: List[Dict[str, Any]] = []
+    for row in raw:
+        emb = _to_float_vec(row.get("embedding"))
+        base = {"chunk_id": row.get("chunk_id"), "keyword_name": row.get("keyword_name")}
+        if not emb:
+            base["has_embedding"] = False
+            base["semantic_score"] = None
+            base["lexical_adjustment"] = None
+            base["rerank_score"] = None
+            no_emb.append(base)
+            continue
+        cosine = _cosine_similarity(vec, emb)
+        lex_adj = _lexical_adjustment(q, str(row.get("keyword_name", "")))
+        base["has_embedding"] = True
+        base["semantic_score"] = round(cosine, 4)
+        base["lexical_adjustment"] = round(lex_adj, 4)
+        base["rerank_score"] = round(cosine + lex_adj, 4)
+        scored.append(base)
+
+    scored.sort(key=lambda x: x["rerank_score"], reverse=True)
+    for i, item in enumerate(scored):
+        item["rank"] = i + 1
+
+    return {
+        "skipped": False,
+        "semantic_query": q,
+        "embedding": vec_info,
+        "scope_ids": scope_ids,
+        "index_mode": index_mode,
+        "candidate_count": len(raw),
+        "fetch_ms": fetch_ms,
+        "candidates": scored + no_emb,
+        "top_k": scored[:k],
+    }
