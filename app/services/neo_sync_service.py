@@ -10,6 +10,30 @@ from app.services.neo_client import neo4j_driver, _neo4j_database  # hoặc impo
 ROOT_THING_ID = "thing"
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user
 
+_VECTOR_INDEX_SPECS = {
+    "topic":   ("topic_embedding_idx",   "Topic",   "embedding"),
+    "lesson":  ("lesson_embedding_idx",  "Lesson",  "embedding"),
+    "chunk":   ("chunk_embedding_idx",   "Chunk",   "embedding"),
+    "keyword": ("keyword_embedding_idx", "Keyword", "embedding"),
+}
+
+def _ensure_vector_index_for_col(session: NeoSession, col: str) -> None:
+    spec = _VECTOR_INDEX_SPECS.get(col)
+    if not spec:
+        return
+
+    idx_name, label, prop = spec
+
+    session.run(
+        f"""
+        CREATE VECTOR INDEX {idx_name} IF NOT EXISTS
+        FOR (n:{label}) ON (n.{prop})
+        OPTIONS {{indexConfig: {{
+            `vector.dimensions`: 768,
+            `vector.similarity_function`: 'cosine'
+        }}}}
+        """
+    )
 
 @contextmanager
 def neo_session() -> NeoSession:
@@ -55,7 +79,13 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         with neo_session() as s:
+            # chỉ ensure index khi payload thật sự có embedding
+            vec = payload.get("embedding")
+            if isinstance(vec, (list, tuple)) and len(vec) > 0:
+                _ensure_vector_index_for_col(s, col)
+
             handlers[col](s, payload)
+
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -357,22 +387,33 @@ def _upsert_keyword(
     )
 
 
-_NEO_NAME_EMBEDDING_INDEXES = [
-    ("topic_embedding_idx",  "Topic",  "embedding"),
-    ("lesson_embedding_idx", "Lesson", "embedding"),
-    ("chunk_embedding_idx",  "Chunk",  "embedding"),
+# Vector indexes required by neo_search_service.py
+_NEO_VECTOR_INDEXES = [
+    ("topic_embedding_idx",   "Topic",   "embedding"),
+    ("lesson_embedding_idx",  "Lesson",  "embedding"),
+    ("chunk_embedding_idx",   "Chunk",   "embedding"),
+    # keyword_embedding_idx is managed separately (created during keyword sync)
 ]
 
 
-def ensure_neo_name_embedding_indexes() -> dict:
+def ensure_neo_vector_indexes() -> dict:
     """
-    Create vector indexes for Topic / Lesson / Chunk embedding property in Neo4j.
-    Uses `IF NOT EXISTS` — safe to call repeatedly.
-    Returns status per index.
+    Create Neo4j vector indexes for Topic / Lesson / Chunk nodes (idempotent).
+
+    Index names must match neo_search_service.py exactly:
+      topic_embedding_idx, lesson_embedding_idx, chunk_embedding_idx
+
+    Safe to call repeatedly — uses `CREATE VECTOR INDEX … IF NOT EXISTS`.
+    Returns {index_name: "ok" | "error: ..."}.
+
+    Step 1 of the embedding setup flow:
+      1. ensure_neo_vector_indexes()   ← this function
+      2. rebuild PG name embeddings    (backfill/name-embeddings endpoint)
+      3. backfill Neo node embeddings  (backfill/neo-name-embeddings endpoint)
     """
     results = {}
     with neo_session() as s:
-        for idx_name, label, prop in _NEO_NAME_EMBEDDING_INDEXES:
+        for idx_name, label, prop in _NEO_VECTOR_INDEXES:
             try:
                 s.run(
                     f"""
@@ -388,3 +429,7 @@ def ensure_neo_name_embedding_indexes() -> dict:
             except Exception as e:
                 results[idx_name] = f"error: {e}"
     return results
+
+
+# Keep old name as alias so any other callers don't break
+ensure_neo_name_embedding_indexes = ensure_neo_vector_indexes

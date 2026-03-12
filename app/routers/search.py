@@ -227,6 +227,7 @@ def _build_public_response(
         "items": [item.to_dict() for item in items],
         "results": results,
         "resolved_structure": execution_dict.get("resolved_structure", {}),
+        "timings": execution_dict.get("timings"),
     }
 
     if debug:
@@ -275,6 +276,7 @@ def search(
         items=items,
         limit=limit,
         debug=debug,
+        
     )
 
 

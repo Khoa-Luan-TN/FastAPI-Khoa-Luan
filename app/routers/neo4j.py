@@ -12,7 +12,7 @@ from app.services.neo_client import get_neo4j_session
 from app.services.embedder import embed_query
 from app.services.postgre_client import SessionLocal
 from app.services.mongo_client import get_mongo_client
-from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, ensure_neo_name_embedding_indexes
+from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, ensure_neo_vector_indexes
 from app.services.name_embedding_service import ensure_name_embedding
 import app.models.model_postgre as pg_models
 
@@ -506,29 +506,39 @@ def backfill_numeric_fields():
 
 @router.post(
     "/create-embedding-indexes",
-    summary="Create vector indexes for Topic / Lesson / Chunk embedding property in Neo4j",
+    summary="[Step 1] Create Neo4j vector indexes for Topic / Lesson / Chunk",
 )
 def create_neo_embedding_indexes():
     """
-    Idempotent — uses `CREATE VECTOR INDEX … IF NOT EXISTS`.
-    Creates topic_embedding_idx, lesson_embedding_idx, chunk_embedding_idx (dim=768, cosine).
+    Step 1 of 3 — run this before the backfill endpoints.
+
+    Creates these vector indexes (dim=768, cosine) if they do not already exist:
+      - topic_embedding_idx   on (:Topic   {embedding})
+      - lesson_embedding_idx  on (:Lesson  {embedding})
+      - chunk_embedding_idx   on (:Chunk   {embedding})
+
+    These names are used verbatim by neo_search_service.py.
+    Safe to run multiple times — uses `CREATE VECTOR INDEX … IF NOT EXISTS`.
     """
-    results = ensure_neo_name_embedding_indexes()
+    results = ensure_neo_vector_indexes()
     ok = all(v == "ok" for v in results.values())
     return {"ok": ok, "indexes": results}
 
 
 @router.post(
     "/backfill/neo-name-embeddings",
-    summary="Backfill embedding property onto existing Topic / Lesson / Chunk Neo4j nodes",
+    summary="[Step 3] Backfill embedding property onto Topic / Lesson / Chunk Neo4j nodes",
 )
 def backfill_neo_name_embeddings():
     """
-    Queries all Topic / Lesson / Chunk rows from PostgreSQL (with parent JOIN for context),
-    computes passage embeddings, and upserts the `embedding` property onto Neo4j nodes.
+    Step 3 of 3 — run after create-embedding-indexes (step 1) and
+    backfill/name-embeddings (step 2).
 
-    Safe to run multiple times — CASE guard preserves existing embeddings only when new
-    value is NULL. This run always provides a non-null value, so all nodes are updated.
+    Reads embeddings from PostgreSQL (topic_embedding / lesson_embedding / chunk_embedding)
+    and writes the `embedding` property onto the corresponding Neo4j nodes so the vector
+    indexes (topic_embedding_idx, lesson_embedding_idx, chunk_embedding_idx) become searchable.
+
+    Safe to run multiple times.
     """
     pg = SessionLocal()
     stats: Dict[str, Any] = {
@@ -538,42 +548,66 @@ def backfill_neo_name_embeddings():
     }
 
     try:
-        topics  = pg.query(pg_models.Topic).all()
-        lessons = pg.query(pg_models.Lesson).all()
-        chunks  = pg.query(pg_models.Chunk).all()
+        # Read pre-computed embeddings from PG tables (populated by Step 2).
+        # JOIN with parent tables to get the fields neo_sync_upsert needs.
+        topic_rows = pg.execute(sql_text("""
+            SELECT te.topic_id, te.embedding::text AS emb_text,
+                   t.topic_name, t.subject_id, t.topic_num
+            FROM topic_embedding te
+            JOIN topic t USING (topic_id)
+        """)).mappings().all()
+
+        lesson_rows = pg.execute(sql_text("""
+            SELECT le.lesson_id, le.embedding::text AS emb_text,
+                   l.lesson_name, l.topic_id, l.lesson_num
+            FROM lesson_embedding le
+            JOIN lesson l USING (lesson_id)
+        """)).mappings().all()
+
+        chunk_rows = pg.execute(sql_text("""
+            SELECT ce.chunk_id, ce.embedding::text AS emb_text,
+                   c.chunk_name, c.lesson_id, c.chunk_label
+            FROM chunk_embedding ce
+            JOIN chunk c USING (chunk_id)
+        """)).mappings().all()
     except Exception as e:
-        pg.close()
         return {"ok": False, "error": str(e)}
-
-    _ENTITY_META = {
-        "topic":  [(r, "topic",  r.topic_id,  r.topic_name,  r.subject_id, {"topic_num": r.topic_num})   for r in topics],
-        "lesson": [(r, "lesson", r.lesson_id, r.lesson_name, r.topic_id,   {"lesson_num": r.lesson_num}) for r in lessons],
-        "chunk":  [(r, "chunk",  r.chunk_id,  r.chunk_name,  r.lesson_id,  {"chunk_label": r.chunk_label}) for r in chunks],
-    }
-
-    try:
-        for entity, rows in _ENTITY_META.items():
-            for row, col, eid, ename, parent_id, extra in rows:
-                try:
-                    with pg.begin_nested():
-                        emb = ensure_name_embedding(pg, col, eid)
-                    vec = emb.get("embedding") if isinstance(emb, dict) and emb.get("ok") else None
-                    if not (isinstance(vec, (list, tuple)) and len(vec) == 768):
-                        raise ValueError(emb.get("error") if isinstance(emb, dict) else "embedding failed")
-                    vec = [float(x) for x in vec]
-                    res = neo_sync_upsert(col, {"id": eid, "name": ename, "parent_id": parent_id, "embedding": vec, **extra})
-                    if res.get("ok"):
-                        stats[entity]["ok"] += 1
-                    else:
-                        stats[entity]["error"] += 1
-                        stats[entity]["errors"].append({"id": eid, "error": res.get("error")})
-                except Exception as e:
-                    stats[entity]["error"] += 1
-                    stats[entity]["errors"].append({"id": eid, "error": str(e)})
-
-        pg.commit()
     finally:
         pg.close()
+
+    def _parse_vec(emb_text: str) -> List[float]:
+        """Parse PG vector literal '[0.1,0.2,...]' into a float list."""
+        return [float(x) for x in emb_text.strip("[] ").split(",")]
+
+    _ENTITY_ROWS = [
+        ("topic",  topic_rows,  "topic_id",  "topic_name",  "subject_id", "topic_num",   None),
+        ("lesson", lesson_rows, "lesson_id", "lesson_name", "topic_id",   "lesson_num",  None),
+        ("chunk",  chunk_rows,  "chunk_id",  "chunk_name",  "lesson_id",  "chunk_label", None),
+    ]
+
+    for entity, rows, id_col, name_col, parent_col, extra_col, _ in _ENTITY_ROWS:
+        for row in rows:
+            eid = str(row[id_col])
+            try:
+                vec = _parse_vec(row["emb_text"])
+                if len(vec) != 768:
+                    raise ValueError(f"expected 768 dims, got {len(vec)}")
+                payload: Dict[str, Any] = {
+                    "id": eid,
+                    "name": row[name_col] or "",
+                    "parent_id": row[parent_col],
+                    "embedding": vec,
+                    extra_col: row[extra_col],
+                }
+                res = neo_sync_upsert(entity, payload)
+                if res.get("ok"):
+                    stats[entity]["ok"] += 1
+                else:
+                    stats[entity]["error"] += 1
+                    stats[entity]["errors"].append({"id": eid, "error": res.get("error")})
+            except Exception as e:
+                stats[entity]["error"] += 1
+                stats[entity]["errors"].append({"id": eid, "error": str(e)})
 
     total_ok    = sum(stats[e]["ok"]    for e in stats)
     total_error = sum(stats[e]["error"] for e in stats)
@@ -582,13 +616,16 @@ def backfill_neo_name_embeddings():
 
 @router.post(
     "/backfill/name-embeddings",
-    summary="Rebuild topic/lesson/chunk name embeddings in PostgreSQL",
+    summary="[Step 2] Rebuild topic/lesson/chunk name embeddings in PostgreSQL",
 )
 def backfill_name_embeddings():
     """
-    Iterates all Topic, Lesson, and Chunk rows in PostgreSQL, builds contextual
-    search text for each, embeds with multilingual-e5-base, and upserts into
-    topic_embedding / lesson_embedding / chunk_embedding tables.
+    Step 2 of 3 — run after create-embedding-indexes (step 1), before
+    backfill/neo-name-embeddings (step 3).
+
+    Iterates all Topic, Lesson, and Chunk rows in PostgreSQL, embeds each name
+    with multilingual-e5-base, and stores into:
+      topic_embedding / lesson_embedding / chunk_embedding tables.
 
     Safe to run multiple times — uses ON CONFLICT DO UPDATE.
     Returns per-entity counts and any per-row errors.

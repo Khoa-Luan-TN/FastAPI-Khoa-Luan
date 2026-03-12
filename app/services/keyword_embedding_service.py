@@ -1,10 +1,9 @@
-# app/services/keyword_embedding_service.py
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 from sqlalchemy import text as sql_text
 
-from app.services.embedder import embed_passage, MODEL_SHORT  # MODEL_SHORT="multilingual-e5-base"
+from app.services.embedder import embed_passage, MODEL_SHORT
 
 
 def _vec_to_pg(vec: list[float]) -> str:
@@ -12,22 +11,13 @@ def _vec_to_pg(vec: list[float]) -> str:
 
 
 def build_text_for_embedding(db: Session, chunk_id: str, keyword_name: str) -> str:
-    sql = sql_text("""
-        SELECT concat_ws(' | ',
-            :keyword_name,
-            ch.chunk_name,
-            l.lesson_name,
-            t.topic_name
-        ) AS text_for_embedding
-        FROM chunk ch
-        LEFT JOIN lesson  l  ON l.lesson_id = ch.lesson_id
-        LEFT JOIN topic   t  ON t.topic_id = l.topic_id
-        WHERE ch.chunk_id = :chunk_id
-        LIMIT 1
-    """)
-    row = db.execute(sql, {"chunk_id": chunk_id, "keyword_name": keyword_name}).mappings().first()
-    text = ((row or {}).get("text_for_embedding") or "").strip()
-    return text if text else keyword_name.strip()
+    """
+    Pure keyword embedding:
+    chỉ vector hoá chính keyword_name, không ghép thêm chunk/lesson/topic context.
+
+    Giữ nguyên signature (db, chunk_id, keyword_name) để không làm vỡ code gọi cũ.
+    """
+    return (keyword_name or "").strip()
 
 
 def upsert_keyword_embedding(db: Session, chunk_id: str, keyword_name: str, vec: list[float]) -> None:
@@ -53,11 +43,17 @@ def upsert_keyword_embedding(db: Session, chunk_id: str, keyword_name: str, vec:
 def ensure_keyword_embedding(db: Session, chunk_id: str, keyword_name: str) -> dict:
     text = build_text_for_embedding(db, chunk_id, keyword_name)
 
-    # ✅ IMPORTANT: keyword lưu DB dùng passage:
-    vec = embed_passage(text)
+    if not text:
+        return {"ok": False, "error": "keyword_name is empty"}
 
-    # Neo4j thích float python thuần
+    # Keyword embedding dùng passage
+    vec = embed_passage(text)
     vec = [float(x) for x in vec]
 
     upsert_keyword_embedding(db, chunk_id, keyword_name, vec)
-    return {"ok": True, "embedding": vec, "model_name": MODEL_SHORT}
+    return {
+        "ok": True,
+        "search_text": text,
+        "embedding": vec,
+        "model_name": MODEL_SHORT,
+    }

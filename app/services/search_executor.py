@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+from time import perf_counter
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Tuple
+
 
 from neo4j import Session
 
@@ -10,7 +12,7 @@ from app.services.search_scope_builder import SearchScope
 from app.services.search_strategy_builder import SearchStrategy
 from app.services.neo_search_service import (
     resolve_structure_neo,
-    run_semantic_search_neo,
+    run_semantic_search_neo,    
 )
 
 # Confidence thresholds
@@ -41,6 +43,7 @@ class ExecutionResult:
 
     name_similarity_score: Optional[float] = None
     name_note: Optional[str] = None
+    timings: Optional[Dict[str, float]] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -236,6 +239,7 @@ def _build_structure_result(
     notes: List[str],
     reason_if_confident: str,
     reason_if_no_match: str,
+    timings: Optional[Dict[str, float]] = None,
 ) -> ExecutionResult:
     if not _has_any_resolved_structure(resolved):
         return ExecutionResult(
@@ -250,6 +254,7 @@ def _build_structure_result(
             name_hits=[],
             keyword_hits=[],
             notes=notes,
+            timings=timings,
         )
 
     name_score: Optional[float] = None
@@ -281,6 +286,7 @@ def _build_structure_result(
         notes=notes,
         name_similarity_score=name_score,
         name_note=name_note_val,
+        timings=timings,
     )
 
 
@@ -293,7 +299,16 @@ def execute_search(
     scope: SearchScope,
     strategy: SearchStrategy,
 ) -> ExecutionResult:
+    total_start = perf_counter()
+    timings: Dict[str, float] = {}
+
     if strategy.mode == "empty":
+        total_end = perf_counter()
+        timings["structure_ms"] = 0.0
+        timings["semantic_ms"] = 0.0
+        timings["finalize_ms"] = 0.0
+        timings["total_ms"] = round((total_end - total_start) * 1000, 2)
+
         return ExecutionResult(
             mode="empty",
             status="no_match",
@@ -306,6 +321,7 @@ def execute_search(
             name_hits=[],
             keyword_hits=[],
             notes=["No usable signals in query."],
+            timings=timings,
         )
 
     notes: List[str] = []
@@ -313,11 +329,15 @@ def execute_search(
     keyword_hits: List[Dict[str, Any]] = []
 
     # --- Structure resolution ------------------------------------------------
+    structure_start = perf_counter()
     if strategy.use_structure_filters:
         resolved, struct_notes = resolve_structure_neo(neo, scope)
         notes.extend(struct_notes)
+    structure_end = perf_counter()
+    timings["structure_ms"] = round((structure_end - structure_start) * 1000, 2)
 
     # --- Keyword semantic search ---------------------------------------------
+    semantic_start = perf_counter()
     if strategy.use_semantic_search:
         failure_reason = _semantic_scope_failure_reason(scope, resolved)
         if failure_reason:
@@ -325,34 +345,51 @@ def execute_search(
         else:
             _, keyword_hits, sem_notes = run_semantic_search_neo(neo, scope, resolved)
             notes.extend(sem_notes)
+    semantic_end = perf_counter()
+    timings["semantic_ms"] = round((semantic_end - semantic_start) * 1000, 2)
 
     # --- Structure-only ------------------------------------------------------
+    finalize_start = perf_counter()
+
     if strategy.mode == "structure_only":
-        return _build_structure_result(
+        result = _build_structure_result(
             mode=strategy.mode,
             scope=scope,
             resolved=resolved,
             notes=notes,
             reason_if_confident="Resolved structural result from query.",
             reason_if_no_match="No structural result matched this query.",
+            timings=timings,
         )
+        finalize_end = perf_counter()
+        timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+        timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+        result.timings = timings
+        return result
 
     # --- Hybrid --------------------------------------------------------------
     if strategy.mode == "hybrid":
         # Nếu semantic không ra hit nhưng structure đã resolve được,
         # fallback về structure thay vì trả no_match sai.
         if not keyword_hits and _has_any_resolved_structure(resolved):
-            return _build_structure_result(
+            result = _build_structure_result(
                 mode=strategy.mode,
                 scope=scope,
                 resolved=resolved,
                 notes=notes,
                 reason_if_confident="Resolved structural result from query.",
                 reason_if_no_match="No structural result matched this query.",
+                timings=timings,
             )
+            finalize_end = perf_counter()
+            timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+            timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+            result.timings = timings
+            return result
 
         status, reason, bks, best_keyword_hit = _evaluate_confidence(keyword_hits)
-        return ExecutionResult(
+
+        result = ExecutionResult(
             mode=strategy.mode,
             status=status,
             reason=reason,
@@ -364,12 +401,18 @@ def execute_search(
             name_hits=[],
             keyword_hits=keyword_hits,
             notes=notes,
+            timings=timings,
         )
+        finalize_end = perf_counter()
+        timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+        timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+        result.timings = timings
+        return result
 
     # --- Keyword-only --------------------------------------------------------
     status, reason, bks, best_keyword_hit = _evaluate_confidence(keyword_hits)
 
-    return ExecutionResult(
+    result = ExecutionResult(
         mode=strategy.mode,
         status=status,
         reason=reason,
@@ -381,4 +424,12 @@ def execute_search(
         name_hits=[],
         keyword_hits=keyword_hits,
         notes=notes,
+        timings=timings,
     )
+
+    finalize_end = perf_counter()
+    timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+    timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+    result.timings = timings
+    return result
+
