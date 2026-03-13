@@ -48,15 +48,6 @@ def _lexical_adjustment(query: str, text: str) -> float:
 
     return adjust
 
-# Gói kết quả search thành object hoàn chỉnh.
-def _scored_hit(base: Dict[str, Any], query: str, text: str, score: float) -> Dict[str, Any]:
-    lexical_adjustment = _lexical_adjustment(query, text)
-    out = dict(base)
-    out["semantic_score"] = round(score, 4)
-    out["lexical_adjustment"] = round(lexical_adjustment, 4)
-    out["rerank_score"] = round(score + lexical_adjustment, 4)
-    return out
-
 def _to_float_vec(v: Any) -> List[float]:
     if not isinstance(v, (list, tuple)):
         return []
@@ -106,6 +97,36 @@ def _build_keyword_candidate_text(row: Dict[str, Any]) -> str:
 
     return ". ".join(parts)
 
+def _keyword_lexical_bonus(query: str, keyword_name: str) -> tuple[float, bool]:
+    q = _norm_text(query)
+    k = _norm_text(keyword_name)
+
+    if not q or not k:
+        return 0.0, False
+
+    # khớp toàn bộ keyword
+    if q == k:
+        return 0.20, True
+
+    q_tokens = q.split()
+    k_tokens = k.split()
+
+    common = set(q_tokens) & set(k_tokens)
+    common_count = len(common)
+
+    if common_count == 0:
+        return 0.0, False
+
+    # query là cụm con nằm trong keyword và có ít nhất 2 token
+    if q in k and len(q_tokens) >= 2:
+        return 0.10, False
+
+    # trùng từ khá mạnh
+    if common_count >= 2:
+        return 0.08, False
+
+    # chỉ trùng 1 từ
+    return 0.03, False
 
 def _rank_scoped_rows(
     rows: List[Dict[str, Any]],
@@ -805,22 +826,32 @@ def run_semantic_search_neo(
 
     for i, r in enumerate(raw):
         candidate_text = candidate_texts[i]
+        keyword_name = str(r.get("keyword_name", ""))
+
         cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
         cross_score = _sigmoid(float(cross_raw))
-        lexical_adjustment = _lexical_adjustment(q, str(r.get("keyword_name", "")))
+
+        lexical_bonus, exact_keyword_match = _keyword_lexical_bonus(q, keyword_name)
+
+        # exact match mạnh thì đẩy lên tuyệt đối
+        if exact_keyword_match and cross_score >= 0.80:
+            rerank_score = 1.0
+        else:
+            rerank_score = min(1.0, cross_score + lexical_bonus)
 
         keyword_hits.append({
             "chunk_id": r["chunk_id"],
             "chunk_name": r.get("chunk_name"),
             "chunk_label": r.get("chunk_label"),
-            "keyword_name": r["keyword_name"],
+            "keyword_name": keyword_name,
             "candidate_text": candidate_text,
 
             "semantic_score": round(float(r.get("score", 0.0)), 4),
             "cross_encoder_raw": round(float(cross_raw), 4),
             "cross_encoder_score": round(cross_score, 4),
-            "lexical_adjustment": round(lexical_adjustment, 4),
-            "rerank_score": round(cross_score, 4),
+            "lexical_bonus": round(lexical_bonus, 4),
+            "exact_keyword_match": exact_keyword_match,
+            "rerank_score": round(rerank_score, 4),
         })
 
     keyword_hits.sort(key=lambda x: x["rerank_score"], reverse=True)
@@ -1193,22 +1224,32 @@ def debug_keyword_scores(
     cross_raw_scores = rerank_pairs(q, candidate_texts)
 
     scored: List[Dict[str, Any]] = []
+    
     for i, row in enumerate(raw):
+        keyword_name = str(row.get("keyword_name", ""))
+
         cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
         cross_score = _sigmoid(float(cross_raw))
-        lex_adj = _lexical_adjustment(q, str(row.get("keyword_name", "")))
+
+        lexical_bonus, exact_keyword_match = _keyword_lexical_bonus(q, keyword_name)
+
+        if exact_keyword_match and cross_score >= 0.80:
+            rerank_score = 1.0
+        else:
+            rerank_score = min(1.0, cross_score + lexical_bonus)
 
         scored.append({
             "chunk_id": row.get("chunk_id"),
             "chunk_name": row.get("chunk_name"),
             "chunk_label": row.get("chunk_label"),
-            "keyword_name": row.get("keyword_name"),
+            "keyword_name": keyword_name,
             "candidate_text": candidate_texts[i],
             "semantic_score": round(float(row.get("score", 0.0)), 4),
             "cross_encoder_raw": round(float(cross_raw), 4),
             "cross_encoder_score": round(cross_score, 4),
-            "lexical_adjustment": round(lex_adj, 4),
-            "rerank_score": round(cross_score, 4),
+            "lexical_bonus": round(lexical_bonus, 4),
+            "exact_keyword_match": exact_keyword_match,
+            "rerank_score": round(rerank_score, 4),
         })
 
     scored.sort(key=lambda x: x["rerank_score"], reverse=True)
