@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Tuple, Annotated
 from pydantic import BaseModel
 from app.services.postgre_client import SessionLocal, engine
 import app.models.model_postgre as models
-from app.services.embedder import embed_query
 
 
 router = APIRouter(prefix="/admin/postgre", tags=["PostgreSQL"])

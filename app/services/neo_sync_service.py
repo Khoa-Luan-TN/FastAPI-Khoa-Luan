@@ -387,19 +387,11 @@ def _upsert_keyword(
     )
 
 
-# Vector indexes required by neo_search_service.py
-_NEO_VECTOR_INDEXES = [
-    ("topic_embedding_idx",   "Topic",   "embedding"),
-    ("lesson_embedding_idx",  "Lesson",  "embedding"),
-    ("chunk_embedding_idx",   "Chunk",   "embedding"),
-    # keyword_embedding_idx is managed separately (created during keyword sync)
-]
-
-
 def ensure_neo_vector_indexes() -> dict:
+    """Create all vector indexes (idempotent — uses IF NOT EXISTS)."""
     results = {}
     with neo_session() as s:
-        for idx_name, label, prop in _NEO_VECTOR_INDEXES:
+        for col, (idx_name, label, prop) in _VECTOR_INDEX_SPECS.items():
             try:
                 s.run(
                     f"""
@@ -417,5 +409,26 @@ def ensure_neo_vector_indexes() -> dict:
     return results
 
 
-# Keep old name as alias so any other callers don't break
-ensure_neo_name_embedding_indexes = ensure_neo_vector_indexes
+def detach_delete_entity(col: str, entity_id: str) -> dict:
+    """Remove a Neo4j node and all its relationships by entity id."""
+    col_to_spec = {
+        "class":   ("Class",   "class_id"),
+        "subject": ("Subject", "subject_id"),
+        "topic":   ("Topic",   "topic_id"),
+        "lesson":  ("Lesson",  "lesson_id"),
+        "chunk":   ("Chunk",   "chunk_id"),
+        "keyword": ("Keyword", "keyword_key"),
+    }
+    spec = col_to_spec.get(col)
+    if not spec:
+        return {"ok": True, "skipped": True}
+    label, id_prop = spec
+    try:
+        with neo_session() as s:
+            s.run(
+                f"MATCH (n:{label} {{{id_prop}: $eid}}) DETACH DELETE n",
+                eid=entity_id,
+            )
+        return {"ok": True, "deleted": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

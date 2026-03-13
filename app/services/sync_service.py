@@ -1,11 +1,11 @@
-# app/routers/mongo_sync.py
+# app/services/sync_service.py
 import re
 from typing import Any, Optional
 
 from bson import ObjectId
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
-from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
+from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
 from app.services.entity_embedding_service import ensure_keyword_embedding, ensure_entity_embedding as ensure_name_embedding
 
 
@@ -321,6 +321,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if existing:
             if existing.chunk_id != chunk_id or existing.keyword_name != keyword_name:
+                old_neo_id = f"{existing.chunk_id}::{existing.keyword_name}"
                 pg.delete(existing)
                 pg.flush()
                 obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
@@ -331,6 +332,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                     "pg_id": keyword_key,
                     "chunk_id": chunk_id,
                     "keyword_name": keyword_name,
+                    "old_neo_id": old_neo_id,
                     "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
                 }
 
@@ -354,7 +356,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             "keyword_name": keyword_name,
             "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
         }
-
 
     if col == "user":
         def _s(v) -> str:
@@ -401,45 +402,78 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
     """
     Mongo -> PG -> (PG ok) -> Neo
-    Soft-delete only: we do NOT hard delete in Postgres.
+    Soft-delete: if doc is marked deleted, PG row is still updated but Neo node is removed.
     """
     if col not in SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
+
+    is_deleted = doc.get("is_deleted") is True
 
     pg = SessionLocal()
     try:
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
-            if col in {"topic", "lesson", "chunk"} and isinstance(info, dict):
-                pg_id = info.get("pg_id")
-                if pg_id:
-                    emb = ensure_name_embedding(pg, col, pg_id)
-                    _attach_vec_to_neo_payload(
-                        info,
-                        emb.get("embedding") if isinstance(emb, dict) else None,
-                    )
+            if not is_deleted:
+                if col in {"topic", "lesson", "chunk"} and isinstance(info, dict):
+                    pg_id = info.get("pg_id")
+                    if pg_id:
+                        emb = ensure_name_embedding(pg, col, pg_id)
+                        _attach_vec_to_neo_payload(
+                            info,
+                            emb.get("embedding") if isinstance(emb, dict) else None,
+                        )
 
-            if col == "keyword" and isinstance(info, dict):
-                cid = info.get("chunk_id")
-                kn = info.get("keyword_name")
-                if cid and kn:
-                    emb = ensure_keyword_embedding(pg, cid, kn)
-                    _attach_vec_to_neo_payload(
-                        info,
-                        emb.get("embedding") if isinstance(emb, dict) else None,
-                        model_name=emb.get("model_name") if isinstance(emb, dict) else None,
-                    )
+                if col == "keyword" and isinstance(info, dict):
+                    cid = info.get("chunk_id")
+                    kn = info.get("keyword_name")
+                    if cid and kn:
+                        emb = ensure_keyword_embedding(pg, cid, kn)
+                        _attach_vec_to_neo_payload(
+                            info,
+                            emb.get("embedding") if isinstance(emb, dict) else None,
+                            model_name=emb.get("model_name") if isinstance(emb, dict) else None,
+                        )
 
-        neo_res = {"ok": True, "skipped": True}
+        neo_cleanup: Optional[dict] = None
+        neo_upsert: Optional[dict] = None
+
         if col in NEO_SYNCABLE_COLS:
-            neo_payload = info.pop("neo_payload", None) if isinstance(info, dict) else None
-            if not isinstance(neo_payload, dict):
-                neo_res = {"ok": False, "error": "missing neo_payload"}
+            if is_deleted:
+                pg_id = info.get("pg_id") if isinstance(info, dict) else None
+                if pg_id:
+                    neo_upsert = detach_delete_entity(col, str(pg_id))
+                else:
+                    neo_upsert = {"ok": True, "skipped": True}
             else:
-                neo_res = neo_sync_upsert(col, neo_payload)
+                # Stale keyword cleanup when identity changed (recreate op)
+                if col == "keyword" and isinstance(info, dict) and info.get("op") == "recreate":
+                    old_neo_id = info.get("old_neo_id")
+                    if old_neo_id:
+                        neo_cleanup = detach_delete_entity("keyword", old_neo_id)
 
-        return {"ok": True, **(info or {}), "neo": neo_res}
+                cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
+                if not cleanup_ok:
+                    # Skip upsert: avoid inconsistent state when old node isn't gone
+                    neo_upsert = {"ok": False, "error": "skipped: stale keyword cleanup failed"}
+                else:
+                    neo_payload = info.pop("neo_payload", None) if isinstance(info, dict) else None
+                    if not isinstance(neo_payload, dict):
+                        neo_upsert = {"ok": False, "error": "missing neo_payload"}
+                    else:
+                        neo_upsert = neo_sync_upsert(col, neo_payload)
+
+        cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
+        upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
+        top_ok = cleanup_ok and upsert_ok
+
+        result: dict = {"ok": top_ok, **(info or {})}
+        if neo_cleanup is not None:
+            result["neo_cleanup"] = neo_cleanup
+        if neo_upsert is not None:
+            result["neo_upsert"] = neo_upsert
+        result["neo"] = neo_upsert or neo_cleanup or {"ok": True, "skipped": True}
+        return result
     except Exception as e:
         pg.rollback()
         return {"ok": False, "error": str(e)}

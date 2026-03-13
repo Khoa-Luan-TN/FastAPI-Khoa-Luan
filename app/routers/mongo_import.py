@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, Request, UploadFile, File, HTTPException, 
 
 from app.services.mongo_client import get_mongo_client
 from app.services.mongo_import_service import import_excel_to_mongo
-from app.routers.mongo_sync import sync_doc_to_postgres
+from app.services.sync_service import sync_doc_to_postgres
 
 router = APIRouter()
 mongo = get_mongo_client()

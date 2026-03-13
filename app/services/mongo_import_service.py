@@ -26,9 +26,19 @@ REF_MAP = {
 JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", "table_url"}
 
 # ====== MinIO auto-mapping config ======
-MINIO_BASE_DIR = (os.getenv("MINIO_DOC_PREFIX") or "documents").strip().strip("/")  # default: documents
-DEFAULT_BUCKET = (os.getenv("MINIO_BUCKET") or "data-edu").strip()
-MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
+
+def _minio_base_dir() -> str:
+    return (os.getenv("MINIO_DOC_PREFIX") or "documents").strip().strip("/")
+
+
+def _default_bucket() -> str:
+    return (os.getenv("MINIO_BUCKET") or "data-edu").strip()
+
+
+def _minio_public_base_url() -> str:
+    return (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
+
+
 
 AUTO_MINIO_COLS = {"subject", "topic", "lesson", "chunk"}  # bạn nói: trừ class + keyword
 
@@ -94,9 +104,9 @@ def _two_digit(v: Any) -> str:
 
 
 def _minio_public_url(bucket: str, object_key: str) -> str:
-    b = (bucket or DEFAULT_BUCKET).strip()
+    b = (bucket or _default_bucket()).strip()
     ok = (object_key or "").lstrip("/")
-    return f"{MINIO_PUBLIC_BASE_URL}/{b}/{quote(ok, safe='/')}"
+    return f"{_minio_public_base_url()}/{b}/{quote(ok, safe='/')}"
 
 
 def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
@@ -220,7 +230,7 @@ def _pick_bucket_from_row(rec: Dict[str, Any]) -> str:
         or str(rec.get("bucket") or "").strip()
         or str(rec.get("minio_bucket") or "").strip()
     )
-    return b or DEFAULT_BUCKET
+    return b or _default_bucket()
 
 
 def _get_class_slug(db, class_ref: str, ctx: Dict[str, Any]) -> str:
@@ -257,7 +267,7 @@ def _get_subject_base_prefix(db, subject_ref: str, ctx: Dict[str, Any]) -> Tuple
 
     m = d.get("minio") or {}
     ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or DEFAULT_BUCKET
+    bucket = (m.get("bucket") or "").strip() or _default_bucket()
 
     # Nếu subject đã có minio trước đó => derive base_prefix từ object_key
     base_prefix = ""
@@ -271,7 +281,7 @@ def _get_subject_base_prefix(db, subject_ref: str, ctx: Dict[str, Any]) -> Tuple
         type_slug = _slugify_vi(d.get("subject_type"))
         subj_slug = _slugify_vi(d.get("subject_name"))
         if class_slug and type_slug and subj_slug:
-            base_prefix = f"{MINIO_BASE_DIR}/{type_slug}/{class_slug}/{subj_slug}"
+            base_prefix = f"{_minio_base_dir()}/{type_slug}/{class_slug}/{subj_slug}"
 
     if base_prefix:
         ctx.setdefault("subject", {})[subject_ref] = {"bucket": bucket, "base_prefix": base_prefix}
@@ -293,7 +303,7 @@ def _get_topic_base_prefix(db, topic_ref: str, ctx: Dict[str, Any]) -> Tuple[str
 
     m = d.get("minio") or {}
     ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or DEFAULT_BUCKET
+    bucket = (m.get("bucket") or "").strip() or _default_bucket()
 
     base_prefix = ""
     if ok and "/topic/" in ok:
@@ -325,7 +335,7 @@ def _get_lesson_base_prefix(db, lesson_ref: str, ctx: Dict[str, Any]) -> Tuple[s
 
     m = d.get("minio") or {}
     ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or DEFAULT_BUCKET
+    bucket = (m.get("bucket") or "").strip() or _default_bucket()
 
     base_prefix = ""
     if ok and "/lesson/" in ok:
@@ -389,7 +399,7 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         if not (bucket and class_slug and type_slug and subj_slug):
             return  # thiếu dữ liệu -> bỏ qua, user tự set minio
 
-        base_prefix = f"{MINIO_BASE_DIR}/{type_slug}/{class_slug}/{subj_slug}"
+        base_prefix = f"{_minio_base_dir()}/{type_slug}/{class_slug}/{subj_slug}"
         object_key = f"{base_prefix}/sgk/sgk.pdf"
 
         doc["minio"] = {
@@ -556,8 +566,9 @@ def import_excel_to_mongo(
                 if sync_one and op != "noop":
                     full = db[col].find_one({"import_key": import_key})
                     if full:
-                        sync_one(col, full)
-                        synced += 1
+                        sync_result = sync_one(col, full)
+                        if isinstance(sync_result, dict) and sync_result.get("ok"):
+                            synced += 1
 
                 if op == "insert":
                     inserted += 1

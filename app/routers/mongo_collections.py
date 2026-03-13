@@ -10,6 +10,7 @@ mongo = get_mongo_client()
 db = mongo["db"]
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+CORE_COLLECTIONS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "user"}
 
 def _normalize_collection_name(name: str) -> str:
     name = name.strip()
@@ -42,6 +43,8 @@ def create_collection(collection_name: str = Path(...)):
 @router.delete("/collections/{collection_name}", summary="Xoá một collection")
 def delete_collection(collection_name: str = Path(...)):
     name = _normalize_collection_name(collection_name)
+    if name in CORE_COLLECTIONS:
+        raise HTTPException(status_code=403, detail=f"Collection '{name}' là core collection, không thể xoá.")
     _check_collection_exist(name)
     db.drop_collection(name)
     return {"deleted": True, "collection": name}
@@ -50,6 +53,9 @@ def delete_collection(collection_name: str = Path(...)):
 def rename_collection(collection_name: str = Path(...), new_name: str = Query(...)):
     old = _normalize_collection_name(collection_name)
     new = _normalize_collection_name(new_name)
+
+    if old in CORE_COLLECTIONS:
+        raise HTTPException(status_code=403, detail=f"Collection '{old}' là core collection, không thể đổi tên.")
 
     _check_collection_exist(old)
     if new in db.list_collection_names():

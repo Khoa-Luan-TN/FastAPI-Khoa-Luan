@@ -9,7 +9,8 @@ from bson import ObjectId
 from bson.errors import InvalidId
 
 from app.services.mongo_client import get_mongo_client
-from app.routers.mongo_sync import sync_doc_to_postgres  # ✅ dùng sync mới
+from app.services.sync_service import sync_doc_to_postgres
+from app.services.document_service import create_document_core  # noqa: F401 (re-exported for backwards compat)
 
 router = APIRouter()
 mongo = get_mongo_client()
@@ -110,42 +111,6 @@ def get_documents(collection_name: str = Query(...), limit: int = Query(50, ge=1
     docs = jsonable_encoder(docs, custom_encoder={ObjectId: str})
 
     return {"collection": col, "total": total, "limit": limit, "offset": offset, "returned_count": len(docs), "documents": docs}
-
-def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: str, sync_pg: bool = True):
-    col = _normalize_collection_name(collection_name)
-    _check_collection_exist(col)
-
-    now = _now()
-    body = dict(body or {})
-    body.pop("_id", None)
-    for k in ("created_at", "created_by", "updated_at", "updated_by", "deleted_at"):
-        body.pop(k, None)
-
-    _user_normalize_and_validate(col, body, is_create=True)
-
-    body.setdefault("is_deleted", False)
-    body.setdefault("deleted_at", None)
-    body["created_at"] = now
-    body["updated_at"] = now
-    body["created_by"] = actor
-    body["updated_by"] = actor
-    if body.get("is_deleted") is True:
-        body["deleted_at"] = now
-
-    result = db[col].insert_one(body)
-    inserted_doc = db[col].find_one({"_id": result.inserted_id})
-
-    sync = {"ok": True, "skipped": True}
-    if sync_pg and inserted_doc:
-        sync = sync_doc_to_postgres(db, col, inserted_doc)
-
-        # Write the PG-assigned user_id back to the MongoDB document
-        # so the frontend can read it directly from the user collection
-        if col == "user" and sync.get("ok") and sync.get("pg_id"):
-            pg_user_id = str(sync["pg_id"])
-            db[col].update_one({"_id": result.inserted_id}, {"$set": {"user_id": pg_user_id}})
-
-    return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
 
 @router.post("/documents/{collection_name}", summary="Thêm document vào collection (generic)")
 def create_document(collection_name: str, request: Request, body: Dict[str, Any] = Body(...)):
