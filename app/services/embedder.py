@@ -9,12 +9,11 @@ from sentence_transformers import SentenceTransformer
 MODEL_NAME = "intfloat/multilingual-e5-base"
 MODEL_SHORT = "multilingual-e5-base"  # lưu vào DB
 
-
+# dùng để chuẩn hoá chữ
 def normalize_embedding_text(text: str) -> str:
-    """Normalize text before embedding: NFC unicode, lowercase, collapse spaces.
-    Keeps Vietnamese characters intact."""
     t = unicodedata.normalize("NFC", str(text or ""))
-    return " ".join(t.lower().split())
+    return " ".join(t.split())
+
 
 @lru_cache(maxsize=1)
 def get_model() -> SentenceTransformer:
