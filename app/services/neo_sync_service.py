@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from typing import Any, Dict, Optional, Callable
 
 from neo4j import Session as NeoSession
-from app.services.neo_client import neo4j_driver, _neo4j_database  # hoặc import helper riêng nếu bạn muốn public API
+from app.services.neo_client import neo4j_driver, _neo4j_database
 
 ROOT_THING_ID = "thing"
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user
@@ -409,78 +409,151 @@ def ensure_neo_vector_indexes() -> dict:
     return results
 
 
-# Cascade Cypher: each col deletes the target node + all Neo descendants.
-_CASCADE_CYPHER: dict[str, tuple[str, str]] = {
-    "class": (
-        "class_id",
-        """
+# Cascade hard-delete mapping for Neo4j subtrees.
+#
+# Mongo soft-delete (is_deleted flag) is managed upstream in sync_service.py.
+# These queries perform a hard DETACH DELETE on the Neo4j side so deleted nodes
+# never surface in vector or graph searches.
+#
+# Each descendant level is collected inside an independent CALL { WITH n ... }
+# subquery. This avoids the cartesian row explosion that occurs when chaining
+# OPTIONAL MATCH clauses in a single pipeline (N×M×… rows before any DELETE).
+# After all CALL blocks, the lists are combined, UNWINDed, deduplicated with
+# WITH DISTINCT, nulls filtered out, then each node is DETACH DELETEd once.
+_CASCADE_CYPHER: dict[str, str] = {
+    "class": """
         MATCH (n:Class {class_id: $eid})
-        OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(s:Subject)
-        OPTIONAL MATCH (s)-[:HAS_TOPIC]->(t:Topic)
-        OPTIONAL MATCH (t)-[:HAS_LESSON]->(l:Lesson)
-        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
-        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
-        DETACH DELETE n, s, t, l, c, kw
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(s:Subject)
+            RETURN collect(DISTINCT s) AS subjects
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t:Topic)
+            RETURN collect(DISTINCT t) AS topics
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(l:Lesson)
+            RETURN collect(DISTINCT l) AS lessons
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            RETURN collect(DISTINCT c) AS chunks
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            RETURN collect(DISTINCT kw) AS keywords
+        }
+        WITH [n] + subjects + topics + lessons + chunks + keywords AS all_nodes
+        UNWIND all_nodes AS node
+        WITH DISTINCT node
+        WHERE node IS NOT NULL
+        DETACH DELETE node
         """,
-    ),
-    "subject": (
-        "subject_id",
-        """
+    "subject": """
         MATCH (n:Subject {subject_id: $eid})
-        OPTIONAL MATCH (n)-[:HAS_TOPIC]->(t:Topic)
-        OPTIONAL MATCH (t)-[:HAS_LESSON]->(l:Lesson)
-        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
-        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
-        DETACH DELETE n, t, l, c, kw
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_TOPIC]->(t:Topic)
+            RETURN collect(DISTINCT t) AS topics
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(l:Lesson)
+            RETURN collect(DISTINCT l) AS lessons
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            RETURN collect(DISTINCT c) AS chunks
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            RETURN collect(DISTINCT kw) AS keywords
+        }
+        WITH [n] + topics + lessons + chunks + keywords AS all_nodes
+        UNWIND all_nodes AS node
+        WITH DISTINCT node
+        WHERE node IS NOT NULL
+        DETACH DELETE node
         """,
-    ),
-    "topic": (
-        "topic_id",
-        """
+    "topic": """
         MATCH (n:Topic {topic_id: $eid})
-        OPTIONAL MATCH (n)-[:HAS_LESSON]->(l:Lesson)
-        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
-        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
-        DETACH DELETE n, l, c, kw
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_LESSON]->(l:Lesson)
+            RETURN collect(DISTINCT l) AS lessons
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)
+            RETURN collect(DISTINCT c) AS chunks
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            RETURN collect(DISTINCT kw) AS keywords
+        }
+        WITH [n] + lessons + chunks + keywords AS all_nodes
+        UNWIND all_nodes AS node
+        WITH DISTINCT node
+        WHERE node IS NOT NULL
+        DETACH DELETE node
         """,
-    ),
-    "lesson": (
-        "lesson_id",
-        """
+    "lesson": """
         MATCH (n:Lesson {lesson_id: $eid})
-        OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
-        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
-        DETACH DELETE n, c, kw
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
+            RETURN collect(DISTINCT c) AS chunks
+        }
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_CHUNK]->(:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
+            RETURN collect(DISTINCT kw) AS keywords
+        }
+        WITH [n] + chunks + keywords AS all_nodes
+        UNWIND all_nodes AS node
+        WITH DISTINCT node
+        WHERE node IS NOT NULL
+        DETACH DELETE node
         """,
-    ),
-    "chunk": (
-        "chunk_id",
-        """
+    "chunk": """
         MATCH (n:Chunk {chunk_id: $eid})
-        OPTIONAL MATCH (n)-[:HAS_KEYWORD]->(kw:Keyword)
-        DETACH DELETE n, kw
+        CALL {
+            WITH n
+            OPTIONAL MATCH (n)-[:HAS_KEYWORD]->(kw:Keyword)
+            RETURN collect(DISTINCT kw) AS keywords
+        }
+        WITH [n] + keywords AS all_nodes
+        UNWIND all_nodes AS node
+        WITH DISTINCT node
+        WHERE node IS NOT NULL
+        DETACH DELETE node
         """,
-    ),
-    "keyword": (
-        "keyword_key",
-        "MATCH (n:Keyword {keyword_key: $eid}) DETACH DELETE n",
-    ),
+    "keyword": "MATCH (n:Keyword {keyword_key: $eid}) DETACH DELETE n",
 }
 
 
 def detach_delete_entity(col: str, entity_id: str) -> dict:
     """
-    Remove a Neo4j node and all its descendants by entity id.
-    Parent deletions cascade to descendant Lesson/Chunk/Keyword nodes so they
-    do not remain as orphaned, searchable stale content.
+    Hard-delete a Neo4j node and its entire descendant subtree by entity id.
+    Mongo soft-delete (is_deleted) is handled upstream; this call removes the
+    nodes from Neo so they no longer appear in vector or graph searches.
+    CALL subqueries collect each descendant level independently to prevent
+    cartesian expansion before deletion.
     """
-    spec = _CASCADE_CYPHER.get(col)
-    if not spec:
+    cypher = _CASCADE_CYPHER.get(col)
+    if not cypher:
         return {"ok": True, "skipped": True}
-    _, cypher = spec
     try:
         with neo_session() as s:
-            s.run(cypher, eid=entity_id)
+            s.run(cypher, eid=entity_id).consume()
         return {"ok": True, "deleted": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
