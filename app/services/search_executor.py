@@ -191,7 +191,7 @@ def _evaluate_confidence(
             best_keyword,
         )
 
-    has_lexical = best_keyword.get("lexical_adjustment", 0.0) > 0.0
+    has_lexical = best_keyword.get("lexical_bonus", 0.0) > 0.0
 
     if bks is not None and (bks >= _LOW_CONFIDENCE_FLOOR or has_lexical):
         return (

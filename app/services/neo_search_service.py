@@ -11,8 +11,9 @@ from app.services.embedder import embed_query, rerank_pairs
 from app.services.search_plan_builder import SearchPlan
 
 _STRUCT_K = 10
-_SEM_K = 10          # số kết quả cuối cùng trả ra
-_SEM_FETCH_K = 30    # số candidate lấy trước khi rerank
+_STRUCT_FETCH_K = 20  # số candidate lấy trước khi rerank cho topic/lesson/chunk name
+_SEM_K = 10           # số kết quả cuối cùng trả ra
+_SEM_FETCH_K = 30     # số candidate lấy trước khi rerank cho keyword
 
 # ---------------------------------------------------------------------------
 # Shared scoring helpers
@@ -86,6 +87,69 @@ def _sigmoid(x: float) -> float:
     z = math.exp(x)
     return z / (1.0 + z)
 
+def _clamp01(x: float) -> float:
+    return max(0.0, min(1.0, float(x)))
+
+
+def _normalize_semantic_score(score: float) -> float:
+    """
+    Đưa cosine score từ khoảng [-1, 1] về [0, 1].
+    Thực tế score của bạn thường đang quanh 0.8-0.95.
+    """
+    return _clamp01((float(score) + 1.0) / 2.0)
+
+
+def _combine_name_rerank_score(
+    query: str,
+    semantic_score: float,
+    cross_score: float,
+    lexical_bonus: float,
+    exact_match: bool,
+) -> float:
+    """
+    Công thức rerank dùng chung cho topic_name / lesson_name / chunk_name.
+
+    semantic_score: cosine/vector score gốc
+    cross_score: đã qua sigmoid, nằm trong [0,1]
+    lexical_bonus: bonus text match hiện tại (0.0 -> 0.2)
+    """
+
+    q_tokens = _norm_text(query).split()
+
+    semantic_norm = _normalize_semantic_score(semantic_score)
+    cross_norm = _clamp01(cross_score)
+
+    # lexical_bonus hiện max thực tế là 0.20, nên scale về [0,1]
+    lexical_norm = _clamp01(lexical_bonus / 0.20) if lexical_bonus > 0 else 0.0
+
+    # exact match thì đẩy mạnh
+    if exact_match:
+        if cross_norm >= 0.60 or semantic_norm >= 0.90:
+            return 1.0
+
+        boosted = 0.80 + 0.15 * semantic_norm + 0.05 * lexical_norm
+        return round(_clamp01(boosted), 4)
+
+    # Query ngắn 3 token: ưu tiên semantic nhiều hơn cross
+    if len(q_tokens) <= 3:
+        score = (
+            0.6 * semantic_norm +
+            0.15 * cross_norm +
+            0.25 * lexical_norm
+        )
+    else:
+        # Query dài hơn: tăng vai trò cross encoder
+        score = (
+            0.35 * semantic_norm +
+            0.45 * cross_norm +
+            0.20 * lexical_norm
+        )
+
+    # Nếu semantic tốt + có lexical hit thì thưởng thêm nhẹ
+    if lexical_bonus > 0 and semantic_norm >= 0.85:
+        score += 0.05
+
+    return round(_clamp01(score), 4)
 
 def _build_keyword_candidate_text(row: Dict[str, Any]) -> str:
     parts: List[str] = []
@@ -96,6 +160,82 @@ def _build_keyword_candidate_text(row: Dict[str, Any]) -> str:
         parts.append(f"chunk: {row['chunk_name']}")
 
     return ". ".join(parts)
+
+def _build_chunk_candidate_text(row: Dict[str, Any]) -> str:
+    if row.get("chunk_name"):
+        return f"chunk: {row['chunk_name']}"
+    return ""
+
+def _name_lexical_bonus(query: str, target_name: str) -> tuple[float, bool]:
+    q = _norm_text(query)
+    t = _norm_text(target_name)
+
+    if not q or not t:
+        return 0.0, False
+
+    if q == t:
+        return 0.20, True
+
+    q_tokens = q.split()
+    t_tokens = t.split()
+
+    common = set(q_tokens) & set(t_tokens)
+    common_count = len(common)
+
+    if common_count == 0:
+        return 0.0, False
+
+    if q in t and len(q_tokens) >= 2:
+        return 0.10, False
+
+    if common_count >= 2:
+        return 0.08, False
+
+    return 0.03, False
+
+def _rerank_chunk_name_candidates(
+    query: str,
+    rows: List[Dict[str, Any]],
+    k: int,
+) -> List[Dict[str, Any]]:
+    if not rows:
+        return []
+
+    candidate_texts = [_build_chunk_candidate_text(r) for r in rows]
+    cross_raw_scores = rerank_pairs(query, candidate_texts)
+
+    scored: List[Dict[str, Any]] = []
+
+    for i, row in enumerate(rows):
+        chunk_name = str(row.get("chunk_name", ""))
+        semantic_score = float(row.get("score", 0.0))
+
+        cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
+        cross_score = _sigmoid(float(cross_raw))
+
+        lexical_bonus, exact_match = _name_lexical_bonus(query, chunk_name)
+
+        rerank_score = _combine_name_rerank_score(
+            query=query,
+            semantic_score=semantic_score,
+            cross_score=cross_score,
+            lexical_bonus=lexical_bonus,
+            exact_match=exact_match,
+        )
+
+        item = dict(row)
+        item["candidate_text"] = candidate_texts[i]
+        item["semantic_score"] = round(semantic_score, 4)
+        item["semantic_score_norm"] = round(_normalize_semantic_score(semantic_score), 4)
+        item["cross_encoder_raw"] = round(float(cross_raw), 4)
+        item["cross_encoder_score"] = round(cross_score, 4)
+        item["lexical_bonus"] = round(lexical_bonus, 4)
+        item["exact_match"] = exact_match
+        item["rerank_score"] = rerank_score
+        scored.append(item)
+
+    scored.sort(key=lambda x: x["rerank_score"], reverse=True)
+    return scored[:k]
 
 def _keyword_lexical_bonus(query: str, keyword_name: str) -> tuple[float, bool]:
     q = _norm_text(query)
@@ -272,6 +412,7 @@ def _q_chunk_embedding(
                        c.chunk_name  AS chunk_name,
                        c.chunk_label AS chunk_label,
                        l.lesson_id   AS lesson_id,
+                       l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
                 """,
                 lesson_ids=lesson_ids,
@@ -288,6 +429,7 @@ def _q_chunk_embedding(
                        c.chunk_name  AS chunk_name,
                        c.chunk_label AS chunk_label,
                        l.lesson_id   AS lesson_id,
+                       l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
                 """,
                 topic_ids=topic_ids,
@@ -304,6 +446,7 @@ def _q_chunk_embedding(
                        c.chunk_name  AS chunk_name,
                        c.chunk_label AS chunk_label,
                        l.lesson_id   AS lesson_id,
+                       l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
                 """,
                 class_ids=class_ids,
@@ -320,6 +463,7 @@ def _q_chunk_embedding(
                    c.chunk_name  AS chunk_name,
                    c.chunk_label AS chunk_label,
                    l.lesson_id   AS lesson_id,
+                   l.lesson_name AS lesson_name,
                    score
             """,
             k=k, vec=vec,
@@ -716,20 +860,35 @@ def resolve_structure_neo(
         elif plan.chunk_name:
             vec = embed_query(plan.chunk_name)
             if vec:
-                rows = _q_chunk_embedding(neo, vec, lesson_ids, topic_ids, class_ids, _STRUCT_K)
+                raw_rows = _q_chunk_embedding(
+                    neo,
+                    vec,
+                    lesson_ids,
+                    topic_ids,
+                    class_ids,
+                    _STRUCT_FETCH_K,
+                )
+
+                reranked_rows = _rerank_chunk_name_candidates(
+                    plan.chunk_name,
+                    raw_rows,
+                    _STRUCT_K,
+                )
+
                 resolved["chunk"] = [
                     {
                         "chunk_id": r["chunk_id"],
                         "chunk_name": r["chunk_name"],
                         "chunk_label": r["chunk_label"],
                         "lesson_id": r.get("lesson_id"),
+                        "lesson_name": r.get("lesson_name"),
                     }
-                    for r in rows
+                    for r in reranked_rows
                 ]
                 notes.append(
-                    f"chunk_name embedding '{plan.chunk_name}' → {len(resolved['chunk'])} match(es)"
+                    f"chunk_name reranked '{plan.chunk_name}' → {len(resolved['chunk'])} match(es)"
                 )
-
+        
         elif plan.chunk_requested:
             if lesson_ids:
                 rows = neo.run(
@@ -980,7 +1139,6 @@ def debug_topic_name_scores(
         "top_k": scored[:k],
     }
 
-
 def debug_lesson_name_scores(
     neo: Session,
     plan: SearchPlan,
@@ -1063,7 +1221,6 @@ def debug_lesson_name_scores(
         "top_k": scored[:k],
     }
 
-
 def debug_chunk_name_scores(
     neo: Session,
     plan: SearchPlan,
@@ -1087,70 +1244,33 @@ def debug_chunk_name_scores(
         }
 
     t0 = perf_counter()
+
     if lesson_ids:
-        rows = neo.run(
-            """
-            MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-            WHERE l.lesson_id IN $lesson_ids
-            RETURN c.chunk_id    AS chunk_id,
-                   c.chunk_name  AS chunk_name,
-                   c.chunk_label AS chunk_label,
-                   l.lesson_id   AS lesson_id,
-                   c.embedding   AS embedding
-            """,
-            lesson_ids=lesson_ids,
-        )
-        raw = [dict(r) for r in rows]
         index_mode = "scoped_by_lesson"
     elif topic_ids:
-        rows = neo.run(
-            """
-            MATCH (t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-            WHERE t.topic_id IN $topic_ids
-            RETURN c.chunk_id    AS chunk_id,
-                   c.chunk_name  AS chunk_name,
-                   c.chunk_label AS chunk_label,
-                   l.lesson_id   AS lesson_id,
-                   c.embedding   AS embedding
-            """,
-            topic_ids=topic_ids,
-        )
-        raw = [dict(r) for r in rows]
         index_mode = "scoped_by_topic"
     elif class_ids:
-        rows = neo.run(
-            """
-            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-            WHERE cls.class_id IN $class_ids
-            RETURN c.chunk_id    AS chunk_id,
-                   c.chunk_name  AS chunk_name,
-                   c.chunk_label AS chunk_label,
-                   l.lesson_id   AS lesson_id,
-                   c.embedding   AS embedding
-            """,
-            class_ids=class_ids,
-        )
-        raw = [dict(r) for r in rows]
         index_mode = "scoped_by_class"
     else:
-        rows = neo.run(
-            """
-            CALL db.index.vector.queryNodes('chunk_embedding_idx', $k, $vec)
-            YIELD node AS c, score
-            MATCH (l:Lesson)-[:HAS_CHUNK]->(c)
-            RETURN c.chunk_id    AS chunk_id,
-                   c.chunk_name  AS chunk_name,
-                   c.chunk_label AS chunk_label,
-                   l.lesson_id   AS lesson_id,
-                   c.embedding   AS embedding
-            """,
-            k=k * 3, vec=vec,
-        )
-        raw = [dict(r) for r in rows]
         index_mode = "global_index"
+
+    raw = _q_chunk_embedding(
+        neo,
+        vec,
+        lesson_ids,
+        topic_ids,
+        class_ids,
+        _STRUCT_FETCH_K,
+    )
     fetch_ms = round((perf_counter() - t0) * 1000, 2)
 
-    scored, no_emb = _score_and_rank(raw, vec, plan.chunk_name, "chunk_name")
+    t1 = perf_counter()
+    scored = _rerank_chunk_name_candidates(plan.chunk_name, raw, len(raw))
+    rerank_ms = round((perf_counter() - t1) * 1000, 2)
+
+    for i, item in enumerate(scored):
+        item["rank"] = i + 1
+
     return {
         "skipped": False,
         "embedding": vec_info,
@@ -1158,10 +1278,10 @@ def debug_chunk_name_scores(
         "index_mode": index_mode,
         "candidate_count": len(raw),
         "fetch_ms": fetch_ms,
-        "candidates": scored + no_emb,
+        "rerank_ms": rerank_ms,
+        "candidates": scored,
         "top_k": scored[:k],
     }
-
 
 def debug_keyword_scores(
     neo: Session,
