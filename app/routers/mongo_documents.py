@@ -10,7 +10,7 @@ from bson.errors import InvalidId
 
 from app.services.mongo_client import get_mongo_client
 from app.services.sync_service import sync_doc_to_postgres
-from app.services.document_service import create_document_core  # noqa: F401 (re-exported for backwards compat)
+from app.services.document_service import create_document_core
 
 router = APIRouter()
 mongo = get_mongo_client()

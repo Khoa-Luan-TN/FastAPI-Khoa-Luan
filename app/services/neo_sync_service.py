@@ -409,26 +409,78 @@ def ensure_neo_vector_indexes() -> dict:
     return results
 
 
+# Cascade Cypher: each col deletes the target node + all Neo descendants.
+_CASCADE_CYPHER: dict[str, tuple[str, str]] = {
+    "class": (
+        "class_id",
+        """
+        MATCH (n:Class {class_id: $eid})
+        OPTIONAL MATCH (n)-[:HAS_SUBJECT]->(s:Subject)
+        OPTIONAL MATCH (s)-[:HAS_TOPIC]->(t:Topic)
+        OPTIONAL MATCH (t)-[:HAS_LESSON]->(l:Lesson)
+        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
+        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
+        DETACH DELETE n, s, t, l, c, kw
+        """,
+    ),
+    "subject": (
+        "subject_id",
+        """
+        MATCH (n:Subject {subject_id: $eid})
+        OPTIONAL MATCH (n)-[:HAS_TOPIC]->(t:Topic)
+        OPTIONAL MATCH (t)-[:HAS_LESSON]->(l:Lesson)
+        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
+        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
+        DETACH DELETE n, t, l, c, kw
+        """,
+    ),
+    "topic": (
+        "topic_id",
+        """
+        MATCH (n:Topic {topic_id: $eid})
+        OPTIONAL MATCH (n)-[:HAS_LESSON]->(l:Lesson)
+        OPTIONAL MATCH (l)-[:HAS_CHUNK]->(c:Chunk)
+        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
+        DETACH DELETE n, l, c, kw
+        """,
+    ),
+    "lesson": (
+        "lesson_id",
+        """
+        MATCH (n:Lesson {lesson_id: $eid})
+        OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
+        OPTIONAL MATCH (c)-[:HAS_KEYWORD]->(kw:Keyword)
+        DETACH DELETE n, c, kw
+        """,
+    ),
+    "chunk": (
+        "chunk_id",
+        """
+        MATCH (n:Chunk {chunk_id: $eid})
+        OPTIONAL MATCH (n)-[:HAS_KEYWORD]->(kw:Keyword)
+        DETACH DELETE n, kw
+        """,
+    ),
+    "keyword": (
+        "keyword_key",
+        "MATCH (n:Keyword {keyword_key: $eid}) DETACH DELETE n",
+    ),
+}
+
+
 def detach_delete_entity(col: str, entity_id: str) -> dict:
-    """Remove a Neo4j node and all its relationships by entity id."""
-    col_to_spec = {
-        "class":   ("Class",   "class_id"),
-        "subject": ("Subject", "subject_id"),
-        "topic":   ("Topic",   "topic_id"),
-        "lesson":  ("Lesson",  "lesson_id"),
-        "chunk":   ("Chunk",   "chunk_id"),
-        "keyword": ("Keyword", "keyword_key"),
-    }
-    spec = col_to_spec.get(col)
+    """
+    Remove a Neo4j node and all its descendants by entity id.
+    Parent deletions cascade to descendant Lesson/Chunk/Keyword nodes so they
+    do not remain as orphaned, searchable stale content.
+    """
+    spec = _CASCADE_CYPHER.get(col)
     if not spec:
         return {"ok": True, "skipped": True}
-    label, id_prop = spec
+    _, cypher = spec
     try:
         with neo_session() as s:
-            s.run(
-                f"MATCH (n:{label} {{{id_prop}: $eid}}) DETACH DELETE n",
-                eid=entity_id,
-            )
+            s.run(cypher, eid=entity_id)
         return {"ok": True, "deleted": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}

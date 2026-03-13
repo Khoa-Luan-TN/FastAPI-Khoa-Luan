@@ -7,9 +7,16 @@ import json
 import os
 import re
 import unicodedata
+from pathlib import Path
 from urllib.parse import quote
 
+from dotenv import load_dotenv
 from openpyxl import load_workbook
+
+
+def _load_env() -> None:
+    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
+    load_dotenv(env_path)
 
 
 IMPORT_ORDER = ["class", "subject", "topic", "lesson", "chunk", "keyword"]
@@ -28,14 +35,17 @@ JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", 
 # ====== MinIO auto-mapping config ======
 
 def _minio_base_dir() -> str:
+    _load_env()
     return (os.getenv("MINIO_DOC_PREFIX") or "documents").strip().strip("/")
 
 
 def _default_bucket() -> str:
+    _load_env()
     return (os.getenv("MINIO_BUCKET") or "data-edu").strip()
 
 
 def _minio_public_base_url() -> str:
+    _load_env()
     return (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
 
 

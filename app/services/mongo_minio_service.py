@@ -56,10 +56,51 @@ def _find_subject_by_slugs(subject_type_slug: str, class_slug: str, subject_slug
     return None
 
 
+def _subject_ref_filter(subject_doc: dict) -> dict:
+    """
+    Build a Mongo $or filter matching child docs that reference this subject,
+    whether via import_key-based refs (subject_ref) or direct Mongo _id refs (subject_id).
+    """
+    ors = []
+    import_key = subject_doc.get("import_key")
+    if import_key:
+        ors.append({"subject_ref": import_key})
+    mongo_id = str(subject_doc.get("_id", ""))
+    if mongo_id:
+        ors.append({"subject_id": mongo_id})
+    return {"$or": ors} if ors else {}
+
+
+def _topic_ref_filter(topic_docs: list) -> dict:
+    """Build $or filter matching children of any of the given topic docs."""
+    ors = []
+    for t in topic_docs:
+        if t.get("import_key"):
+            ors.append({"topic_ref": t["import_key"]})
+        mid = str(t.get("_id", ""))
+        if mid:
+            ors.append({"topic_id": mid})
+    return {"$or": ors} if ors else {}
+
+
+def _lesson_ref_filter(lesson_doc: dict) -> dict:
+    """Build $or filter matching children of a lesson doc."""
+    ors = []
+    if lesson_doc.get("import_key"):
+        ors.append({"lesson_ref": lesson_doc["import_key"]})
+    mid = str(lesson_doc.get("_id", ""))
+    if mid:
+        ors.append({"lesson_id": mid})
+    return {"$or": ors} if ors else {}
+
+
 def _resolve_edu_doc_by_path(col: str, parsed: dict) -> Optional[dict]:
     """
     Try to find an existing educational doc using identity derived from the parsed
     object_key path (subject_type, class_slug, subject_slug, file_no, lesson_no, chunk_no).
+    Supports both import-key-based refs (subject_ref/topic_ref/lesson_ref) and direct
+    Mongo _id refs (subject_id/topic_id/lesson_id) so both imported and manually-created
+    docs can be matched.
     Returns the Mongo document or None.
     """
     subject_type_slug = parsed.get("subject_type", "")
@@ -76,10 +117,13 @@ def _resolve_edu_doc_by_path(col: str, parsed: dict) -> Optional[dict]:
         if file_no is None:
             return None
         subject_doc = _find_subject_by_slugs(subject_type_slug, class_slug, subject_slug)
-        if not subject_doc or not subject_doc.get("import_key"):
+        if not subject_doc:
+            return None
+        ref_filter = _subject_ref_filter(subject_doc)
+        if not ref_filter:
             return None
         return db["topic"].find_one({
-            "subject_ref": subject_doc["import_key"],
+            **ref_filter,
             "topic_num": int(file_no),
             "is_deleted": {"$ne": True},
         })
@@ -88,20 +132,22 @@ def _resolve_edu_doc_by_path(col: str, parsed: dict) -> Optional[dict]:
         if file_no is None:
             return None
         subject_doc = _find_subject_by_slugs(subject_type_slug, class_slug, subject_slug)
-        if not subject_doc or not subject_doc.get("import_key"):
+        if not subject_doc:
             return None
-        topic_keys = [
-            t["import_key"]
-            for t in db["topic"].find(
-                {"subject_ref": subject_doc["import_key"], "is_deleted": {"$ne": True}},
-                {"import_key": 1},
-            )
-            if t.get("import_key")
-        ]
-        if not topic_keys:
+        ref_filter = _subject_ref_filter(subject_doc)
+        if not ref_filter:
+            return None
+        topic_docs = list(db["topic"].find(
+            {**ref_filter, "is_deleted": {"$ne": True}},
+            {"import_key": 1, "_id": 1},
+        ))
+        if not topic_docs:
+            return None
+        topic_filter = _topic_ref_filter(topic_docs)
+        if not topic_filter:
             return None
         return db["lesson"].find_one({
-            "topic_ref": {"$in": topic_keys},
+            **topic_filter,
             "lesson_num": int(file_no),
             "is_deleted": {"$ne": True},
         })
@@ -115,27 +161,32 @@ def _resolve_edu_doc_by_path(col: str, parsed: dict) -> Optional[dict]:
         except (ValueError, TypeError):
             return None
         subject_doc = _find_subject_by_slugs(subject_type_slug, class_slug, subject_slug)
-        if not subject_doc or not subject_doc.get("import_key"):
+        if not subject_doc:
             return None
-        topic_keys = [
-            t["import_key"]
-            for t in db["topic"].find(
-                {"subject_ref": subject_doc["import_key"], "is_deleted": {"$ne": True}},
-                {"import_key": 1},
-            )
-            if t.get("import_key")
-        ]
-        if not topic_keys:
+        ref_filter = _subject_ref_filter(subject_doc)
+        if not ref_filter:
+            return None
+        topic_docs = list(db["topic"].find(
+            {**ref_filter, "is_deleted": {"$ne": True}},
+            {"import_key": 1, "_id": 1},
+        ))
+        if not topic_docs:
+            return None
+        topic_filter = _topic_ref_filter(topic_docs)
+        if not topic_filter:
             return None
         lesson_doc = db["lesson"].find_one({
-            "topic_ref": {"$in": topic_keys},
+            **topic_filter,
             "lesson_num": lesson_no,
             "is_deleted": {"$ne": True},
         })
-        if not lesson_doc or not lesson_doc.get("import_key"):
+        if not lesson_doc:
+            return None
+        lesson_filter = _lesson_ref_filter(lesson_doc)
+        if not lesson_filter:
             return None
         return db["chunk"].find_one({
-            "lesson_ref": lesson_doc["import_key"],
+            **lesson_filter,
             "chunk_label": chunk_no,
             "is_deleted": {"$ne": True},
         })
