@@ -744,6 +744,7 @@ def resolve_structure_neo(
                         "topic_num": r["topic_num"],
                         "class_id": r.get("class_id"),
                         "class_name": r.get("class_name"),
+                        "rerank_score": r.get("rerank_score"),
                     }
                     for r in reranked_rows
                 ]
@@ -843,6 +844,7 @@ def resolve_structure_neo(
                         "lesson_name": r["lesson_name"],
                         "lesson_num": r["lesson_num"],
                         "topic_id": r["topic_id"],
+                        "rerank_score": r.get("rerank_score"),
                     }
                     for r in reranked_rows
                 ]
@@ -972,6 +974,7 @@ def resolve_structure_neo(
                         "chunk_label": r["chunk_label"],
                         "lesson_id": r.get("lesson_id"),
                         "lesson_name": r.get("lesson_name"),
+                        "rerank_score": r.get("rerank_score"),
                     }
                     for r in reranked_rows
                 ]

@@ -55,6 +55,39 @@ class ResultItem:
         return asdict(self)
 
 
+
+def _build_resolved_meta_map(
+    rows: List[Dict[str, Any]],
+    id_field: str,
+) -> Dict[str, Dict[str, Any]]:
+    out: Dict[str, Dict[str, Any]] = {}
+    for idx, row in enumerate(rows):
+        rid = row.get(id_field)
+        if not rid:
+            continue
+        out[rid] = {
+            "rank": idx,
+            "rerank_score": row.get("rerank_score"),
+        }
+    return out
+
+
+def _order_rows_by_input_ids(
+    rows: List[Dict[str, Any]],
+    ids: List[str],
+    id_field: str,
+) -> List[Dict[str, Any]]:
+    pos = {rid: i for i, rid in enumerate(ids)}
+    return sorted(rows, key=lambda r: pos.get(r[id_field], 10**9))
+
+
+def _score_display_from_rerank(score: Optional[float]) -> str:
+    if score is None:
+        return "100%"
+    pct = round(float(score) * 100)
+    pct = max(0, min(100, pct))
+    return f"{pct}%"
+
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
@@ -150,50 +183,55 @@ def _from_structure(
     name_score: Optional[float] = None,
     name_note: Optional[str] = None,
 ) -> List[ResultItem]:
-    """
-    Use target_level to determine output.
-    Scope-fetch fallbacks (listing all entities in parent scope) are only
-    allowed when the user made a broad request (*_requested with no num/name).
-    Specific requests (num or name given) that resolved to nothing → return [].
-    name_score/name_note are applied when a numeric match was validated.
-    """
-    class_ids  = [r["class_id"]  for r in resolved.get("class",  [])]
-    topic_ids  = [r["topic_id"]  for r in resolved.get("topic",  [])]
-    lesson_ids = [r["lesson_id"] for r in resolved.get("lesson", [])]
-    chunk_ids  = [r["chunk_id"]  for r in resolved.get("chunk",  [])]
+    class_rows = resolved.get("class", [])
+    topic_rows = resolved.get("topic", [])
+    lesson_rows = resolved.get("lesson", [])
+    chunk_rows = resolved.get("chunk", [])
+
+    class_ids  = [r["class_id"]  for r in class_rows]
+    topic_ids  = [r["topic_id"]  for r in topic_rows]
+    lesson_ids = [r["lesson_id"] for r in lesson_rows]
+    chunk_ids  = [r["chunk_id"]  for r in chunk_rows]
+
+    topic_meta  = _build_resolved_meta_map(topic_rows, "topic_id")
+    lesson_meta = _build_resolved_meta_map(lesson_rows, "lesson_id")
+    chunk_meta  = _build_resolved_meta_map(chunk_rows, "chunk_id")
 
     if target_level == "chunk":
         if chunk_ids:
-            return _apply_struct_score(_enrich_chunks(pg, chunk_ids), name_score, name_note)
+            items = _enrich_chunks(pg, chunk_ids, meta_map=chunk_meta)
+            return _apply_struct_score(items, name_score, name_note)
         if _is_specific_chunk_request(plan):
             return []
         return _fetch_chunks_by_scope(pg, lesson_ids, topic_ids, class_ids)
 
     if target_level == "lesson":
         if lesson_ids:
-            return _apply_struct_score(_enrich_lessons(pg, lesson_ids), name_score, name_note)
+            items = _enrich_lessons(pg, lesson_ids, meta_map=lesson_meta)
+            return _apply_struct_score(items, name_score, name_note)
         if _is_specific_lesson_request(plan):
             return []
         return _fetch_lessons_by_scope(pg, topic_ids, class_ids)
 
     if target_level == "topic":
         if topic_ids:
-            return _apply_struct_score(_enrich_topics(pg, topic_ids), name_score, name_note)
+            items = _enrich_topics(pg, topic_ids, meta_map=topic_meta)
+            return _apply_struct_score(items, name_score, name_note)
         if _is_specific_topic_request(plan):
             return []
         return _fetch_topics_by_scope(pg, class_ids)
 
-    # Fallback: deepest resolved
     if chunk_ids:
-        return _apply_struct_score(_enrich_chunks(pg, chunk_ids), name_score, name_note)
+        items = _enrich_chunks(pg, chunk_ids, meta_map=chunk_meta)
+        return _apply_struct_score(items, name_score, name_note)
     if lesson_ids:
-        return _apply_struct_score(_enrich_lessons(pg, lesson_ids), name_score, name_note)
+        items = _enrich_lessons(pg, lesson_ids, meta_map=lesson_meta)
+        return _apply_struct_score(items, name_score, name_note)
     if topic_ids:
-        return _apply_struct_score(_enrich_topics(pg, topic_ids), name_score, name_note)
+        items = _enrich_topics(pg, topic_ids, meta_map=topic_meta)
+        return _apply_struct_score(items, name_score, name_note)
 
     return []
-
-
 # ---------------------------------------------------------------------------
 # Scope-fetch helpers (used when target_level > deepest resolved)
 # ---------------------------------------------------------------------------
@@ -404,8 +442,11 @@ def _fetch_chunks_by_scope(
 # ---------------------------------------------------------------------------
 # Direct-ID enrichment helpers
 # ---------------------------------------------------------------------------
-
-def _enrich_chunks(pg: Session, chunk_ids: List[str]) -> List[ResultItem]:
+def _enrich_chunks(
+    pg: Session,
+    chunk_ids: List[str],
+    meta_map: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> List[ResultItem]:
     if not chunk_ids:
         return []
 
@@ -432,6 +473,8 @@ def _enrich_chunks(pg: Session, chunk_ids: List[str]) -> List[ResultItem]:
         {"ids": chunk_ids},
     ).mappings().all()
 
+    rows = _order_rows_by_input_ids(rows, chunk_ids, "chunk_id")
+
     kw_rows = pg.execute(
         sql_text("SELECT chunk_id, keyword_name FROM keyword WHERE chunk_id = ANY(:ids)"),
         {"ids": chunk_ids},
@@ -453,17 +496,22 @@ def _enrich_chunks(pg: Session, chunk_ids: List[str]) -> List[ResultItem]:
             lesson_num=r["lesson_num"],
             chunk_name=r["chunk_name"],
             chunk_label=r["chunk_label"],
-            description=_FALLBACK_DESC["chunk"],   # TODO: chunk_des from MongoDB
+            description=_FALLBACK_DESC["chunk"],
             minio_url=r["chunk_minio"],
             keywords=kw_map.get(r["chunk_id"], []),
-            score_display="100%",
+            score_display=_score_display_from_rerank(
+                (meta_map or {}).get(r["chunk_id"], {}).get("rerank_score")
+            ),
             source="structure",
         )
         for r in rows
     ]
 
-
-def _enrich_lessons(pg: Session, lesson_ids: List[str]) -> List[ResultItem]:
+def _enrich_lessons(
+    pg: Session,
+    lesson_ids: List[str],
+    meta_map: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> List[ResultItem]:
     if not lesson_ids:
         return []
 
@@ -487,6 +535,8 @@ def _enrich_lessons(pg: Session, lesson_ids: List[str]) -> List[ResultItem]:
         {"ids": lesson_ids},
     ).mappings().all()
 
+    rows = _order_rows_by_input_ids(rows, lesson_ids, "lesson_id")
+
     return [
         ResultItem(
             result_type="lesson",
@@ -500,17 +550,22 @@ def _enrich_lessons(pg: Session, lesson_ids: List[str]) -> List[ResultItem]:
             lesson_num=r["lesson_num"],
             chunk_name=None,
             chunk_label=None,
-            description=_FALLBACK_DESC["lesson"],  # TODO: lesson_des from MongoDB
+            description=_FALLBACK_DESC["lesson"],
             minio_url=r["lesson_minio"],
             keywords=[],
-            score_display="100%",
+            score_display=_score_display_from_rerank(
+                (meta_map or {}).get(r["lesson_id"], {}).get("rerank_score")
+            ),
             source="structure",
         )
         for r in rows
     ]
 
-
-def _enrich_topics(pg: Session, topic_ids: List[str]) -> List[ResultItem]:
+def _enrich_topics(
+    pg: Session,
+    topic_ids: List[str],
+    meta_map: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> List[ResultItem]:
     if not topic_ids:
         return []
 
@@ -531,6 +586,8 @@ def _enrich_topics(pg: Session, topic_ids: List[str]) -> List[ResultItem]:
         {"ids": topic_ids},
     ).mappings().all()
 
+    rows = _order_rows_by_input_ids(rows, topic_ids, "topic_id")
+
     return [
         ResultItem(
             result_type="topic",
@@ -544,15 +601,16 @@ def _enrich_topics(pg: Session, topic_ids: List[str]) -> List[ResultItem]:
             lesson_num=None,
             chunk_name=None,
             chunk_label=None,
-            description=_FALLBACK_DESC["topic"],   # TODO: topic_des from MongoDB
+            description=_FALLBACK_DESC["topic"],
             minio_url=r["topic_minio"],
             keywords=[],
-            score_display="100%",
+            score_display=_score_display_from_rerank(
+                (meta_map or {}).get(r["topic_id"], {}).get("rerank_score")
+            ),
             source="structure",
         )
         for r in rows
     ]
-
 
 # ---------------------------------------------------------------------------
 # Semantic path — keyword_only
