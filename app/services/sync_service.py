@@ -418,7 +418,8 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 if col in {"topic", "lesson", "chunk"} and isinstance(info, dict):
                     pg_id = info.get("pg_id")
                     if pg_id:
-                        emb = ensure_name_embedding(pg, col, pg_id)
+                        name = (info.get("neo_payload") or {}).get("name", "")
+                        emb = ensure_name_embedding(pg, col, pg_id, name=name)
                         _attach_vec_to_neo_payload(
                             info,
                             emb.get("embedding") if isinstance(emb, dict) else None,

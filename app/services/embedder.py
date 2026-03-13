@@ -36,3 +36,9 @@ def embed_passage(text: str) -> list[float]:
     if not t:
         return []
     return _embed([t], kind="passage")[0]
+
+def embed_passage_prepared(text: str) -> list[float]:
+    """Embed already-normalized text as a passage. Does not normalize again."""
+    if not text:
+        return []
+    return _embed([text], kind="passage")[0]
