@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import List
 
-from app.services.search_scope_builder import SearchScope
+from app.services.search_plan_builder import SearchPlan
 
 
 @dataclass
@@ -38,21 +38,21 @@ def _build_structure_stage_order(
     return stages
 
 
-def build_search_strategy(scope: SearchScope) -> SearchStrategy:
-    has_chunk_num = scope.chunk_num is not None
-    has_chunk_name = bool(scope.chunk_name)
-    has_chunk_requested = scope.chunk_requested
+def build_search_strategy(plan: SearchPlan) -> SearchStrategy:
+    has_chunk_num = plan.chunk_num is not None
+    has_chunk_name = bool(plan.chunk_name)
+    has_chunk_requested = plan.chunk_requested
 
-    has_lesson_num = scope.lesson_num is not None
-    has_lesson_name = bool(scope.lesson_name)
-    has_lesson_requested = scope.lesson_requested
+    has_lesson_num = plan.lesson_num is not None
+    has_lesson_name = bool(plan.lesson_name)
+    has_lesson_requested = plan.lesson_requested
 
-    has_topic_num = scope.topic_num is not None
-    has_topic_name = bool(scope.topic_name)
-    has_topic_requested = scope.topic_requested
+    has_topic_num = plan.topic_num is not None
+    has_topic_name = bool(plan.topic_name)
+    has_topic_requested = plan.topic_requested
 
-    has_class = scope.class_hint is not None
-    has_keyword = bool((scope.semantic_query or "").strip())
+    has_class = plan.class_hint is not None
+    has_keyword = bool((plan.semantic_query or "").strip())
 
     has_chunk = has_chunk_num or has_chunk_name or has_chunk_requested
     has_lesson = has_lesson_num or has_lesson_name or has_lesson_requested

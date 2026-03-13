@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
 from app.services.search_executor import ExecutionResult
-from app.services.search_scope_builder import SearchScope
+from app.services.search_plan_builder import SearchPlan
 
 # ---------------------------------------------------------------------------
 # Fallback descriptions (replace with MongoDB *_des fields when available)
@@ -63,7 +63,7 @@ def build_results(
     pg: Session,
     execution: ExecutionResult,
     target_level: str = "chunk",
-    scope: Optional[SearchScope] = None,
+    plan: Optional[SearchPlan] = None,
 ) -> List[ResultItem]:
     """Convert an ExecutionResult into a list of frontend-ready ResultItems."""
     if execution.mode == "empty" or execution.status == "no_match":
@@ -71,7 +71,7 @@ def build_results(
 
     if execution.mode == "structure_only":
         return _from_structure(
-            pg, execution.resolved_structure, target_level, scope,
+            pg, execution.resolved_structure, target_level, plan,
             name_score=execution.name_similarity_score,
             name_note=execution.name_note,
         )
@@ -83,7 +83,7 @@ def build_results(
     # hybrid with resolved structure but no keyword hits
     if _has_resolved_structure(execution.resolved_structure):
         return _from_structure(
-            pg, execution.resolved_structure, target_level, scope,
+            pg, execution.resolved_structure, target_level, plan,
             name_score=execution.name_similarity_score,
             name_note=execution.name_note,
         )
@@ -119,23 +119,23 @@ def _apply_struct_score(
 # Strict-request helpers
 # ---------------------------------------------------------------------------
 
-def _is_specific_topic_request(scope: Optional[SearchScope]) -> bool:
+def _is_specific_topic_request(plan: Optional[SearchPlan]) -> bool:
     """True when user asked for a specific topic (num or name), not a broad listing."""
-    if scope is None:
+    if plan is None:
         return False
-    return scope.topic_num is not None or bool(scope.topic_name)
+    return plan.topic_num is not None or bool(plan.topic_name)
 
 
-def _is_specific_lesson_request(scope: Optional[SearchScope]) -> bool:
-    if scope is None:
+def _is_specific_lesson_request(plan: Optional[SearchPlan]) -> bool:
+    if plan is None:
         return False
-    return scope.lesson_num is not None or bool(scope.lesson_name)
+    return plan.lesson_num is not None or bool(plan.lesson_name)
 
 
-def _is_specific_chunk_request(scope: Optional[SearchScope]) -> bool:
-    if scope is None:
+def _is_specific_chunk_request(plan: Optional[SearchPlan]) -> bool:
+    if plan is None:
         return False
-    return scope.chunk_num is not None or bool(scope.chunk_name)
+    return plan.chunk_num is not None or bool(plan.chunk_name)
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ def _from_structure(
     pg: Session,
     resolved: Dict[str, Any],
     target_level: str,
-    scope: Optional[SearchScope] = None,
+    plan: Optional[SearchPlan] = None,
     name_score: Optional[float] = None,
     name_note: Optional[str] = None,
 ) -> List[ResultItem]:
@@ -165,21 +165,21 @@ def _from_structure(
     if target_level == "chunk":
         if chunk_ids:
             return _apply_struct_score(_enrich_chunks(pg, chunk_ids), name_score, name_note)
-        if _is_specific_chunk_request(scope):
+        if _is_specific_chunk_request(plan):
             return []
         return _fetch_chunks_by_scope(pg, lesson_ids, topic_ids, class_ids)
 
     if target_level == "lesson":
         if lesson_ids:
             return _apply_struct_score(_enrich_lessons(pg, lesson_ids), name_score, name_note)
-        if _is_specific_lesson_request(scope):
+        if _is_specific_lesson_request(plan):
             return []
         return _fetch_lessons_by_scope(pg, topic_ids, class_ids)
 
     if target_level == "topic":
         if topic_ids:
             return _apply_struct_score(_enrich_topics(pg, topic_ids), name_score, name_note)
-        if _is_specific_topic_request(scope):
+        if _is_specific_topic_request(plan):
             return []
         return _fetch_topics_by_scope(pg, class_ids)
 

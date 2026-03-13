@@ -8,7 +8,7 @@ from time import perf_counter
 from neo4j import Session
 
 from app.services.embedder import embed_query
-from app.services.search_scope_builder import SearchScope
+from app.services.search_plan_builder import SearchPlan
 
 _STRUCT_K = 5   # top-k for name-based structure resolution
 _SEM_K    = 10  # top-k for keyword semantic search
@@ -378,42 +378,42 @@ def _q_keyword_embedding(
 # Hard-scope helpers
 # ---------------------------------------------------------------------------
 
-def _has_topic_signal(scope: SearchScope) -> bool:
-    return scope.topic_num is not None or bool(scope.topic_name) or scope.topic_requested
+def _has_topic_signal(plan: SearchPlan) -> bool:
+    return plan.topic_num is not None or bool(plan.topic_name) or plan.topic_requested
 
 
-def _has_lesson_signal(scope: SearchScope) -> bool:
-    return scope.lesson_num is not None or bool(scope.lesson_name) or scope.lesson_requested
+def _has_lesson_signal(plan: SearchPlan) -> bool:
+    return plan.lesson_num is not None or bool(plan.lesson_name) or plan.lesson_requested
 
 
-def _has_chunk_signal(scope: SearchScope) -> bool:
-    return scope.chunk_num is not None or bool(scope.chunk_name) or scope.chunk_requested
+def _has_chunk_signal(plan: SearchPlan) -> bool:
+    return plan.chunk_num is not None or bool(plan.chunk_name) or plan.chunk_requested
 
 
-def _class_hard_failed(scope: SearchScope, class_ids: List[str]) -> bool:
-    return scope.class_hint is not None and not class_ids
+def _class_hard_failed(plan: SearchPlan, class_ids: List[str]) -> bool:
+    return plan.class_hint is not None and not class_ids
 
 
-def _topic_hard_failed(scope: SearchScope, topic_ids: List[str]) -> bool:
-    return scope.topic_num is not None and not topic_ids
+def _topic_hard_failed(plan: SearchPlan, topic_ids: List[str]) -> bool:
+    return plan.topic_num is not None and not topic_ids
 
 
-def _lesson_hard_failed(scope: SearchScope, lesson_ids: List[str]) -> bool:
-    return scope.lesson_num is not None and not lesson_ids
+def _lesson_hard_failed(plan: SearchPlan, lesson_ids: List[str]) -> bool:
+    return plan.lesson_num is not None and not lesson_ids
 
 # ---------------------------------------------------------------------------
 # Structure resolution — exact Cypher + name-based embedding
 # ---------------------------------------------------------------------------
 def resolve_structure_neo(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
 ) -> Tuple[Dict[str, Any], List[str]]:
     resolved: Dict[str, Any] = {}
     notes: List[str] = []
 
     # ── Class ────────────────────────────────────────────────────────────────
-    if scope.class_hint is not None:
-        hint_str = str(scope.class_hint)
+    if plan.class_hint is not None:
+        hint_str = str(plan.class_hint)
         rows = neo.run(
             """
             MATCH (cls:Class)
@@ -427,17 +427,17 @@ def resolve_structure_neo(
             {"class_id": r["class_id"], "class_name": r["class_name"]}
             for r in rows
         ]
-        notes.append(f"class_hint={scope.class_hint} → {len(resolved['class'])} match(es)")
+        notes.append(f"class_hint={plan.class_hint} → {len(resolved['class'])} match(es)")
 
     class_ids: List[str] = [r["class_id"] for r in resolved.get("class", [])]
 
     # ── Topic ────────────────────────────────────────────────────────────────
-    if _has_topic_signal(scope):
-        if _class_hard_failed(scope, class_ids):
+    if _has_topic_signal(plan):
+        if _class_hard_failed(plan,class_ids):
             resolved["topic"] = []
             notes.append("topic skipped: class requested but none matched")
 
-        elif scope.topic_num is not None:
+        elif plan.topic_num is not None:
             if class_ids:
                 rows = neo.run(
                     """
@@ -448,7 +448,7 @@ def resolve_structure_neo(
                            cls.class_id AS class_id, cls.class_name AS class_name
                     LIMIT 5
                     """,
-                    n=scope.topic_num, class_ids=class_ids,
+                    n=plan.topic_num, class_ids=class_ids,
                 )
             else:
                 rows = neo.run(
@@ -460,14 +460,14 @@ def resolve_structure_neo(
                            cls.class_id AS class_id, cls.class_name AS class_name
                     LIMIT 5
                     """,
-                    n=scope.topic_num,
+                    n=plan.topic_num,
                 )
 
             resolved["topic"] = [dict(r) for r in rows]
-            notes.append(f"topic_num={scope.topic_num} → {len(resolved['topic'])} match(es)")
+            notes.append(f"topic_num={plan.topic_num} → {len(resolved['topic'])} match(es)")
 
-        elif scope.topic_name:
-            vec = embed_query(scope.topic_name)
+        elif plan.topic_name:
+            vec = embed_query(plan.topic_name)
             if vec:
                 rows = _q_topic_embedding(neo, vec, class_ids, _STRUCT_K)
                 resolved["topic"] = [
@@ -481,10 +481,10 @@ def resolve_structure_neo(
                     for r in rows
                 ]
                 notes.append(
-                    f"topic_name embedding '{scope.topic_name}' → {len(resolved['topic'])} match(es)"
+                    f"topic_name embedding '{plan.topic_name}' → {len(resolved['topic'])} match(es)"
                 )
 
-        elif scope.topic_requested:
+        elif plan.topic_requested:
             if class_ids:
                 rows = neo.run(
                     """
@@ -504,16 +504,16 @@ def resolve_structure_neo(
     topic_ids: List[str] = [r["topic_id"] for r in resolved.get("topic", [])]
 
     # ── Lesson ───────────────────────────────────────────────────────────────
-    if _has_lesson_signal(scope):
-        if _class_hard_failed(scope, class_ids):
+    if _has_lesson_signal(plan):
+        if _class_hard_failed(plan,class_ids):
             resolved["lesson"] = []
             notes.append("lesson skipped: class requested but none matched")
 
-        elif _topic_hard_failed(scope, topic_ids):
+        elif _topic_hard_failed(plan,topic_ids):
             resolved["lesson"] = []
             notes.append("lesson skipped: topic requested but none matched")
 
-        elif scope.lesson_num is not None:
+        elif plan.lesson_num is not None:
             if topic_ids:
                 rows = neo.run(
                     """
@@ -523,7 +523,7 @@ def resolve_structure_neo(
                            l.lesson_num AS lesson_num, t.topic_id AS topic_id
                     LIMIT 5
                     """,
-                    n=scope.lesson_num, topic_ids=topic_ids,
+                    n=plan.lesson_num, topic_ids=topic_ids,
                 )
             elif class_ids:
                 rows = neo.run(
@@ -534,7 +534,7 @@ def resolve_structure_neo(
                            l.lesson_num AS lesson_num, t.topic_id AS topic_id
                     LIMIT 5
                     """,
-                    n=scope.lesson_num, class_ids=class_ids,
+                    n=plan.lesson_num, class_ids=class_ids,
                 )
             else:
                 rows = neo.run(
@@ -545,14 +545,14 @@ def resolve_structure_neo(
                            l.lesson_num AS lesson_num, t.topic_id AS topic_id
                     LIMIT 5
                     """,
-                    n=scope.lesson_num,
+                    n=plan.lesson_num,
                 )
 
             resolved["lesson"] = [dict(r) for r in rows]
-            notes.append(f"lesson_num={scope.lesson_num} → {len(resolved['lesson'])} match(es)")
+            notes.append(f"lesson_num={plan.lesson_num} → {len(resolved['lesson'])} match(es)")
 
-        elif scope.lesson_name:
-            vec = embed_query(scope.lesson_name)
+        elif plan.lesson_name:
+            vec = embed_query(plan.lesson_name)
             if vec:
                 rows = _q_lesson_embedding(neo, vec, topic_ids, class_ids, _STRUCT_K)
                 resolved["lesson"] = [
@@ -565,10 +565,10 @@ def resolve_structure_neo(
                     for r in rows
                 ]
                 notes.append(
-                    f"lesson_name embedding '{scope.lesson_name}' → {len(resolved['lesson'])} match(es)"
+                    f"lesson_name embedding '{plan.lesson_name}' → {len(resolved['lesson'])} match(es)"
                 )
 
-        elif scope.lesson_requested:
+        elif plan.lesson_requested:
             if topic_ids:
                 rows = neo.run(
                     """
@@ -602,20 +602,20 @@ def resolve_structure_neo(
     lesson_ids: List[str] = [r["lesson_id"] for r in resolved.get("lesson", [])]
 
     # ── Chunk ────────────────────────────────────────────────────────────────
-    if _has_chunk_signal(scope):
-        if _class_hard_failed(scope, class_ids):
+    if _has_chunk_signal(plan):
+        if _class_hard_failed(plan,class_ids):
             resolved["chunk"] = []
             notes.append("chunk skipped: class requested but none matched")
 
-        elif _topic_hard_failed(scope, topic_ids):
+        elif _topic_hard_failed(plan,topic_ids):
             resolved["chunk"] = []
             notes.append("chunk skipped: topic requested but none matched")
 
-        elif _lesson_hard_failed(scope, lesson_ids):
+        elif _lesson_hard_failed(plan,lesson_ids):
             resolved["chunk"] = []
             notes.append("chunk skipped: lesson requested but none matched")
 
-        elif scope.chunk_num is not None:
+        elif plan.chunk_num is not None:
             if lesson_ids:
                 rows = neo.run(
                     """
@@ -625,7 +625,7 @@ def resolve_structure_neo(
                            c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
-                    n=scope.chunk_num, lesson_ids=lesson_ids,
+                    n=plan.chunk_num, lesson_ids=lesson_ids,
                 )
             elif topic_ids:
                 rows = neo.run(
@@ -636,7 +636,7 @@ def resolve_structure_neo(
                            c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
-                    n=scope.chunk_num, topic_ids=topic_ids,
+                    n=plan.chunk_num, topic_ids=topic_ids,
                 )
             elif class_ids:
                 rows = neo.run(
@@ -647,7 +647,7 @@ def resolve_structure_neo(
                            c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
-                    n=scope.chunk_num, class_ids=class_ids,
+                    n=plan.chunk_num, class_ids=class_ids,
                 )
             else:
                 rows = neo.run(
@@ -658,14 +658,14 @@ def resolve_structure_neo(
                            c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
-                    n=scope.chunk_num,
+                    n=plan.chunk_num,
                 )
 
             resolved["chunk"] = [dict(r) for r in rows]
-            notes.append(f"chunk_label={scope.chunk_num} → {len(resolved['chunk'])} match(es)")
+            notes.append(f"chunk_label={plan.chunk_num} → {len(resolved['chunk'])} match(es)")
 
-        elif scope.chunk_name:
-            vec = embed_query(scope.chunk_name)
+        elif plan.chunk_name:
+            vec = embed_query(plan.chunk_name)
             if vec:
                 rows = _q_chunk_embedding(neo, vec, lesson_ids, topic_ids, class_ids, _STRUCT_K)
                 resolved["chunk"] = [
@@ -678,10 +678,10 @@ def resolve_structure_neo(
                     for r in rows
                 ]
                 notes.append(
-                    f"chunk_name embedding '{scope.chunk_name}' → {len(resolved['chunk'])} match(es)"
+                    f"chunk_name embedding '{plan.chunk_name}' → {len(resolved['chunk'])} match(es)"
                 )
 
-        elif scope.chunk_requested:
+        elif plan.chunk_requested:
             if lesson_ids:
                 rows = neo.run(
                     """
@@ -735,18 +735,18 @@ def resolve_structure_neo(
 
 def run_semantic_search_neo(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     resolved: Dict[str, Any],
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
     """
     Run keyword semantic search via Neo4j keyword_embedding_idx.
-    Only fires for scope.semantic_query.
+    Only fires for plan.semantic_query.
     Returns (name_hits=[], keyword_hits, notes).
     """
     notes: List[str] = []
     keyword_hits: List[Dict[str, Any]] = []
 
-    q = (scope.semantic_query or "").strip()
+    q = (plan.semantic_query or "").strip()
     if not q:
         notes.append("Semantic search skipped: empty semantic_query")
         return [], keyword_hits, notes
@@ -831,14 +831,14 @@ def _score_and_rank(
 
 def debug_topic_name_scores(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     class_ids: List[str],
     k: int = _STRUCT_K,
 ) -> Dict[str, Any]:
-    if not scope.topic_name:
+    if not plan.topic_name:
         return {"skipped": True, "reason": "no topic_name in scope"}
 
-    vec, vec_info = _vec_info(scope.topic_name)
+    vec, vec_info = _vec_info(plan.topic_name)
     if not vec:
         return {
             "skipped": False,
@@ -885,7 +885,7 @@ def debug_topic_name_scores(
         index_mode = "global_index"
     fetch_ms = round((perf_counter() - t0) * 1000, 2)
 
-    scored, no_emb = _score_and_rank(raw, vec, scope.topic_name, "topic_name")
+    scored, no_emb = _score_and_rank(raw, vec, plan.topic_name, "topic_name")
     return {
         "skipped": False,
         "embedding": vec_info,
@@ -900,15 +900,15 @@ def debug_topic_name_scores(
 
 def debug_lesson_name_scores(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     topic_ids: List[str],
     class_ids: List[str],
     k: int = _STRUCT_K,
 ) -> Dict[str, Any]:
-    if not scope.lesson_name:
+    if not plan.lesson_name:
         return {"skipped": True, "reason": "no lesson_name in scope"}
 
-    vec, vec_info = _vec_info(scope.lesson_name)
+    vec, vec_info = _vec_info(plan.lesson_name)
     if not vec:
         return {
             "skipped": False,
@@ -968,7 +968,7 @@ def debug_lesson_name_scores(
         index_mode = "global_index"
     fetch_ms = round((perf_counter() - t0) * 1000, 2)
 
-    scored, no_emb = _score_and_rank(raw, vec, scope.lesson_name, "lesson_name")
+    scored, no_emb = _score_and_rank(raw, vec, plan.lesson_name, "lesson_name")
     return {
         "skipped": False,
         "embedding": vec_info,
@@ -983,16 +983,16 @@ def debug_lesson_name_scores(
 
 def debug_chunk_name_scores(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     lesson_ids: List[str],
     topic_ids: List[str],
     class_ids: List[str],
     k: int = _STRUCT_K,
 ) -> Dict[str, Any]:
-    if not scope.chunk_name:
+    if not plan.chunk_name:
         return {"skipped": True, "reason": "no chunk_name in scope"}
 
-    vec, vec_info = _vec_info(scope.chunk_name)
+    vec, vec_info = _vec_info(plan.chunk_name)
     if not vec:
         return {
             "skipped": False,
@@ -1067,7 +1067,7 @@ def debug_chunk_name_scores(
         index_mode = "global_index"
     fetch_ms = round((perf_counter() - t0) * 1000, 2)
 
-    scored, no_emb = _score_and_rank(raw, vec, scope.chunk_name, "chunk_name")
+    scored, no_emb = _score_and_rank(raw, vec, plan.chunk_name, "chunk_name")
     return {
         "skipped": False,
         "embedding": vec_info,
@@ -1082,11 +1082,11 @@ def debug_chunk_name_scores(
 
 def debug_keyword_scores(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     resolved: Dict[str, Any],
     k: int = _SEM_K,
 ) -> Dict[str, Any]:
-    q = (scope.semantic_query or "").strip()
+    q = (plan.semantic_query or "").strip()
     if not q:
         return {"skipped": True, "reason": "no semantic_query in scope"}
 

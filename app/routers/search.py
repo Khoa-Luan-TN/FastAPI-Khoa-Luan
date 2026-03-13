@@ -10,7 +10,6 @@ from app.services.query_parser import parse_query
 from app.services.search_executor import execute_search
 from app.services.search_plan_builder import build_search_plan
 from app.services.search_result_builder import ResultItem, build_results
-from app.services.search_scope_builder import build_search_scope
 from app.services.search_strategy_builder import build_search_strategy, SearchStrategy
 
 router = APIRouter(prefix="/search", tags=["Search"])
@@ -98,7 +97,7 @@ def _standardize_name_hit(hit: Dict[str, Any]) -> Dict[str, Any]:
         "title": hit.get("search_text"),
         "score": hit.get("rerank_score"),
         "semantic_score": hit.get("semantic_score"),
-        "lexical_boost": hit.get("lexical_boost"),
+        "lexical_adjustment": hit.get("lexical_adjustment"),
         "metadata": {
             "level": hit.get("level"),
             "search_text": hit.get("search_text"),
@@ -114,7 +113,7 @@ def _standardize_keyword_hit(hit: Dict[str, Any]) -> Dict[str, Any]:
         "title": hit.get("keyword_name"),
         "score": hit.get("rerank_score"),
         "semantic_score": hit.get("semantic_score"),
-        "lexical_boost": hit.get("lexical_boost"),
+        "lexical_adjustment": hit.get("lexical_adjustment"),
         "metadata": {
             "chunk_id": hit.get("chunk_id"),
             "keyword_name": hit.get("keyword_name"),
@@ -196,7 +195,6 @@ def _build_public_response(
     q: str,
     parsed: Any,
     plan: Any,
-    scope: Any,
     strategy: SearchStrategy,
     execution: Any,
     items: List[ResultItem],
@@ -234,7 +232,6 @@ def _build_public_response(
         response["debug"] = {
             "parsed": parsed.to_dict(),
             "plan": plan.to_dict(),
-            "scope": scope.to_dict(),
             "strategy": strategy.to_dict(),
             "execution": execution_dict,
         }
@@ -254,15 +251,14 @@ def search(
 ):
     parsed = parse_query(q)
     plan = build_search_plan(parsed)
-    scope = build_search_scope(plan)
-    strategy = build_search_strategy(scope)
+    strategy = build_search_strategy(plan)
 
     driver = neo4j_driver()
     pg = SessionLocal()
     try:
         with driver.session() as neo:
-            execution = execute_search(neo, scope, strategy)
-        items = build_results(pg, execution, strategy.target_level, scope=scope)
+            execution = execute_search(neo, plan, strategy)
+        items = build_results(pg, execution, strategy.target_level, plan=plan)
     finally:
         pg.close()
 
@@ -270,13 +266,11 @@ def search(
         q=q,
         parsed=parsed,
         plan=plan,
-        scope=scope,
         strategy=strategy,
         execution=execution,
         items=items,
         limit=limit,
         debug=debug,
-        
     )
 
 
@@ -300,30 +294,15 @@ def debug_plan(q: str = Query(..., min_length=1, description="Raw Vietnamese que
     }
 
 
-@router.get("/debug/scope", summary="Debug: build search scope from parsed query")
-def debug_scope(q: str = Query(..., min_length=1, description="Raw Vietnamese query")):
-    parsed = parse_query(q)
-    plan = build_search_plan(parsed)
-    scope = build_search_scope(plan)
-
-    return {
-        "parsed": parsed.to_dict(),
-        "plan": plan.to_dict(),
-        "scope": scope.to_dict(),
-    }
-
-
 @router.get("/debug/strategy", summary="Debug: classify search strategy from parsed query")
 def debug_strategy(q: str = Query(..., min_length=1, description="Raw Vietnamese query")):
     parsed = parse_query(q)
     plan = build_search_plan(parsed)
-    scope = build_search_scope(plan)
-    strategy = build_search_strategy(scope)
+    strategy = build_search_strategy(plan)
 
     return {
         "parsed": parsed.to_dict(),
         "plan": plan.to_dict(),
-        "scope": scope.to_dict(),
         "strategy": strategy.to_dict(),
     }
 
@@ -332,17 +311,15 @@ def debug_strategy(q: str = Query(..., min_length=1, description="Raw Vietnamese
 def debug_execute(q: str = Query(..., min_length=1, description="Raw Vietnamese query")):
     parsed = parse_query(q)
     plan = build_search_plan(parsed)
-    scope = build_search_scope(plan)
-    strategy = build_search_strategy(scope)
+    strategy = build_search_strategy(plan)
 
     driver = neo4j_driver()
     with driver.session() as neo:
-        execution = execute_search(neo, scope, strategy)
+        execution = execute_search(neo, plan, strategy)
 
     return {
         "parsed": parsed.to_dict(),
         "plan": plan.to_dict(),
-        "scope": scope.to_dict(),
         "strategy": strategy.to_dict(),
         "execution": execution.to_dict(),
     }

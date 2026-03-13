@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from neo4j import Session
 
-from app.services.search_scope_builder import SearchScope
+from app.services.search_plan_builder import SearchPlan
 from app.services.search_strategy_builder import SearchStrategy
 from app.services.neo_search_service import (
     resolve_structure_neo,
@@ -119,7 +119,7 @@ def _title_match_score(inp: str, actual: str) -> Tuple[float, Optional[str]]:
 
 
 def _validate_name_text(
-    scope: SearchScope,
+    plan: SearchPlan,
     resolved: Dict[str, Any],
 ) -> Tuple[float, Optional[str]]:
     """
@@ -136,14 +136,14 @@ def _validate_name_text(
     input_name: Optional[str] = None
     actual_name: Optional[str] = None
 
-    if resolved.get("chunk") and scope.chunk_num is not None and scope.chunk_name:
-        input_name = scope.chunk_name
+    if resolved.get("chunk") and plan.chunk_num is not None and plan.chunk_name:
+        input_name = plan.chunk_name
         actual_name = resolved["chunk"][0].get("chunk_name", "")
-    elif resolved.get("lesson") and scope.lesson_num is not None and scope.lesson_name:
-        input_name = scope.lesson_name
+    elif resolved.get("lesson") and plan.lesson_num is not None and plan.lesson_name:
+        input_name = plan.lesson_name
         actual_name = resolved["lesson"][0].get("lesson_name", "")
-    elif resolved.get("topic") and scope.topic_num is not None and scope.topic_name:
-        input_name = scope.topic_name
+    elif resolved.get("topic") and plan.topic_num is not None and plan.topic_name:
+        input_name = plan.topic_name
         actual_name = resolved["topic"][0].get("topic_name", "")
 
     # Numeric-only query -> full score
@@ -159,13 +159,13 @@ def _validate_name_text(
     return _title_match_score(p, a)
 
 
-def _has_numeric_resolution(scope: SearchScope, resolved: Dict[str, Any]) -> bool:
+def _has_numeric_resolution(plan: SearchPlan, resolved: Dict[str, Any]) -> bool:
     """True when any *_num was given and successfully resolved to entities."""
-    if resolved.get("chunk") and scope.chunk_num is not None:
+    if resolved.get("chunk") and plan.chunk_num is not None:
         return True
-    if resolved.get("lesson") and scope.lesson_num is not None:
+    if resolved.get("lesson") and plan.lesson_num is not None:
         return True
-    if resolved.get("topic") and scope.topic_num is not None:
+    if resolved.get("topic") and plan.topic_num is not None:
         return True
     return False
 
@@ -191,7 +191,7 @@ def _evaluate_confidence(
             best_keyword,
         )
 
-    has_lexical = best_keyword.get("lexical_boost", 0.0) > 0.0
+    has_lexical = best_keyword.get("lexical_adjustment", 0.0) > 0.0
 
     if bks is not None and (bks >= _LOW_CONFIDENCE_FLOOR or has_lexical):
         return (
@@ -217,14 +217,14 @@ def _has_any_resolved_structure(resolved: Dict[str, Any]) -> bool:
 # Scope-failure guard (hard signals only)
 # ---------------------------------------------------------------------------
 
-def _semantic_scope_failure_reason(scope: SearchScope, resolved: Dict[str, Any]) -> str | None:
-    if scope.chunk_num is not None and not resolved.get("chunk"):
+def _semantic_scope_failure_reason(plan: SearchPlan, resolved: Dict[str, Any]) -> str | None:
+    if plan.chunk_num is not None and not resolved.get("chunk"):
         return "Semantic search skipped: chunk_label was requested but no chunk matched"
-    if scope.lesson_num is not None and not resolved.get("lesson"):
+    if plan.lesson_num is not None and not resolved.get("lesson"):
         return "Semantic search skipped: lesson_num was requested but no lesson matched"
-    if scope.topic_num is not None and not resolved.get("topic"):
+    if plan.topic_num is not None and not resolved.get("topic"):
         return "Semantic search skipped: topic_num was requested but no topic matched"
-    if scope.class_hint is not None and not resolved.get("class"):
+    if plan.class_hint is not None and not resolved.get("class"):
         return "Semantic search skipped: class scope was requested but no class matched"
     return None
 
@@ -236,7 +236,7 @@ def _semantic_scope_failure_reason(scope: SearchScope, resolved: Dict[str, Any])
 def _build_structure_result(
     *,
     mode: str,
-    scope: SearchScope,
+    plan: SearchPlan,
     resolved: Dict[str, Any],
     notes: List[str],
     reason_if_confident: str,
@@ -262,8 +262,8 @@ def _build_structure_result(
     name_score: Optional[float] = None
     name_note_val: Optional[str] = None
 
-    if _has_numeric_resolution(scope, resolved):
-        name_score, name_note_val = _validate_name_text(scope, resolved)
+    if _has_numeric_resolution(plan, resolved):
+        name_score, name_note_val = _validate_name_text(plan, resolved)
         if name_note_val:
             notes.append(name_note_val)
 
@@ -298,7 +298,7 @@ def _build_structure_result(
 
 def execute_search(
     neo: Session,
-    scope: SearchScope,
+    plan: SearchPlan,
     strategy: SearchStrategy,
 ) -> ExecutionResult:
     total_start = perf_counter()
@@ -333,7 +333,7 @@ def execute_search(
     # --- Structure resolution ------------------------------------------------
     structure_start = perf_counter()
     if strategy.use_structure_filters:
-        resolved, struct_notes = resolve_structure_neo(neo, scope)
+        resolved, struct_notes = resolve_structure_neo(neo, plan)
         notes.extend(struct_notes)
     structure_end = perf_counter()
     timings["structure_ms"] = round((structure_end - structure_start) * 1000, 2)
@@ -341,11 +341,11 @@ def execute_search(
     # --- Keyword semantic search ---------------------------------------------
     semantic_start = perf_counter()
     if strategy.use_semantic_search:
-        failure_reason = _semantic_scope_failure_reason(scope, resolved)
+        failure_reason = _semantic_scope_failure_reason(plan, resolved)
         if failure_reason:
             notes.append(failure_reason)
         else:
-            _, keyword_hits, sem_notes = run_semantic_search_neo(neo, scope, resolved)
+            _, keyword_hits, sem_notes = run_semantic_search_neo(neo, plan, resolved)
             notes.extend(sem_notes)
     semantic_end = perf_counter()
     timings["semantic_ms"] = round((semantic_end - semantic_start) * 1000, 2)
@@ -356,7 +356,7 @@ def execute_search(
     if strategy.mode == "structure_only":
         result = _build_structure_result(
             mode=strategy.mode,
-            scope=scope,
+            plan=plan,
             resolved=resolved,
             notes=notes,
             reason_if_confident="Resolved structural result from query.",
@@ -376,7 +376,7 @@ def execute_search(
         if not keyword_hits and _has_any_resolved_structure(resolved):
             result = _build_structure_result(
                 mode=strategy.mode,
-                scope=scope,
+                plan=plan,
                 resolved=resolved,
                 notes=notes,
                 reason_if_confident="Resolved structural result from query.",
