@@ -1,18 +1,5 @@
-#services/search_result_builder.py
-"""
-search_result_builder.py
+# app/services/search_result_builder.py
 
-Post-processing layer that converts an ExecutionResult into a list of
-frontend-ready ResultItem objects.
-
-Works for all execution modes:
-  - structure_only  → enriches resolved_structure via PostgreSQL JOINs
-  - hybrid / keyword_only → maps name_hits (+ keyword_hits) with context
-  - empty / no_match → returns []
-
-Description fields use safe fallback text until topic_des / lesson_des /
-chunk_des are available from MongoDB.
-"""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field

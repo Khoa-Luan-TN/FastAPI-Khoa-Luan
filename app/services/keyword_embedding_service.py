@@ -1,9 +1,10 @@
+# app/services/keyword_embedding_service.py
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 from sqlalchemy import text as sql_text
 
-from app.services.embedder import embed_passage, MODEL_SHORT
+from app.services.embedder import embed_passage, MODEL_SHORT, normalize_embedding_text
 
 
 def _vec_to_pg(vec: list[float]) -> str:
@@ -17,7 +18,7 @@ def build_text_for_embedding(db: Session, chunk_id: str, keyword_name: str) -> s
 
     Giữ nguyên signature (db, chunk_id, keyword_name) để không làm vỡ code gọi cũ.
     """
-    return (keyword_name or "").strip()
+    return normalize_embedding_text(keyword_name)
 
 
 def upsert_keyword_embedding(db: Session, chunk_id: str, keyword_name: str, vec: list[float]) -> None:

@@ -1,4 +1,4 @@
-#services/neo_sync_service.py
+# app/services/neo_sync_service.py
 from __future__ import annotations
 
 from contextlib import contextmanager

@@ -1,9 +1,10 @@
+# app/services/name_embedding_service.py
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 from sqlalchemy import text as sql_text
 
-from app.services.embedder import embed_passage, MODEL_SHORT
+from app.services.embedder import embed_passage, MODEL_SHORT, normalize_embedding_text
 
 
 def _vec_to_pg(vec: list[float]) -> str:
@@ -15,15 +16,15 @@ def _vec_to_pg(vec: list[float]) -> str:
 # ---------------------------------------------------------------------------
 
 def topic_search_text(topic_name: str) -> str:
-    return topic_name.strip()
+    return normalize_embedding_text(topic_name)
 
 
 def lesson_search_text(lesson_name: str) -> str:
-    return lesson_name.strip()
+    return normalize_embedding_text(lesson_name)
 
 
 def chunk_search_text(chunk_name: str) -> str:
-    return chunk_name.strip()
+    return normalize_embedding_text(chunk_name)
 
 
 # ---------------------------------------------------------------------------
