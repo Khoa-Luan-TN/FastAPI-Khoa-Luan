@@ -6,8 +6,7 @@ from bson import ObjectId
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert
-from app.services.keyword_embedding_service import ensure_keyword_embedding
-from app.services.name_embedding_service import ensure_name_embedding
+from app.services.entity_embedding_service import ensure_keyword_embedding, ensure_entity_embedding as ensure_name_embedding
 
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")

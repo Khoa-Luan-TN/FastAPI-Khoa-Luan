@@ -14,7 +14,7 @@ from app.services.embedder import embed_query
 from app.services.postgre_client import SessionLocal
 from app.services.mongo_client import get_mongo_client
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, ensure_neo_vector_indexes
-from app.services.name_embedding_service import ensure_name_embedding
+from app.services.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
 import app.models.model_postgre as pg_models
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])

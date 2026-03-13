@@ -397,20 +397,6 @@ _NEO_VECTOR_INDEXES = [
 
 
 def ensure_neo_vector_indexes() -> dict:
-    """
-    Create Neo4j vector indexes for Topic / Lesson / Chunk nodes (idempotent).
-
-    Index names must match neo_search_service.py exactly:
-      topic_embedding_idx, lesson_embedding_idx, chunk_embedding_idx
-
-    Safe to call repeatedly — uses `CREATE VECTOR INDEX … IF NOT EXISTS`.
-    Returns {index_name: "ok" | "error: ..."}.
-
-    Step 1 of the embedding setup flow:
-      1. ensure_neo_vector_indexes()   ← this function
-      2. rebuild PG name embeddings    (backfill/name-embeddings endpoint)
-      3. backfill Neo node embeddings  (backfill/neo-name-embeddings endpoint)
-    """
     results = {}
     with neo_session() as s:
         for idx_name, label, prop in _NEO_VECTOR_INDEXES:
