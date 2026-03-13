@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from typing import List, Optional
+from typing import Optional
 
 
 @dataclass
@@ -27,7 +27,6 @@ class ParsedQuery:
     chunk_requested: bool
 
     primary_keyword: str
-    secondary_keywords: List[str]
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -99,7 +98,6 @@ _FILLERS: list[str] = [
     "làm ơn",
     "xin hãy",
     "hỏi về",
-    "tìm kiếm",
     "hãy",
     "xem",
 
@@ -207,6 +205,30 @@ _WEAK_ONLY_TOKENS = {
     "dưới",
 }
 
+_WEAK_STRUCT_NAME_PREFIX_PHRASES = sorted([
+    "thuộc về",
+    "ở trong",
+    "nằm trong",
+], key=len, reverse=True)
+
+_WEAK_STRUCT_NAME_PREFIX_TOKENS = {
+    "trong",
+    "của",
+    "ở",
+    "về",
+    "thuộc",
+}
+
+_STRUCT_BRIDGE_SUFFIX_TOKENS = {
+    "và",
+    "hoặc",
+}
+
+_STRUCT_BRIDGE_EDGE_TOKENS = {
+    "và",
+    "hoặc",
+}
+
 # -------------------------------------------------------
 # Helpers
 # -------------------------------------------------------
@@ -266,6 +288,58 @@ def _strip_weak_struct_tail(name: str) -> str:
 
     return _ws(s)
 
+def _strip_struct_bridge_edges(name: str) -> str:
+    s = _ws((name or "").lower())
+    if not s:
+        return ""
+
+    changed = True
+    while changed:
+        changed = False
+        tokens = s.split()
+
+        if tokens and tokens[0] in _STRUCT_BRIDGE_EDGE_TOKENS:
+            tokens.pop(0)
+            s = " ".join(tokens)
+            changed = True
+            continue
+
+        if tokens and tokens[-1] in _STRUCT_BRIDGE_EDGE_TOKENS:
+            tokens.pop()
+            s = " ".join(tokens)
+            changed = True
+
+    return _ws(s)
+
+def _strip_weak_struct_prefix(name: str) -> str:
+    s = _ws((name or "").lower())
+    if not s:
+        return ""
+
+    changed = True
+    while changed:
+        changed = False
+
+        # cắt cụm yếu ở đầu trước
+        for phrase in _WEAK_STRUCT_NAME_PREFIX_PHRASES:
+            pattern = r"^" + re.escape(phrase) + r"(?=\s|$)"
+            new_s = _ws(re.sub(pattern, " ", s, flags=re.IGNORECASE))
+            if new_s != s:
+                s = new_s
+                changed = True
+                break
+
+        if changed:
+            continue
+
+        # cắt 1 token yếu ở đầu
+        tokens = s.split()
+        if tokens and tokens[0] in _WEAK_STRUCT_NAME_PREFIX_TOKENS:
+            tokens.pop(0)
+            s = " ".join(tokens)
+            changed = True
+
+    return _ws(s)
 
 def _strip_tail_noise(s: str) -> str:
     """
@@ -353,9 +427,15 @@ def _find_structural_segments(
     return segments, prefix
 
 
-
 def _drop_weak_struct_name(name: Optional[str]) -> Optional[str]:
-    s = _strip_weak_struct_tail(name or "")
+    s = _ws((name or "").lower())
+    if not s:
+        return None
+
+    s = _strip_weak_struct_prefix(s)
+    s = _strip_weak_struct_tail(s)
+    s = _strip_struct_bridge_edges(s)
+
     if not s:
         return None
 
@@ -373,7 +453,9 @@ def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optiona
     else:
         body = re.sub(r"^(?:mục)\s*", "", segment_text, flags=re.IGNORECASE)
 
-    body = _strip_fillers(_ws(body))
+    # KHÔNG strip filler trong structural name nữa
+    # vì phần sau "bài/chủ đề/mục" thường là tên thực thể thật
+    body = _ws(body)
     body = _strip_tail_noise(body)
 
     if not body:
@@ -388,21 +470,6 @@ def _parse_segment(kind: str, segment_text: str) -> tuple[Optional[int], Optiona
 
     name = _drop_weak_struct_name(body)
     return None, name
-
-def _split_keywords(cleaned: str) -> tuple[str, List[str]]:
-    if not cleaned:
-        return "", []
-
-    parts = [
-        p.strip()
-        for p in re.split(r"\s*(?:,|và|hoặc)\s*", cleaned)
-        if p.strip()
-    ]
-    if not parts:
-        return "", []
-
-    return parts[0], parts[1:]
-
 
 # -------------------------------------------------------
 # Main parser
@@ -465,8 +532,8 @@ def parse_query(raw: str) -> ParsedQuery:
     cleaned = _strip_fillers(_ws(leftover))
     cleaned = _strip_tail_noise(cleaned)
 
-    # 7) Build primary / secondary keywords from leftover free text only
-    primary_keyword, secondary_keywords = _split_keywords(cleaned)
+    # 7) Leftover free text becomes the single semantic phrase
+    primary_keyword = _ws(cleaned)
 
     return ParsedQuery(
         original_query=original,
@@ -482,5 +549,4 @@ def parse_query(raw: str) -> ParsedQuery:
         chunk_name=chunk_name,
         chunk_requested=chunk_requested,
         primary_keyword=primary_keyword,
-        secondary_keywords=secondary_keywords,
     )

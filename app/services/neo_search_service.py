@@ -7,11 +7,12 @@ from time import perf_counter
 
 from neo4j import Session
 
-from app.services.embedder import embed_query
+from app.services.embedder import embed_query, rerank_pairs
 from app.services.search_plan_builder import SearchPlan
 
-_STRUCT_K = 5   # top-k for name-based structure resolution
-_SEM_K    = 10  # top-k for keyword semantic search
+_STRUCT_K = 10
+_SEM_K = 10          # số kết quả cuối cùng trả ra
+_SEM_FETCH_K = 30    # số candidate lấy trước khi rerank
 
 # ---------------------------------------------------------------------------
 # Shared scoring helpers
@@ -86,6 +87,24 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
         return -1.0
 
     return dot / (math.sqrt(norm_a) * math.sqrt(norm_b))
+
+def _sigmoid(x: float) -> float:
+    if x >= 0:
+        z = math.exp(-x)
+        return 1.0 / (1.0 + z)
+    z = math.exp(x)
+    return z / (1.0 + z)
+
+
+def _build_keyword_candidate_text(row: Dict[str, Any]) -> str:
+    parts: List[str] = []
+
+    if row.get("keyword_name"):
+        parts.append(f"keyword: {row['keyword_name']}")
+    if row.get("chunk_name"):
+        parts.append(f"chunk: {row['chunk_name']}")
+
+    return ". ".join(parts)
 
 
 def _rank_scoped_rows(
@@ -308,8 +327,10 @@ def _q_keyword_embedding(
                 MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
                 WHERE c.chunk_id IN $chunk_ids
                 RETURN c.chunk_id      AS chunk_id,
-                       kw.keyword_name AS keyword_name,
-                       kw.embedding    AS embedding
+                    c.chunk_name    AS chunk_name,
+                    c.chunk_label   AS chunk_label,
+                    kw.keyword_name AS keyword_name,
+                    kw.embedding    AS embedding
                 """,
                 chunk_ids=chunk_ids,
             )
@@ -322,8 +343,10 @@ def _q_keyword_embedding(
                 MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
                 WHERE l.lesson_id IN $lesson_ids
                 RETURN c.chunk_id      AS chunk_id,
-                       kw.keyword_name AS keyword_name,
-                       kw.embedding    AS embedding
+                    c.chunk_name    AS chunk_name,
+                    c.chunk_label   AS chunk_label,
+                    kw.keyword_name AS keyword_name,
+                    kw.embedding    AS embedding
                 """,
                 lesson_ids=lesson_ids,
             )
@@ -336,8 +359,10 @@ def _q_keyword_embedding(
                 MATCH (t:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
                 WHERE t.topic_id IN $topic_ids
                 RETURN c.chunk_id      AS chunk_id,
-                       kw.keyword_name AS keyword_name,
-                       kw.embedding    AS embedding
+                    c.chunk_name    AS chunk_name,
+                    c.chunk_label   AS chunk_label,
+                    kw.keyword_name AS keyword_name,
+                    kw.embedding    AS embedding
                 """,
                 topic_ids=topic_ids,
             )
@@ -346,12 +371,14 @@ def _q_keyword_embedding(
         # Scope theo class
         if class_ids:
             rows = neo.run(
-                """
+                 """
                 MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
                 WHERE cls.class_id IN $class_ids
                 RETURN c.chunk_id      AS chunk_id,
-                       kw.keyword_name AS keyword_name,
-                       kw.embedding    AS embedding
+                    c.chunk_name    AS chunk_name,
+                    c.chunk_label   AS chunk_label,
+                    kw.keyword_name AS keyword_name,
+                    kw.embedding    AS embedding
                 """,
                 class_ids=class_ids,
             )
@@ -364,8 +391,10 @@ def _q_keyword_embedding(
             YIELD node AS kw, score
             MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw)
             RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   score
+                c.chunk_name    AS chunk_name,
+                c.chunk_label   AS chunk_label,
+                kw.keyword_name AS keyword_name,
+                score
             """,
             k=k, vec=vec,
         )
@@ -373,7 +402,6 @@ def _q_keyword_embedding(
 
     except Exception as exc:
         raise RuntimeError(f"Neo4j keyword_embedding_idx query failed: {exc}") from exc
-
 # ---------------------------------------------------------------------------
 # Hard-scope helpers
 # ---------------------------------------------------------------------------
@@ -738,11 +766,7 @@ def run_semantic_search_neo(
     plan: SearchPlan,
     resolved: Dict[str, Any],
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
-    """
-    Run keyword semantic search via Neo4j keyword_embedding_idx.
-    Only fires for plan.semantic_query.
-    Returns (name_hits=[], keyword_hits, notes).
-    """
+
     notes: List[str] = []
     keyword_hits: List[Dict[str, Any]] = []
 
@@ -761,23 +785,51 @@ def run_semantic_search_neo(
     lesson_ids = [r["lesson_id"] for r in resolved.get("lesson", [])]
     chunk_ids  = [r["chunk_id"]  for r in resolved.get("chunk",  [])]
 
-    raw = _q_keyword_embedding(neo, vec, chunk_ids, lesson_ids, topic_ids, class_ids, _SEM_K)
+    # Lấy rộng hơn kết quả cuối để rerank
+    raw = _q_keyword_embedding(
+        neo,
+        vec,
+        chunk_ids,
+        lesson_ids,
+        topic_ids,
+        class_ids,
+        _SEM_FETCH_K,
+    )
 
-    for r in raw:
-        keyword_hits.append(
-            _scored_hit(
-                base={"chunk_id": r["chunk_id"], "keyword_name": r["keyword_name"]},
-                query=q,
-                text=r["keyword_name"],
-                score=float(r["score"]),
-            )
-        )
+    if not raw:
+        notes.append(f"keyword_embedding_idx on '{q}': 0 hit(s)")
+        return [], keyword_hits, notes
+
+    candidate_texts = [_build_keyword_candidate_text(r) for r in raw]
+    cross_raw_scores = rerank_pairs(q, candidate_texts)
+
+    for i, r in enumerate(raw):
+        candidate_text = candidate_texts[i]
+        cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
+        cross_score = _sigmoid(float(cross_raw))
+        lexical_adjustment = _lexical_adjustment(q, str(r.get("keyword_name", "")))
+
+        keyword_hits.append({
+            "chunk_id": r["chunk_id"],
+            "chunk_name": r.get("chunk_name"),
+            "chunk_label": r.get("chunk_label"),
+            "keyword_name": r["keyword_name"],
+            "candidate_text": candidate_text,
+
+            "semantic_score": round(float(r.get("score", 0.0)), 4),
+            "cross_encoder_raw": round(float(cross_raw), 4),
+            "cross_encoder_score": round(cross_score, 4),
+            "lexical_adjustment": round(lexical_adjustment, 4),
+            "rerank_score": round(cross_score, 4),
+        })
 
     keyword_hits.sort(key=lambda x: x["rerank_score"], reverse=True)
-    notes.append(f"keyword_embedding_idx on '{q}': {len(keyword_hits)} hit(s)")
+    keyword_hits = keyword_hits[:_SEM_K]
+
+    notes.append(
+        f"keyword_embedding_idx on '{q}': fetched={len(raw)}, reranked={len(keyword_hits)}"
+    )
     return [], keyword_hits, notes
-
-
 # ---------------------------------------------------------------------------
 # Debug scoring helpers — used by /search/debug/score endpoint
 # ---------------------------------------------------------------------------
@@ -1114,93 +1166,50 @@ def debug_keyword_scores(
     }
 
     t0 = perf_counter()
-    if chunk_ids:
-        rows = neo.run(
-            """
-            MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
-            WHERE c.chunk_id IN $chunk_ids
-            RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   kw.embedding    AS embedding
-            """,
-            chunk_ids=chunk_ids,
-        )
-        raw = [dict(r) for r in rows]
-        index_mode = "scoped_by_chunk"
-    elif lesson_ids:
-        rows = neo.run(
-            """
-            MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
-            WHERE l.lesson_id IN $lesson_ids
-            RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   kw.embedding    AS embedding
-            """,
-            lesson_ids=lesson_ids,
-        )
-        raw = [dict(r) for r in rows]
-        index_mode = "scoped_by_lesson"
-    elif topic_ids:
-        rows = neo.run(
-            """
-            MATCH (t:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
-            WHERE t.topic_id IN $topic_ids
-            RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   kw.embedding    AS embedding
-            """,
-            topic_ids=topic_ids,
-        )
-        raw = [dict(r) for r in rows]
-        index_mode = "scoped_by_topic"
-    elif class_ids:
-        rows = neo.run(
-            """
-            MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
-            WHERE cls.class_id IN $class_ids
-            RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   kw.embedding    AS embedding
-            """,
-            class_ids=class_ids,
-        )
-        raw = [dict(r) for r in rows]
-        index_mode = "scoped_by_class"
-    else:
-        rows = neo.run(
-            """
-            CALL db.index.vector.queryNodes('keyword_embedding_idx', $k, $vec)
-            YIELD node AS kw, score
-            MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw)
-            RETURN c.chunk_id      AS chunk_id,
-                   kw.keyword_name AS keyword_name,
-                   kw.embedding    AS embedding
-            """,
-            k=k * 3, vec=vec,
-        )
-        raw = [dict(r) for r in rows]
-        index_mode = "global_index"
+    raw = _q_keyword_embedding(
+        neo,
+        vec,
+        chunk_ids,
+        lesson_ids,
+        topic_ids,
+        class_ids,
+        _SEM_FETCH_K,
+    )
     fetch_ms = round((perf_counter() - t0) * 1000, 2)
 
+    if not raw:
+        return {
+            "skipped": False,
+            "semantic_query": q,
+            "embedding": vec_info,
+            "scope_ids": scope_ids,
+            "candidate_count": 0,
+            "fetch_ms": fetch_ms,
+            "candidates": [],
+            "top_k": [],
+        }
+
+    candidate_texts = [_build_keyword_candidate_text(r) for r in raw]
+    cross_raw_scores = rerank_pairs(q, candidate_texts)
+
     scored: List[Dict[str, Any]] = []
-    no_emb: List[Dict[str, Any]] = []
-    for row in raw:
-        emb = _to_float_vec(row.get("embedding"))
-        base = {"chunk_id": row.get("chunk_id"), "keyword_name": row.get("keyword_name")}
-        if not emb:
-            base["has_embedding"] = False
-            base["semantic_score"] = None
-            base["lexical_adjustment"] = None
-            base["rerank_score"] = None
-            no_emb.append(base)
-            continue
-        cosine = _cosine_similarity(vec, emb)
+    for i, row in enumerate(raw):
+        cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
+        cross_score = _sigmoid(float(cross_raw))
         lex_adj = _lexical_adjustment(q, str(row.get("keyword_name", "")))
-        base["has_embedding"] = True
-        base["semantic_score"] = round(cosine, 4)
-        base["lexical_adjustment"] = round(lex_adj, 4)
-        base["rerank_score"] = round(cosine + lex_adj, 4)
-        scored.append(base)
+
+        scored.append({
+            "chunk_id": row.get("chunk_id"),
+            "chunk_name": row.get("chunk_name"),
+            "chunk_label": row.get("chunk_label"),
+            "keyword_name": row.get("keyword_name"),
+            "candidate_text": candidate_texts[i],
+            "semantic_score": round(float(row.get("score", 0.0)), 4),
+            "cross_encoder_raw": round(float(cross_raw), 4),
+            "cross_encoder_score": round(cross_score, 4),
+            "lexical_adjustment": round(lex_adj, 4),
+            "rerank_score": round(cross_score, 4),
+        })
 
     scored.sort(key=lambda x: x["rerank_score"], reverse=True)
     for i, item in enumerate(scored):
@@ -1211,9 +1220,8 @@ def debug_keyword_scores(
         "semantic_query": q,
         "embedding": vec_info,
         "scope_ids": scope_ids,
-        "index_mode": index_mode,
         "candidate_count": len(raw),
         "fetch_ms": fetch_ms,
-        "candidates": scored + no_emb,
+        "candidates": scored,
         "top_k": scored[:k],
     }

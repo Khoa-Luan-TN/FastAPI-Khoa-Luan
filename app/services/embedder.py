@@ -1,13 +1,16 @@
-# app/services/embedder.py
 from __future__ import annotations
 
 import unicodedata
 from functools import lru_cache
 from typing import Literal
-from sentence_transformers import SentenceTransformer
+
+import torch.nn as nn
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 MODEL_NAME = "intfloat/multilingual-e5-base"
 MODEL_SHORT = "multilingual-e5-base"  # lưu vào DB
+
+RERANKER_NAME = "BAAI/bge-reranker-v2-m3"
 
 # dùng để chuẩn hoá chữ
 def normalize_embedding_text(text: str) -> str:
@@ -19,11 +22,18 @@ def normalize_embedding_text(text: str) -> str:
 def get_model() -> SentenceTransformer:
     return SentenceTransformer(MODEL_NAME)
 
+
+@lru_cache(maxsize=1)
+def get_reranker() -> CrossEncoder:
+    return CrossEncoder(RERANKER_NAME)
+
+
 def _embed(texts: list[str], *, kind: Literal["query", "passage"]) -> list[list[float]]:
     prefix = "query: " if kind == "query" else "passage: "
     inputs = [prefix + (str(t or "").strip()) for t in texts]
     emb = get_model().encode(inputs, normalize_embeddings=True)
     return emb.astype("float32").tolist()
+
 
 def embed_query(text: str) -> list[float]:
     t = normalize_embedding_text(text)
@@ -31,14 +41,34 @@ def embed_query(text: str) -> list[float]:
         return []
     return _embed([t], kind="query")[0]
 
+
 def embed_passage(text: str) -> list[float]:
     t = normalize_embedding_text(text)
     if not t:
         return []
     return _embed([t], kind="passage")[0]
 
+
 def embed_passage_prepared(text: str) -> list[float]:
     """Embed already-normalized text as a passage. Does not normalize again."""
     if not text:
         return []
     return _embed([text], kind="passage")[0]
+
+
+def rerank_pairs(query: str, candidates: list[str]) -> list[float]:
+    """
+    Cross-encoder score cho từng cặp (query, candidate_text).
+    Trả raw score/logit, chưa sigmoid.
+    """
+    q = str(query or "").strip()
+    texts = [str(x or "").strip() for x in candidates]
+    if not q or not texts:
+        return []
+
+    pairs = [(q, text) for text in texts]
+    scores = get_reranker().predict(
+        pairs,
+        activation_fn=nn.Identity(),
+    )
+    return [float(x) for x in scores]

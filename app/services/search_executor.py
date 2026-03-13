@@ -18,8 +18,8 @@ from app.services.neo_search_service import (
 )
 
 # Confidence thresholds
-_KEYWORD_CONFIDENT_THRESHOLD = 0.90
-_LOW_CONFIDENCE_FLOOR = 0.70
+_KEYWORD_CONFIDENT_THRESHOLD = 0.75
+_LOW_CONFIDENCE_FLOOR = 0.45
 
 # Note shown when attached name does not match strongly enough
 _NAME_NOTE = "Tên tìm kiếm chưa khớp hoàn toàn với kết quả này."
