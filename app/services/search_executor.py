@@ -590,7 +590,20 @@ def execute_search(
         return result
 
     # --- Hybrid --------------------------------------------------------------
+        # --- Hybrid --------------------------------------------------------------
     if strategy.mode == "hybrid":
+        structure_score: Optional[float] = None
+        structure_note: Optional[str] = None
+
+        # Nếu query có _num thì luôn tính structure score trước
+        if _has_any_numeric_signal(plan):
+            structure_score, structure_note, structure_notes = _evaluate_numeric_structure_score(
+                plan, resolved
+            )
+            notes.extend(structure_notes)
+            if structure_note and structure_note not in notes:
+                notes.append(structure_note)
+
         # Nếu semantic không ra hit nhưng structure đã resolve được,
         # fallback về structure thay vì trả no_match sai.
         if not keyword_hits and _has_any_resolved_structure(resolved):
@@ -611,6 +624,80 @@ def execute_search(
 
         status, reason, bks, best_keyword_hit = _evaluate_confidence(keyword_hits)
 
+        # Nếu có numeric structure score thì phải dùng nó trong hybrid
+        if structure_score is not None:
+            keyword_score = float(bks or 0.0)
+
+            # Nếu structure quá yếu thì không cho semantic kéo lên thành confident
+            if structure_score < _STRUCTURE_LOW_CONFIDENCE_FLOOR:
+                hybrid_score = round(0.7 * structure_score + 0.3 * keyword_score, 4)
+
+                result = ExecutionResult(
+                    mode=strategy.mode,
+                    status="low_confidence",
+                    reason=(
+                        f"Resolved hybrid result, but structure score={structure_score:.4f} "
+                        f"is weak; hybrid_score={hybrid_score:.4f}."
+                    ),
+                    best_name_score=structure_score,
+                    best_keyword_score=bks,
+                    best_name_hit=None,
+                    best_keyword_hit=best_keyword_hit,
+                    resolved_structure=resolved,
+                    name_hits=[],
+                    keyword_hits=keyword_hits,
+                    notes=notes + [
+                        f"hybrid_score={hybrid_score:.4f} "
+                        f"(0.7 * structure + 0.3 * keyword)"
+                    ],
+                    name_similarity_score=structure_score,
+                    name_note=structure_note,
+                    timings=timings,
+                )
+                finalize_end = perf_counter()
+                timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+                timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+                result.timings = timings
+                return result
+
+            hybrid_score = round(0.7 * structure_score + 0.3 * keyword_score, 4)
+
+            if hybrid_score >= _STRUCTURE_CONFIDENT_THRESHOLD:
+                final_status = "confident_match"
+            elif hybrid_score >= _STRUCTURE_LOW_CONFIDENCE_FLOOR:
+                final_status = "low_confidence"
+            else:
+                final_status = "low_confidence"
+
+            result = ExecutionResult(
+                mode=strategy.mode,
+                status=final_status,
+                reason=(
+                    f"Resolved hybrid result with hybrid_score={hybrid_score:.4f} "
+                    f"(structure={structure_score:.4f}, keyword={keyword_score:.4f})."
+                ),
+                best_name_score=structure_score,
+                best_keyword_score=bks,
+                best_name_hit=None,
+                best_keyword_hit=best_keyword_hit,
+                resolved_structure=resolved,
+                name_hits=[],
+                keyword_hits=keyword_hits,
+                notes=notes + [
+                    f"hybrid_score={hybrid_score:.4f} "
+                    f"(0.7 * structure + 0.3 * keyword)"
+                ],
+                name_similarity_score=structure_score,
+                name_note=structure_note,
+                timings=timings,
+            )
+            finalize_end = perf_counter()
+            timings["finalize_ms"] = round((finalize_end - finalize_start) * 1000, 2)
+            timings["total_ms"] = round((finalize_end - total_start) * 1000, 2)
+            result.timings = timings
+            return result
+
+        # Query hybrid nhưng không có numeric signal -> giữ logic cũ
         result = ExecutionResult(
             mode=strategy.mode,
             status=status,
