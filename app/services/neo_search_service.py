@@ -19,35 +19,9 @@ _SEM_FETCH_K = 30     # số candidate lấy trước khi rerank cho keyword
 # Shared scoring helpers
 # ---------------------------------------------------------------------------
 
-#  Chuẩn hoá text 
+# Chuẩn hoá text
 def _norm_text(s: str) -> str:
     return " ".join(str(s or "").lower().strip().split())
-
-# Khi semantic search ra score vector, hàm này cộng thêm điểm nếu text thật có khớp chữ.
-def _lexical_adjustment(query: str, text: str) -> float:
-    q, t = _norm_text(query), _norm_text(text)
-    if not q or not t:
-        return 0.0
-
-    adjust = 0.0
-    q_tokens = q.split()
-    t_tokens = t.split()
-
-    common = set(q_tokens) & set(t_tokens)
-    common_count = len(common)
-
-    if q == t:
-        adjust += 0.20
-    elif q in t:
-        adjust += 0.12
-
-    if t.startswith(q):
-        adjust += 0.05
-
-    if common_count == 0:
-        adjust -= 0.10
-
-    return adjust
 
 def _to_float_vec(v: Any) -> List[float]:
     if not isinstance(v, (list, tuple)):
@@ -60,7 +34,6 @@ def _to_float_vec(v: Any) -> List[float]:
         except Exception:
             return []
     return out
-
 
 def _cosine_similarity(a: List[float], b: List[float]) -> float:
     if not a or not b or len(a) != len(b):
@@ -92,14 +65,48 @@ def _clamp01(x: float) -> float:
 
 
 def _normalize_semantic_score(score: float) -> float:
-    """
-    Đưa cosine score từ khoảng [-1, 1] về [0, 1].
-    Thực tế score của bạn thường đang quanh 0.8-0.95.
-    """
-    return _clamp01((float(score) + 1.0) / 2.0)
+    return _clamp01(float(score))
 
 
-def _combine_name_rerank_score(
+# ---------------------------------------------------------------------------
+# Shared rerank policy (common for name + keyword)
+# ---------------------------------------------------------------------------
+
+# Ngưỡng gate: query càng ngắn thì càng phải nghiêm với cross
+_GATE_CROSS_ONE_TOKEN = 0.10
+_GATE_CROSS_TWO_TOKEN = 0.08
+_GATE_CROSS_LONG = 0.05
+
+# Weight mặc định theo độ dài query
+# Bạn có thể chỉnh sau ở đúng chỗ này
+_ONE_TOKEN_WEIGHTS = {
+    "semantic": 0.35,
+    "cross": 0.45,
+    "lexical": 0.20,
+}
+_TWO_TOKEN_WEIGHTS = {
+    "semantic": 0.35,
+    "cross": 0.40,
+    "lexical": 0.25,
+}
+_LONG_QUERY_WEIGHTS = {
+    "semantic": 0.35,
+    "cross": 0.45,
+    "lexical": 0.20,
+}
+
+
+def _get_rerank_policy(query: str) -> tuple[dict, float]:
+    token_count = len(_norm_text(query).split())
+
+    if token_count <= 1:
+        return _ONE_TOKEN_WEIGHTS, _GATE_CROSS_ONE_TOKEN
+    if token_count == 2:
+        return _TWO_TOKEN_WEIGHTS, _GATE_CROSS_TWO_TOKEN
+    return _LONG_QUERY_WEIGHTS, _GATE_CROSS_LONG
+
+
+def _combine_common_rerank_score(
     query: str,
     semantic_score: float,
     cross_score: float,
@@ -107,68 +114,56 @@ def _combine_name_rerank_score(
     exact_match: bool,
 ) -> float:
     """
-    Công thức rerank dùng chung cho topic_name / lesson_name / chunk_name.
-
-    semantic_score: cosine/vector score gốc
-    cross_score: đã qua sigmoid, nằm trong [0,1]
-    lexical_bonus: bonus text match hiện tại (0.0 -> 0.2)
+    Logic chung cho cả name và keyword:
+    1. exact match -> ưu tiên rất mạnh
+    2. hard gate cho query ngắn / query rác:
+       - cross thấp
+       - lexical = 0
+       => semantic không được cứu
+    3. nếu qua gate thì trộn theo weight phụ thuộc độ dài query
     """
-
-    q_tokens = _norm_text(query).split()
 
     semantic_norm = _normalize_semantic_score(semantic_score)
     cross_norm = _clamp01(cross_score)
-
-    # lexical_bonus hiện max thực tế là 0.20, nên scale về [0,1]
     lexical_norm = _clamp01(lexical_bonus / 0.20) if lexical_bonus > 0 else 0.0
 
-    # exact match thì đẩy mạnh
+    # Exact match thì đẩy mạnh
     if exact_match:
         if cross_norm >= 0.60 or semantic_norm >= 0.90:
             return 1.0
 
-        boosted = 0.80 + 0.15 * semantic_norm + 0.05 * lexical_norm
+        boosted = 0.85 + 0.10 * semantic_norm + 0.05 * lexical_norm
         return round(_clamp01(boosted), 4)
 
-    # Query ngắn 3 token: ưu tiên semantic nhiều hơn cross
-    if len(q_tokens) <= 3:
-        score = (
-            0.65 * semantic_norm +
-            0.15 * cross_norm +
-            0.20 * lexical_norm
-        )
-    else:
-        # Query dài hơn: tăng vai trò cross encoder
-        score = (
-            0.45 * semantic_norm +
-            0.35 * cross_norm +
-            0.20 * lexical_norm
-        )
+    weights, gate_cross = _get_rerank_policy(query)
 
-    # Nếu semantic tốt + có lexical hit thì thưởng thêm nhẹ
+    # Hard gate:
+    # query ngắn mà cross thấp + lexical không có
+    # => semantic không được kéo candidate rác lên
+    if cross_norm < gate_cross and lexical_bonus <= 0:
+        return round(cross_norm, 4)
+
+    score = (
+        weights["semantic"] * semantic_norm
+        + weights["cross"] * cross_norm
+        + weights["lexical"] * lexical_norm
+    )
+
+    # Nếu có lexical hit và semantic vốn cũng tốt thì thưởng nhẹ
     if lexical_bonus > 0 and semantic_norm >= 0.85:
         score += 0.05
 
     return round(_clamp01(score), 4)
 
 def _build_keyword_candidate_text(row: Dict[str, Any]) -> str:
-    parts: List[str] = []
-
     if row.get("keyword_name"):
-        parts.append(f"keyword: {row['keyword_name']}")
-    if row.get("chunk_name"):
-        parts.append(f"chunk: {row['chunk_name']}")
-
-    return ". ".join(parts)
-
-def _build_chunk_candidate_text(row: Dict[str, Any]) -> str:
-    if row.get("chunk_name"):
-        return f"chunk: {row['chunk_name']}"
+        return f"keyword: {row['keyword_name']}"
     return ""
 
-def _name_lexical_bonus(query: str, target_name: str) -> tuple[float, bool]:
+def _lexical_bonus(query: str, target: str) -> tuple[float, bool]:
+    """Shared lexical overlap bonus for both name and keyword scoring."""
     q = _norm_text(query)
-    t = _norm_text(target_name)
+    t = _norm_text(target)
 
     if not q or not t:
         return 0.0, False
@@ -177,9 +172,7 @@ def _name_lexical_bonus(query: str, target_name: str) -> tuple[float, bool]:
         return 0.20, True
 
     q_tokens = q.split()
-    t_tokens = t.split()
-
-    common = set(q_tokens) & set(t_tokens)
+    common = set(q_tokens) & set(t.split())
     common_count = len(common)
 
     if common_count == 0:
@@ -191,81 +184,6 @@ def _name_lexical_bonus(query: str, target_name: str) -> tuple[float, bool]:
     if common_count >= 2:
         return 0.08, False
 
-    return 0.03, False
-
-def _rerank_chunk_name_candidates(
-    query: str,
-    rows: List[Dict[str, Any]],
-    k: int,
-) -> List[Dict[str, Any]]:
-    if not rows:
-        return []
-
-    candidate_texts = [_build_chunk_candidate_text(r) for r in rows]
-    cross_raw_scores = rerank_pairs(query, candidate_texts)
-
-    scored: List[Dict[str, Any]] = []
-
-    for i, row in enumerate(rows):
-        chunk_name = str(row.get("chunk_name", ""))
-        semantic_score = float(row.get("score", 0.0))
-
-        cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
-        cross_score = _sigmoid(float(cross_raw))
-
-        lexical_bonus, exact_match = _name_lexical_bonus(query, chunk_name)
-
-        rerank_score = _combine_name_rerank_score(
-            query=query,
-            semantic_score=semantic_score,
-            cross_score=cross_score,
-            lexical_bonus=lexical_bonus,
-            exact_match=exact_match,
-        )
-
-        item = dict(row)
-        item["candidate_text"] = candidate_texts[i]
-        item["semantic_score"] = round(semantic_score, 4)
-        item["semantic_score_norm"] = round(_normalize_semantic_score(semantic_score), 4)
-        item["cross_encoder_raw"] = round(float(cross_raw), 4)
-        item["cross_encoder_score"] = round(cross_score, 4)
-        item["lexical_bonus"] = round(lexical_bonus, 4)
-        item["exact_match"] = exact_match
-        item["rerank_score"] = rerank_score
-        scored.append(item)
-
-    scored.sort(key=lambda x: x["rerank_score"], reverse=True)
-    return scored[:k]
-
-def _keyword_lexical_bonus(query: str, keyword_name: str) -> tuple[float, bool]:
-    q = _norm_text(query)
-    k = _norm_text(keyword_name)
-
-    if not q or not k:
-        return 0.0, False
-
-    # khớp toàn bộ keyword
-    if q == k:
-        return 0.20, True
-
-    q_tokens = q.split()
-    k_tokens = k.split()
-
-    common = set(q_tokens) & set(k_tokens)
-    common_count = len(common)
-
-    if common_count == 0:
-        return 0.0, False
-
-    # query là cụm con nằm trong keyword và có ít nhất 2 token
-    if q in k and len(q_tokens) >= 2:
-        return 0.10, False
-
-    # trùng từ khá mạnh
-    if common_count >= 2:
-        return 0.08, False
-
-    # chỉ trùng 1 từ
     return 0.03, False
 
 def _rank_scoped_rows(
@@ -325,9 +243,9 @@ def _rerank_name_candidates(
         cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
         cross_score = _sigmoid(float(cross_raw))
 
-        lexical_bonus, exact_match = _name_lexical_bonus(query, target_name)
+        lexical_bonus, exact_match = _lexical_bonus(query, target_name)
 
-        rerank_score = _combine_name_rerank_score(
+        rerank_score = _combine_common_rerank_score(
             query=query,
             semantic_score=semantic_score,
             cross_score=cross_score,
@@ -395,7 +313,7 @@ def _q_topic_embedding(
         if "no such vector schema index" in str(exc).lower() or "no such index" in str(exc).lower():
             return []
         raise RuntimeError(f"Neo4j topic_embedding_idx query failed: {exc}") from exc
-    
+
 def _q_lesson_embedding(
     neo: Session, vec: List[float], topic_ids: List[str], class_ids: List[str], k: int
 ) -> List[Dict[str, Any]]:
@@ -452,7 +370,7 @@ def _q_lesson_embedding(
         if "no such vector schema index" in str(exc).lower() or "no such index" in str(exc).lower():
             return []
         raise RuntimeError(f"Neo4j lesson_embedding_idx query failed: {exc}") from exc
-    
+
 def _q_chunk_embedding(
     neo: Session,
     vec: List[float],
@@ -596,7 +514,7 @@ def _q_keyword_embedding(
         # Scope theo class
         if class_ids:
             rows = neo.run(
-                 """
+                """
                 MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(:Topic)-[:HAS_LESSON]->(:Lesson)-[:HAS_CHUNK]->(c:Chunk)-[:HAS_KEYWORD]->(kw:Keyword)
                 WHERE cls.class_id IN $class_ids
                 RETURN c.chunk_id      AS chunk_id,
@@ -1083,13 +1001,15 @@ def run_semantic_search_neo(
         cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
         cross_score = _sigmoid(float(cross_raw))
 
-        lexical_bonus, exact_keyword_match = _keyword_lexical_bonus(q, keyword_name)
+        lexical_bonus, exact_keyword_match = _lexical_bonus(q, keyword_name)
 
-        # exact match mạnh thì đẩy lên tuyệt đối
-        if exact_keyword_match and cross_score >= 0.80:
-            rerank_score = 1.0
-        else:
-            rerank_score = min(1.0, cross_score + lexical_bonus)
+        rerank_score = _combine_common_rerank_score(
+            query=q,
+            semantic_score=float(r.get("score", 0.0)),
+            cross_score=cross_score,
+            lexical_bonus=lexical_bonus,
+            exact_match=exact_keyword_match,
+        )
 
         keyword_hits.append({
             "chunk_id": r["chunk_id"],
@@ -1099,6 +1019,7 @@ def run_semantic_search_neo(
             "candidate_text": candidate_text,
 
             "semantic_score": round(float(r.get("score", 0.0)), 4),
+            "semantic_score_norm": round(_normalize_semantic_score(float(r.get("score", 0.0))), 4),
             "cross_encoder_raw": round(float(cross_raw), 4),
             "cross_encoder_score": round(cross_score, 4),
             "lexical_bonus": round(lexical_bonus, 4),
@@ -1128,41 +1049,6 @@ def _vec_info(query_text: str) -> Tuple[List[float], Dict[str, Any]]:
         "preview": vec[:8] if vec else [],
         "embed_ms": embed_ms,
     }
-
-
-def _score_and_rank(
-    candidates_raw: List[Dict[str, Any]],
-    query_vec: List[float],
-    query_text: str,
-    name_field: str,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Score raw candidates (with embedding field). Returns (scored_sorted_with_rank, no_embedding_list)."""
-    scored: List[Dict[str, Any]] = []
-    no_emb: List[Dict[str, Any]] = []
-
-    for row in candidates_raw:
-        emb = _to_float_vec(row.get("embedding"))
-        base = {k: v for k, v in row.items() if k != "embedding"}
-        if not emb:
-            base["has_embedding"] = False
-            base["cosine_score"] = None
-            base["lexical_adjustment"] = None
-            base["rerank_score"] = None
-            no_emb.append(base)
-            continue
-        cosine = _cosine_similarity(query_vec, emb)
-        lex_adj = _lexical_adjustment(query_text, str(row.get(name_field, "")))
-        base["has_embedding"] = True
-        base["cosine_score"] = round(cosine, 4)
-        base["lexical_adjustment"] = round(lex_adj, 4)
-        base["rerank_score"] = round(cosine + lex_adj, 4)
-        scored.append(base)
-
-    scored.sort(key=lambda x: x["rerank_score"], reverse=True)
-    for i, item in enumerate(scored):
-        item["rank"] = i + 1
-    return scored, no_emb
-
 
 def debug_topic_name_scores(
     neo: Session,
@@ -1411,19 +1297,22 @@ def debug_keyword_scores(
     cross_raw_scores = rerank_pairs(q, candidate_texts)
 
     scored: List[Dict[str, Any]] = []
-    
+
     for i, row in enumerate(raw):
         keyword_name = str(row.get("keyword_name", ""))
 
         cross_raw = cross_raw_scores[i] if i < len(cross_raw_scores) else 0.0
         cross_score = _sigmoid(float(cross_raw))
 
-        lexical_bonus, exact_keyword_match = _keyword_lexical_bonus(q, keyword_name)
+        lexical_bonus, exact_keyword_match = _lexical_bonus(q, keyword_name)
 
-        if exact_keyword_match and cross_score >= 0.80:
-            rerank_score = 1.0
-        else:
-            rerank_score = min(1.0, cross_score + lexical_bonus)
+        rerank_score = _combine_common_rerank_score(
+            query=q,
+            semantic_score=float(row.get("score", 0.0)),
+            cross_score=cross_score,
+            lexical_bonus=lexical_bonus,
+            exact_match=exact_keyword_match,
+        )
 
         scored.append({
             "chunk_id": row.get("chunk_id"),
@@ -1432,6 +1321,7 @@ def debug_keyword_scores(
             "keyword_name": keyword_name,
             "candidate_text": candidate_texts[i],
             "semantic_score": round(float(row.get("score", 0.0)), 4),
+            "semantic_score_norm": round(_normalize_semantic_score(float(row.get("score", 0.0))), 4),
             "cross_encoder_raw": round(float(cross_raw), 4),
             "cross_encoder_score": round(cross_score, 4),
             "lexical_bonus": round(lexical_bonus, 4),

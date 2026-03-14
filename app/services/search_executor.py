@@ -590,7 +590,6 @@ def execute_search(
         return result
 
     # --- Hybrid --------------------------------------------------------------
-        # --- Hybrid --------------------------------------------------------------
     if strategy.mode == "hybrid":
         structure_score: Optional[float] = None
         structure_note: Optional[str] = None

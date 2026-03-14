@@ -59,6 +59,15 @@ const LEVEL_LABEL = {
   class: "Lớp học",
 };
 
+// ---- Confidence meta helper ----
+// Returns display metadata for a given score (0-100), or null if score < 50 (should be filtered out).
+function getConfidenceMeta(score) {
+  if (score > 80) return { label: "Độ tin cậy cao", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
+  if (score >= 60) return { label: "Độ tin cậy vừa phải", color: "#92400e", bg: "#fef3c7", border: "#fcd34d" };
+  if (score >= 30) return { label: "Độ tin cậy thấp", color: "#c2410c", bg: "#ffedd5", border: "#fdba74" };
+  return null;
+}
+
 // ---- Hierarchy formatters ----
 function fmtTopic(num, name) {
   if (!name) return null;
@@ -79,7 +88,7 @@ function fmtChunk(label, name) {
 //                 topic_name, topic_num, lesson_name, lesson_num,
 //                 chunk_name, chunk_label, description, minio_url,
 //                 keywords, score_display, source
-function resultItemToViewModel(item, status) {
+function resultItemToViewModel(item) {
   const level = item.result_type || "topic";
   const descFull = item.description || MOCK_DESC[level] || "Mô tả đang được cập nhật.";
   const relevance = parseInt(item.score_display) || 0;
@@ -107,7 +116,7 @@ function resultItemToViewModel(item, status) {
     score: item.score_display,
     keywords: item.keywords || [],
     minioUrl: item.minio_url || null,
-    isLowConfidence: status === "low_confidence",
+    isLowConfidence: relevance >= 50 && relevance < 75,
     matchNote: item.match_note || null,
   };
 }
@@ -152,9 +161,14 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
             {doc.classBadge && (
               <span className="u-modal-badge-class">{doc.classBadge}</span>
             )}
-            <span className="u-modal-badge-relevance">
-              {doc.relevance}% phù hợp
-            </span>
+            {(() => {
+              const cm = getConfidenceMeta(doc.relevance);
+              return cm ? (
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 20, color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
+                  {cm.label} · {doc.relevance}%
+                </span>
+              ) : null;
+            })()}
           </div>
         </div>
 
@@ -253,7 +267,14 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
           {doc.subjectBadge && (
             <span className="u-subject-badge">{doc.subjectBadge}</span>
           )}
-          <span className="u-relevance">{doc.relevance}%</span>
+          {(() => {
+            const cm = getConfidenceMeta(doc.relevance);
+            return cm ? (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20, color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
+                {cm.label} · {doc.relevance}%
+              </span>
+            ) : null;
+          })()}
         </div>
         <button
           className={`u-save-btn ${isSaved ? "saved" : ""}`}
@@ -358,7 +379,9 @@ export default function UserHome() {
       const data = await executeSearch(trimmed);
       const { items = [], status = "no_match", message = "", mode = "" } = data;
 
-      const cards = items.map((item) => resultItemToViewModel(item, status));
+      const cards = items
+        .map((item) => resultItemToViewModel(item))
+        .filter((card) => card.relevance >= 50);
 
       setResults(cards);
       setSearchMeta({ status, reason: message, mode });
@@ -477,7 +500,7 @@ export default function UserHome() {
           {results.length === 0 || isNoMatch ? (
             <div className="u-empty">
               <div className="u-empty-icon"><SearchIcon size={42} /></div>
-              <p className="u-empty-title">Không tìm thấy kết quả phù hợp</p>
+              <p className="u-empty-title">Không tìm thấy kết quả học tập đủ độ liên quan</p>
               <p className="u-empty-desc">
                 {searchMeta?.reason || "Thử điều chỉnh từ khoá hoặc chọn một gợi ý."}
               </p>
