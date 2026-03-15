@@ -77,11 +77,6 @@ function fmtLesson(num, name) {
   if (!name) return null;
   return num != null ? `Bài ${num}. ${name}` : name;
 }
-function fmtChunk(label, name) {
-  if (!name) return null;
-  return label != null ? `Mục ${label}. ${name}` : name;
-}
-
 // ---- View model mapper ----
 // Maps a backend ResultItem (from /search?q=...) into a UI-ready card object.
 // Backend fields: result_type, id, title, class_name, subject_name,
@@ -107,7 +102,8 @@ function resultItemToViewModel(item) {
     classBadge,
     topicContext,                              // "Chủ đề 2. Mạng máy tính và Internet"
     lessonContext,                             // "Bài 8. Mạng máy tính trong cuộc sống"
-    chunkContext: fmtChunk(item.chunk_label, item.chunk_name),
+    chunkLabel: item.chunk_label ?? null,
+    chunkName: item.chunk_name || null,
     topicNum: item.topic_num ?? null,
     topicName: item.topic_name || null,
     lessonNum: item.lesson_num ?? null,
@@ -116,7 +112,7 @@ function resultItemToViewModel(item) {
     score: item.score_display,
     keywords: item.keywords || [],
     minioUrl: item.minio_url || null,
-    isLowConfidence: relevance >= 50 && relevance < 75,
+    isLowConfidence: relevance >= 30 && relevance < 60,
     matchNote: item.match_note || null,
   };
 }
@@ -175,7 +171,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
         <div className="u-modal-body">
 
           {/* Context panel for lesson / chunk */}
-          {(doc.topicName && doc.level !== "topic" || doc.lessonName) && (
+          {(doc.topicName && doc.level !== "topic" || doc.lessonName || doc.chunkName) && (
             <div className="u-ctx-panel">
               {doc.topicName && doc.level !== "topic" && (
                 <div className="u-ctx-row">
@@ -193,6 +189,14 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
                   <span className="u-ctx-value">{doc.lessonName}</span>
                 </div>
               )}
+              {doc.chunkName && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">
+                    {doc.chunkLabel != null ? `Mục ${doc.chunkLabel}` : "Mục"}
+                  </span>
+                  <span className="u-ctx-value">{doc.chunkName}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -204,11 +208,6 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
           {/* Description */}
           <div>
             <p className="u-modal-section-label">Mô tả</p>
-            {doc.isLowConfidence && (
-              <p style={{ fontSize: 12.5, color: "#92400E", background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, padding: "9px 13px", margin: "0 0 10px", fontWeight: 600 }}>
-                Kết quả có độ tin cậy thấp — mô tả có thể chưa chính xác hoàn toàn.
-              </p>
-            )}
             <p className="u-modal-desc">{doc.descFull}</p>
           </div>
 
@@ -323,6 +322,7 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
 // ---- Main ----
 export default function UserHome() {
   const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [results, setResults] = useState(null);       // null = idle, [] = searched
   const [searchMeta, setSearchMeta] = useState(null); // { status, reason, notes }
   const [loading, setLoading] = useState(false);
@@ -370,6 +370,7 @@ export default function UserHome() {
     const trimmed = (q ?? query).trim();
     if (!trimmed) return;
     setQuery(trimmed);
+    setSubmittedQuery(trimmed);
     setLoading(true);
     setResults(null);
     setSearchMeta(null);
@@ -381,7 +382,7 @@ export default function UserHome() {
 
       const cards = items
         .map((item) => resultItemToViewModel(item))
-        .filter((card) => card.relevance >= 50);
+        .filter((card) => card.relevance >= 30);
 
       setResults(cards);
       setSearchMeta({ status, reason: message, mode });
@@ -413,10 +414,10 @@ export default function UserHome() {
     setSearchMeta(null);
     setError(null);
     setQuery("");
+    setSubmittedQuery("");
     setTimeout(() => textareaRef.current?.focus(), 40);
   }
 
-  const isLowConfidence = searchMeta?.status === "low_confidence";
   const isNoMatch = searchMeta?.status === "no_match";
 
   return (
@@ -479,17 +480,9 @@ export default function UserHome() {
       {/* Results */}
       {!loading && results !== null && (
         <>
-          {/* Low-confidence banner */}
-          {isLowConfidence && (
-            <div className="u-confidence-banner">
-              <span className="u-banner-icon">⚠</span>
-              Kết quả có độ tin cậy thấp — có thể không khớp hoàn toàn với yêu cầu của bạn.
-            </div>
-          )}
-
           <div className="u-results-header">
             <span className="u-results-label">
-              Kết quả cho <strong>"{query}"</strong>
+              Kết quả cho <strong>"{submittedQuery}"</strong>
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span className="u-results-count">{results.length} kết quả</span>
