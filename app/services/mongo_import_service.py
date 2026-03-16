@@ -480,6 +480,9 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         return
 
 def _ensure_keyword_related_indexes(db) -> None:
+    from app.services.keyword_alias_service import ensure_keyword_alias_indexes
+    ensure_keyword_alias_indexes(db)
+
     _ACTIVE = {"is_deleted": {"$ne": True}}
 
     # Drop legacy import_key unique index — keyword no longer uses import_key
@@ -555,6 +558,11 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
     for c in candidates:
         if c.get("keyword_name") == keyword_name:
             return str(c["_id"]), "noop"
+
+    # Enforce canonical-name-wins: soft-delete any active alias that collides
+    # with this new keyword_name before inserting
+    from app.services.keyword_alias_service import enforce_canonical_name_precedence
+    enforce_canonical_name_precedence(db, keyword_name, actor)
 
     now = _now()
     doc = {
@@ -640,14 +648,31 @@ def _upsert_topic_bag(db, topic_id: str, keyword_id: str, actor: str) -> str:
     return "insert"
 
 
-def _import_keyword_rows(db, rows: List[Dict[str, Any]], actor: str) -> Dict[str, Any]:
+def _import_keyword_rows(
+    db,
+    rows: List[Dict[str, Any]],
+    actor: str,
+    *,
+    progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+    progress_state: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
     Process rows from the keyword sheet.
     Each row needs: chunk_ref, keyword_name.
     Resolves chunk → lesson → topic chain to populate chunk_keyword and topic_bag.
+    Generates Gemini aliases once for each newly inserted keyword in this import run.
+    Existing (reused) keywords are left untouched.
     """
-    inserted = updated = 0
+    from app.services.keyword_alias_service import refresh_keyword_aliases
+
+    inserted = reused = 0
     errors: List[Dict[str, Any]] = []
+
+    alias_processed_keywords = 0
+    alias_inserted = 0
+    alias_skipped = 0
+    alias_errors: List[Dict[str, Any]] = []
+    processed_keyword_ids: set[str] = set()
 
     for rec in rows:
         rowno = rec.pop("_row", None)
@@ -704,17 +729,48 @@ def _import_keyword_rows(db, rows: List[Dict[str, Any]], actor: str) -> Dict[str
             if kw_op == "insert":
                 inserted += 1
             else:
-                updated += 1
+                reused += 1
+
+            # Alias generation — only for newly inserted keywords, only once per keyword_id
+            if kw_op == "insert" and keyword_id not in processed_keyword_ids:
+                processed_keyword_ids.add(keyword_id)
+                try:
+                    alias_result = refresh_keyword_aliases(
+                        db, keyword_id, keyword_name, actor
+                    )
+                    alias_processed_keywords += 1
+                    alias_inserted += alias_result.get("inserted", 0)
+                except Exception as alias_err:
+                    alias_errors.append({"keyword_name": keyword_name, "error": str(alias_err)})
+            else:
+                alias_skipped += 1
 
         except Exception as e:
             errors.append({"row": rowno, "error": str(e), "collection": "keyword"})
+        finally:
+            if progress_callback is not None and progress_state is not None:
+                progress_state["processed_rows"] += 1
+                _pr = progress_state["processed_rows"]
+                _tot = progress_state["total_rows"]
+                progress_callback({
+                    "current_collection": "keyword",
+                    "processed_rows": _pr,
+                    "total_rows": _tot,
+                    "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+                    "message": "Đang xử lý keyword...",
+                })
 
     return {
         "rows": len(rows),
         "inserted": inserted,
-        "updated": updated,
+        "reused": reused,
         "synced": 0,
         "errors": errors[:50],
+        "alias_processed_keywords": alias_processed_keywords,
+        "alias_inserted": alias_inserted,
+        "alias_deleted": 0,
+        "alias_skipped": alias_skipped,
+        "alias_errors": alias_errors[:20],
     }
 
 
@@ -725,6 +781,7 @@ def import_excel_to_mongo(
     actor: str,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
     only_cols: Optional[List[str]] = None,
+    progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> Dict[str, Any]:
     wb = load_workbook(xlsx_path, data_only=True)
 
@@ -737,8 +794,13 @@ def import_excel_to_mongo(
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
+    # Pre-read all rows once; used for both processing and progress tracking
+    rows_by_col: Dict[str, List[Dict[str, Any]]] = {col: _read_sheet_rows(wb, col) for col in cols}
+    total_rows: int = sum(len(r) for r in rows_by_col.values())
+    processed_rows: int = 0
+
     for col in cols:
-        rows = _read_sheet_rows(wb, col)
+        rows = rows_by_col[col]
         if not rows:
             report["collections"][col] = {"rows": 0, "inserted": 0, "updated": 0, "synced": 0, "skipped": True}
             continue
@@ -746,7 +808,17 @@ def import_excel_to_mongo(
         # keyword has its own dedicated import path
         if col == "keyword":
             _ensure_keyword_related_indexes(db)
-            report["collections"]["keyword"] = _import_keyword_rows(db, rows, actor)
+            _progress_state = (
+                {"processed_rows": processed_rows, "total_rows": total_rows}
+                if progress_callback is not None else None
+            )
+            report["collections"]["keyword"] = _import_keyword_rows(
+                db, rows, actor,
+                progress_callback=progress_callback,
+                progress_state=_progress_state,
+            )
+            if _progress_state is not None:
+                processed_rows = _progress_state["processed_rows"]
             continue
 
         _ensure_import_index(db, col)
@@ -821,6 +893,16 @@ def import_excel_to_mongo(
 
             except Exception as e:
                 errors.append({"row": rowno, "error": str(e), "collection": col})
+            finally:
+                if progress_callback is not None:
+                    processed_rows += 1
+                    progress_callback({
+                        "current_collection": col,
+                        "processed_rows": processed_rows,
+                        "total_rows": total_rows,
+                        "progress": min(int(processed_rows * 100 / total_rows), 99) if total_rows > 0 else 99,
+                        "message": f"Đang xử lý {col}...",
+                    })
 
         report["collections"][col] = {
             "rows": len(rows),

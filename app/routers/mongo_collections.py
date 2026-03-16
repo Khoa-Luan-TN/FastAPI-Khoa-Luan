@@ -9,7 +9,7 @@ router = APIRouter()
 db = get_mongo_db()
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
-CORE_COLLECTIONS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "topic_bag", "user"}
+CORE_COLLECTIONS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "topic_bag", "keyword_alias", "user", "import_job"}
 
 def _normalize_collection_name(name: str) -> str:
     name = name.strip()

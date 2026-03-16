@@ -116,6 +116,36 @@ def create_document(collection_name: str, request: Request, body: Dict[str, Any]
     actor = _get_actor(request)
     return create_document_core(collection_name, body, actor=actor, sync_pg=True)
 
+def _handle_keyword_update(col: str, body: Dict[str, Any], id_filter: dict, actor: str) -> None:
+    """Keyword-specific pre-update logic. Modifies body in-place.
+    Raises HTTPException on empty name or duplicate keyword_name conflict.
+    No-ops for non-keyword collections or when keyword_name is not being changed.
+    """
+    if col != "keyword" or "keyword_name" not in body:
+        return
+
+    from app.services.keyword_alias_service import handle_keyword_rename_cleanup
+
+    new_name = str(body.get("keyword_name") or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=422, detail="keyword_name cannot be empty")
+
+    kw_doc = db[col].find_one(id_filter, {"_id": 1, "keyword_name": 1})
+    if not kw_doc:
+        return
+
+    current_name = str(kw_doc.get("keyword_name") or "").strip()
+    if new_name == current_name:
+        return  # no actual rename — nothing to do
+
+    try:
+        result = handle_keyword_rename_cleanup(db, str(kw_doc["_id"]), new_name, actor)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    body["keyword_slug"] = result["new_slug"]
+
+
 @router.put("/documents/{collection_name}/{oid}", summary="Update document (generic)")
 def update_document(collection_name: str, oid: str, request: Request, body: Dict[str, Any] = Body(...)):
     col = _normalize_collection_name(collection_name)
@@ -147,6 +177,7 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
                 )
 
     _user_normalize_and_validate(col, body, is_create=False)
+    _handle_keyword_update(col, body, id_filter, actor)
 
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
@@ -156,6 +187,13 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     body["updated_by"] = actor
 
     r = db[col].update_one(id_filter, {"$set": body})
+
+    # After keyword rename: rebuild keyword.aliases from active keyword_alias docs
+    if col == "keyword" and "keyword_name" in body:
+        from app.services.keyword_alias_service import sync_keyword_alias_array
+        kw_doc = db[col].find_one(id_filter, {"_id": 1})
+        if kw_doc:
+            sync_keyword_alias_array(db, str(kw_doc["_id"]), actor=actor)
 
     updated_doc = db[col].find_one(id_filter)
     sync = sync_doc_to_postgres(db, col, updated_doc) if updated_doc else {"ok": False, "error": "updated_doc missing"}
