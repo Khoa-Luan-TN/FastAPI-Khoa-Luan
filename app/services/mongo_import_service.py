@@ -606,9 +606,10 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
     return "insert"
 
 
-def _upsert_topic_bag(db, topic_id: str, keyword_id: str, actor: str) -> str:
+def _upsert_topic_bag(db, topic_id: str, topic_name: Optional[str], keyword_id: str, actor: str) -> str:
     """
     Upsert topic_bag for topic_id, adding keyword_id to keyword_ids array.
+    topic_name is stored for easier inspection in MongoDB.
     Returns op in {"insert", "update", "noop"}.
     """
     now = _now()
@@ -621,11 +622,14 @@ def _upsert_topic_bag(db, topic_id: str, keyword_id: str, actor: str) -> str:
         before_ids = existing.get("keyword_ids") or []
         if keyword_id in before_ids:
             return "noop"
+        set_fields: Dict[str, Any] = {"updated_at": now, "updated_by": actor}
+        if topic_name is not None:
+            set_fields["topic_name"] = topic_name
         db["topic_bag"].update_one(
             {"_id": existing["_id"]},
             {
                 "$addToSet": {"keyword_ids": keyword_id},
-                "$set": {"updated_at": now, "updated_by": actor},
+                "$set": set_fields,
             },
         )
         # recompute total_keywords
@@ -636,6 +640,7 @@ def _upsert_topic_bag(db, topic_id: str, keyword_id: str, actor: str) -> str:
 
     db["topic_bag"].insert_one({
         "topic_id": topic_id,
+        "topic_name": topic_name,
         "keyword_ids": [keyword_id],
         "total_keywords": 1,
         "is_deleted": False,
@@ -657,23 +662,27 @@ def _import_keyword_rows(
     progress_state: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Process rows from the keyword sheet.
-    Each row needs: chunk_ref, keyword_name.
-    Resolves chunk → lesson → topic chain to populate chunk_keyword and topic_bag.
-    Generates Gemini aliases once for each newly inserted keyword in this import run.
-    Existing (reused) keywords are left untouched.
+    Two-phase keyword import.
+
+    Phase 1: import all keyword rows — resolve chunk/lesson/topic, create/reuse keywords,
+             build chunk_keyword and topic_bag links.  Alias generation is intentionally
+             deferred so that `generate_aliases(existing_keyword_names=...)` sees the
+             complete active keyword collection, not a partially-imported set.
+
+    Phase 2: after every keyword row has been processed, generate Gemini aliases for
+             each newly inserted keyword in this run.  Existing/reused keywords are
+             left untouched.
     """
     from app.services.keyword_alias_service import refresh_keyword_aliases
 
     inserted = reused = 0
     errors: List[Dict[str, Any]] = []
+    # keyword_id -> keyword_name, only for keywords inserted in this run
+    new_keywords: Dict[str, str] = {}
+    # unique keyword IDs returned as "noop" (already existed in DB)
+    reused_keyword_ids: set[str] = set()
 
-    alias_processed_keywords = 0
-    alias_inserted = 0
-    alias_skipped = 0
-    alias_errors: List[Dict[str, Any]] = []
-    processed_keyword_ids: set[str] = set()
-
+    # ── Phase 1: import rows ──────────────────────────────────────────────────
     for rec in rows:
         rowno = rec.pop("_row", None)
         try:
@@ -699,7 +708,6 @@ def _import_keyword_rows(
             if not lesson_id:
                 raise ValueError(f"chunk '{chunk_ref}' has no lesson_id")
 
-            # try ObjectId lookup first, fall back to raw string _id
             lesson_doc = None
             if ObjectId.is_valid(lesson_id):
                 lesson_doc = db["lesson"].find_one(
@@ -717,33 +725,35 @@ def _import_keyword_rows(
             if not topic_id:
                 raise ValueError(f"lesson '{lesson_id}' has no topic_id")
 
-            # keyword dedupe
+            # resolve topic_name for topic_bag storage
+            topic_doc = None
+            if ObjectId.is_valid(topic_id):
+                topic_doc = db["topic"].find_one(
+                    {"_id": ObjectId(topic_id), "is_deleted": {"$ne": True}},
+                    {"topic_name": 1},
+                )
+            if not topic_doc:
+                topic_doc = db["topic"].find_one(
+                    {"_id": topic_id, "is_deleted": {"$ne": True}},
+                    {"topic_name": 1},
+                )
+            if not topic_doc:
+                raise ValueError(f"topic '{topic_id}' not found")
+            topic_name: Optional[str] = topic_doc.get("topic_name") or None
+
             keyword_id, kw_op = _find_or_create_keyword(db, keyword_name, actor)
-
-            # chunk_keyword upsert
-            _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
-
-            # topic_bag upsert
-            _upsert_topic_bag(db, topic_id, keyword_id, actor)
-
+            # Track and count immediately — before link steps that might fail,
+            # so phase-2 alias generation and report counters stay consistent
+            # even if _upsert_chunk_keyword or _upsert_topic_bag later throws.
             if kw_op == "insert":
+                new_keywords.setdefault(keyword_id, keyword_name)
                 inserted += 1
             else:
+                reused_keyword_ids.add(keyword_id)
                 reused += 1
 
-            # Alias generation — only for newly inserted keywords, only once per keyword_id
-            if kw_op == "insert" and keyword_id not in processed_keyword_ids:
-                processed_keyword_ids.add(keyword_id)
-                try:
-                    alias_result = refresh_keyword_aliases(
-                        db, keyword_id, keyword_name, actor
-                    )
-                    alias_processed_keywords += 1
-                    alias_inserted += alias_result.get("inserted", 0)
-                except Exception as alias_err:
-                    alias_errors.append({"keyword_name": keyword_name, "error": str(alias_err)})
-            else:
-                alias_skipped += 1
+            _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
+            _upsert_topic_bag(db, topic_id, topic_name, keyword_id, actor)
 
         except Exception as e:
             errors.append({"row": rowno, "error": str(e), "collection": "keyword"})
@@ -757,8 +767,66 @@ def _import_keyword_rows(
                     "processed_rows": _pr,
                     "total_rows": _tot,
                     "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-                    "message": "Đang xử lý keyword...",
+                    "message": "Đang import keyword...",
                 })
+
+    # ── Phase 2: alias generation ─────────────────────────────────────────────
+    # total_rows was pre-allocated as len(rows) * 2 by the caller.
+    # We NEVER touch total_rows here — doing so would cause backward progress jumps.
+    alias_count = len(new_keywords)
+    if progress_callback is not None and progress_state is not None:
+        _pr = progress_state["processed_rows"]
+        _tot = progress_state["total_rows"]
+        progress_callback({
+            "current_collection": "keyword",
+            "processed_rows": _pr,
+            "total_rows": _tot,
+            "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+            "message": "Đã import xong keyword, đang sinh alias..." if alias_count > 0 else "Đang hoàn tất keyword...",
+        })
+
+    alias_processed_keywords = 0
+    alias_inserted = 0
+    # Unique pre-existing keywords never given alias generation in this run.
+    # Excludes any ID that also appears in new_keywords (inserted earlier in same run).
+    alias_skipped = len(reused_keyword_ids - new_keywords.keys())
+    alias_errors: List[Dict[str, Any]] = []
+
+    for keyword_id, keyword_name in new_keywords.items():
+        alias_processed_keywords += 1
+        try:
+            alias_result = refresh_keyword_aliases(db, keyword_id, keyword_name, actor)
+            alias_inserted += alias_result.get("inserted", 0)
+        except Exception as alias_err:
+            alias_errors.append({"keyword_name": keyword_name, "error": str(alias_err)})
+        finally:
+            if progress_callback is not None and progress_state is not None:
+                progress_state["processed_rows"] += 1
+                _pr = progress_state["processed_rows"]
+                _tot = progress_state["total_rows"]
+                progress_callback({
+                    "current_collection": "keyword",
+                    "processed_rows": _pr,
+                    "total_rows": _tot,
+                    "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+                    "message": "Đang sinh alias cho keyword...",
+                })
+
+    # Consume the pre-allocated phase-2 slots that were not used.
+    # Pre-allocated = len(rows); used = alias_count (unique new keywords).
+    # Adding the remainder keeps processed_rows aligned with total_rows.
+    remaining_slots = len(rows) - alias_count
+    if progress_callback is not None and progress_state is not None and remaining_slots > 0:
+        progress_state["processed_rows"] += remaining_slots
+        _pr = progress_state["processed_rows"]
+        _tot = progress_state["total_rows"]
+        progress_callback({
+            "current_collection": "keyword",
+            "processed_rows": _pr,
+            "total_rows": _tot,
+            "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+            "message": "Đang sinh alias cho keyword...",
+        })
 
     return {
         "rows": len(rows),
@@ -794,9 +862,15 @@ def import_excel_to_mongo(
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
-    # Pre-read all rows once; used for both processing and progress tracking
+    # Pre-read all rows once; used for both processing and progress tracking.
+    # The keyword collection is allocated 2× its row count to cover both
+    # phase 1 (row import) and phase 2 (alias generation) without ever
+    # increasing total_rows mid-run (which would cause backward progress jumps).
     rows_by_col: Dict[str, List[Dict[str, Any]]] = {col: _read_sheet_rows(wb, col) for col in cols}
-    total_rows: int = sum(len(r) for r in rows_by_col.values())
+    total_rows: int = sum(
+        len(r) * 2 if col == "keyword" else len(r)
+        for col, r in rows_by_col.items()
+    )
     processed_rows: int = 0
 
     for col in cols:
