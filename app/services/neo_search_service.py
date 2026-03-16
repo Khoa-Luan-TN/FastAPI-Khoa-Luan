@@ -388,7 +388,7 @@ def _q_chunk_embedding(
                 WHERE l.lesson_id IN $lesson_ids
                 RETURN c.chunk_id    AS chunk_id,
                        c.chunk_name  AS chunk_name,
-                       c.chunk_label AS chunk_label,
+                       c.chunk_num AS chunk_num,
                        l.lesson_id   AS lesson_id,
                        l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
@@ -405,7 +405,7 @@ def _q_chunk_embedding(
                 WHERE t.topic_id IN $topic_ids
                 RETURN c.chunk_id    AS chunk_id,
                        c.chunk_name  AS chunk_name,
-                       c.chunk_label AS chunk_label,
+                       c.chunk_num AS chunk_num,
                        l.lesson_id   AS lesson_id,
                        l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
@@ -422,7 +422,7 @@ def _q_chunk_embedding(
                 WHERE cls.class_id IN $class_ids
                 RETURN c.chunk_id    AS chunk_id,
                        c.chunk_name  AS chunk_name,
-                       c.chunk_label AS chunk_label,
+                       c.chunk_num AS chunk_num,
                        l.lesson_id   AS lesson_id,
                        l.lesson_name AS lesson_name,
                        c.embedding   AS embedding
@@ -439,7 +439,7 @@ def _q_chunk_embedding(
             MATCH (l:Lesson)-[:HAS_CHUNK]->(c)
             RETURN c.chunk_id    AS chunk_id,
                    c.chunk_name  AS chunk_name,
-                   c.chunk_label AS chunk_label,
+                   c.chunk_num AS chunk_num,
                    l.lesson_id   AS lesson_id,
                    l.lesson_name AS lesson_name,
                    score
@@ -471,7 +471,7 @@ def _q_keyword_embedding(
                 WHERE c.chunk_id IN $chunk_ids
                 RETURN c.chunk_id      AS chunk_id,
                     c.chunk_name    AS chunk_name,
-                    c.chunk_label   AS chunk_label,
+                    c.chunk_num   AS chunk_num,
                     kw.keyword_name AS keyword_name,
                     kw.embedding    AS embedding
                 """,
@@ -487,7 +487,7 @@ def _q_keyword_embedding(
                 WHERE l.lesson_id IN $lesson_ids
                 RETURN c.chunk_id      AS chunk_id,
                     c.chunk_name    AS chunk_name,
-                    c.chunk_label   AS chunk_label,
+                    c.chunk_num   AS chunk_num,
                     kw.keyword_name AS keyword_name,
                     kw.embedding    AS embedding
                 """,
@@ -503,7 +503,7 @@ def _q_keyword_embedding(
                 WHERE t.topic_id IN $topic_ids
                 RETURN c.chunk_id      AS chunk_id,
                     c.chunk_name    AS chunk_name,
-                    c.chunk_label   AS chunk_label,
+                    c.chunk_num   AS chunk_num,
                     kw.keyword_name AS keyword_name,
                     kw.embedding    AS embedding
                 """,
@@ -519,7 +519,7 @@ def _q_keyword_embedding(
                 WHERE cls.class_id IN $class_ids
                 RETURN c.chunk_id      AS chunk_id,
                     c.chunk_name    AS chunk_name,
-                    c.chunk_label   AS chunk_label,
+                    c.chunk_num   AS chunk_num,
                     kw.keyword_name AS keyword_name,
                     kw.embedding    AS embedding
                 """,
@@ -535,7 +535,7 @@ def _q_keyword_embedding(
             MATCH (c:Chunk)-[:HAS_KEYWORD]->(kw)
             RETURN c.chunk_id      AS chunk_id,
                 c.chunk_name    AS chunk_name,
-                c.chunk_label   AS chunk_label,
+                c.chunk_num   AS chunk_num,
                 kw.keyword_name AS keyword_name,
                 score
             """,
@@ -821,9 +821,9 @@ def resolve_structure_neo(
                 rows = neo.run(
                     """
                     MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-                    WHERE c.chunk_label = $n AND l.lesson_id IN $lesson_ids
+                    WHERE c.chunk_num = $n AND l.lesson_id IN $lesson_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
                     n=plan.chunk_num, lesson_ids=lesson_ids,
@@ -832,9 +832,9 @@ def resolve_structure_neo(
                 rows = neo.run(
                     """
                     MATCH (t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-                    WHERE c.chunk_label = $n AND t.topic_id IN $topic_ids
+                    WHERE c.chunk_num = $n AND t.topic_id IN $topic_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
                     n=plan.chunk_num, topic_ids=topic_ids,
@@ -843,9 +843,9 @@ def resolve_structure_neo(
                 rows = neo.run(
                     """
                     MATCH (cls:Class)-[:HAS_SUBJECT]->(s:Subject)-[:HAS_TOPIC]->(t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-                    WHERE c.chunk_label = $n AND cls.class_id IN $class_ids
+                    WHERE c.chunk_num = $n AND cls.class_id IN $class_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
                     n=plan.chunk_num, class_ids=class_ids,
@@ -854,16 +854,16 @@ def resolve_structure_neo(
                 rows = neo.run(
                     """
                     MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
-                    WHERE c.chunk_label = $n
+                    WHERE c.chunk_num = $n
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
                     LIMIT 5
                     """,
                     n=plan.chunk_num,
                 )
 
             resolved["chunk"] = [dict(r) for r in rows]
-            notes.append(f"chunk_label={plan.chunk_num} → {len(resolved['chunk'])} match(es)")
+            notes.append(f"chunk_num={plan.chunk_num} → {len(resolved['chunk'])} match(es)")
 
         elif plan.chunk_name:
             vec = embed_query(plan.chunk_name)
@@ -889,7 +889,7 @@ def resolve_structure_neo(
                     {
                         "chunk_id": r["chunk_id"],
                         "chunk_name": r["chunk_name"],
-                        "chunk_label": r["chunk_label"],
+                        "chunk_num": r["chunk_num"],
                         "lesson_id": r.get("lesson_id"),
                         "lesson_name": r.get("lesson_name"),
                         "rerank_score": r.get("rerank_score"),
@@ -907,8 +907,8 @@ def resolve_structure_neo(
                     MATCH (l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
                     WHERE l.lesson_id IN $lesson_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
-                    ORDER BY c.chunk_label
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
+                    ORDER BY c.chunk_num
                     LIMIT 50
                     """,
                     lesson_ids=lesson_ids,
@@ -922,8 +922,8 @@ def resolve_structure_neo(
                     MATCH (t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
                     WHERE t.topic_id IN $topic_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
-                    ORDER BY c.chunk_label
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
+                    ORDER BY c.chunk_num
                     LIMIT 50
                     """,
                     topic_ids=topic_ids,
@@ -937,8 +937,8 @@ def resolve_structure_neo(
                     MATCH (cls:Class)-[:HAS_SUBJECT]->(s:Subject)-[:HAS_TOPIC]->(t:Topic)-[:HAS_LESSON]->(l:Lesson)-[:HAS_CHUNK]->(c:Chunk)
                     WHERE cls.class_id IN $class_ids
                     RETURN c.chunk_id AS chunk_id, c.chunk_name AS chunk_name,
-                           c.chunk_label AS chunk_label, l.lesson_id AS lesson_id
-                    ORDER BY c.chunk_label
+                           c.chunk_num AS chunk_num, l.lesson_id AS lesson_id
+                    ORDER BY c.chunk_num
                     LIMIT 50
                     """,
                     class_ids=class_ids,
@@ -1014,7 +1014,7 @@ def run_semantic_search_neo(
         keyword_hits.append({
             "chunk_id": r["chunk_id"],
             "chunk_name": r.get("chunk_name"),
-            "chunk_label": r.get("chunk_label"),
+            "chunk_num": r.get("chunk_num"),
             "keyword_name": keyword_name,
             "candidate_text": candidate_text,
 
@@ -1317,7 +1317,7 @@ def debug_keyword_scores(
         scored.append({
             "chunk_id": row.get("chunk_id"),
             "chunk_name": row.get("chunk_name"),
-            "chunk_label": row.get("chunk_label"),
+            "chunk_num": row.get("chunk_num"),
             "keyword_name": keyword_name,
             "candidate_text": candidate_texts[i],
             "semantic_score": round(float(row.get("score", 0.0)), 4),

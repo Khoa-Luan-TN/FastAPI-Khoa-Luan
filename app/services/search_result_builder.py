@@ -40,7 +40,7 @@ class ResultItem:
     lesson_name: Optional[str]     # populated for chunk results
     lesson_num: Optional[int]      # curriculum sequence number for lesson
     chunk_name: Optional[str]      # alias of title when result_type == "chunk"
-    chunk_label: Optional[int]     # curriculum sequence label for chunk
+    chunk_num: Optional[int]       # curriculum sequence number for chunk
 
     # TODO: replace description with topic_des / lesson_des / chunk_des from MongoDB
     description: Optional[str]
@@ -270,7 +270,7 @@ def _fetch_topics_by_scope(pg: Session, class_ids: List[str]) -> List[ResultItem
             lesson_name=None,
             lesson_num=None,
             chunk_name=None,
-            chunk_label=None,
+            chunk_num=None,
             description=_FALLBACK_DESC["topic"],
             minio_url=r["topic_minio"],
             keywords=[],
@@ -340,7 +340,7 @@ def _fetch_lessons_by_scope(
             lesson_name=r["lesson_name"],
             lesson_num=r["lesson_num"],
             chunk_name=None,
-            chunk_label=None,
+            chunk_num=None,
             description=_FALLBACK_DESC["lesson"],
             minio_url=r["lesson_minio"],
             keywords=[],
@@ -386,7 +386,7 @@ def _fetch_chunks_by_scope(
             SELECT
                 c.chunk_id,
                 c.chunk_name,
-                c.chunk_label,
+                c.chunk_num,
                 c.minio_url    AS chunk_minio,
                 l2.lesson_name,
                 l2.lesson_num,
@@ -401,7 +401,7 @@ def _fetch_chunks_by_scope(
             JOIN subject s2 ON s2.subject_id = t2.subject_id
             JOIN "class" cl ON cl.class_id   = s2.class_id
             {where}
-            ORDER BY cl.class_name, t2.topic_num, l2.lesson_num, c.chunk_label
+            ORDER BY cl.class_name, t2.topic_num, l2.lesson_num, c.chunk_num
             LIMIT 50
         """),
         params,
@@ -428,7 +428,7 @@ def _fetch_chunks_by_scope(
             lesson_name=r["lesson_name"],
             lesson_num=r["lesson_num"],
             chunk_name=r["chunk_name"],
-            chunk_label=r["chunk_label"],
+            chunk_num=r["chunk_num"],
             description=_FALLBACK_DESC["chunk"],
             minio_url=r["chunk_minio"],
             keywords=kw_map.get(r["chunk_id"], []),
@@ -455,7 +455,7 @@ def _enrich_chunks(
             SELECT
                 c.chunk_id,
                 c.chunk_name,
-                c.chunk_label,
+                c.chunk_num,
                 c.minio_url    AS chunk_minio,
                 l.lesson_name,
                 l.lesson_num,
@@ -495,7 +495,7 @@ def _enrich_chunks(
             lesson_name=r["lesson_name"],
             lesson_num=r["lesson_num"],
             chunk_name=r["chunk_name"],
-            chunk_label=r["chunk_label"],
+            chunk_num=r["chunk_num"],
             description=_FALLBACK_DESC["chunk"],
             minio_url=r["chunk_minio"],
             keywords=kw_map.get(r["chunk_id"], []),
@@ -549,7 +549,7 @@ def _enrich_lessons(
             lesson_name=r["lesson_name"],
             lesson_num=r["lesson_num"],
             chunk_name=None,
-            chunk_label=None,
+            chunk_num=None,
             description=_FALLBACK_DESC["lesson"],
             minio_url=r["lesson_minio"],
             keywords=[],
@@ -600,7 +600,7 @@ def _enrich_topics(
             lesson_name=None,
             lesson_num=None,
             chunk_name=None,
-            chunk_label=None,
+            chunk_num=None,
             description=_FALLBACK_DESC["topic"],
             minio_url=r["topic_minio"],
             keywords=[],
@@ -639,7 +639,7 @@ def _from_keyword_only(pg: Session, execution: ExecutionResult) -> List[ResultIt
             SELECT
                 c.chunk_id,
                 c.chunk_name,
-                c.chunk_label,
+                c.chunk_num,
                 c.minio_url    AS chunk_minio,
                 l.lesson_name,
                 l.lesson_num,
@@ -683,7 +683,7 @@ def _from_keyword_only(pg: Session, execution: ExecutionResult) -> List[ResultIt
             lesson_name=r["lesson_name"],
             lesson_num=r["lesson_num"],
             chunk_name=r["chunk_name"],
-            chunk_label=r["chunk_label"],
+            chunk_num=r["chunk_num"],
             description=_FALLBACK_DESC["chunk"],
             minio_url=r["chunk_minio"],
             keywords=kw_map.get(cid, []),

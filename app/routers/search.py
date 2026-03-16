@@ -74,7 +74,7 @@ def _standardize_structure_item(level: str, row: Dict[str, Any]) -> Dict[str, An
             "metadata": {
                 "chunk_id": row.get("chunk_id"),
                 "chunk_name": row.get("chunk_name"),
-                "chunk_label": row.get("chunk_label"),
+                "chunk_num": row.get("chunk_num"),
                 "lesson_id": row.get("lesson_id"),
             },
         }

@@ -424,7 +424,7 @@ def _has_any_resolved_structure(resolved: Dict[str, Any]) -> bool:
 
 def _semantic_scope_failure_reason(plan: SearchPlan, resolved: Dict[str, Any]) -> str | None:
     if plan.chunk_num is not None and not resolved.get("chunk"):
-        return "Semantic search skipped: chunk_label was requested but no chunk matched"
+        return "Semantic search skipped: chunk_num was requested but no chunk matched"
     if plan.lesson_num is not None and not resolved.get("lesson"):
         return "Semantic search skipped: lesson_num was requested but no lesson matched"
     if plan.topic_num is not None and not resolved.get("topic"):
