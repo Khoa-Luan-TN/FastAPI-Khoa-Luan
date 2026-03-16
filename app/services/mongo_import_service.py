@@ -673,7 +673,6 @@ def _import_keyword_rows(
              each newly inserted keyword in this run.  Existing/reused keywords are
              left untouched.
     """
-    from app.services.keyword_alias_service import refresh_keyword_aliases
 
     inserted = reused = 0
     errors: List[Dict[str, Any]] = []
@@ -770,54 +769,17 @@ def _import_keyword_rows(
                     "message": "Đang import keyword...",
                 })
 
-    # ── Phase 2: alias generation ─────────────────────────────────────────────
+    # ── Phase 2: alias generation (temporarily disabled — Gemini quota exhausted) ──
     # total_rows was pre-allocated as len(rows) * 2 by the caller.
-    # We NEVER touch total_rows here — doing so would cause backward progress jumps.
-    alias_count = len(new_keywords)
-    if progress_callback is not None and progress_state is not None:
-        _pr = progress_state["processed_rows"]
-        _tot = progress_state["total_rows"]
-        progress_callback({
-            "current_collection": "keyword",
-            "processed_rows": _pr,
-            "total_rows": _tot,
-            "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-            "message": "Đã import xong keyword, đang sinh alias..." if alias_count > 0 else "Đang hoàn tất keyword...",
-        })
-
+    # Consume the full phase-2 budget in one step to keep progress monotonic.
     alias_processed_keywords = 0
     alias_inserted = 0
-    # Unique pre-existing keywords never given alias generation in this run.
-    # Excludes any ID that also appears in new_keywords (inserted earlier in same run).
     alias_skipped = len(reused_keyword_ids - new_keywords.keys())
     alias_errors: List[Dict[str, Any]] = []
 
-    for keyword_id, keyword_name in new_keywords.items():
-        alias_processed_keywords += 1
-        try:
-            alias_result = refresh_keyword_aliases(db, keyword_id, keyword_name, actor)
-            alias_inserted += alias_result.get("inserted", 0)
-        except Exception as alias_err:
-            alias_errors.append({"keyword_name": keyword_name, "error": str(alias_err)})
-        finally:
-            if progress_callback is not None and progress_state is not None:
-                progress_state["processed_rows"] += 1
-                _pr = progress_state["processed_rows"]
-                _tot = progress_state["total_rows"]
-                progress_callback({
-                    "current_collection": "keyword",
-                    "processed_rows": _pr,
-                    "total_rows": _tot,
-                    "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-                    "message": "Đang sinh alias cho keyword...",
-                })
-
-    # Consume the pre-allocated phase-2 slots that were not used.
-    # Pre-allocated = len(rows); used = alias_count (unique new keywords).
-    # Adding the remainder keeps processed_rows aligned with total_rows.
-    remaining_slots = len(rows) - alias_count
-    if progress_callback is not None and progress_state is not None and remaining_slots > 0:
-        progress_state["processed_rows"] += remaining_slots
+    phase2_slots = len(rows)  # pre-allocated phase-2 budget
+    if progress_callback is not None and progress_state is not None and phase2_slots > 0:
+        progress_state["processed_rows"] += phase2_slots
         _pr = progress_state["processed_rows"]
         _tot = progress_state["total_rows"]
         progress_callback({
@@ -825,7 +787,7 @@ def _import_keyword_rows(
             "processed_rows": _pr,
             "total_rows": _tot,
             "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-            "message": "Đang sinh alias cho keyword...",
+            "message": "Hoàn tất import keyword (alias generation tạm thời bị tắt).",
         })
 
     return {

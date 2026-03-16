@@ -6,13 +6,13 @@ from bson import ObjectId
 from app.services.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
-from app.services.entity_embedding_service import ensure_keyword_embedding, ensure_entity_embedding as ensure_name_embedding
+from app.services.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
 
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
-SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "user"}
-NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}
+SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
+NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
 
 
 def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] = None) -> None:
@@ -310,52 +310,72 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
-        chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid", "chunkRef", "chunk"])
-        chunk_id = _ensure_parent_pg_id(db, pg, "chunk", chunk_ref)
+        if not keyword_name:
+            raise ValueError("keyword missing keyword_name")
+        # Standalone keyword — no chunk context in Mongo keyword collection.
+        # PG Keyword rows are written via chunk_keyword sync instead.
+        return {
+            "op": "noop",
+            "keyword_name": keyword_name,
+            "neo_payload": {"id": mongo_id, "name": keyword_name},
+        }
 
-        if not keyword_name or not chunk_id:
-            raise ValueError(f"keyword missing fields or chunk_ref not mapped (chunk_ref={chunk_ref})")
+    if col == "chunk_keyword":
+        # Resolve chunk
+        chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid"])
+        pg_chunk_id = _ensure_parent_pg_id(db, pg, "chunk", chunk_ref)
+        if not pg_chunk_id:
+            raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
 
-        keyword_key = f"{chunk_id}::{keyword_name}"
+        # Resolve keyword_name from Mongo keyword collection
+        keyword_ref = str(doc.get("keyword_id") or "").strip()
+        if not keyword_ref:
+            raise ValueError("chunk_keyword missing keyword_id")
+        kw_doc = _mongo_find_by_oid_or_str(db, "keyword", keyword_ref)
+        if not kw_doc:
+            raise ValueError(f"keyword '{keyword_ref}' not found")
+        keyword_name = (kw_doc.get("keyword_name") or "").strip()
+        if not keyword_name:
+            raise ValueError(f"keyword '{keyword_ref}' has no keyword_name")
 
+        keyword_key = f"{pg_chunk_id}::{keyword_name}"
+        _neo = {"id": keyword_key, "name": keyword_name, "parent_id": pg_chunk_id}
+
+        # Primary lookup: by mongo_id (handles renames correctly)
         existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if existing:
-            if existing.chunk_id != chunk_id or existing.keyword_name != keyword_name:
-                old_neo_id = f"{existing.chunk_id}::{existing.keyword_name}"
+            old_key = f"{existing.chunk_id}::{existing.keyword_name}"
+            if old_key != keyword_key:
+                # Identity changed (rename) — replace PG row, signal Neo cleanup
+                old_neo_id = old_key
                 pg.delete(existing)
                 pg.flush()
-                obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
+                obj = pg_models.Keyword(chunk_id=pg_chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
                 pg.add(obj)
                 pg.flush()
                 return {
                     "op": "recreate",
                     "pg_id": keyword_key,
-                    "chunk_id": chunk_id,
+                    "chunk_id": pg_chunk_id,
                     "keyword_name": keyword_name,
                     "old_neo_id": old_neo_id,
-                    "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
+                    "neo_payload": _neo,
                 }
+            return {"op": "noop", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
-            existing.chunk_id = chunk_id
-            existing.keyword_name = keyword_name
-            return {
-                "op": "update",
-                "pg_id": keyword_key,
-                "chunk_id": chunk_id,
-                "keyword_name": keyword_name,
-                "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
-            }
+        # Fallback: lookup by (chunk_id, keyword_name) to avoid duplicates from legacy data
+        dup = pg.query(pg_models.Keyword).filter(
+            pg_models.Keyword.chunk_id == pg_chunk_id,
+            pg_models.Keyword.keyword_name == keyword_name,
+        ).first()
+        if dup:
+            dup.mongo_id = mongo_id
+            return {"op": "update", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
-        obj = pg_models.Keyword(chunk_id=chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
+        obj = pg_models.Keyword(chunk_id=pg_chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
         pg.add(obj)
         pg.flush()
-        return {
-            "op": "insert",
-            "pg_id": keyword_key,
-            "chunk_id": chunk_id,
-            "keyword_name": keyword_name,
-            "neo_payload": {"id": keyword_key, "name": keyword_name, "parent_id": chunk_id},
-        }
+        return {"op": "insert", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
     if col == "user":
         def _s(v) -> str:
@@ -411,11 +431,34 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     pg = SessionLocal()
     try:
+        # ── chunk_keyword soft-delete: delete PG row first, then Neo ──────────
+        if col == "chunk_keyword" and is_deleted:
+            with pg.begin():
+                existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, str(doc.get("_id")))
+                if existing:
+                    old_neo_id = f"{existing.chunk_id}::{existing.keyword_name}"
+                    pg.delete(existing)
+                else:
+                    old_neo_id = None
+
+            neo_upsert: Optional[dict] = None
+            if old_neo_id:
+                neo_upsert = detach_delete_entity("keyword", old_neo_id)
+            else:
+                neo_upsert = {"ok": True, "skipped": True}
+
+            ok = neo_upsert.get("ok", True) if neo_upsert else True
+            result: dict = {"ok": ok, "op": "delete"}
+            if neo_upsert is not None:
+                result["neo_upsert"] = neo_upsert
+            result["neo"] = neo_upsert or {"ok": True, "skipped": True}
+            return result
+
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
             if not is_deleted:
-                if col in {"topic", "lesson", "chunk"} and isinstance(info, dict):
+                if col == "topic" and isinstance(info, dict):
                     pg_id = info.get("pg_id")
                     if pg_id:
                         name = (info.get("neo_payload") or {}).get("name", "")
@@ -425,17 +468,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                             emb.get("embedding") if isinstance(emb, dict) else None,
                         )
 
-                if col == "keyword" and isinstance(info, dict):
-                    cid = info.get("chunk_id")
-                    kn = info.get("keyword_name")
-                    if cid and kn:
-                        emb = ensure_keyword_embedding(pg, cid, kn)
-                        _attach_vec_to_neo_payload(
-                            info,
-                            emb.get("embedding") if isinstance(emb, dict) else None,
-                            model_name=emb.get("model_name") if isinstance(emb, dict) else None,
-                        )
-
         neo_cleanup: Optional[dict] = None
         neo_upsert: Optional[dict] = None
 
@@ -443,26 +475,28 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             if is_deleted:
                 pg_id = info.get("pg_id") if isinstance(info, dict) else None
                 if pg_id:
-                    neo_upsert = detach_delete_entity(col, str(pg_id))
+                    neo_col = "keyword" if col == "chunk_keyword" else col
+                    neo_upsert = detach_delete_entity(neo_col, str(pg_id))
                 else:
                     neo_upsert = {"ok": True, "skipped": True}
             else:
-                # Stale keyword cleanup when identity changed (recreate op)
-                if col == "keyword" and isinstance(info, dict) and info.get("op") == "recreate":
+                # For chunk_keyword rename (recreate op): delete old Neo node first
+                if col == "chunk_keyword" and isinstance(info, dict) and info.get("op") == "recreate":
                     old_neo_id = info.get("old_neo_id")
                     if old_neo_id:
                         neo_cleanup = detach_delete_entity("keyword", old_neo_id)
 
                 cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
                 if not cleanup_ok:
-                    # Skip upsert: avoid inconsistent state when old node isn't gone
                     neo_upsert = {"ok": False, "error": "skipped: stale keyword cleanup failed"}
                 else:
                     neo_payload = info.pop("neo_payload", None) if isinstance(info, dict) else None
                     if not isinstance(neo_payload, dict):
                         neo_upsert = {"ok": False, "error": "missing neo_payload"}
                     else:
-                        neo_upsert = neo_sync_upsert(col, neo_payload)
+                        # chunk_keyword syncs as "keyword" node in Neo4j
+                        neo_col = "keyword" if col == "chunk_keyword" else col
+                        neo_upsert = neo_sync_upsert(neo_col, neo_payload)
 
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True

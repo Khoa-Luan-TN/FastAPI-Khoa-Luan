@@ -8,13 +8,10 @@ from neo4j import Session as NeoSession
 from app.services.neo_client import neo4j_driver, _neo4j_database
 
 ROOT_THING_ID = "thing"
-NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user
+NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user; chunk_keyword routes via "keyword"
 
 _VECTOR_INDEX_SPECS = {
-    "topic":   ("topic_embedding_idx",   "Topic",   "embedding"),
-    "lesson":  ("lesson_embedding_idx",  "Lesson",  "embedding"),
-    "chunk":   ("chunk_embedding_idx",   "Chunk",   "embedding"),
-    "keyword": ("keyword_embedding_idx", "Keyword", "embedding"),
+    "topic": ("topic_embedding_idx", "Topic", "embedding"),
 }
 
 def _ensure_vector_index_for_col(session: NeoSession, col: str) -> None:
@@ -61,19 +58,17 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "lesson": lambda s, p: _upsert_lesson(
             s, lesson_id=p["id"], lesson_name=p.get("name", ""), topic_id=p.get("parent_id"),
-            lesson_num=p.get("lesson_num"), embedding=p.get("embedding"),
+            lesson_num=p.get("lesson_num"),
         ),
         "chunk": lambda s, p: _upsert_chunk(
             s, chunk_id=p["id"], chunk_name=p.get("name", ""), lesson_id=p.get("parent_id"),
-            chunk_label=p.get("chunk_label"), embedding=p.get("embedding"),
+            chunk_label=p.get("chunk_label"),
         ),
         "keyword": lambda s, p: _upsert_keyword(
             s,
             keyword_key=p["id"],
             keyword_name=p.get("name", ""),
             chunk_id=p.get("parent_id"),
-            embedding=p.get("embedding"),
-            model_name=p.get("model_name"),
         ),
     }
 
@@ -213,7 +208,6 @@ def _upsert_lesson(
     lesson_name: str,
     topic_id: Optional[str],
     lesson_num: Optional[int] = None,
-    embedding: Optional[list[float]] = None,
 ) -> None:
     if not topic_id:
         session.run(
@@ -221,13 +215,11 @@ def _upsert_lesson(
             MERGE (l:Lesson {lesson_id:$lesson_id})
             SET l.lesson_name = $lesson_name,
                 l.lesson_num = CASE WHEN $lesson_num IS NOT NULL THEN $lesson_num ELSE l.lesson_num END,
-                l.embedding = CASE WHEN $embedding IS NULL THEN l.embedding ELSE $embedding END,
                 l.updated_at = datetime()
             """,
             lesson_id=lesson_id,
             lesson_name=lesson_name or "",
             lesson_num=lesson_num,
-            embedding=embedding,
         )
         return
 
@@ -237,7 +229,6 @@ def _upsert_lesson(
         MERGE (l:Lesson {lesson_id:$lesson_id})
         SET l.lesson_name = $lesson_name,
             l.lesson_num = CASE WHEN $lesson_num IS NOT NULL THEN $lesson_num ELSE l.lesson_num END,
-            l.embedding = CASE WHEN $embedding IS NULL THEN l.embedding ELSE $embedding END,
             l.updated_at = datetime()
 
         WITH t, l
@@ -251,7 +242,6 @@ def _upsert_lesson(
         lesson_id=lesson_id,
         lesson_name=lesson_name or "",
         lesson_num=lesson_num,
-        embedding=embedding,
     )
 
 
@@ -262,7 +252,6 @@ def _upsert_chunk(
     chunk_name: str,
     lesson_id: Optional[str],
     chunk_label: Optional[int] = None,
-    embedding: Optional[list[float]] = None,
 ) -> None:
     if not lesson_id:
         session.run(
@@ -270,13 +259,11 @@ def _upsert_chunk(
             MERGE (c:Chunk {chunk_id:$chunk_id})
             SET c.chunk_name = $chunk_name,
                 c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
-                c.embedding = CASE WHEN $embedding IS NULL THEN c.embedding ELSE $embedding END,
                 c.updated_at = datetime()
             """,
             chunk_id=chunk_id,
             chunk_name=chunk_name or "",
             chunk_label=chunk_label,
-            embedding=embedding,
         )
         return
 
@@ -286,7 +273,6 @@ def _upsert_chunk(
         MERGE (c:Chunk {chunk_id:$chunk_id})
         SET c.chunk_name = $chunk_name,
             c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
-            c.embedding = CASE WHEN $embedding IS NULL THEN c.embedding ELSE $embedding END,
             c.updated_at = datetime()
 
         WITH l, c
@@ -300,7 +286,6 @@ def _upsert_chunk(
         chunk_id=chunk_id,
         chunk_name=chunk_name or "",
         chunk_label=chunk_label,
-        embedding=embedding,
     )
 
 
@@ -310,8 +295,6 @@ def _upsert_keyword(
     keyword_key: str,
     keyword_name: str,
     chunk_id: Optional[str],
-    embedding: Optional[list[float]] = None,
-    model_name: Optional[str] = None,
 ) -> None:
     keyword_key = (keyword_key or "").strip()
     keyword_name = (keyword_name or "").strip()
@@ -328,21 +311,11 @@ def _upsert_keyword(
             k.chunk_id = CASE
             WHEN $chunk_key IS NULL OR trim($chunk_key) = "" THEN coalesce(k.chunk_id, "")
             ELSE $chunk_key
-            END,
-            k.embedding = CASE
-            WHEN $embedding IS NULL THEN k.embedding
-            ELSE $embedding
-            END,
-            k.embedding_model = CASE
-            WHEN $model_name IS NULL THEN coalesce(k.embedding_model, "")
-            ELSE $model_name
             END
         """,
         keyword_key=keyword_key,
         keyword_name=keyword_name,
         chunk_key=ck,
-        embedding=embedding,
-        model_name=model_name,
     )
 
 
