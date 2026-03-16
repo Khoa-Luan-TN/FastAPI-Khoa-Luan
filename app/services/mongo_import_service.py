@@ -466,7 +466,7 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
             return
 
         lesson_num = _get_lesson_num_from_ref(db, lesson_ref, ctx)
-        chunk_num = _two_digit(rec.get("chunk_label") or doc.get("chunk_label"))
+        chunk_num = _two_digit(rec.get("chunk_num") or doc.get("chunk_num"))
 
         if not lesson_num or not chunk_num:
             return
@@ -481,6 +481,12 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
 
 def _ensure_keyword_related_indexes(db) -> None:
     _ACTIVE = {"is_deleted": {"$ne": True}}
+
+    # Drop legacy import_key unique index — keyword no longer uses import_key
+    try:
+        db["keyword"].drop_index("import_key_1")
+    except Exception:
+        pass
 
     try:
         db["keyword"].create_index("keyword_slug")

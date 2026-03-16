@@ -186,7 +186,7 @@ def _resolve_edu_doc_by_path(col: str, parsed: dict) -> Optional[dict]:
             return None
         return db["chunk"].find_one({
             **lesson_filter,
-            "chunk_label": chunk_no,
+            "chunk_num": chunk_no,
             "is_deleted": {"$ne": True},
         })
 
