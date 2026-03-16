@@ -2,99 +2,115 @@
 from __future__ import annotations
 
 import json
-import unicodedata
 
 from app.services.gemini_client import generate_text
 from app.services.gemini_alias_service import extract_json, normalize_for_compare
 
-# ===================== KEYWORD EXTRACTION =====================
+# ===================== QUERY KEYWORD EXTRACTION =====================
 
 _PROMPT_TEMPLATE = """\
-You are a strict terminology extraction assistant.
+You are a strict query-keyword extraction assistant for Vietnamese high-school Informatics education.
 
 === FIXED DOMAIN CONTEXT ===
-This text belongs to Vietnamese high-school Informatics textbooks (Kết nối tri thức series).
-Interpret everything in academic and technical computer-science / informatics context, not in everyday-language context.
+The input is a USER SEARCH QUERY about Vietnamese high-school Informatics textbooks (Kết nối tri thức series).
+Extract only the real domain concepts the user wants to search for.
+Interpret everything in academic and technical computer-science / informatics context.
 
 === TASK ===
-Extract high-quality keywords from the input text.
+Identify the actual Informatics / computer-science concepts embedded in the query.
+Ignore all request-intent words, helper phrases, and everyday filler.
 
-A keyword must be:
-- a real concept, technical term, named topic, tool, method, data concept, programming concept, network concept, graphics concept, or computing-related term
-- useful for indexing and retrieval
-- faithful to the meaning in the text
+=== USER QUERY ===
+{input_text}
 
-=== INPUT TEXT ===
-"{input_text}"
+=== IGNORE THESE (do not extract as keywords) ===
+Words and phrases to ignore entirely:
+- tìm, tìm kiếm, muốn tìm, tìm hiểu
+- tôi muốn, cho tôi, giúp tôi
+- thông tin, thông tin về
+- giải thích, hướng dẫn, cách
+- là gì, hỏi, trả lời
+- any phrase that describes the act of searching, asking, or explaining
 
 === STRICT RULES ===
-- Return ONLY keywords that are clearly supported by the text.
-- Prefer specific technical terms over vague/general words.
-- Prefer noun phrases and domain concepts over verbs, adjectives, or filler expressions.
-- Do NOT invent concepts that are not explicitly present or strongly and directly supported by the text.
-- Do NOT return:
-  - explanations
-  - descriptions
-  - full sentences
-  - examples unless the example itself is a real technical term
-  - generic filler words
-  - overly broad words if a more precise term is already present
-  - duplicate variants of the same keyword
-- If the text contains both a vague term and a clearly more specific term for the same local meaning, prefer the more specific one.
-- Keep original Vietnamese wording when the text is in Vietnamese.
-- Preserve standard abbreviations exactly if they appear in the text (for example: AI, IoT, ASCII, UTF-8).
+- Return ONLY the real domain concepts, technical terms, or named topics the user is asking about.
+- Keep original Vietnamese wording when the query is in Vietnamese.
+- Preserve standard abbreviations exactly (for example: AI, IoT, LAN, ASCII, UTF-8).
 - Do not translate terms.
-- Do not add aliases.
-- Do not normalize into another wording.
-- A keyword should usually be short, concise, and directly usable as an index term.
+- Do not invent concepts not present in the query.
+- A keyword should be short and directly usable as a search term.
 - Prefer empty list over weak guesses.
-
-=== DEDUPLICATION RULES ===
-- Remove exact duplicates.
-- Remove duplicates that differ only by capitalization or extra spaces.
-- If two candidates are near-identical and one is clearly more complete/specific, keep the more useful one.
+- Return at most {max_keywords} keywords, ordered from most specific to least specific.
 
 === OUTPUT FORMAT ===
-Return ONLY this JSON object and nothing else:
+Return ONLY this JSON object and nothing else — no explanation, no markdown:
 {{"keywords": ["...", "..."]}}
 
-=== EXTRA QUALITY RULES ===
-- Maximum number of keywords: {max_keywords}
-- Order keywords from most important to less important.
-- If the text is too weak, off-topic, or does not contain clear Informatics concepts, return:
+If the query contains no clear Informatics concepts, return:
 {{"keywords": []}}
 
 === EXAMPLES ===
-Text: "Mạng LAN sử dụng router để kết nối các thiết bị và truy cập Internet."
-Output:
-{{"keywords": ["Mạng LAN", "router", "Internet"]}}
+Query: "tôi muốn tìm kiếm thông tin về data"
+Output: {{"keywords": ["data"]}}
 
-Text: "Python hỗ trợ kiểu dữ liệu danh sách, câu lệnh if-else và vòng lặp for."
-Output:
-{{"keywords": ["Python", "kiểu dữ liệu danh sách", "if-else", "vòng lặp for"]}}
+Query: "giải thích giúp tôi về mạng LAN và router"
+Output: {{"keywords": ["mạng LAN", "router"]}}
 
-Text: "Các em hãy thảo luận và nêu cảm nghĩ của mình."
-Output:
-{{"keywords": []}}
+Query: "python có vòng lặp for không"
+Output: {{"keywords": ["Python", "vòng lặp for"]}}
+
+Query: "cho tôi biết thêm thông tin về trí tuệ nhân tạo và machine learning"
+Output: {{"keywords": ["trí tuệ nhân tạo", "machine learning"]}}
+
+Query: "IoT là gì"
+Output: {{"keywords": ["IoT"]}}
+
+Query: "cho tôi biết thêm thông tin"
+Output: {{"keywords": []}}
+
+Query: "hướng dẫn cách sử dụng vòng lặp while trong Python"
+Output: {{"keywords": ["vòng lặp while", "Python"]}}
 """
 
+_NOISE_TERMS: frozenset[str] = frozenset([
+    "tim",
+    "tim kiem",
+    "tim hieu",
+    "muon",
+    "toi muon",
+    "cho toi",
+    "giup toi",
+    "thong tin",
+    "thong tin ve",
+    "ve",
+    "giai thich",
+    "huong dan",
+    "cach",
+    "la gi",
+    "hoi",
+    "tra loi",
+])
 
-def extract_keywords(
+_BAD_PREFIXES = (
+    "thong tin ",
+    "thong tin ve ",
+    "tim kiem ",
+    "giai thich ",
+    "huong dan ",
+    "cach ",
+)
+
+_MAX_QUERY_KW_WORDS = 6
+
+
+def extract_query_keywords(
     input_text: str,
     max_keywords: int = 10,
     model: str = "gemini-2.5-flash",
 ) -> dict:
-    """Extract keywords from a text chunk using Gemini.
-
-    Returns:
-        {
-            "raw_keywords": [...],
-            "filtered_keywords": [...],
-            "raw_response": "...",
-        }
-    """
+    """Extract search keywords from a user query using Gemini."""
     prompt = _PROMPT_TEMPLATE.format(
-        input_text=input_text,
+        input_text=json.dumps(input_text, ensure_ascii=False),
         max_keywords=max_keywords,
     )
 
@@ -123,12 +139,25 @@ def _filter_keywords(keywords: list, max_keywords: int = 10) -> list[str]:
     for kw in keywords:
         if not isinstance(kw, str):
             continue
+
         kw = kw.strip()
         if not kw:
             continue
+
+        if len(kw.split()) > _MAX_QUERY_KW_WORDS:
+            continue
+
         norm = normalize_for_compare(kw)
+
+        if norm in _NOISE_TERMS:
+            continue
+
+        if any(norm.startswith(p) for p in _BAD_PREFIXES):
+            continue
+
         if norm in seen:
             continue
+
         seen.add(norm)
         result.append(kw)
 

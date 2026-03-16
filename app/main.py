@@ -13,6 +13,7 @@ from app.routers.search import router as search_router
 from app.routers.debug_score_router import router as debug_score_router
 from app.routers.gemini_debug_router import router as gemini_debug_router
 from app.routers.gemini_keyword_debug_router import router as gemini_keyword_debug_router
+from app.routers.gemini_topic_keyword_debug_router import router as gemini_topic_keyword_debug_router
 
 from app.services.postgre_client import engine, Base
 import app.models.model_postgre  
@@ -54,3 +55,4 @@ app.include_router(search_router)
 app.include_router(debug_score_router)
 app.include_router(gemini_debug_router)
 app.include_router(gemini_keyword_debug_router)
+app.include_router(gemini_topic_keyword_debug_router)
