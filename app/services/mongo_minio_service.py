@@ -7,12 +7,11 @@ import os
 import re
 import unicodedata
 
-from app.services.mongo_client import get_mongo_client
+from app.services.mongo_client import get_mongo_db
 from app.services.document_service import create_document_core
 from app.services.sync_service import sync_doc_to_postgres
 
-mongo = get_mongo_client()
-db = mongo["db"]
+db = get_mongo_db()
 
 DOC_ROOTS = {"documents", "document"}  # giữ backward
 DOC_KINDS = {"sgk", "topic", "lesson", "chunk"}

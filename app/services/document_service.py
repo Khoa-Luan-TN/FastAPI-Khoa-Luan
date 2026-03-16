@@ -7,11 +7,10 @@ from typing import Any, Dict
 
 from fastapi import HTTPException
 
-from app.services.mongo_client import get_mongo_client
+from app.services.mongo_client import get_mongo_db
 from app.services.sync_service import sync_doc_to_postgres
 
-mongo = get_mongo_client()
-db = mongo["db"]
+db = get_mongo_db()
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 

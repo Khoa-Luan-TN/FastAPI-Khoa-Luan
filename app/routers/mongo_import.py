@@ -4,13 +4,11 @@ import re
 import tempfile
 from fastapi import APIRouter, Query, Request, UploadFile, File, HTTPException, status
 
-from app.services.mongo_client import get_mongo_client
+from app.services.mongo_client import get_mongo_db
 from app.services.mongo_import_service import import_excel_to_mongo
-from app.services.sync_service import sync_doc_to_postgres
 
 router = APIRouter()
-mongo = get_mongo_client()
-db = mongo["db"]
+db = get_mongo_db()
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
@@ -54,7 +52,7 @@ async def import_excel_workbook(request: Request, file: UploadFile = File(...)):
             db,
             tmp_path,
             actor=actor,
-            sync_one=lambda c, d: sync_doc_to_postgres(db, c, d),
+            sync_one=None,
         )
         return {"ok": True, "report": report}
     finally:
@@ -65,7 +63,7 @@ async def import_excel_workbook(request: Request, file: UploadFile = File(...)):
                 pass
 
 
-@router.post("/import/excel-one", summary="Import Excel -> 1 collection -> Mongo -> PG -> Neo")
+@router.post("/import/excel-one", summary="Import Excel -> 1 collection -> Mongo only (sync disabled)")
 async def import_excel_one_collection(
     request: Request,
     collection_name: str = Query(...),
@@ -90,8 +88,8 @@ async def import_excel_one_collection(
             db,
             tmp_path,
             actor=actor,
-            sync_one=lambda c, d: sync_doc_to_postgres(db, c, d),
-            only_cols=[col],  # ✅ dùng tên đã normalize
+            sync_one=None,
+            only_cols=[col],
         )
         return {"ok": True, "report": report}
     finally:

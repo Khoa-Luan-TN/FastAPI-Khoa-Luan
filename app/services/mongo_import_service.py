@@ -10,6 +10,7 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import quote
 
+from bson import ObjectId
 from dotenv import load_dotenv
 from openpyxl import load_workbook
 
@@ -21,13 +22,12 @@ def _load_env() -> None:
 
 IMPORT_ORDER = ["class", "subject", "topic", "lesson", "chunk", "keyword"]
 
-# ref columns -> mongo id field
+# ref columns -> mongo id field  (keyword handled separately)
 REF_MAP = {
     "subject": ("class_ref", "class_id", "class"),
     "topic": ("subject_ref", "subject_id", "subject"),
     "lesson": ("topic_ref", "topic_id", "topic"),
     "chunk": ("lesson_ref", "lesson_id", "lesson"),
-    "keyword": ("chunk_ref", "chunk_id", "chunk"),
 }
 
 JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", "table_url"}
@@ -479,6 +479,239 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         }
         return
 
+def _ensure_keyword_related_indexes(db) -> None:
+    _ACTIVE = {"is_deleted": {"$ne": True}}
+
+    try:
+        db["keyword"].create_index("keyword_slug")
+    except Exception:
+        pass
+
+    # Drop old non-partial unique index if it exists, then recreate as partial
+    try:
+        db["keyword"].drop_index("keyword_slug_1_keyword_name_1")
+    except Exception:
+        pass
+    try:
+        db["keyword"].create_index(
+            [("keyword_slug", 1), ("keyword_name", 1)],
+            unique=True,
+            partialFilterExpression=_ACTIVE,
+        )
+    except Exception:
+        pass
+
+    try:
+        db["chunk_keyword"].drop_index("chunk_id_1_keyword_id_1")
+    except Exception:
+        pass
+    try:
+        db["chunk_keyword"].create_index(
+            [("chunk_id", 1), ("keyword_id", 1)],
+            unique=True,
+            partialFilterExpression=_ACTIVE,
+        )
+    except Exception:
+        pass
+
+    try:
+        db["topic_bag"].drop_index("topic_id_1")
+    except Exception:
+        pass
+    try:
+        db["topic_bag"].create_index(
+            "topic_id",
+            unique=True,
+            partialFilterExpression=_ACTIVE,
+        )
+    except Exception:
+        pass
+
+
+# ===================== KEYWORD HELPERS =====================
+
+def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
+    """
+    Return (keyword_id, op) where op in {"insert", "noop"}.
+    Dedupe rules:
+      - If same slug AND same name exists → reuse.
+      - If same slug but different name → create new.
+      - If no matching slug → create new.
+    """
+    keyword_slug = _slugify_vi(keyword_name)
+    if not keyword_slug:
+        raise ValueError(f"keyword_name '{keyword_name}' produces empty slug")
+
+    candidates = list(db["keyword"].find(
+        {"keyword_slug": keyword_slug, "is_deleted": {"$ne": True}},
+        {"_id": 1, "keyword_name": 1},
+    ))
+    for c in candidates:
+        if c.get("keyword_name") == keyword_name:
+            return str(c["_id"]), "noop"
+
+    now = _now()
+    doc = {
+        "keyword_name": keyword_name,
+        "keyword_slug": keyword_slug,
+        "aliases": [],
+        "is_deleted": False,
+        "deleted_at": None,
+        "created_at": now,
+        "updated_at": now,
+        "created_by": actor,
+        "updated_by": actor,
+    }
+    r = db["keyword"].insert_one(doc)
+    return str(r.inserted_id), "insert"
+
+
+def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
+    """
+    Upsert (chunk_id, keyword_id) pair into chunk_keyword.
+    Return op in {"insert", "noop"}.
+    """
+    existing = db["chunk_keyword"].find_one(
+        {"chunk_id": chunk_id, "keyword_id": keyword_id, "is_deleted": {"$ne": True}},
+        {"_id": 1},
+    )
+    if existing:
+        return "noop"
+
+    now = _now()
+    db["chunk_keyword"].insert_one({
+        "chunk_id": chunk_id,
+        "keyword_id": keyword_id,
+        "is_deleted": False,
+        "deleted_at": None,
+        "created_at": now,
+        "updated_at": now,
+        "created_by": actor,
+        "updated_by": actor,
+    })
+    return "insert"
+
+
+def _upsert_topic_bag(db, topic_id: str, keyword_id: str, actor: str) -> str:
+    """
+    Upsert topic_bag for topic_id, adding keyword_id to keyword_ids array.
+    Returns op in {"insert", "update", "noop"}.
+    """
+    now = _now()
+    existing = db["topic_bag"].find_one(
+        {"topic_id": topic_id, "is_deleted": {"$ne": True}},
+        {"_id": 1, "keyword_ids": 1},
+    )
+
+    if existing:
+        before_ids = existing.get("keyword_ids") or []
+        if keyword_id in before_ids:
+            return "noop"
+        db["topic_bag"].update_one(
+            {"_id": existing["_id"]},
+            {
+                "$addToSet": {"keyword_ids": keyword_id},
+                "$set": {"updated_at": now, "updated_by": actor},
+            },
+        )
+        # recompute total_keywords
+        updated_doc = db["topic_bag"].find_one({"_id": existing["_id"]}, {"keyword_ids": 1})
+        total = len(updated_doc.get("keyword_ids") or [])
+        db["topic_bag"].update_one({"_id": existing["_id"]}, {"$set": {"total_keywords": total}})
+        return "update"
+
+    db["topic_bag"].insert_one({
+        "topic_id": topic_id,
+        "keyword_ids": [keyword_id],
+        "total_keywords": 1,
+        "is_deleted": False,
+        "deleted_at": None,
+        "created_at": now,
+        "updated_at": now,
+        "created_by": actor,
+        "updated_by": actor,
+    })
+    return "insert"
+
+
+def _import_keyword_rows(db, rows: List[Dict[str, Any]], actor: str) -> Dict[str, Any]:
+    """
+    Process rows from the keyword sheet.
+    Each row needs: chunk_ref, keyword_name.
+    Resolves chunk → lesson → topic chain to populate chunk_keyword and topic_bag.
+    """
+    inserted = updated = 0
+    errors: List[Dict[str, Any]] = []
+
+    for rec in rows:
+        rowno = rec.pop("_row", None)
+        try:
+            chunk_ref = str(rec.get("chunk_ref") or "").strip()
+            keyword_name = str(rec.get("keyword_name") or "").strip()
+
+            if not chunk_ref:
+                raise ValueError("missing chunk_ref")
+            if not keyword_name:
+                raise ValueError("missing keyword_name")
+
+            # resolve chunk (exclude soft-deleted)
+            chunk_doc = db["chunk"].find_one(
+                {"import_key": chunk_ref, "is_deleted": {"$ne": True}},
+                {"_id": 1, "lesson_id": 1},
+            )
+            if not chunk_doc:
+                raise ValueError(f"chunk with import_key='{chunk_ref}' not found")
+            chunk_id = str(chunk_doc["_id"])
+
+            # resolve lesson -> topic (exclude soft-deleted)
+            lesson_id = str(chunk_doc.get("lesson_id") or "").strip()
+            if not lesson_id:
+                raise ValueError(f"chunk '{chunk_ref}' has no lesson_id")
+
+            # try ObjectId lookup first, fall back to raw string _id
+            lesson_doc = None
+            if ObjectId.is_valid(lesson_id):
+                lesson_doc = db["lesson"].find_one(
+                    {"_id": ObjectId(lesson_id), "is_deleted": {"$ne": True}},
+                    {"topic_id": 1},
+                )
+            if not lesson_doc:
+                lesson_doc = db["lesson"].find_one(
+                    {"_id": lesson_id, "is_deleted": {"$ne": True}},
+                    {"topic_id": 1},
+                )
+            if not lesson_doc:
+                raise ValueError(f"lesson '{lesson_id}' not found")
+            topic_id = str(lesson_doc.get("topic_id") or "").strip()
+            if not topic_id:
+                raise ValueError(f"lesson '{lesson_id}' has no topic_id")
+
+            # keyword dedupe
+            keyword_id, kw_op = _find_or_create_keyword(db, keyword_name, actor)
+
+            # chunk_keyword upsert
+            _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
+
+            # topic_bag upsert
+            _upsert_topic_bag(db, topic_id, keyword_id, actor)
+
+            if kw_op == "insert":
+                inserted += 1
+            else:
+                updated += 1
+
+        except Exception as e:
+            errors.append({"row": rowno, "error": str(e), "collection": "keyword"})
+
+    return {
+        "rows": len(rows),
+        "inserted": inserted,
+        "updated": updated,
+        "synced": 0,
+        "errors": errors[:50],
+    }
+
+
 def import_excel_to_mongo(
     db,
     xlsx_path: str,
@@ -499,12 +732,18 @@ def import_excel_to_mongo(
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
     for col in cols:
-        _ensure_import_index(db, col)
-
         rows = _read_sheet_rows(wb, col)
         if not rows:
             report["collections"][col] = {"rows": 0, "inserted": 0, "updated": 0, "synced": 0, "skipped": True}
             continue
+
+        # keyword has its own dedicated import path
+        if col == "keyword":
+            _ensure_keyword_related_indexes(db)
+            report["collections"]["keyword"] = _import_keyword_rows(db, rows, actor)
+            continue
+
+        _ensure_import_index(db, col)
 
         inserted = updated = synced = 0
         errors = []
@@ -513,14 +752,6 @@ def import_excel_to_mongo(
             rowno = rec.pop("_row", None)
             try:
                 import_key = str(rec.get("import_key") or "").strip()
-
-                # special-case keyword: nếu thiếu import_key thì auto chunk_ref::keyword_name
-                if not import_key and col == "keyword":
-                    chunk_ref = str(rec.get("chunk_ref") or "").strip()
-                    keyword_name = str(rec.get("keyword_name") or rec.get("name") or "").strip()
-                    if chunk_ref and keyword_name:
-                        import_key = f"{chunk_ref}::{keyword_name}"
-
                 if not import_key:
                     raise ValueError("missing import_key")
 
@@ -570,9 +801,6 @@ def import_excel_to_mongo(
                 # store map for later children
                 id_map[col][import_key] = mongo_id
 
-                # fetch full doc for sync
-                full = None
-
                 if sync_one and op != "noop":
                     full = db[col].find_one({"import_key": import_key})
                     if full:
@@ -584,9 +812,6 @@ def import_excel_to_mongo(
                     inserted += 1
                 elif op == "update":
                     updated += 1
-                else:
-                    # noop: không cộng gì
-                    pass
 
             except Exception as e:
                 errors.append({"row": rowno, "error": str(e), "collection": col})

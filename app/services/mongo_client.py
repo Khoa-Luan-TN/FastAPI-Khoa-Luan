@@ -1,28 +1,40 @@
 # services/mongo_client
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 from datetime import timezone
 
+from dotenv import load_dotenv
 from pymongo import MongoClient
 
-def _load_env():
+_client: MongoClient | None = None
+_db_name: str | None = None
+
+
+def _load_env() -> None:
     env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
     load_dotenv(env_path)
 
-def get_mongo_client():
-    _load_env()
-    URI = os.getenv("MONGODB_URI")
-    DB = os.getenv("MONGODB_DB")
 
-    missing = [k for k, v in {
-        "MONGODB_URI": URI,
-        "MONGODB_DB": DB
-    }.items() if not v ]
+def _get_client() -> tuple[MongoClient, str]:
+    global _client, _db_name
+    if _client is None:
+        _load_env()
+        uri = os.getenv("MONGODB_URI")
+        db_name = os.getenv("MONGODB_DB")
+        missing = [k for k, v in {"MONGODB_URI": uri, "MONGODB_DB": db_name}.items() if not v]
+        if missing:
+            raise RuntimeError(f"Missing env vars: {', '.join(missing)} (check your config.env file)")
+        _client = MongoClient(uri, tz_aware=True, tzinfo=timezone.utc)
+        _db_name = db_name
+        print(f"[mongo_client] Connected — active database: '{_db_name}'")
+    return _client, _db_name
 
-    if missing:
-        raise RuntimeError(f"Missing env vars: {', '.join(missing)} (check your config.env file)")
-    client = MongoClient(URI, tz_aware=True, tzinfo=timezone.utc)
-    
-    db = client[DB]
-    return {"client": client, "db": db}
+
+def get_mongo_client() -> MongoClient:
+    client, _ = _get_client()
+    return client
+
+
+def get_mongo_db():
+    client, db_name = _get_client()
+    return client[db_name]

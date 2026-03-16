@@ -3,14 +3,13 @@ import re
 from fastapi import APIRouter, Query, Path, HTTPException, status
 from pymongo.errors import CollectionInvalid, OperationFailure
 
-from app.services.mongo_client import get_mongo_client
+from app.services.mongo_client import get_mongo_db
 
 router = APIRouter()
-mongo = get_mongo_client()
-db = mongo["db"]
+db = get_mongo_db()
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
-CORE_COLLECTIONS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "user"}
+CORE_COLLECTIONS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "topic_bag", "user"}
 
 def _normalize_collection_name(name: str) -> str:
     name = name.strip()
