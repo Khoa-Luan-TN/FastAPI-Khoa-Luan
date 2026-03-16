@@ -62,7 +62,7 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "chunk": lambda s, p: _upsert_chunk(
             s, chunk_id=p["id"], chunk_name=p.get("name", ""), lesson_id=p.get("parent_id"),
-            chunk_label=p.get("chunk_label"),
+            chunk_num=p.get("chunk_num"),
         ),
         "keyword": lambda s, p: _upsert_keyword(
             s,
@@ -251,19 +251,19 @@ def _upsert_chunk(
     chunk_id: str,
     chunk_name: str,
     lesson_id: Optional[str],
-    chunk_label: Optional[int] = None,
+    chunk_num: Optional[int] = None,
 ) -> None:
     if not lesson_id:
         session.run(
             """
             MERGE (c:Chunk {chunk_id:$chunk_id})
             SET c.chunk_name = $chunk_name,
-                c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
+                c.chunk_num = CASE WHEN $chunk_num IS NOT NULL THEN $chunk_num ELSE c.chunk_num END,
                 c.updated_at = datetime()
             """,
             chunk_id=chunk_id,
             chunk_name=chunk_name or "",
-            chunk_label=chunk_label,
+            chunk_num=chunk_num,
         )
         return
 
@@ -272,7 +272,7 @@ def _upsert_chunk(
         MERGE (l:Lesson {lesson_id:$lesson_id})
         MERGE (c:Chunk {chunk_id:$chunk_id})
         SET c.chunk_name = $chunk_name,
-            c.chunk_label = CASE WHEN $chunk_label IS NOT NULL THEN $chunk_label ELSE c.chunk_label END,
+            c.chunk_num = CASE WHEN $chunk_num IS NOT NULL THEN $chunk_num ELSE c.chunk_num END,
             c.updated_at = datetime()
 
         WITH l, c
@@ -285,7 +285,7 @@ def _upsert_chunk(
         lesson_id=lesson_id,
         chunk_id=chunk_id,
         chunk_name=chunk_name or "",
-        chunk_label=chunk_label,
+        chunk_num=chunk_num,
     )
 
 

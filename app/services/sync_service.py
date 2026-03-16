@@ -278,27 +278,27 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
     if col == "chunk":
         chunk_name = (doc.get("chunk_name") or doc.get("name") or "").strip()
-        chunk_label = _to_int(doc.get("chunk_label") or doc.get("label"), None)
+        chunk_num = _to_int(doc.get("chunk_num") or doc.get("num"), None)
         minio_url = _minio_url(doc)
 
         lesson_ref = _get_ref(doc, ["lesson_id", "lesson_mongo_id", "lesson_oid", "lessonRef", "lesson"])
         lesson_id = _ensure_parent_pg_id(db, pg, "lesson", lesson_ref)
 
-        if not chunk_name or chunk_label is None or not lesson_id:
+        if not chunk_name or chunk_num is None or not lesson_id:
             raise ValueError(f"chunk missing fields or lesson_ref not mapped (lesson_ref={lesson_ref})")
 
         obj = _pg_get_by_mongo_id(pg, pg_models.Chunk, mongo_id)
         if obj:
             obj.chunk_name = chunk_name
-            obj.chunk_label = chunk_label
+            obj.chunk_num = chunk_num
             obj.lesson_id = lesson_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            return {"op": "update", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_label": chunk_label}}
+            return {"op": "update", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_num": chunk_num}}
 
         obj = pg_models.Chunk(
             chunk_name=chunk_name,
-            chunk_label=chunk_label,
+            chunk_num=chunk_num,
             lesson_id=lesson_id,
             mongo_id=mongo_id,
             minio_url=minio_url,
@@ -306,7 +306,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         pg.add(obj)
         pg.flush()
         pg.refresh(obj)
-        return {"op": "insert", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_label": chunk_label}}
+        return {"op": "insert", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_num": chunk_num}}
 
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()

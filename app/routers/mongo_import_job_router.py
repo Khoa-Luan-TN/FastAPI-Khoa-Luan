@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request, UploadFile, File, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 
 from app.services.mongo_client import get_mongo_db
+from app.services.sync_service import sync_doc_to_postgres
 from app.services.import_job_service import (
     create_import_job,
     update_import_job_progress,
@@ -64,7 +65,7 @@ def _run_import_job(
             _db,
             tmp_path,
             actor=actor,
-            sync_one=None,
+            sync_one=lambda col, doc: sync_doc_to_postgres(_db, col, doc),
             only_cols=only_cols,
             progress_callback=progress_callback,
         )

@@ -660,6 +660,7 @@ def _import_keyword_rows(
     *,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     progress_state: Optional[Dict[str, Any]] = None,
+    sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Two-phase keyword import.
@@ -674,7 +675,7 @@ def _import_keyword_rows(
              left untouched.
     """
 
-    inserted = reused = 0
+    inserted = reused = synced = 0
     errors: List[Dict[str, Any]] = []
     # keyword_id -> keyword_name, only for keywords inserted in this run
     new_keywords: Dict[str, str] = {}
@@ -753,6 +754,19 @@ def _import_keyword_rows(
 
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
             _upsert_topic_bag(db, topic_id, topic_name, keyword_id, actor)
+            if sync_one is not None:
+                try:
+                    ck_doc = db["chunk_keyword"].find_one(
+                        {"chunk_id": chunk_id, "keyword_id": keyword_id, "is_deleted": {"$ne": True}}
+                    )
+                    if ck_doc:
+                        sync_result = sync_one("chunk_keyword", ck_doc)
+                        if isinstance(sync_result, dict) and sync_result.get("ok"):
+                            synced += 1
+                        elif isinstance(sync_result, dict):
+                            errors.append({"row": rowno, "error": f"sync_failed: {sync_result.get('error') or 'no detail'}", "collection": "chunk_keyword"})
+                except Exception as sync_e:
+                    errors.append({"row": rowno, "error": f"sync_exception: {sync_e}", "collection": "chunk_keyword"})
 
         except Exception as e:
             errors.append({"row": rowno, "error": str(e), "collection": "keyword"})
@@ -794,7 +808,7 @@ def _import_keyword_rows(
         "rows": len(rows),
         "inserted": inserted,
         "reused": reused,
-        "synced": 0,
+        "synced": synced,
         "errors": errors[:50],
         "alias_processed_keywords": alias_processed_keywords,
         "alias_inserted": alias_inserted,
@@ -852,6 +866,7 @@ def import_excel_to_mongo(
                 db, rows, actor,
                 progress_callback=progress_callback,
                 progress_state=_progress_state,
+                sync_one=sync_one,
             )
             if _progress_state is not None:
                 processed_rows = _progress_state["processed_rows"]
@@ -915,17 +930,22 @@ def import_excel_to_mongo(
                 # store map for later children
                 id_map[col][import_key] = mongo_id
 
-                if sync_one and op != "noop":
-                    full = db[col].find_one({"import_key": import_key})
-                    if full:
-                        sync_result = sync_one(col, full)
-                        if isinstance(sync_result, dict) and sync_result.get("ok"):
-                            synced += 1
-
                 if op == "insert":
                     inserted += 1
                 elif op == "update":
                     updated += 1
+
+                if sync_one and op != "noop":
+                    full = db[col].find_one({"import_key": import_key})
+                    if full:
+                        try:
+                            sync_result = sync_one(col, full)
+                            if isinstance(sync_result, dict) and sync_result.get("ok"):
+                                synced += 1
+                            elif isinstance(sync_result, dict):
+                                errors.append({"row": rowno, "error": f"sync_failed: {sync_result.get('error') or 'no detail'}", "collection": col})
+                        except Exception as sync_e:
+                            errors.append({"row": rowno, "error": f"sync_exception: {sync_e}", "collection": col})
 
             except Exception as e:
                 errors.append({"row": rowno, "error": str(e), "collection": col})

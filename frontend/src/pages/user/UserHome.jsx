@@ -102,7 +102,7 @@ function resultItemToViewModel(item) {
     classBadge,
     topicContext,                              // "Chủ đề 2. Mạng máy tính và Internet"
     lessonContext,                             // "Bài 8. Mạng máy tính trong cuộc sống"
-    chunkLabel: item.chunk_label ?? null,
+    chunkNum: item.chunk_num ?? null,
     chunkName: item.chunk_name || null,
     topicNum: item.topic_num ?? null,
     topicName: item.topic_name || null,
@@ -192,7 +192,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
               {doc.chunkName && (
                 <div className="u-ctx-row">
                   <span className="u-ctx-label">
-                    {doc.chunkLabel != null ? `Mục ${doc.chunkLabel}` : "Mục"}
+                    {doc.chunkNum != null ? `Mục ${doc.chunkNum}` : "Mục"}
                   </span>
                   <span className="u-ctx-value">{doc.chunkName}</span>
                 </div>

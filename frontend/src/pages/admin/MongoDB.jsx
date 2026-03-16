@@ -132,7 +132,7 @@ function defaultPairsForCollection(col) {
     case "chunk":
       return [
         { k: "lesson_id", v: "" },
-        { k: "chunk_label", v: "1" },
+        { k: "chunk_num", v: "1" },
         { k: "chunk_name", v: "" },
         { k: "chunk_des", v: "" },
 

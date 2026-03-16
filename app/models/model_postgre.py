@@ -57,7 +57,7 @@ class Chunk(Base):
     chunk_id = Column(String, primary_key=True, index=True, server_default=FetchedValue())
     lesson_id = Column(String, ForeignKey("lesson.lesson_id", ondelete="CASCADE"), nullable=False)
 
-    chunk_label = Column(Integer, nullable=False)  # DB là int
+    chunk_num = Column(Integer, nullable=False)  # DB là int
     chunk_name = Column(String, nullable=False)
     mongo_id = Column(String, unique=True, nullable=True)
     minio_url = Column(String, nullable=True)

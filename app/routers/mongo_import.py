@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query, Request, UploadFile, File, HTTPException, 
 
 from app.services.mongo_client import get_mongo_db
 from app.services.mongo_import_service import import_excel_to_mongo
+from app.services.sync_service import sync_doc_to_postgres
 
 router = APIRouter()
 db = get_mongo_db()
@@ -52,7 +53,7 @@ async def import_excel_workbook(request: Request, file: UploadFile = File(...)):
             db,
             tmp_path,
             actor=actor,
-            sync_one=None,
+            sync_one=lambda col, doc: sync_doc_to_postgres(db, col, doc),
         )
         return {"ok": True, "report": report}
     finally:

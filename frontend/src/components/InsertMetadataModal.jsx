@@ -86,7 +86,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
         requiredFile: true,
         fields: [
           { name: "lesson_id", label: "lesson_id", required: true },
-          { name: "chunk_label", label: "chunk_label", type: "number", required: true },
+          { name: "chunk_num", label: "chunk_num", type: "number", required: true },
           { name: "chunk_name", label: "chunk_name", required: true },
         ],
       };
