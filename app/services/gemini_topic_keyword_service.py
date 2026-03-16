@@ -1,6 +1,8 @@
 # app/services/gemini_topic_keyword_service.py
 from __future__ import annotations
 
+import json
+
 from app.services.gemini_client import generate_text
 from app.services.gemini_alias_service import extract_json, normalize_for_compare
 
@@ -15,9 +17,10 @@ Interpret everything in academic and technical computer-science / informatics co
 
 === TASK ===
 Extract high-quality indexing keywords from the topic description below.
+These keywords will be used for content indexing and retrieval — not for summarizing.
 
 A keyword must be:
-- a real Informatics / computer-science concept, technical term, named topic, tool, method, programming concept, data concept, network concept, graphics concept, or digital-technology concept
+- a stable, concrete Informatics / computer-science concept, technical term, named topic, tool, method, unit, format, component, data structure, programming concept, network concept, graphics concept, or digital-technology concept
 - useful for indexing and retrieval of this topic
 - explicitly present in or strongly and directly supported by the text
 
@@ -26,9 +29,11 @@ A keyword must be:
 
 === STRICT RULES ===
 - Return ONLY keywords clearly supported by the text.
-- Prefer specific technical terms over vague or general words.
+- Prefer concrete, stable indexing terms: named concepts, units, technologies, components, formats, structures, tools, methods.
 - Prefer noun phrases and domain concepts over verbs, adjectives, or filler expressions.
 - Do NOT invent concepts not present in or not strongly supported by the text.
+- Do NOT return standalone functional verbs or broad activity labels such as "lưu trữ", "xử lý", "truyền tải", "sử dụng", "thực hiện" unless they are part of an established technical term (e.g. "bộ nhớ lưu trữ" is acceptable if present, "lưu trữ" alone is not).
+- Do NOT return broad contextual or social-background phrases such as "kỷ nguyên số", "xã hội tri thức", "thế giới số" unless they are clearly a central, explicitly defined concept in the text.
 - Do NOT return:
   - explanations or definitions
   - descriptions or full sentences
@@ -36,12 +41,12 @@ A keyword must be:
   - overly broad words when a more specific term already covers the same concept
   - duplicate variants of the same keyword
 - Keep original Vietnamese wording.
-- Preserve standard abbreviations exactly as they appear (AI, IoT, LAN, WAN, ASCII, UTF-8, RGB, CMYK, Python, Scratch, Inkscape, ...).
+- Preserve standard abbreviations exactly as they appear (AI, IoT, LAN, WAN, ASCII, UTF-8, RGB, CMYK, Python, Scratch, Inkscape, bit, byte, KB, MB, GB, ...).
 - Do not translate terms.
 - Do not add aliases.
 - Do not normalize into another wording.
 - If two candidates are near-identical, keep the more complete / specific one.
-- If the text contains no clear Informatics concepts, return {{"keywords": []}}.
+- If the text contains no clear Informatics indexing concepts, return {{"keywords": []}}.
 - Prefer empty list over weak guesses.
 
 === DEDUPLICATION ===
@@ -64,9 +69,26 @@ Output: {{"keywords": ["Python", "kiểu dữ liệu danh sách", "if-else", "v�
 Text: "Inkscape là phần mềm cho phép tạo và chỉnh sửa đồ hoạ vectơ với các công cụ vẽ đường cong Bezier."
 Output: {{"keywords": ["Inkscape", "đồ hoạ vectơ", "đường cong Bezier"]}}
 
+Text: "Chủ đề này tập trung vào các khái niệm nền tảng về thông tin và dữ liệu trong kỷ nguyên số. Học sinh tìm hiểu các đơn vị đo lường (bit, byte, KB, MB, GB), cách máy tính xử lý và lưu trữ thông tin số, và các thiết bị số phổ biến."
+Output: {{"keywords": ["thông tin", "dữ liệu", "bit", "byte", "KB", "MB", "GB", "máy tính", "thiết bị số"]}}
+Note: "kỷ nguyên số", "lưu trữ", "xử lý", "truyền tải thông tin" are NOT returned — they are activity words or background context, not stable indexing terms.
+
 Text: "Học sinh thảo luận nhóm và trình bày kết quả trước lớp."
 Output: {{"keywords": []}}
 """
+
+# Small normalized blacklist for weak topic_des phrases that should never be indexing terms.
+_WEAK_TERMS: frozenset[str] = frozenset([
+    "luu tru",
+    "xu ly",
+    "truyen tai",
+    "truyen tai thong tin",
+    "ky nguyen so",
+    "xa hoi tri thuc",
+    "the gioi so",
+    "su dung",
+    "thuc hien",
+])
 
 _MAX_KW_WORDS = 8
 
@@ -86,7 +108,7 @@ def extract_topic_keywords(
         }
     """
     prompt = _PROMPT_TEMPLATE.format(
-        input_text=input_text,
+        input_text=json.dumps(input_text, ensure_ascii=False),
         max_keywords=max_keywords,
     )
 
@@ -121,6 +143,8 @@ def _filter_keywords(keywords: list, max_keywords: int = 20) -> list[str]:
         if len(kw.split()) > _MAX_KW_WORDS:
             continue
         norm = normalize_for_compare(kw)
+        if norm in _WEAK_TERMS:
+            continue
         if norm in seen:
             continue
         seen.add(norm)
