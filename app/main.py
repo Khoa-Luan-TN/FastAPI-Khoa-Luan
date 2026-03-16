@@ -11,6 +11,8 @@ from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
 from app.routers.search import router as search_router
 from app.routers.debug_score_router import router as debug_score_router
+from app.routers.gemini_debug_router import router as gemini_debug_router
+from app.routers.gemini_keyword_debug_router import router as gemini_keyword_debug_router
 
 from app.services.postgre_client import engine, Base
 import app.models.model_postgre  
@@ -50,3 +52,5 @@ app.include_router(mongo_router)
 app.include_router(neo_router)
 app.include_router(search_router)
 app.include_router(debug_score_router)
+app.include_router(gemini_debug_router)
+app.include_router(gemini_keyword_debug_router)
