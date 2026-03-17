@@ -595,14 +595,28 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
-        top_ok = cleanup_ok and upsert_ok
+        rename_prop_ok = not bool(isinstance(info, dict) and info.get("keyword_rename_errors"))
+        top_ok = cleanup_ok and upsert_ok and rename_prop_ok
 
         result: dict = {"ok": top_ok, **(info or {})}
         if neo_cleanup is not None:
             result["neo_cleanup"] = neo_cleanup
         if neo_upsert is not None:
             result["neo_upsert"] = neo_upsert
-        result["neo"] = neo_upsert or neo_cleanup or {"ok": True, "skipped": True}
+
+        # For keyword rename: neo_upsert/neo_cleanup are both None (keyword not in
+        # NEO_SYNCABLE_COLS), so the fallback {"ok": True, "skipped": True} would be
+        # misleading when propagation failed.  Override with a truthful summary.
+        if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
+            errors = info.get("keyword_rename_errors")
+            propagated = info.get("keyword_rename_propagated", 0)
+            if errors:
+                result["neo"] = {"ok": False, "propagated": propagated, "errors": errors}
+            else:
+                result["neo"] = {"ok": True, "propagated": propagated}
+        else:
+            result["neo"] = neo_upsert or neo_cleanup or {"ok": True, "skipped": True}
+
         return result
     except Exception as e:
         pg.rollback()

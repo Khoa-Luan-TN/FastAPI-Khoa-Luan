@@ -42,22 +42,27 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
     if not base:
         raise ValueError(f"keyword_name '{name}' produces empty slug")
 
-    # Exact name match → reuse
-    name_filter: dict = {"keyword_name": name, "is_deleted": {"$ne": True}}
+    # Build self-exclusion filter once; applied to BOTH name-match and slug-scan queries
+    _excl: dict = {}
     if exclude_id is not None:
         from bson import ObjectId
-        oid = ObjectId(str(exclude_id)) if ObjectId.is_valid(str(exclude_id)) else str(exclude_id)
-        name_filter["_id"] = {"$ne": oid}
-    existing = db["keyword"].find_one(name_filter, {"_id": 1, "keyword_slug": 1})
+        _oid = ObjectId(str(exclude_id)) if ObjectId.is_valid(str(exclude_id)) else str(exclude_id)
+        _excl["_id"] = {"$ne": _oid}
+
+    # Exact name match → reuse
+    existing = db["keyword"].find_one(
+        {"keyword_name": name, "is_deleted": {"$ne": True}, **_excl},
+        {"_id": 1, "keyword_slug": 1},
+    )
     if existing:
         return existing["keyword_slug"], str(existing["_id"])
 
-    # Collect active slugs that look like base or base_N
+    # Collect active slugs that look like base or base_N (excluding self to avoid self-blocking)
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
     taken = {
         doc["keyword_slug"]
         for doc in db["keyword"].find(
-            {"keyword_slug": {"$regex": pattern}, "is_deleted": {"$ne": True}},
+            {"keyword_slug": {"$regex": pattern}, "is_deleted": {"$ne": True}, **_excl},
             {"keyword_slug": 1},
         )
         if doc.get("keyword_slug")
