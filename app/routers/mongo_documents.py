@@ -179,6 +179,17 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     _user_normalize_and_validate(col, body, is_create=False)
     _handle_keyword_update(col, body, id_filter, actor)
 
+    # chunk_keyword: reject if keyword_id being set is not a valid business id
+    if col == "chunk_keyword" and "keyword_id" in body:
+        biz_kw_id = str(body["keyword_id"] or "").strip()
+        if not biz_kw_id.startswith("kw_"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"chunk_keyword.keyword_id must be a business keyword_id (kw_<slug>), got: '{biz_kw_id}'",
+            )
+        if not db["keyword"].find_one({"keyword_id": biz_kw_id, "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"keyword '{biz_kw_id}' not found or is deleted")
+
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None

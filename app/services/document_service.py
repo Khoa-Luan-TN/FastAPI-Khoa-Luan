@@ -85,6 +85,30 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if body.get("is_deleted") is True:
         body["deleted_at"] = now
 
+    # keyword: resolve slug + set keyword_id before insert so Mongo doc is complete
+    if col == "keyword" and not body.get("is_deleted"):
+        from app.services.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
+        kw_name = str(body.get("keyword_name") or "").strip()
+        if not kw_name:
+            raise HTTPException(status_code=422, detail="keyword_name is required")
+        kw_slug, existing_biz_id = _resolve_keyword_slug(db, kw_name)
+        if existing_biz_id:
+            raise HTTPException(status_code=409, detail=f"keyword_name '{kw_name}' already exists")
+        enforce_canonical_name_precedence(db, kw_name, actor)
+        body["keyword_slug"] = kw_slug
+        body["keyword_id"] = f"kw_{kw_slug}"
+
+    # chunk_keyword: reject if keyword_id is not a valid business id
+    if col == "chunk_keyword":
+        biz_kw_id = str(body.get("keyword_id") or "").strip()
+        if not biz_kw_id.startswith("kw_"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"chunk_keyword.keyword_id must be a business keyword_id (kw_<slug>), got: '{biz_kw_id}'",
+            )
+        if not db["keyword"].find_one({"keyword_id": biz_kw_id, "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"keyword '{biz_kw_id}' not found or is deleted")
+
     result = db[col].insert_one(body)
     inserted_doc = db[col].find_one({"_id": result.inserted_id})
 
@@ -95,12 +119,5 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         if col == "user" and sync.get("ok") and sync.get("pg_id"):
             pg_user_id = str(sync["pg_id"])
             db[col].update_one({"_id": result.inserted_id}, {"$set": {"user_id": pg_user_id}})
-
-        if col == "keyword" and sync.get("ok") and sync.get("pg_id"):
-            kw_id = str(sync["pg_id"])  # "kw_<slug>"
-            db[col].update_one(
-                {"_id": result.inserted_id},
-                {"$set": {"keyword_id": kw_id, "keyword_slug": kw_id[3:]}},
-            )
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
