@@ -52,10 +52,11 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
     # Exact name match → reuse
     existing = db["keyword"].find_one(
         {"keyword_name": name, "is_deleted": {"$ne": True}, **_excl},
-        {"_id": 1, "keyword_slug": 1},
+        {"_id": 1, "keyword_slug": 1, "keyword_id": 1},
     )
     if existing:
-        return existing["keyword_slug"], str(existing["_id"])
+        biz_id = existing.get("keyword_id") or f"kw_{existing['keyword_slug']}"
+        return existing["keyword_slug"], biz_id
 
     # Collect active slugs that look like base or base_N (excluding self to avoid self-blocking)
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"

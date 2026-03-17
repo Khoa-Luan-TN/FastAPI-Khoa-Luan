@@ -96,4 +96,11 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             pg_user_id = str(sync["pg_id"])
             db[col].update_one({"_id": result.inserted_id}, {"$set": {"user_id": pg_user_id}})
 
+        if col == "keyword" and sync.get("ok") and sync.get("pg_id"):
+            kw_id = str(sync["pg_id"])  # "kw_<slug>"
+            db[col].update_one(
+                {"_id": result.inserted_id},
+                {"$set": {"keyword_id": kw_id, "keyword_slug": kw_id[3:]}},
+            )
+
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}

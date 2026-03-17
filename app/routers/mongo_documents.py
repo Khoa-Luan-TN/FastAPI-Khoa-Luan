@@ -204,6 +204,12 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             pg_user_id = str(sync["pg_id"])
             db[col].update_one(id_filter, {"$set": {"user_id": pg_user_id}})
 
+    # Back-fill keyword_id in Mongo if it was missing (keyword_slug already set correctly
+    # by _handle_keyword_update; only keyword_id may be absent for legacy docs)
+    if col == "keyword" and sync.get("ok") and sync.get("pg_id"):
+        if not (updated_doc or {}).get("keyword_id"):
+            db[col].update_one(id_filter, {"$set": {"keyword_id": str(sync["pg_id"])}})
+
     return {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
 
 @router.delete("/documents/{collection_name}/{oid}", summary="Soft delete document (generic)")

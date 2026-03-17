@@ -1,6 +1,5 @@
 # app/services/sync_service.py
 import re
-import uuid as _uuid
 from typing import Any, Optional
 
 from bson import ObjectId
@@ -315,21 +314,17 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not keyword_name:
             raise ValueError("keyword missing keyword_name")
         if not keyword_slug:
-            import re as _re, unicodedata as _ud
-            _s = _ud.normalize("NFKD", keyword_name.lower())
-            _s = "".join(c for c in _s if not _ud.combining(c))
-            _s = _s.replace("đ", "d")
-            keyword_slug = _re.sub(r"[^a-z0-9]+", "-", _s).strip("-")
+            from app.services.keyword_alias_service import _resolve_keyword_slug
+            keyword_slug, _ = _resolve_keyword_slug(db, keyword_name)
 
         # Upsert standalone Keyword row by mongo_id.
-        # keyword_id has NO server-side trigger/sequence — always application-generated.
+        # keyword_id is deterministic: "kw_" + keyword_slug (set on first insert, preserved on rename).
         obj = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if obj:
             old_keyword_name = obj.keyword_name  # capture before overwrite
             obj.keyword_name = keyword_name
             obj.keyword_slug = keyword_slug
             pg.flush()
-            # No pg.refresh() needed — keyword_id is app-generated, already known.
             renamed = old_keyword_name != keyword_name
             ret = {
                 "op": "update",
@@ -357,8 +352,9 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 "neo_payload": {"id": dup.keyword_id, "name": keyword_name},
             }
 
-        # No existing row — generate a UUID keyword_id application-side.
-        new_kw_id = str(_uuid.uuid4())
+        # No existing row — use business keyword_id from Mongo doc if present,
+        # otherwise generate deterministically from resolved slug.
+        new_kw_id = (doc.get("keyword_id") or "").strip() or f"kw_{keyword_slug}"
         obj = pg_models.Keyword(
             keyword_id=new_kw_id,
             keyword_name=keyword_name,
@@ -367,7 +363,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         )
         pg.add(obj)
         pg.flush()
-        # No pg.refresh() needed — we already know keyword_id = new_kw_id.
+        # keyword_id is deterministic: "kw_" + resolved slug.
         return {
             "op": "insert",
             "pg_id": new_kw_id,
@@ -382,26 +378,31 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not pg_chunk_id:
             raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
 
-        # Resolve keyword from Mongo keyword collection
-        keyword_ref = str(doc.get("keyword_id") or "").strip()
-        if not keyword_ref:
+        # keyword_id in Mongo chunk_keyword is the business keyword_id (kw_<slug>)
+        business_kw_id = str(doc.get("keyword_id") or "").strip()
+        if not business_kw_id:
             raise ValueError("chunk_keyword missing keyword_id")
-        kw_doc = _mongo_find_by_oid_or_str(db, "keyword", keyword_ref)
+
+        # Look up Mongo keyword by business keyword_id field (not Mongo _id)
+        kw_doc = db["keyword"].find_one({"keyword_id": business_kw_id, "is_deleted": {"$ne": True}})
         if not kw_doc:
-            raise ValueError(f"keyword '{keyword_ref}' not found")
+            raise ValueError(f"keyword with keyword_id='{business_kw_id}' not found in Mongo")
         keyword_name = (kw_doc.get("keyword_name") or "").strip()
         if not keyword_name:
-            raise ValueError(f"keyword '{keyword_ref}' has no keyword_name")
+            raise ValueError(f"keyword '{business_kw_id}' has no keyword_name")
 
-        # Ensure the Keyword row exists in PG (upsert by mongo keyword _id)
-        kw_mongo_id = str(kw_doc["_id"])
-        pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, kw_mongo_id)
+        # Ensure the Keyword row exists in PG — direct lookup by business keyword_id
+        pg_kw = pg.query(pg_models.Keyword).filter(
+            pg_models.Keyword.keyword_id == business_kw_id
+        ).first()
         if not pg_kw:
             _upsert_one_to_pg(db, pg, "keyword", kw_doc)
-            pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, kw_mongo_id)
+            pg_kw = pg.query(pg_models.Keyword).filter(
+                pg_models.Keyword.keyword_id == business_kw_id
+            ).first()
         if not pg_kw:
-            raise ValueError(f"keyword '{keyword_ref}' could not be synced to PG")
-        pg_keyword_id = pg_kw.keyword_id
+            raise ValueError(f"keyword '{business_kw_id}' could not be synced to PG")
+        pg_keyword_id = pg_kw.keyword_id  # = business_kw_id
 
         keyword_key = f"{pg_chunk_id}::{keyword_name}"
         _neo = {"id": keyword_key, "name": keyword_name, "parent_id": pg_chunk_id}

@@ -574,8 +574,10 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
     # with this new keyword_name before inserting
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
+    business_kw_id = f"kw_{keyword_slug}"
     now = _now()
     doc = {
+        "keyword_id": business_kw_id,
         "keyword_name": keyword_name,
         "keyword_slug": keyword_slug,
         "aliases": [],
@@ -586,8 +588,8 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
         "created_by": actor,
         "updated_by": actor,
     }
-    r = db["keyword"].insert_one(doc)
-    return str(r.inserted_id), "insert"
+    db["keyword"].insert_one(doc)
+    return business_kw_id, "insert"
 
 
 def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
