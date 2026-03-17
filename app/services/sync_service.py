@@ -325,18 +325,22 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         # keyword_id has NO server-side trigger/sequence — always application-generated.
         obj = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if obj:
+            old_keyword_name = obj.keyword_name  # capture before overwrite
             obj.keyword_name = keyword_name
             obj.keyword_slug = keyword_slug
             pg.flush()
             # No pg.refresh() needed — keyword_id is app-generated, already known.
-            return {
+            renamed = old_keyword_name != keyword_name
+            ret = {
                 "op": "update",
                 "pg_id": obj.keyword_id,
                 "keyword_name": keyword_name,
-                # keyword col is NOT in NEO_SYNCABLE_COLS; neo_payload is never consumed
-                # but kept for observability in the returned info dict.
                 "neo_payload": {"id": obj.keyword_id, "name": keyword_name},
             }
+            if renamed:
+                ret["renamed"] = True
+                ret["old_keyword_name"] = old_keyword_name
+            return ret
 
         # Fallback: lookup by keyword_name to avoid duplicates
         dup = pg.query(pg_models.Keyword).filter(
@@ -534,6 +538,30 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                             info,
                             emb.get("embedding") if isinstance(emb, dict) else None,
                         )
+
+        # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──
+        # keyword is NOT in NEO_SYNCABLE_COLS (standalone sync skips Neo),
+        # but a rename must rebuild every "{chunk_id}::{keyword_name}" node.
+        if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
+            old_name = info["old_keyword_name"]
+            new_name = info["keyword_name"]
+            pg_kw_id = info["pg_id"]
+            ck_rows = pg.query(pg_models.ChunkKeyword).filter(
+                pg_models.ChunkKeyword.keyword_id == pg_kw_id
+            ).all()
+            rename_ok = 0
+            rename_errors = []
+            for ck in ck_rows:
+                cid = ck.chunk_id
+                del_r = detach_delete_entity("keyword", f"{cid}::{old_name}")
+                ins_r = neo_sync_upsert("keyword", {"id": f"{cid}::{new_name}", "name": new_name, "parent_id": cid})
+                if del_r.get("ok") and ins_r.get("ok"):
+                    rename_ok += 1
+                else:
+                    rename_errors.append({"chunk_id": cid, "del": del_r, "ins": ins_r})
+            info["keyword_rename_propagated"] = rename_ok
+            if rename_errors:
+                info["keyword_rename_errors"] = rename_errors
 
         neo_cleanup: Optional[dict] = None
         neo_upsert: Optional[dict] = None

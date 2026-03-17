@@ -491,19 +491,33 @@ def _ensure_keyword_related_indexes(db) -> None:
     except Exception:
         pass
 
+    # keyword_slug must be unique among active keywords (application resolves collisions
+    # with _1, _2 suffixes before insert; DB index enforces the invariant)
     try:
-        db["keyword"].create_index("keyword_slug")
+        db["keyword"].drop_index("keyword_slug_1")
     except Exception:
         pass
-
-    # Drop old non-partial unique index if it exists, then recreate as partial
     try:
         db["keyword"].drop_index("keyword_slug_1_keyword_name_1")
     except Exception:
         pass
     try:
         db["keyword"].create_index(
-            [("keyword_slug", 1), ("keyword_name", 1)],
+            "keyword_slug",
+            unique=True,
+            partialFilterExpression=_ACTIVE,
+        )
+    except Exception:
+        pass
+
+    # keyword_name must also be unique among active keywords
+    try:
+        db["keyword"].drop_index("keyword_name_1")
+    except Exception:
+        pass
+    try:
+        db["keyword"].create_index(
+            "keyword_name",
             unique=True,
             partialFilterExpression=_ACTIVE,
         )
@@ -543,25 +557,21 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
     """
     Return (keyword_id, op) where op in {"insert", "noop"}.
     Dedupe rules:
-      - If same slug AND same name exists → reuse.
-      - If same slug but different name → create new.
-      - If no matching slug → create new.
+      - Active keyword with same keyword_name → reuse (noop).
+      - Active keyword with same base slug but different name → assign suffix slug (_1, _2, …).
+      - No slug/name match → insert with resolved slug.
     """
-    keyword_slug = _slugify_vi(keyword_name)
-    if not keyword_slug:
-        raise ValueError(f"keyword_name '{keyword_name}' produces empty slug")
+    from app.services.keyword_alias_service import (
+        _resolve_keyword_slug,
+        enforce_canonical_name_precedence,
+    )
 
-    candidates = list(db["keyword"].find(
-        {"keyword_slug": keyword_slug, "is_deleted": {"$ne": True}},
-        {"_id": 1, "keyword_name": 1},
-    ))
-    for c in candidates:
-        if c.get("keyword_name") == keyword_name:
-            return str(c["_id"]), "noop"
+    keyword_slug, existing_id = _resolve_keyword_slug(db, keyword_name)
+    if existing_id:
+        return existing_id, "noop"
 
     # Enforce canonical-name-wins: soft-delete any active alias that collides
     # with this new keyword_name before inserting
-    from app.services.keyword_alias_service import enforce_canonical_name_precedence
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
     now = _now()

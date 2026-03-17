@@ -27,6 +27,53 @@ def _slugify_vi(s: str) -> str:
 
 # ===================== INDEXES =====================
 
+def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[str, str | None]:
+    """
+    Returns (slug, existing_id_or_None).
+    - existing_id is not None  → active keyword with same keyword_name already exists; reuse it.
+    - existing_id is None      → no name match; returned slug is the next free unique slug
+                                 among active keywords (base, base_1, base_2, …).
+
+    exclude_id: skip this id when checking for existing name match.
+    Used during rename so the keyword being renamed does not block itself.
+    """
+    name = keyword_name.strip()
+    base = _slugify_vi(name)
+    if not base:
+        raise ValueError(f"keyword_name '{name}' produces empty slug")
+
+    # Exact name match → reuse
+    name_filter: dict = {"keyword_name": name, "is_deleted": {"$ne": True}}
+    if exclude_id is not None:
+        from bson import ObjectId
+        oid = ObjectId(str(exclude_id)) if ObjectId.is_valid(str(exclude_id)) else str(exclude_id)
+        name_filter["_id"] = {"$ne": oid}
+    existing = db["keyword"].find_one(name_filter, {"_id": 1, "keyword_slug": 1})
+    if existing:
+        return existing["keyword_slug"], str(existing["_id"])
+
+    # Collect active slugs that look like base or base_N
+    pattern = f"^{re.escape(base)}(_[0-9]+)?$"
+    taken = {
+        doc["keyword_slug"]
+        for doc in db["keyword"].find(
+            {"keyword_slug": {"$regex": pattern}, "is_deleted": {"$ne": True}},
+            {"keyword_slug": 1},
+        )
+        if doc.get("keyword_slug")
+    }
+
+    if base not in taken:
+        return base, None
+
+    i = 1
+    while True:
+        candidate = f"{base}_{i}"
+        if candidate not in taken:
+            return candidate, None
+        i += 1
+
+
 def ensure_keyword_alias_indexes(db) -> None:
     """Create keyword_alias collection indexes. Safe to call multiple times."""
     _ACTIVE = {"is_deleted": {"$ne": True}}
@@ -151,7 +198,6 @@ def handle_keyword_rename_cleanup(
     if not new_name:
         raise ValueError("keyword_name cannot be empty")
 
-    new_slug = _slugify_vi(new_name)
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
     # Reject if another active keyword already owns this name
@@ -162,6 +208,9 @@ def handle_keyword_rename_cleanup(
     })
     if conflict:
         raise ValueError(f"keyword_name '{new_name}' already exists")
+
+    # Resolve unique slug: pass exclude_id so this keyword doesn't block its own base slug
+    new_slug, _ = _resolve_keyword_slug(db, new_name, exclude_id=kw_oid)
 
     now = _now()
 
