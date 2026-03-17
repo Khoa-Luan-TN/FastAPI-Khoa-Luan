@@ -62,7 +62,8 @@ TABLE_MODEL_MAP = {
     "topic": models.Topic,
     "lesson": models.Lesson,
     "chunk": models.Chunk,
-    "keyword": models.Keyword,  # PK ghép (chunk_id, keyword_name)
+    "keyword": models.Keyword,          # PK keyword_id (server-generated)
+    "chunk_keyword": models.ChunkKeyword,  # PK ghép (chunk_id, keyword_id)
     "user": models.User,
 }
 
@@ -160,7 +161,7 @@ def list_rows(
 def get_row(
     db: db_dependency,
     table_name: str = Path(...),
-    pk: str = Path(..., description="PK string. For keyword use chunk_id::keyword_name"),
+    pk: str = Path(..., description="PK string. For chunk_keyword use chunk_id::keyword_id"),
 ):
     model = _get_model(table_name)
     obj = _get_one_by_pk(db, model, pk)

@@ -409,7 +409,11 @@ def _fetch_chunks_by_scope(
 
     chunk_ids = [r["chunk_id"] for r in rows]
     kw_rows = pg.execute(
-        sql_text("SELECT chunk_id, keyword_name FROM keyword WHERE chunk_id = ANY(:ids)"),
+        sql_text("""
+            SELECT ck.chunk_id, k.keyword_name
+            FROM chunk_keyword ck JOIN keyword k ON k.keyword_id = ck.keyword_id
+            WHERE ck.chunk_id = ANY(:ids)
+        """),
         {"ids": chunk_ids},
     ).all() if chunk_ids else []
     kw_map: Dict[str, List[str]] = {}
@@ -476,7 +480,11 @@ def _enrich_chunks(
     rows = _order_rows_by_input_ids(rows, chunk_ids, "chunk_id")
 
     kw_rows = pg.execute(
-        sql_text("SELECT chunk_id, keyword_name FROM keyword WHERE chunk_id = ANY(:ids)"),
+        sql_text("""
+            SELECT ck.chunk_id, k.keyword_name
+            FROM chunk_keyword ck JOIN keyword k ON k.keyword_id = ck.keyword_id
+            WHERE ck.chunk_id = ANY(:ids)
+        """),
         {"ids": chunk_ids},
     ).all()
     kw_map: Dict[str, List[str]] = {}
@@ -658,7 +666,11 @@ def _from_keyword_only(pg: Session, execution: ExecutionResult) -> List[ResultIt
     ).mappings().all()
 
     kw_rows = pg.execute(
-        sql_text("SELECT chunk_id, keyword_name FROM keyword WHERE chunk_id = ANY(:ids)"),
+        sql_text("""
+            SELECT ck.chunk_id, k.keyword_name
+            FROM chunk_keyword ck JOIN keyword k ON k.keyword_id = ck.keyword_id
+            WHERE ck.chunk_id = ANY(:ids)
+        """),
         {"ids": top_ids},
     ).all()
     kw_map: Dict[str, List[str]] = {}

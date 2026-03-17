@@ -5,7 +5,8 @@ from app.services.postgre_client import Base
 
 # NOTE:
 # - Các id (class_id/subject_id/...) bạn sinh bằng trigger -> dùng server_default=FetchedValue()
-# - Keyword: PK ghép (chunk_id, keyword_name) -> KHÔNG có keyword_id
+# - Keyword: PK là keyword_id — KHÔNG có trigger/sequence trong DB, ứng dụng tự sinh UUID
+# - ChunkKeyword: bảng nối chunk - keyword, PK ghép (chunk_id, keyword_id)
 
 class Class(Base):
     __tablename__ = "class"
@@ -66,9 +67,18 @@ class Chunk(Base):
 
 class Keyword(Base):
     __tablename__ = "keyword"
-    # PRIMARY KEY (chunk_id, keyword_name)
+    # keyword_id has NO trigger/sequence in the DB — the application generates it
+    # (UUID string). Do NOT use server_default=FetchedValue() or eager_defaults here.
+    keyword_id = Column(String, primary_key=True, index=True)
+    keyword_name = Column(String, nullable=False, unique=True)
+    keyword_slug = Column(String, nullable=False)
+    mongo_id = Column(String, unique=True, nullable=True)
+
+
+class ChunkKeyword(Base):
+    __tablename__ = "chunk_keyword"
     chunk_id = Column(String, ForeignKey("chunk.chunk_id", ondelete="CASCADE"), primary_key=True)
-    keyword_name = Column(String, primary_key=True)
+    keyword_id = Column(String, ForeignKey("keyword.keyword_id", ondelete="CASCADE"), primary_key=True)
     mongo_id = Column(String, unique=True, nullable=True)
 
 

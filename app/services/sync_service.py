@@ -1,5 +1,6 @@
 # app/services/sync_service.py
 import re
+import uuid as _uuid
 from typing import Any, Optional
 
 from bson import ObjectId
@@ -310,14 +311,64 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
+        keyword_slug = (doc.get("keyword_slug") or "").strip()
         if not keyword_name:
             raise ValueError("keyword missing keyword_name")
-        # Standalone keyword — no chunk context in Mongo keyword collection.
-        # PG Keyword rows are written via chunk_keyword sync instead.
+        if not keyword_slug:
+            import re as _re, unicodedata as _ud
+            _s = _ud.normalize("NFKD", keyword_name.lower())
+            _s = "".join(c for c in _s if not _ud.combining(c))
+            _s = _s.replace("đ", "d")
+            keyword_slug = _re.sub(r"[^a-z0-9]+", "-", _s).strip("-")
+
+        # Upsert standalone Keyword row by mongo_id.
+        # keyword_id has NO server-side trigger/sequence — always application-generated.
+        obj = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
+        if obj:
+            obj.keyword_name = keyword_name
+            obj.keyword_slug = keyword_slug
+            pg.flush()
+            # No pg.refresh() needed — keyword_id is app-generated, already known.
+            return {
+                "op": "update",
+                "pg_id": obj.keyword_id,
+                "keyword_name": keyword_name,
+                # keyword col is NOT in NEO_SYNCABLE_COLS; neo_payload is never consumed
+                # but kept for observability in the returned info dict.
+                "neo_payload": {"id": obj.keyword_id, "name": keyword_name},
+            }
+
+        # Fallback: lookup by keyword_name to avoid duplicates
+        dup = pg.query(pg_models.Keyword).filter(
+            pg_models.Keyword.keyword_name == keyword_name,
+        ).first()
+        if dup:
+            dup.mongo_id = mongo_id
+            dup.keyword_slug = keyword_slug
+            pg.flush()
+            return {
+                "op": "update",
+                "pg_id": dup.keyword_id,
+                "keyword_name": keyword_name,
+                "neo_payload": {"id": dup.keyword_id, "name": keyword_name},
+            }
+
+        # No existing row — generate a UUID keyword_id application-side.
+        new_kw_id = str(_uuid.uuid4())
+        obj = pg_models.Keyword(
+            keyword_id=new_kw_id,
+            keyword_name=keyword_name,
+            keyword_slug=keyword_slug,
+            mongo_id=mongo_id,
+        )
+        pg.add(obj)
+        pg.flush()
+        # No pg.refresh() needed — we already know keyword_id = new_kw_id.
         return {
-            "op": "noop",
+            "op": "insert",
+            "pg_id": new_kw_id,
             "keyword_name": keyword_name,
-            "neo_payload": {"id": mongo_id, "name": keyword_name},
+            "neo_payload": {"id": new_kw_id, "name": keyword_name},
         }
 
     if col == "chunk_keyword":
@@ -327,7 +378,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not pg_chunk_id:
             raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
 
-        # Resolve keyword_name from Mongo keyword collection
+        # Resolve keyword from Mongo keyword collection
         keyword_ref = str(doc.get("keyword_id") or "").strip()
         if not keyword_ref:
             raise ValueError("chunk_keyword missing keyword_id")
@@ -338,20 +389,30 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not keyword_name:
             raise ValueError(f"keyword '{keyword_ref}' has no keyword_name")
 
+        # Ensure the Keyword row exists in PG (upsert by mongo keyword _id)
+        kw_mongo_id = str(kw_doc["_id"])
+        pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, kw_mongo_id)
+        if not pg_kw:
+            _upsert_one_to_pg(db, pg, "keyword", kw_doc)
+            pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, kw_mongo_id)
+        if not pg_kw:
+            raise ValueError(f"keyword '{keyword_ref}' could not be synced to PG")
+        pg_keyword_id = pg_kw.keyword_id
+
         keyword_key = f"{pg_chunk_id}::{keyword_name}"
         _neo = {"id": keyword_key, "name": keyword_name, "parent_id": pg_chunk_id}
 
-        # Primary lookup: by mongo_id (handles renames correctly)
-        existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
-        if existing:
-            old_key = f"{existing.chunk_id}::{existing.keyword_name}"
+        # Primary lookup: by mongo_id on chunk_keyword table
+        existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, mongo_id)
+        if existing_ck:
+            old_key = f"{existing_ck.chunk_id}::{keyword_name}"
             if old_key != keyword_key:
-                # Identity changed (rename) — replace PG row, signal Neo cleanup
+                # Chunk reassigned — replace row
                 old_neo_id = old_key
-                pg.delete(existing)
+                pg.delete(existing_ck)
                 pg.flush()
-                obj = pg_models.Keyword(chunk_id=pg_chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
-                pg.add(obj)
+                ck = pg_models.ChunkKeyword(chunk_id=pg_chunk_id, keyword_id=pg_keyword_id, mongo_id=mongo_id)
+                pg.add(ck)
                 pg.flush()
                 return {
                     "op": "recreate",
@@ -363,17 +424,18 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 }
             return {"op": "noop", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
-        # Fallback: lookup by (chunk_id, keyword_name) to avoid duplicates from legacy data
-        dup = pg.query(pg_models.Keyword).filter(
-            pg_models.Keyword.chunk_id == pg_chunk_id,
-            pg_models.Keyword.keyword_name == keyword_name,
+        # Fallback: lookup by composite PK (chunk_id, keyword_id)
+        dup = pg.query(pg_models.ChunkKeyword).filter(
+            pg_models.ChunkKeyword.chunk_id == pg_chunk_id,
+            pg_models.ChunkKeyword.keyword_id == pg_keyword_id,
         ).first()
         if dup:
-            dup.mongo_id = mongo_id
+            if dup.mongo_id is None:
+                dup.mongo_id = mongo_id
             return {"op": "update", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
-        obj = pg_models.Keyword(chunk_id=pg_chunk_id, keyword_name=keyword_name, mongo_id=mongo_id)
-        pg.add(obj)
+        ck = pg_models.ChunkKeyword(chunk_id=pg_chunk_id, keyword_id=pg_keyword_id, mongo_id=mongo_id)
+        pg.add(ck)
         pg.flush()
         return {"op": "insert", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
@@ -434,10 +496,15 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         # ── chunk_keyword soft-delete: delete PG row first, then Neo ──────────
         if col == "chunk_keyword" and is_deleted:
             with pg.begin():
-                existing = _pg_get_by_mongo_id(pg, pg_models.Keyword, str(doc.get("_id")))
-                if existing:
-                    old_neo_id = f"{existing.chunk_id}::{existing.keyword_name}"
-                    pg.delete(existing)
+                existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, str(doc.get("_id")))
+                if existing_ck:
+                    # Resolve keyword_name for Neo node id
+                    pg_kw = pg.query(pg_models.Keyword).filter(
+                        pg_models.Keyword.keyword_id == existing_ck.keyword_id
+                    ).first()
+                    kw_name = pg_kw.keyword_name if pg_kw else ""
+                    old_neo_id = f"{existing_ck.chunk_id}::{kw_name}" if kw_name else None
+                    pg.delete(existing_ck)
                 else:
                     old_neo_id = None
 
