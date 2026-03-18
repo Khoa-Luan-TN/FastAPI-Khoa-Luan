@@ -534,11 +534,15 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     pg_id = info.get("pg_id")
                     if pg_id:
                         name = (info.get("neo_payload") or {}).get("name", "")
-                        emb = ensure_name_embedding(pg, col, pg_id, name=name)
-                        _attach_vec_to_neo_payload(
-                            info,
-                            emb.get("embedding") if isinstance(emb, dict) else None,
-                        )
+                        try:
+                            emb = ensure_name_embedding(pg, col, pg_id, name=name)
+                            _attach_vec_to_neo_payload(
+                                info,
+                                emb.get("embedding") if isinstance(emb, dict) else None,
+                            )
+                        except Exception:
+                            # Embedding is best-effort; PG commit and Neo sync must not be blocked.
+                            pass
 
         # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──
         # keyword is NOT in NEO_SYNCABLE_COLS (standalone sync skips Neo),

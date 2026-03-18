@@ -13,7 +13,11 @@ from urllib.parse import quote
 from bson import ObjectId
 from dotenv import load_dotenv
 from openpyxl import load_workbook
-
+from app.services.keyword_alias_service import ensure_keyword_alias_indexes
+from app.services.keyword_alias_service import (
+        _resolve_keyword_slug,
+        enforce_canonical_name_precedence,
+    )
 
 def _load_env() -> None:
     env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
@@ -382,7 +386,6 @@ def _get_lesson_num_from_ref(db, lesson_ref: str, ctx: Dict[str, Any]) -> str:
 
 
 def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: Dict[str, Any], ctx: Dict[str, Any]):
-    # Cache slug cho class để subject dùng nhanh
     if col == "class":
         cn = doc.get("class_name")
         if cn:
@@ -392,7 +395,6 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
     if col not in AUTO_MINIO_COLS:
         return
 
-    # nếu user đã set minio trong excel (hoặc đã có) thì không override
     m = doc.get("minio")
     if isinstance(m, dict) and (m.get("object_key") or m.get("url")):
         return
@@ -480,19 +482,13 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         return
 
 def _ensure_keyword_related_indexes(db) -> None:
-    from app.services.keyword_alias_service import ensure_keyword_alias_indexes
     ensure_keyword_alias_indexes(db)
 
     _ACTIVE = {"is_deleted": {"$ne": True}}
-
-    # Drop legacy import_key unique index — keyword no longer uses import_key
     try:
         db["keyword"].drop_index("import_key_1")
     except Exception:
         pass
-
-    # keyword_slug must be unique among active keywords (application resolves collisions
-    # with _1, _2 suffixes before insert; DB index enforces the invariant)
     try:
         db["keyword"].drop_index("keyword_slug_1")
     except Exception:
@@ -554,24 +550,10 @@ def _ensure_keyword_related_indexes(db) -> None:
 # ===================== KEYWORD HELPERS =====================
 
 def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
-    """
-    Return (keyword_id, op) where op in {"insert", "noop"}.
-    Dedupe rules:
-      - Active keyword with same keyword_name → reuse (noop).
-      - Active keyword with same base slug but different name → assign suffix slug (_1, _2, …).
-      - No slug/name match → insert with resolved slug.
-    """
-    from app.services.keyword_alias_service import (
-        _resolve_keyword_slug,
-        enforce_canonical_name_precedence,
-    )
-
+    
     keyword_slug, existing_id = _resolve_keyword_slug(db, keyword_name)
     if existing_id:
         return existing_id, "noop"
-
-    # Enforce canonical-name-wins: soft-delete any active alias that collides
-    # with this new keyword_name before inserting
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
     business_kw_id = f"kw_{keyword_slug}"
@@ -674,27 +656,12 @@ def _import_keyword_rows(
     progress_state: Optional[Dict[str, Any]] = None,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
-    """
-    Two-phase keyword import.
-
-    Phase 1: import all keyword rows — resolve chunk/lesson/topic, create/reuse keywords,
-             build chunk_keyword and topic_bag links.  Alias generation is intentionally
-             deferred so that `generate_aliases(existing_keyword_names=...)` sees the
-             complete active keyword collection, not a partially-imported set.
-
-    Phase 2: after every keyword row has been processed, generate Gemini aliases for
-             each newly inserted keyword in this run.  Existing/reused keywords are
-             left untouched.
-    """
 
     inserted = reused = synced = 0
     errors: List[Dict[str, Any]] = []
-    # keyword_id -> keyword_name, only for keywords inserted in this run
     new_keywords: Dict[str, str] = {}
-    # unique keyword IDs returned as "noop" (already existed in DB)
     reused_keyword_ids: set[str] = set()
 
-    # ── Phase 1: import rows ──────────────────────────────────────────────────
     for rec in rows:
         rowno = rec.pop("_row", None)
         try:
@@ -754,9 +721,7 @@ def _import_keyword_rows(
             topic_name: Optional[str] = topic_doc.get("topic_name") or None
 
             keyword_id, kw_op = _find_or_create_keyword(db, keyword_name, actor)
-            # Track and count immediately — before link steps that might fail,
-            # so phase-2 alias generation and report counters stay consistent
-            # even if _upsert_chunk_keyword or _upsert_topic_bag later throws.
+
             if kw_op == "insert":
                 new_keywords.setdefault(keyword_id, keyword_name)
                 inserted += 1
@@ -795,9 +760,6 @@ def _import_keyword_rows(
                     "message": "Đang import keyword...",
                 })
 
-    # ── Phase 2: alias generation (temporarily disabled — Gemini quota exhausted) ──
-    # total_rows was pre-allocated as len(rows) * 2 by the caller.
-    # Consume the full phase-2 budget in one step to keep progress monotonic.
     alias_processed_keywords = 0
     alias_inserted = 0
     alias_skipped = len(reused_keyword_ids - new_keywords.keys())
@@ -845,15 +807,10 @@ def import_excel_to_mongo(
     all_cols = set(IMPORT_ORDER) | set(cols)
     id_map: Dict[str, Dict[str, str]] = {c: {} for c in all_cols}
 
-    # ctx cache để build minio theo ref (không cần query lại quá nhiều)
     ctx: Dict[str, Any] = {"class": {}, "subject": {}, "topic": {}, "lesson": {}}
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
-    # Pre-read all rows once; used for both processing and progress tracking.
-    # The keyword collection is allocated 2× its row count to cover both
-    # phase 1 (row import) and phase 2 (alias generation) without ever
-    # increasing total_rows mid-run (which would cause backward progress jumps).
     rows_by_col: Dict[str, List[Dict[str, Any]]] = {col: _read_sheet_rows(wb, col) for col in cols}
     total_rows: int = sum(
         len(r) * 2 if col == "keyword" else len(r)

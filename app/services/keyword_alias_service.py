@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from bson import ObjectId
+from app.services.gemini_alias_service import normalize_for_compare
 
 
 def _now():
@@ -28,28 +29,17 @@ def _slugify_vi(s: str) -> str:
 # ===================== INDEXES =====================
 
 def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[str, str | None]:
-    """
-    Returns (slug, existing_id_or_None).
-    - existing_id is not None  → active keyword with same keyword_name already exists; reuse it.
-    - existing_id is None      → no name match; returned slug is the next free unique slug
-                                 among active keywords (base, base_1, base_2, …).
-
-    exclude_id: skip this id when checking for existing name match.
-    Used during rename so the keyword being renamed does not block itself.
-    """
     name = keyword_name.strip()
     base = _slugify_vi(name)
     if not base:
         raise ValueError(f"keyword_name '{name}' produces empty slug")
 
-    # Build self-exclusion filter once; applied to BOTH name-match and slug-scan queries
     _excl: dict = {}
     if exclude_id is not None:
         from bson import ObjectId
         _oid = ObjectId(str(exclude_id)) if ObjectId.is_valid(str(exclude_id)) else str(exclude_id)
         _excl["_id"] = {"$ne": _oid}
 
-    # Exact name match → reuse
     existing = db["keyword"].find_one(
         {"keyword_name": name, "is_deleted": {"$ne": True}, **_excl},
         {"_id": 1, "keyword_slug": 1, "keyword_id": 1},
@@ -58,7 +48,6 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
         biz_id = existing.get("keyword_id") or f"kw_{existing['keyword_slug']}"
         return existing["keyword_slug"], biz_id
 
-    # Collect active slugs that look like base or base_N (excluding self to avoid self-blocking)
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
     taken = {
         doc["keyword_slug"]
@@ -81,7 +70,6 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
 
 
 def ensure_keyword_alias_indexes(db) -> None:
-    """Create keyword_alias collection indexes. Safe to call multiple times."""
     _ACTIVE = {"is_deleted": {"$ne": True}}
 
     try:
@@ -91,9 +79,8 @@ def ensure_keyword_alias_indexes(db) -> None:
     try:
         db["keyword_alias"].create_index("alias_norm")
     except Exception:
-        pass
+        pass    
 
-    # Unique partial index: one active alias_norm per keyword_id
     try:
         db["keyword_alias"].drop_index("keyword_id_1_alias_norm_1")
     except Exception:
@@ -111,12 +98,6 @@ def ensure_keyword_alias_indexes(db) -> None:
 # ===================== ALIAS ARRAY SYNC =====================
 
 def sync_keyword_alias_array(db, keyword_id: str, actor: str | None = None) -> list[str]:
-    """Mirror active keyword_alias docs to keyword.aliases.
-
-    Loads all active alias docs for this keyword, writes the alias_name list
-    back to keyword.aliases, and updates updated_at.
-    Returns the final alias list.
-    """
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
     active_aliases: list[str] = [
@@ -143,14 +124,6 @@ def enforce_canonical_name_precedence(
     new_keyword_name: str,
     actor: str,
 ) -> dict:
-    """Soft-delete any active keyword_alias whose alias_norm equals normalize(new_keyword_name).
-
-    Call this whenever a keyword_name is created or renamed to enforce the rule that
-    canonical keyword names take precedence over any alias globally.
-
-    Returns: {"stale_aliases_deleted": int}
-    """
-    from app.services.gemini_alias_service import normalize_for_compare
 
     new_norm = normalize_for_compare(new_keyword_name)
     now = _now()
@@ -187,19 +160,6 @@ def handle_keyword_rename_cleanup(
     new_keyword_name: str,
     actor: str,
 ) -> dict:
-    """Pre-update alias cleanup for a keyword rename.
-
-    Enforces:
-    - new_keyword_name must not be empty
-    - no other ACTIVE keyword may already use this keyword_name
-    - any ACTIVE keyword_alias doc (on any keyword) whose alias_norm equals
-      normalize(new_keyword_name) is soft-deleted (canonical name wins globally)
-    - surviving active alias docs for this keyword have their denormalized
-      keyword_name field updated to the new canonical name
-
-    Returns: {"new_slug": str, "stale_aliases_deleted": int}
-    Raises ValueError on conflict (caller should map to 409).
-    """
     new_name = new_keyword_name.strip()
     if not new_name:
         raise ValueError("keyword_name cannot be empty")
@@ -242,19 +202,6 @@ def refresh_keyword_aliases(
     max_aliases: int = 5,
     model: str = "gemini-2.5-flash",
 ) -> dict:
-    """Generate and persist aliases for a newly created keyword via Gemini.
-
-    Uses only the fixed domain context already embedded in the alias prompt.
-    Intended to be called once per newly inserted keyword — not for existing ones.
-
-    Flow:
-    1. Call generate_aliases(context_text=None) — relies on fixed domain prompt only.
-    2. Insert alias docs for each filtered alias returned.
-    3. Mirror final aliases list to keyword.aliases.
-
-    Returns: {"inserted": int, "deleted": int, "final_aliases": list}
-    Best-effort — caller must catch exceptions.
-    """
     from app.services.gemini_alias_service import generate_aliases, normalize_for_compare
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id

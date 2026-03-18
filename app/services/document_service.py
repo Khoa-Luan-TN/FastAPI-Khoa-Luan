@@ -85,21 +85,33 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if body.get("is_deleted") is True:
         body["deleted_at"] = now
 
-    # keyword: resolve slug + set keyword_id before insert so Mongo doc is complete
-    if col == "keyword" and not body.get("is_deleted"):
-        from app.services.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
-        kw_name = str(body.get("keyword_name") or "").strip()
-        if not kw_name:
-            raise HTTPException(status_code=422, detail="keyword_name is required")
-        kw_slug, existing_biz_id = _resolve_keyword_slug(db, kw_name)
-        if existing_biz_id:
-            raise HTTPException(status_code=409, detail=f"keyword_name '{kw_name}' already exists")
-        enforce_canonical_name_precedence(db, kw_name, actor)
-        body["keyword_slug"] = kw_slug
-        body["keyword_id"] = f"kw_{kw_slug}"
+    # keyword: strip client-supplied business fields; always derive from keyword_name.
+    # keyword_id = "kw_" + resolved_slug is set once at create and NEVER changed after that.
+    if col == "keyword":
+        body.pop("keyword_id", None)
+        body.pop("keyword_slug", None)
+        if not body.get("is_deleted"):
+            from app.services.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
+            kw_name = str(body.get("keyword_name") or "").strip()
+            if not kw_name:
+                raise HTTPException(status_code=422, detail="keyword_name is required")
+            kw_slug, existing_biz_id = _resolve_keyword_slug(db, kw_name)
+            if existing_biz_id:
+                raise HTTPException(status_code=409, detail=f"keyword_name '{kw_name}' already exists")
+            enforce_canonical_name_precedence(db, kw_name, actor)
+            body["keyword_slug"] = kw_slug
+            body["keyword_id"] = f"kw_{kw_slug}"
 
-    # chunk_keyword: reject if keyword_id is not a valid business id
+    # chunk_keyword: validate both refs before Mongo write
     if col == "chunk_keyword":
+        from bson import ObjectId as _OID
+        chunk_ref = str(body.get("chunk_id") or "").strip()
+        if not chunk_ref:
+            raise HTTPException(status_code=422, detail="chunk_keyword.chunk_id is required")
+        _chunk_q = {"_id": _OID(chunk_ref), "is_deleted": {"$ne": True}} if _OID.is_valid(chunk_ref) else {"_id": chunk_ref, "is_deleted": {"$ne": True}}
+        if not db["chunk"].find_one(_chunk_q):
+            raise HTTPException(status_code=422, detail=f"chunk '{chunk_ref}' not found or is deleted")
+
         biz_kw_id = str(body.get("keyword_id") or "").strip()
         if not biz_kw_id.startswith("kw_"):
             raise HTTPException(
@@ -115,6 +127,21 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     sync = {"ok": True, "skipped": True}
     if sync_pg and inserted_doc:
         sync = sync_doc_to_postgres(db, col, inserted_doc)
+
+        if not sync.get("ok") and not sync.get("skipped"):
+            # Rollback Mongo insert. If sync_doc_to_postgres already partially committed
+            # to PG or Neo4j before failing, those writes are NOT reversed here — manual
+            # cleanup of PG/Neo may be required for the affected document.
+            try:
+                db[col].delete_one({"_id": result.inserted_id})
+                rolled_back = True
+            except Exception:
+                rolled_back = False
+            rb_note = "Mongo insert rolled back." if rolled_back else "Mongo rollback also failed — document may be orphaned."
+            raise HTTPException(
+                status_code=500,
+                detail=f"Sync failed: {sync.get('error', 'unknown')}. {rb_note} PG/Neo partial writes (if any) require manual cleanup.",
+            )
 
         if col == "user" and sync.get("ok") and sync.get("pg_id"):
             pg_user_id = str(sync["pg_id"])
