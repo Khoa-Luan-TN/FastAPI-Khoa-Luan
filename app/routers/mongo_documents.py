@@ -182,9 +182,9 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
 
     _user_normalize_and_validate(col, body, is_create=False)
 
-    # keyword: strip client-supplied business fields before any processing.
-    # keyword_id is stable (never regenerated after first insert).
-    # keyword_slug is derived — only _handle_keyword_update may set it, and only on rename.
+    # keyword: strip any client-supplied keyword_id/keyword_slug.
+    # Mongo keyword has no business keyword_id — identity is _id only.
+    # keyword_slug is derived; only _handle_keyword_update may set it on rename.
     if col == "keyword":
         body.pop("keyword_id", None)
         body.pop("keyword_slug", None)

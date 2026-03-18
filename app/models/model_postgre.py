@@ -5,7 +5,7 @@ from app.services.postgre_client import Base
 
 # NOTE:
 # - Các id (class_id/subject_id/...) bạn sinh bằng trigger -> dùng server_default=FetchedValue()
-# - Keyword: PK là keyword_id — KHÔNG có trigger/sequence trong DB, ứng dụng tự sinh UUID
+# - Keyword: PK là keyword_id — sinh bởi PostgreSQL BEFORE INSERT trigger ('kw_' || keyword_slug)
 # - ChunkKeyword: bảng nối chunk - keyword, PK ghép (chunk_id, keyword_id)
 
 class Class(Base):

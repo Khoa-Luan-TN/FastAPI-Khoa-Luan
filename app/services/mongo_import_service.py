@@ -606,15 +606,17 @@ def _upsert_topic_bag(
     db, topic_id: str, topic_name: Optional[str], keyword_id: str, keyword_name: str, actor: str
 ) -> str:
     """
-    Upsert topic_bag for topic_id, adding a keyword ref to keyword_refs array.
+    Upsert topic_bag for topic_id.
+    topic_id and keyword_refs[].keyword_id are stored as BSON ObjectId.
     keyword_refs stores [{keyword_id: ObjectId(<Mongo keyword _id>), keyword_name: <str>}].
     Returns op in {"insert", "update", "noop"}.
     """
+    topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
     now = _now()
     existing = db["topic_bag"].find_one(
-        {"topic_id": topic_id, "is_deleted": {"$ne": True}},
+        {"topic_id": topic_oid, "is_deleted": {"$ne": True}},
         {"_id": 1, "keyword_refs": 1},
     )
 
@@ -639,7 +641,7 @@ def _upsert_topic_bag(
         return "update"
 
     db["topic_bag"].insert_one({
-        "topic_id": topic_id,
+        "topic_id": topic_oid,
         "topic_name": topic_name,
         "keyword_refs": [{"keyword_id": kw_oid, "keyword_name": keyword_name}],
         "total_keywords": 1,
@@ -739,8 +741,10 @@ def _import_keyword_rows(
             _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
             if sync_one is not None:
                 try:
+                    _ck_chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
+                    _ck_kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
                     ck_doc = db["chunk_keyword"].find_one(
-                        {"chunk_id": chunk_id, "keyword_id": keyword_id, "is_deleted": {"$ne": True}}
+                        {"chunk_id": _ck_chunk_oid, "keyword_id": _ck_kw_oid, "is_deleted": {"$ne": True}}
                     )
                     if ck_doc:
                         sync_result = sync_one("chunk_keyword", ck_doc)
@@ -877,7 +881,7 @@ def import_excel_to_mongo(
                 if "minio" in doc and (doc["minio"] in ("", None)):
                     doc["minio"] = None
 
-                # resolve parent ref -> mongo _id string
+                # resolve parent ref -> Mongo _id stored as BSON ObjectId
                 if col in REF_MAP:
                     ref_col, target_field, parent_col = REF_MAP[col]
                     ref_key = str(rec.get(ref_col) or "").strip()
@@ -892,7 +896,8 @@ def import_excel_to_mongo(
                             raise ValueError(
                                 f"cannot resolve {ref_col}='{ref_key}' (parent '{parent_col}' not imported yet)"
                             )
-                        doc[target_field] = parent_id
+                        # store as BSON ObjectId so Mongo refs are real ObjectId, not strings
+                        doc[target_field] = ObjectId(parent_id) if ObjectId.is_valid(parent_id) else parent_id
 
                 # ====== AUTO ATTACH MINIO (subject/topic/lesson/chunk) ======
                 _auto_attach_minio(db, col, import_key, rec, doc, ctx)
