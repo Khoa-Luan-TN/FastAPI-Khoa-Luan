@@ -550,16 +550,14 @@ def _ensure_keyword_related_indexes(db) -> None:
 # ===================== KEYWORD HELPERS =====================
 
 def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
-    
-    keyword_slug, existing_id = _resolve_keyword_slug(db, keyword_name)
-    if existing_id:
-        return existing_id, "noop"
+    """Return (mongo_keyword_id_str, op) where mongo_keyword_id_str is str(keyword._id)."""
+    keyword_slug, existing_mongo_id = _resolve_keyword_slug(db, keyword_name)
+    if existing_mongo_id:
+        return existing_mongo_id, "noop"
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
-    business_kw_id = f"kw_{keyword_slug}"
     now = _now()
     doc = {
-        "keyword_id": business_kw_id,
         "keyword_name": keyword_name,
         "keyword_slug": keyword_slug,
         "aliases": [],
@@ -570,17 +568,21 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
         "created_by": actor,
         "updated_by": actor,
     }
-    db["keyword"].insert_one(doc)
-    return business_kw_id, "insert"
+    result = db["keyword"].insert_one(doc)
+    return str(result.inserted_id), "insert"
 
 
 def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
     """
     Upsert (chunk_id, keyword_id) pair into chunk_keyword.
+    chunk_id and keyword_id are stored as BSON ObjectId.
     Return op in {"insert", "noop"}.
     """
+    chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
+    kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
+
     existing = db["chunk_keyword"].find_one(
-        {"chunk_id": chunk_id, "keyword_id": keyword_id, "is_deleted": {"$ne": True}},
+        {"chunk_id": chunk_oid, "keyword_id": kw_oid, "is_deleted": {"$ne": True}},
         {"_id": 1},
     )
     if existing:
@@ -588,8 +590,8 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
 
     now = _now()
     db["chunk_keyword"].insert_one({
-        "chunk_id": chunk_id,
-        "keyword_id": keyword_id,
+        "chunk_id": chunk_oid,
+        "keyword_id": kw_oid,
         "is_deleted": False,
         "deleted_at": None,
         "created_at": now,
@@ -600,21 +602,25 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
     return "insert"
 
 
-def _upsert_topic_bag(db, topic_id: str, topic_name: Optional[str], keyword_id: str, actor: str) -> str:
+def _upsert_topic_bag(
+    db, topic_id: str, topic_name: Optional[str], keyword_id: str, keyword_name: str, actor: str
+) -> str:
     """
-    Upsert topic_bag for topic_id, adding keyword_id to keyword_ids array.
-    topic_name is stored for easier inspection in MongoDB.
+    Upsert topic_bag for topic_id, adding a keyword ref to keyword_refs array.
+    keyword_refs stores [{keyword_id: ObjectId(<Mongo keyword _id>), keyword_name: <str>}].
     Returns op in {"insert", "update", "noop"}.
     """
+    kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
+
     now = _now()
     existing = db["topic_bag"].find_one(
         {"topic_id": topic_id, "is_deleted": {"$ne": True}},
-        {"_id": 1, "keyword_ids": 1},
+        {"_id": 1, "keyword_refs": 1},
     )
 
     if existing:
-        before_ids = existing.get("keyword_ids") or []
-        if keyword_id in before_ids:
+        before_refs = existing.get("keyword_refs") or []
+        if any(r.get("keyword_id") == kw_oid for r in before_refs):
             return "noop"
         set_fields: Dict[str, Any] = {"updated_at": now, "updated_by": actor}
         if topic_name is not None:
@@ -622,20 +628,20 @@ def _upsert_topic_bag(db, topic_id: str, topic_name: Optional[str], keyword_id: 
         db["topic_bag"].update_one(
             {"_id": existing["_id"]},
             {
-                "$addToSet": {"keyword_ids": keyword_id},
+                "$push": {"keyword_refs": {"keyword_id": kw_oid, "keyword_name": keyword_name}},
                 "$set": set_fields,
             },
         )
         # recompute total_keywords
-        updated_doc = db["topic_bag"].find_one({"_id": existing["_id"]}, {"keyword_ids": 1})
-        total = len(updated_doc.get("keyword_ids") or [])
+        updated_doc = db["topic_bag"].find_one({"_id": existing["_id"]}, {"keyword_refs": 1})
+        total = len(updated_doc.get("keyword_refs") or [])
         db["topic_bag"].update_one({"_id": existing["_id"]}, {"$set": {"total_keywords": total}})
         return "update"
 
     db["topic_bag"].insert_one({
         "topic_id": topic_id,
         "topic_name": topic_name,
-        "keyword_ids": [keyword_id],
+        "keyword_refs": [{"keyword_id": kw_oid, "keyword_name": keyword_name}],
         "total_keywords": 1,
         "is_deleted": False,
         "deleted_at": None,
@@ -730,7 +736,7 @@ def _import_keyword_rows(
                 reused += 1
 
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
-            _upsert_topic_bag(db, topic_id, topic_name, keyword_id, actor)
+            _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
             if sync_one is not None:
                 try:
                     ck_doc = db["chunk_keyword"].find_one(

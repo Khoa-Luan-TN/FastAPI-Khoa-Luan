@@ -42,11 +42,11 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
 
     existing = db["keyword"].find_one(
         {"keyword_name": name, "is_deleted": {"$ne": True}, **_excl},
-        {"_id": 1, "keyword_slug": 1, "keyword_id": 1},
+        {"_id": 1, "keyword_slug": 1},
     )
     if existing:
-        biz_id = existing.get("keyword_id") or f"kw_{existing['keyword_slug']}"
-        return existing["keyword_slug"], biz_id
+        # Return Mongo _id as the identity reference (not PG business keyword_id)
+        return existing["keyword_slug"], str(existing["_id"])
 
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
     taken = {
@@ -97,13 +97,14 @@ def ensure_keyword_alias_indexes(db) -> None:
 
 # ===================== ALIAS ARRAY SYNC =====================
 
-def sync_keyword_alias_array(db, keyword_id: str, actor: str | None = None) -> list[str]:
-    kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
+def sync_keyword_alias_array(db, keyword_id, actor: str | None = None) -> list[str]:
+    kw_str = str(keyword_id)
+    kw_oid = ObjectId(kw_str) if ObjectId.is_valid(kw_str) else kw_str
 
     active_aliases: list[str] = [
         doc["alias_name"]
         for doc in db["keyword_alias"].find(
-            {"keyword_id": keyword_id, "is_deleted": {"$ne": True}},
+            {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
             {"alias_name": 1},
         )
         if doc.get("alias_name")
@@ -133,7 +134,7 @@ def enforce_canonical_name_precedence(
         {"_id": 1, "keyword_id": 1},
     ))
 
-    affected_keyword_ids: set[str] = set()
+    affected_keyword_ids: set = set()
     for alias_doc in stale:
         db["keyword_alias"].update_one(
             {"_id": alias_doc["_id"]},
@@ -185,7 +186,7 @@ def handle_keyword_rename_cleanup(
 
     # Update denormalized keyword_name on surviving active alias docs for this keyword
     db["keyword_alias"].update_many(
-        {"keyword_id": keyword_id, "is_deleted": {"$ne": True}},
+        {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
         {"$set": {"keyword_name": new_name, "updated_at": now, "updated_by": actor}},
     )
 
@@ -232,7 +233,7 @@ def refresh_keyword_aliases(
         norm = normalize_for_compare(alias_name)
         try:
             db["keyword_alias"].insert_one({
-                "keyword_id": keyword_id,
+                "keyword_id": kw_oid,
                 "keyword_name": keyword_name,
                 "alias_name": alias_name,
                 "alias_norm": norm,

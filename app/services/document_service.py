@@ -85,8 +85,8 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if body.get("is_deleted") is True:
         body["deleted_at"] = now
 
-    # keyword: strip client-supplied business fields; always derive from keyword_name.
-    # keyword_id = "kw_" + resolved_slug is set once at create and NEVER changed after that.
+    # keyword: strip client-supplied keyword_id/keyword_slug; always derive from keyword_name.
+    # PG trigger generates the business keyword_id (kw_<slug>) — Mongo does not store it.
     if col == "keyword":
         body.pop("keyword_id", None)
         body.pop("keyword_slug", None)
@@ -95,12 +95,11 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             kw_name = str(body.get("keyword_name") or "").strip()
             if not kw_name:
                 raise HTTPException(status_code=422, detail="keyword_name is required")
-            kw_slug, existing_biz_id = _resolve_keyword_slug(db, kw_name)
-            if existing_biz_id:
+            kw_slug, existing_mongo_id = _resolve_keyword_slug(db, kw_name)
+            if existing_mongo_id:
                 raise HTTPException(status_code=409, detail=f"keyword_name '{kw_name}' already exists")
             enforce_canonical_name_precedence(db, kw_name, actor)
             body["keyword_slug"] = kw_slug
-            body["keyword_id"] = f"kw_{kw_slug}"
 
     # chunk_keyword: validate both refs before Mongo write
     if col == "chunk_keyword":
@@ -112,14 +111,17 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         if not db["chunk"].find_one(_chunk_q):
             raise HTTPException(status_code=422, detail=f"chunk '{chunk_ref}' not found or is deleted")
 
-        biz_kw_id = str(body.get("keyword_id") or "").strip()
-        if not biz_kw_id.startswith("kw_"):
-            raise HTTPException(
-                status_code=422,
-                detail=f"chunk_keyword.keyword_id must be a business keyword_id (kw_<slug>), got: '{biz_kw_id}'",
-            )
-        if not db["keyword"].find_one({"keyword_id": biz_kw_id, "is_deleted": {"$ne": True}}):
-            raise HTTPException(status_code=422, detail=f"keyword '{biz_kw_id}' not found or is deleted")
+        # keyword_id is Mongo keyword _id (ObjectId string)
+        kw_ref = str(body.get("keyword_id") or "").strip()
+        if not kw_ref:
+            raise HTTPException(status_code=422, detail="chunk_keyword.keyword_id is required")
+        _kw_q = {"_id": _OID(kw_ref), "is_deleted": {"$ne": True}} if _OID.is_valid(kw_ref) else {"_id": kw_ref, "is_deleted": {"$ne": True}}
+        if not db["keyword"].find_one(_kw_q):
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_ref}' not found or is deleted")
+
+        # Store as BSON ObjectId so Mongo refs are real ObjectIds, not strings
+        body["chunk_id"] = _OID(chunk_ref) if _OID.is_valid(chunk_ref) else chunk_ref
+        body["keyword_id"] = _OID(kw_ref) if _OID.is_valid(kw_ref) else kw_ref
 
     result = db[col].insert_one(body)
     inserted_doc = db[col].find_one({"_id": result.inserted_id})
