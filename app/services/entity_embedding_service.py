@@ -113,9 +113,15 @@ def ensure_keyword_embedding(db: Session, chunk_id: str, keyword_name: str) -> d
 
 
 def ensure_entity_embedding(pg: Session, col: str, entity_id: str, name: str = "", **kwargs) -> dict:
-    """Dispatch by entity type. col in {'topic', 'lesson', 'chunk', 'keyword'}."""
+    """Dispatch by entity type. col in {'topic', 'lesson', 'chunk', 'keyword'}.
+
+    For topic: pass keyword_text=<joined keyword string> to use as embedding source.
+    Falls back to name if keyword_text is absent or empty.
+    """
     if col == "topic":
-        return ensure_topic_embedding(pg, entity_id, name)
+        kw_text = kwargs.get("keyword_text") or ""
+        embed_src = kw_text if kw_text else name
+        return ensure_topic_embedding(pg, entity_id, embed_src)
     if col == "lesson":
         return ensure_lesson_embedding(pg, entity_id, name)
     if col == "chunk":

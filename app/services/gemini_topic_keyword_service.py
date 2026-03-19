@@ -151,3 +151,19 @@ def _filter_keywords(keywords: list, max_keywords: int = 20) -> list[str]:
         result.append(kw)
 
     return result[:max_keywords]
+
+
+# ===================== CONVENIENCE HELPER =====================
+
+def get_topic_keyword_text(topic_des: str) -> tuple[list[str], str]:
+    """Extract keywords from topic_des and return (filtered_keywords, joined_text).
+
+    joined_text format: "kw1 | kw2 | kw3"
+    Returns ([], "") if topic_des is empty or yields no keywords.
+    """
+    if not (topic_des and topic_des.strip()):
+        return [], ""
+    result = extract_topic_keywords(topic_des)
+    kw_list: list[str] = result.get("filtered_keywords") or []
+    kw_text = " | ".join(kw_list) if kw_list else ""
+    return kw_list, kw_text
