@@ -940,16 +940,6 @@ def import_excel_to_mongo(
                 # ====== AUTO ATTACH MINIO (subject/topic/lesson/chunk) ======
                 _auto_attach_minio(db, col, import_key, rec, doc, ctx)
 
-                # ====== TOPIC KEYWORD EXTRACTION (once here; sync reuses the stored field) ======
-                if col == "topic":
-                    _topic_des = str(doc.get("topic_des") or "").strip()
-                    if _topic_des:
-                        from app.services.gemini_topic_keyword_service import get_topic_keyword_text as _get_tkw
-                        _kw_list, _ = _get_tkw(_topic_des)
-                    else:
-                        _kw_list = []
-                    doc["topic_keywords_extracted"] = _kw_list
-
                 # always store import_key in doc
                 doc["import_key"] = import_key
 

@@ -15,29 +15,28 @@ _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 def _resolve_topic_keyword_text(db, doc: dict) -> tuple[list, str]:
     """Return (keywords_list, joined_text) for a topic doc.
 
-    Reuses doc['topic_keywords_extracted'] when present to avoid a Gemini call.
-    Falls back to Gemini extraction if the field is absent and topic_des exists,
-    then persists the result back to Mongo for future calls.
+    Always re-extracts from topic_des so topic_keywords_extracted in Mongo
+    always reflects the current topic_des (never stale after an update).
+    Writes the result back to Mongo as the debug field.
+    Returns ([], "") when topic_des is empty — no fallback to topic_name.
     """
-    extracted = doc.get("topic_keywords_extracted")
-    if isinstance(extracted, list):
-        kw_text = " | ".join(k for k in extracted if isinstance(k, str) and k)
-        return extracted, kw_text
-
     topic_des = (doc.get("topic_des") or "").strip()
+    doc_id = doc.get("_id")
+
     if not topic_des:
+        if doc_id is not None:
+            try:
+                db["topic"].update_one({"_id": doc_id}, {"$set": {"topic_keywords_extracted": []}})
+            except Exception:
+                pass
         return [], ""
 
     from app.services.gemini_topic_keyword_service import get_topic_keyword_text
     kw_list, kw_text = get_topic_keyword_text(topic_des)
 
-    doc_id = doc.get("_id")
     if doc_id is not None:
         try:
-            db["topic"].update_one(
-                {"_id": doc_id},
-                {"$set": {"topic_keywords_extracted": kw_list}},
-            )
+            db["topic"].update_one({"_id": doc_id}, {"$set": {"topic_keywords_extracted": kw_list}})
         except Exception:
             pass
 
@@ -245,8 +244,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         topic_name = (doc.get("topic_name") or doc.get("name") or "").strip()
         topic_num = _to_int(doc.get("topic_num") or doc.get("num"), None)
         minio_url = _minio_url(doc)
-        # Injected by sync_doc_to_postgres before entering pg.begin(); absent in parent-resolution calls.
-        topic_keyword_text: Optional[str] = doc.pop("__topic_keyword_text__", None)
 
         subject_ref = _get_ref(doc, ["subject_id", "subject_mongo_id", "subject_oid", "subjectRef", "subject"])
         subject_id = _ensure_parent_pg_id(db, pg, "subject", subject_ref)
@@ -261,8 +258,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             obj.subject_id = subject_id
             if hasattr(obj, "minio_url"):
                 obj.minio_url = minio_url
-            if topic_keyword_text is not None and hasattr(obj, "topic_keyword_text"):
-                obj.topic_keyword_text = topic_keyword_text or None
             return {"op": "update", "pg_id": obj.topic_id, "neo_payload": {"id": obj.topic_id, "name": topic_name, "parent_id": subject_id, "topic_num": topic_num}}
 
         obj = pg_models.Topic(
@@ -271,7 +266,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             subject_id=subject_id,
             mongo_id=mongo_id,
             minio_url=minio_url,
-            topic_keyword_text=topic_keyword_text or None,
         )
         pg.add(obj)
         pg.flush()
@@ -532,8 +526,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
     _topic_kw_text: Optional[str] = None
     if col == "topic" and not is_deleted:
         _, _topic_kw_text = _resolve_topic_keyword_text(db, doc)
-        doc = dict(doc)
-        doc["__topic_keyword_text__"] = _topic_kw_text  # consumed by _upsert_one_to_pg
 
     pg = SessionLocal()
     try:
@@ -572,10 +564,9 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 if col == "topic" and isinstance(info, dict):
                     pg_id = info.get("pg_id")
                     if pg_id:
-                        name = (info.get("neo_payload") or {}).get("name", "")
                         try:
                             emb = ensure_name_embedding(
-                                pg, col, pg_id, name=name, keyword_text=_topic_kw_text or ""
+                                pg, col, pg_id, keyword_text=_topic_kw_text or ""
                             )
                             _attach_vec_to_neo_payload(
                                 info,
@@ -584,8 +575,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         except Exception:
                             # Embedding is best-effort; PG commit and Neo sync must not be blocked.
                             pass
-                        if _topic_kw_text and isinstance(info.get("neo_payload"), dict):
-                            info["neo_payload"]["topic_keyword_text"] = _topic_kw_text
 
         # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──
         # keyword is NOT in NEO_SYNCABLE_COLS (standalone sync skips Neo),

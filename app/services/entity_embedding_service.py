@@ -112,20 +112,17 @@ def ensure_keyword_embedding(db: Session, chunk_id: str, keyword_name: str) -> d
     return {"ok": True, "search_text": text, "model_name": MODEL_SHORT, "embedding": vec}
 
 
-def ensure_entity_embedding(pg: Session, col: str, entity_id: str, name: str = "", **kwargs) -> dict:
-    """Dispatch by entity type. col in {'topic', 'lesson', 'chunk', 'keyword'}.
+def ensure_entity_embedding(pg: Session, col: str, entity_id: str, **kwargs) -> dict:
+    """Dispatch by entity type.
 
-    For topic: pass keyword_text=<joined keyword string> to use as embedding source.
-    Falls back to name if keyword_text is absent or empty.
+    Topic: requires keyword_text kwarg (joined keyword string). Returns skipped if empty.
+           Does NOT fall back to name. Does NOT embed on empty keyword_text.
+    Lesson / chunk / keyword: not embedded through this shared pipeline — returns skipped.
     """
     if col == "topic":
-        kw_text = kwargs.get("keyword_text") or ""
-        embed_src = kw_text if kw_text else name
-        return ensure_topic_embedding(pg, entity_id, embed_src)
-    if col == "lesson":
-        return ensure_lesson_embedding(pg, entity_id, name)
-    if col == "chunk":
-        return ensure_chunk_embedding(pg, entity_id, name)
-    if col == "keyword":
-        return ensure_keyword_embedding(pg, entity_id, kwargs.get("keyword_name", name))
+        kw_text = (kwargs.get("keyword_text") or "").strip()
+        if not kw_text:
+            return {"ok": True, "skipped": True, "reason": "keyword_text is empty"}
+        return ensure_topic_embedding(pg, entity_id, kw_text)
+    # lesson, chunk, keyword embedding is handled outside this shared sync pipeline
     return {"ok": True, "skipped": True}

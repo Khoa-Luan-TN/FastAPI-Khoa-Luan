@@ -35,7 +35,6 @@ class Topic(Base):
 
     topic_num = Column(Integer, nullable=False)  # DB là int
     topic_name = Column(String, nullable=False)
-    topic_keyword_text = Column(String, nullable=True)  # joined keyword string used for embedding
     mongo_id = Column(String, unique=True, nullable=True)
     minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}

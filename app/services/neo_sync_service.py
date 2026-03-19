@@ -55,7 +55,6 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         "topic": lambda s, p: _upsert_topic(
             s, topic_id=p["id"], topic_name=p.get("name", ""), subject_id=p.get("parent_id"),
             topic_num=p.get("topic_num"), embedding=p.get("embedding"),
-            keyword_text=p.get("topic_keyword_text"),
         ),
         "lesson": lambda s, p: _upsert_lesson(
             s, lesson_id=p["id"], lesson_name=p.get("name", ""), topic_id=p.get("parent_id"),
@@ -161,7 +160,6 @@ def _upsert_topic(
     subject_id: Optional[str],
     topic_num: Optional[int] = None,
     embedding: Optional[list[float]] = None,
-    keyword_text: Optional[str] = None,
 ) -> None:
     if not subject_id:
         session.run(
@@ -170,14 +168,12 @@ def _upsert_topic(
             SET t.topic_name = $topic_name,
                 t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
                 t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
-                t.keyword_text = CASE WHEN $keyword_text IS NULL THEN t.keyword_text ELSE $keyword_text END,
                 t.updated_at = datetime()
             """,
             topic_id=topic_id,
             topic_name=topic_name or "",
             topic_num=topic_num,
             embedding=embedding,
-            keyword_text=keyword_text,
         )
         return
 
@@ -188,7 +184,6 @@ def _upsert_topic(
         SET t.topic_name = $topic_name,
             t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
             t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
-            t.keyword_text = CASE WHEN $keyword_text IS NULL THEN t.keyword_text ELSE $keyword_text END,
             t.updated_at = datetime()
 
         WITH s, t
@@ -203,7 +198,6 @@ def _upsert_topic(
         topic_name=topic_name or "",
         topic_num=topic_num,
         embedding=embedding,
-        keyword_text=keyword_text,
     )
 
 
