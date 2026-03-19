@@ -593,7 +593,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         "ok": emb.get("ok", False),
                         "skipped": emb.get("skipped", False),
                         "model_name": emb.get("model_name"),
-                        "search_text": emb.get("search_text"),
                     }
                 except Exception as _emb_err:
                     _log.warning("topic_embedding upsert failed for pg_id=%s: %s", pg_id, _emb_err)

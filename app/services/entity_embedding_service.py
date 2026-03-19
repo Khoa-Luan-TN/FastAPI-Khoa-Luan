@@ -21,17 +21,16 @@ def _vec_to_pg(vec: list[float]) -> str:
 # PG upsert helpers — write embedding into the correct table
 # ---------------------------------------------------------------------------
 
-def _upsert_topic_embedding(pg: Session, topic_id: str, search_text: str, vec: list[float]) -> None:
+def _upsert_topic_embedding(pg: Session, topic_id: str, vec: list[float]) -> None:
     pg.execute(sql_text("""
-        INSERT INTO topic_embedding (topic_id, search_text, embedding, model_name, updated_at)
-        VALUES (:topic_id, :search_text, (:v)::vector, :model_name, now())
+        INSERT INTO topic_embedding (topic_id, embedding, model_name, updated_at)
+        VALUES (:topic_id, (:v)::vector, :model_name, now())
         ON CONFLICT (topic_id)
         DO UPDATE SET
-            search_text = EXCLUDED.search_text,
             embedding   = EXCLUDED.embedding,
             model_name  = EXCLUDED.model_name,
             updated_at  = now()
-    """), {"topic_id": topic_id, "search_text": search_text, "v": _vec_to_pg(vec), "model_name": MODEL_SHORT})
+    """), {"topic_id": topic_id, "v": _vec_to_pg(vec), "model_name": MODEL_SHORT})
 
 
 def _upsert_lesson_embedding(pg: Session, lesson_id: str, search_text: str, vec: list[float]) -> None:
@@ -81,8 +80,8 @@ def ensure_topic_embedding(pg: Session, topic_id: str, topic_name: str) -> dict:
     if not text:
         return {"ok": False, "error": "topic_name is empty"}
     vec = [float(x) for x in embed_passage_prepared(text)]
-    _upsert_topic_embedding(pg, topic_id, text, vec)
-    return {"ok": True, "search_text": text, "model_name": MODEL_SHORT, "embedding": vec}
+    _upsert_topic_embedding(pg, topic_id, vec)
+    return {"ok": True, "model_name": MODEL_SHORT, "embedding": vec}
 
 
 def ensure_lesson_embedding(pg: Session, lesson_id: str, lesson_name: str) -> dict:

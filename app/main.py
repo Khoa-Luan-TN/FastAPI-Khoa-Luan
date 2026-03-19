@@ -36,28 +36,14 @@ from app.routers.gemini_keyword_debug_router import router as gemini_keyword_deb
 from app.routers.gemini_topic_keyword_debug_router import router as gemini_topic_keyword_debug_router
 
 from app.services.postgre_client import engine, Base
+from app.services.postgres_bootstrap_service import ensure_postgres_bootstrap
 import app.models.model_postgre
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-
-    # topic_embedding is a raw SQL table (not a SQLAlchemy model) — create it if absent.
-    from sqlalchemy import text as _sql_text
-    with engine.connect() as _conn:
-        _conn.execute(_sql_text("CREATE EXTENSION IF NOT EXISTS vector"))
-        _conn.execute(_sql_text("""
-            CREATE TABLE IF NOT EXISTS topic_embedding (
-                topic_id    TEXT PRIMARY KEY REFERENCES topic(topic_id) ON DELETE CASCADE,
-                search_text TEXT,
-                embedding   vector(768),
-                model_name  TEXT,
-                updated_at  TIMESTAMPTZ DEFAULT now()
-            )
-        """))
-        _conn.commit()
-
+    ensure_postgres_bootstrap()
     yield
 
 
