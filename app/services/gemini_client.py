@@ -128,13 +128,37 @@ def _pace_key(idx: int) -> None:
         time.sleep(wait)
 
 
+def _earliest_cooldown_remaining() -> tuple[float, str]:
+    """Return (seconds_until_earliest_available_key, label).
+
+    Returns (0.0, label) immediately if any key is already available.
+    """
+    now = time.monotonic()
+    min_remaining = float("inf")
+    min_label = "—"
+    for i, (label, _) in enumerate(_pool):
+        remaining = _key_cooldown_until.get(i, 0.0) - now
+        if remaining <= 0:
+            return 0.0, label
+        if remaining < min_remaining:
+            min_remaining = remaining
+            min_label = label
+    return (max(0.0, min_remaining) if min_remaining != float("inf") else 1.0), min_label
+
+
 def _call_gemini_http(prompt: str, api_key: str, model: str) -> str:
     """Direct HTTP POST to Gemini REST API — no shared SDK state."""
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"{model}:generateContent?key={api_key}"
     )
-    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.1,
+            "response_mime_type": "application/json",
+        },
+    }).encode()
     req = urllib.request.Request(
         url, data=body,
         headers={"Content-Type": "application/json"},
@@ -161,14 +185,20 @@ def _call_gemini_http(prompt: str, api_key: str, model: str) -> str:
 
 # ── Core API call with round-robin rotation ───────────────────────────────────
 
-def generate_text(prompt: str, model: str = "gemini-2.5-flash") -> str:
+def generate_text(
+    prompt: str,
+    model: str = "gemini-2.5-flash",
+    wait_for_available_key: bool = False,
+    max_wait_seconds: int = 3600,
+) -> str:
     """Call Gemini REST API with round-robin key rotation, per-key pacing, and cooldown.
 
-    Concurrency model:
-    - _lock guards only the shared rotation counters (short critical sections).
-    - _key_locks[idx] serializes pacing + HTTP call for a specific key, so two threads
-      cannot bypass min-interval pacing for the same key.
-    - Different keys can be used concurrently — no global network bottleneck.
+    Modes:
+    - wait_for_available_key=False (default / interactive): fail fast if all keys are
+      exhausted or in cooldown — raises RuntimeError immediately.
+    - wait_for_available_key=True (bulk): if all keys are in cooldown, sleep until the
+      earliest key becomes available (+1s buffer) and retry.  Hard upper bound is
+      max_wait_seconds; raises RuntimeError if exceeded.
 
     Rotation rules:
     - Start from _next_idx, try each key in order.
@@ -176,70 +206,90 @@ def generate_text(prompt: str, model: str = "gemini-2.5-flash") -> str:
     - Min interval between consecutive uses of the same key is enforced.
     - On success: advance rotation pointer.
     - On quota/rate-limit: key enters cooldown, try next key.
-    - If all keys exhausted or in cooldown: raise RuntimeError.
+    - If all keys exhausted or in cooldown: behaviour depends on wait_for_available_key.
     """
     global _next_idx, _call_count, _cycle_count
 
     _load_keys()
     n = len(_pool)
+    job_start = time.monotonic()
+    wait_round = 0
 
-    with _lock:
-        start_idx = _next_idx
+    while True:
+        with _lock:
+            start_idx = _next_idx
 
-    last_err: Exception | None = None
-    tried_labels: list[str] = []
+        last_err: Exception | None = None
+        tried_labels: list[str] = []
 
-    for attempt in range(n):
-        idx = (start_idx + attempt) % n
-        label, key = _pool[idx]
+        for attempt in range(n):
+            idx = (start_idx + attempt) % n
+            label, key = _pool[idx]
 
-        # Fast cooldown check before acquiring per-key lock
-        if _is_key_in_cooldown(idx, time.monotonic()):
-            _log.info("[gemini_client] Key %s in cooldown — skipping", label)
-            continue
-
-        tried_labels.append(label)
-
-        with _key_locks[idx]:
-            # Re-check cooldown now that we hold the per-key lock
+            # Fast cooldown check before acquiring per-key lock
             if _is_key_in_cooldown(idx, time.monotonic()):
-                _log.info("[gemini_client] Key %s entered cooldown while waiting — skipping", label)
                 continue
 
-            _pace_key(idx)
+            tried_labels.append(label)
 
-            try:
-                text = _call_gemini_http(prompt, key, model)
-                _last_call_time[idx] = time.monotonic()
-
-            except Exception as e:
-                if _is_rotatable(e):
-                    last_err = e
-                    _log.info(
-                        "[gemini_client] Key %s quota/rate-limit (attempt %d/%d): %s",
-                        label, attempt + 1, n, str(e)[:120],
-                    )
-                    _set_key_cooldown(idx)
+            with _key_locks[idx]:
+                # Re-check cooldown now that we hold the per-key lock
+                if _is_key_in_cooldown(idx, time.monotonic()):
+                    _log.info("[gemini_client] Key %s entered cooldown while waiting — skipping", label)
                     continue
-                raise
 
-        # Success — update rotation state
-        with _lock:
-            _next_idx = (idx + 1) % n
-            _call_count += 1
-            if _call_count % n == 0:
-                _cycle_count += 1
-            masked = _mask_key(key)
-            _log.info(
-                "[gemini_client] \u2713 %s (%s) | pool_idx=%d next_idx=%d calls=%d cycles=%d",
-                label, masked, idx, _next_idx, _call_count, _cycle_count,
+                _pace_key(idx)
+
+                try:
+                    text = _call_gemini_http(prompt, key, model)
+                    _last_call_time[idx] = time.monotonic()
+
+                except Exception as e:
+                    if _is_rotatable(e):
+                        last_err = e
+                        _log.info(
+                            "[gemini_client] Key %s quota/rate-limit (attempt %d/%d): %s",
+                            label, attempt + 1, n, str(e)[:120],
+                        )
+                        _set_key_cooldown(idx)
+                        continue
+                    raise
+
+            # Success — update rotation state
+            with _lock:
+                _next_idx = (idx + 1) % n
+                _call_count += 1
+                if _call_count % n == 0:
+                    _cycle_count += 1
+                masked = _mask_key(key)
+                _log.info(
+                    "[gemini_client] \u2713 %s (%s) | pool_idx=%d next_idx=%d calls=%d cycles=%d",
+                    label, masked, idx, _next_idx, _call_count, _cycle_count,
+                )
+            return text
+
+        # All keys are in cooldown or exhausted
+        if not wait_for_available_key:
+            raise RuntimeError(
+                f"All {n} Gemini API key(s) exhausted or in cooldown. "
+                f"Tried: {tried_labels}. Last error: {last_err}"
             )
-        return text
 
-    raise RuntimeError(
-        f"All {n} Gemini API key(s) exhausted or in cooldown. "
-        f"Tried: {tried_labels}. Last error: {last_err}"
-    )
+        elapsed = time.monotonic() - job_start
+        if elapsed >= max_wait_seconds:
+            raise RuntimeError(
+                f"[gemini_client] Max wait {max_wait_seconds}s exceeded waiting for available key. "
+                f"Tried: {tried_labels}. Last error: {last_err}"
+            )
+
+        wait_round += 1
+        min_remaining, min_label = _earliest_cooldown_remaining()
+        sleep_dur = min(min_remaining + 1.0, max_wait_seconds - elapsed)
+        _log.info(
+            "[gemini_client] all keys in cooldown | wait_round=%d earliest=%s in %.1fs | sleeping %.1fs | elapsed=%.1fs/%.0fs",
+            wait_round, min_label, min_remaining, sleep_dur, elapsed, max_wait_seconds,
+        )
+        time.sleep(sleep_dur)
 
 
 # ── Observability ─────────────────────────────────────────────────────────────

@@ -191,6 +191,170 @@ def handle_keyword_rename_cleanup(
     return {"new_slug": new_slug, "stale_aliases_deleted": result["stale_aliases_deleted"]}
 
 
+# ===================== BATCH ALIAS REFRESH =====================
+
+def refresh_keyword_aliases_batch(
+    db,
+    keyword_id_name_pairs: list[tuple[str, str]],
+    actor: str,
+    max_aliases: int = 5,
+    model: str = "gemini-2.5-flash",
+    batch_size: int = 10,
+    batch_sleep: float = 6.0,
+    max_wait_seconds: int = 3600,
+) -> dict:
+    """Batch alias refresh: generates aliases for up to batch_size keywords per Gemini call.
+
+    Uses wait_for_available_key=True so the job pauses and retries the same batch
+    when all keys are in cooldown, rather than failing immediately.
+    Hard upper bound is max_wait_seconds total across all batches (default 1 hour).
+    On stop condition (max wait exceeded), returns partial progress with stopped_due_to_quota=True.
+    Sleeps batch_sleep seconds between successful batches.
+    """
+    import time
+    from app.services.gemini_alias_service import generate_aliases_batch
+
+    if not keyword_id_name_pairs:
+        return {
+            "processed_keywords": 0,
+            "inserted_aliases": 0,
+            "stopped_due_to_quota": False,
+            "remaining_keywords": [],
+        }
+
+    existing_keyword_names: list[str] = [
+        doc["keyword_name"]
+        for doc in db["keyword"].find({"is_deleted": {"$ne": True}}, {"keyword_name": 1})
+        if doc.get("keyword_name")
+    ]
+
+    processed_keywords = 0
+    inserted_aliases = 0
+    stopped_due_to_quota = False
+    remaining_keywords: list[str] = []
+
+    batches = [keyword_id_name_pairs[i : i + batch_size] for i in range(0, len(keyword_id_name_pairs), batch_size)]
+    job_start = time.monotonic()
+
+    for batch_idx, batch in enumerate(batches):
+        # Compute remaining time budget for this batch call
+        elapsed = time.monotonic() - job_start
+        remaining_budget = max_wait_seconds - elapsed
+        if remaining_budget <= 0:
+            _log.warning(
+                "[keyword_alias] alias_batch %d/%d total time budget exhausted (%.0fs) — stopping",
+                batch_idx + 1, len(batches), max_wait_seconds,
+            )
+            stopped_due_to_quota = True
+            for future_batch in batches[batch_idx:]:
+                for _, name in future_batch:
+                    remaining_keywords.append(name)
+            break
+
+        batch_names = [name for _, name in batch]
+        _log.info(
+            "[keyword_alias] alias_batch %d/%d | keywords=%d | budget_remaining=%.0fs | sleep_after=%.1fs",
+            batch_idx + 1, len(batches), len(batch), remaining_budget, batch_sleep,
+        )
+
+        try:
+            alias_map = generate_aliases_batch(
+                keyword_names=batch_names,
+                existing_keyword_names=existing_keyword_names,
+                model=model,
+                batch_size=batch_size,
+                max_aliases_per_keyword=max_aliases,
+                wait_for_available_key=True,
+                max_wait_seconds=max(1, int(remaining_budget)),
+            )
+        except RuntimeError as e:
+            err_lower = str(e).lower()
+            if any(p in err_lower for p in ("exhausted", "cooldown", "all keys", "max wait")):
+                _log.warning(
+                    "[keyword_alias] alias_batch %d/%d stop condition — halting job: %s",
+                    batch_idx + 1, len(batches), str(e)[:200],
+                )
+                stopped_due_to_quota = True
+                for _, name in batch:
+                    remaining_keywords.append(name)
+                for future_batch in batches[batch_idx + 1 :]:
+                    for _, name in future_batch:
+                        remaining_keywords.append(name)
+                break
+            raise
+
+        # DB writes: only for keywords where alias_map value is not None.
+        # None means the batch failed all parse retries — old aliases are preserved.
+        now = _now()
+        batch_inserted = 0
+        batch_failed = 0
+        batch_kws_with_aliases = 0
+
+        for kw_id, kw_name in batch:
+            final_aliases = alias_map.get(kw_name)  # None = batch parse failure
+
+            if final_aliases is None:
+                batch_failed += 1
+                _log.warning(
+                    "[keyword_alias] batch_parse_failed | kw=%r keyword_id=%s — old aliases preserved",
+                    kw_name, kw_id,
+                )
+                continue
+
+            kw_oid = ObjectId(kw_id) if ObjectId.is_valid(kw_id) else kw_id
+
+            del_result = db["keyword_alias"].delete_many({"keyword_id": kw_oid})
+            _log.info("[keyword_alias] hard_deleted=%d | keyword_id=%s", del_result.deleted_count, kw_id)
+
+            kw_inserted = 0
+            for alias_name in final_aliases:
+                norm = normalize_for_compare(alias_name)
+                try:
+                    db["keyword_alias"].insert_one({
+                        "keyword_id": kw_oid,
+                        "keyword_name": kw_name,
+                        "alias_name": alias_name,
+                        "alias_norm": norm,
+                        "source": "gemini",
+                        "context_text": None,
+                        "is_deleted": False,
+                        "created_at": now,
+                        "updated_at": now,
+                        "created_by": actor,
+                        "updated_by": actor,
+                    })
+                    kw_inserted += 1
+                except Exception as exc:
+                    _log.warning(
+                        "[keyword_alias] insert skipped alias=%r | keyword_id=%s | %s",
+                        alias_name, kw_id, exc,
+                    )
+
+            sync_keyword_alias_array(db, kw_id, actor=actor)
+            processed_keywords += 1
+            batch_inserted += kw_inserted
+            inserted_aliases += kw_inserted
+            if kw_inserted > 0:
+                batch_kws_with_aliases += 1
+
+        _log.info(
+            "[keyword_alias] alias_batch %d/%d done | batch_inserted=%d total_inserted=%d"
+            " kws_with_aliases=%d batch_failed=%d | sleeping=%.1fs",
+            batch_idx + 1, len(batches), batch_inserted, inserted_aliases,
+            batch_kws_with_aliases, batch_failed, batch_sleep,
+        )
+
+        if batch_idx < len(batches) - 1:
+            time.sleep(batch_sleep)
+
+    return {
+        "processed_keywords": processed_keywords,
+        "inserted_aliases": inserted_aliases,
+        "stopped_due_to_quota": stopped_due_to_quota,
+        "remaining_keywords": remaining_keywords,
+    }
+
+
 # ===================== ALIAS REFRESH =====================
 
 def refresh_keyword_aliases(

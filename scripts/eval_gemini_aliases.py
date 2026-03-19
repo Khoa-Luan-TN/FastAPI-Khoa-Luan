@@ -65,9 +65,6 @@ CASES: list[dict] = [
           "GUI only"),
     _case("viet_abbrev", "Giao di\u1ec7n ng\u01b0\u1eddi d\u00f9ng \u0111\u1ed3 h\u1ecda", ["GUI", "Graphical User Interface"], ["GUI"],
           "GUI passes; Graphical User Interface rejected"),
-    _case("viet_abbrev", "C\u01a1 s\u1edf d\u1eef li\u1ec7u quan h\u1ec7", ["SQL"], ["SQL"],
-          "SQL is valid abbreviation for relational database"),
-
     # ── Group 2: Vietnamese keywords with NO standard abbreviation → [] ────────
     _case("viet_no_abbrev", "M\u1ea1ng m\u00e1y t\u00ednh", ["Computer Network"], [],
           "Computer Network is an English translation, not an alias"),

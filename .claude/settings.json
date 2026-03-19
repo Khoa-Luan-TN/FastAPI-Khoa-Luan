@@ -3,7 +3,10 @@
     "allow": [
       "Read(//Users/tt/Documents/Khoa-Luan-Tot-Nghiep/Vector_keyword/**)",
       "Read(//Users/tt/Documents/Khoa-Luan-Tot-Nghiep/**)",
-      "Bash(python3 scripts/eval_gemini_aliases.py)"
+      "Bash(python3 scripts/eval_gemini_aliases.py)",
+      "Bash(python3 -c \"import app.services.gemini_alias_service; import app.services.keyword_alias_service\")",
+      "Bash(python3 -c \"import app.services.gemini_client; import app.services.gemini_alias_service; import app.services.keyword_alias_service\")",
+      "Bash(python3 scripts/eval_batch_validation.py)"
     ]
   }
 }

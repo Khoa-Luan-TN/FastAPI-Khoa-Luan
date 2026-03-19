@@ -770,42 +770,29 @@ def _import_keyword_rows(
                     "message": "Đang import keyword...",
                 })
 
-    alias_processed_keywords = 0
-    alias_inserted = 0
     alias_skipped = len(reused_keyword_ids - new_keywords.keys())
-    alias_errors: List[Dict[str, Any]] = []
 
-    from app.services.keyword_alias_service import refresh_keyword_aliases
+    from app.services.keyword_alias_service import refresh_keyword_aliases_batch
 
-    # Phase 2: generate aliases for newly inserted keywords only
-    phase2_slots = len(rows)  # pre-allocated progress budget (same as phase 1)
-    phase2_ticked = 0
-
-    for kw_id, kw_name in new_keywords.items():
+    # Phase 2: batch alias generation for newly inserted keywords only
+    batch_result = {"processed_keywords": 0, "inserted_aliases": 0, "stopped_due_to_quota": False, "remaining_keywords": []}
+    if new_keywords:
         try:
-            result = refresh_keyword_aliases(db, keyword_id=kw_id, keyword_name=kw_name, actor=actor)
-            alias_inserted += result.get("inserted", 0)
-        except Exception as alias_e:
-            alias_errors.append({"keyword_id": kw_id, "keyword_name": kw_name, "error": str(alias_e)})
-        finally:
-            alias_processed_keywords += 1
-            if progress_callback is not None and progress_state is not None:
-                progress_state["processed_rows"] += 1
-                phase2_ticked += 1
-                _pr = progress_state["processed_rows"]
-                _tot = progress_state["total_rows"]
-                progress_callback({
-                    "current_collection": "keyword",
-                    "processed_rows": _pr,
-                    "total_rows": _tot,
-                    "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-                    "message": f"Đang tạo alias cho keyword ({alias_processed_keywords}/{len(new_keywords)})...",
-                })
+            batch_result = refresh_keyword_aliases_batch(
+                db=db,
+                keyword_id_name_pairs=list(new_keywords.items()),
+                actor=actor,
+                batch_size=10,
+                batch_sleep=6.0,
+                max_wait_seconds=3600,
+            )
+        except Exception as batch_e:
+            _log.warning("[import] alias batch failed: %s", batch_e)
 
-    # Consume remaining pre-allocated slots (for reused keywords) in one tick
-    remaining_slots = phase2_slots - phase2_ticked
-    if progress_callback is not None and progress_state is not None and remaining_slots > 0:
-        progress_state["processed_rows"] += remaining_slots
+    # Advance progress for phase 2
+    phase2_slots = len(rows)
+    if progress_callback is not None and progress_state is not None and phase2_slots > 0:
+        progress_state["processed_rows"] += phase2_slots
         _pr = progress_state["processed_rows"]
         _tot = progress_state["total_rows"]
         progress_callback({
@@ -822,11 +809,13 @@ def _import_keyword_rows(
         "reused": reused,
         "synced": synced,
         "errors": errors[:50],
-        "alias_processed_keywords": alias_processed_keywords,
-        "alias_inserted": alias_inserted,
+        "alias_processed_keywords": batch_result["processed_keywords"],
+        "alias_inserted": batch_result["inserted_aliases"],
         "alias_deleted": 0,
         "alias_skipped": alias_skipped,
-        "alias_errors": alias_errors[:20],
+        "alias_errors": [],
+        "alias_stopped_due_to_quota": batch_result["stopped_due_to_quota"],
+        "alias_remaining_keywords": batch_result["remaining_keywords"],
     }
 
 

@@ -203,9 +203,6 @@ _TERM_CANONICAL: dict[str, frozenset[str]] = {
     # GUI
     "gui": frozenset({"giao dien nguoi dung do hoa", "graphical user interface", "gui"}),
     "graphical user interface": frozenset({"giao dien nguoi dung do hoa", "graphical user interface", "gui"}),
-    # SQL
-    "sql": frozenset({"co so du lieu quan he", "structured query language", "sql"}),
-    "structured query language": frozenset({"co so du lieu quan he", "structured query language", "sql"}),
     # WWW — valid only for World Wide Web, NOT for Internet
     "www": frozenset({"world wide web", "www"}),
     "world wide web": frozenset({"world wide web", "www"}),
@@ -308,7 +305,13 @@ def _is_disallowed_pair(norm_kw: str, norm_alias: str) -> bool:
     return (norm_kw, norm_alias) in _DISALLOWED_PAIRS
 
 
-# ── Prompt ────────────────────────────────────────────────────────────────────
+# ── Chunking helper ───────────────────────────────────────────────────────────
+
+def _chunks(lst: list, size: int) -> list:
+    return [lst[i : i + size] for i in range(0, len(lst), size)]
+
+
+# ── Prompts ───────────────────────────────────────────────────────────────────
 
 _DOMAIN_CONTEXT = (
     "This term belongs to Vietnamese high-school Informatics textbooks "
@@ -394,8 +397,202 @@ Respond with ONLY this JSON object \u2014 no explanation, no markdown:
 {{"aliases": ["...", "..."]}}
 """
 
+_BATCH_PROMPT_TEMPLATE = """\
+You are a strict terminology assistant for Vietnamese high-school Informatics education.
+
+=== FIXED DOMAIN CONTEXT ===
+{domain_context}
+
+=== TASK ===
+Find real aliases (alternative names) for each keyword in the list below.
+An alias must refer to EXACTLY the same concept in the SAME domain and context.
+
+Keywords:
+{keywords_json}
+
+=== VIETNAMESE-FIRST RULE (most important) ===
+If a keyword is Vietnamese (has diacritics like \u0103, \u00e2, \u00ea, \u00f4, \u01a1, \u01b0, \u0111, etc.):
+- Return ONLY standard abbreviations/acronyms that are exact for that concept.
+  e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] only. NOT "Operating System".
+  e.g. "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] only. NOT "Artificial Intelligence".
+  e.g. "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] only. NOT "Local Area Network".
+- English full-form translations are NOT valid aliases for Vietnamese keywords.
+- If there is no well-known abbreviation, return [].
+
+If a keyword is already English, an abbreviation, or a mixed official form:
+- Normal rules apply.
+  e.g. "Internet of Things" \u2192 ["IoT"] \u2714
+
+=== WHAT IS NOT A VALID ALIAS ===
+Reject ALL of the following \u2014 return [] instead:
+- English translations (full-form or single-word) for Vietnamese keywords
+- Related but distinct concepts
+- Descriptive phrases and paraphrases
+- Near-synonyms or broader/narrower terms
+- Unit symbols: a single letter like "b" or "B"
+- The keyword itself repeated or slightly rephrased
+
+=== CRITICAL RULE ===
+If you are not certain the alias is a real, established, interchangeable term: return [].
+Prefer [] over any weak or uncertain output.
+
+{existing_section}=== OUTPUT FORMAT ===
+Return ONLY a JSON object where each key is EXACTLY one of the input keywords and the value is a list of aliases (strings).
+All input keywords must appear as keys. No extra keys. No markdown. No explanation.
+
+=== EXAMPLE OUTPUT (for illustration only, do not copy values) ===
+{{
+  "H\u1ec7 \u0111i\u1ec1u h\u00e0nh": ["OS"],
+  "M\u1ea1ng c\u1ee5c b\u1ed9": ["LAN"],
+  "Internet of Things": ["IoT"],
+  "Tin h\u1ecdc": [],
+  "Internet": []
+}}
+"""
+
+
+# ── Batch response validation ─────────────────────────────────────────────────
+
+def _parse_batch_result(
+    batch: list[str],
+    parsed: dict,
+    existing_keyword_names: list[str],
+    max_aliases: int,
+    batch_label: str,
+) -> dict[str, list[str]]:
+    """Validate a parsed Gemini batch response dict and return per-keyword filtered aliases.
+
+    - Missing keys → treated as []; logged as warning.
+    - Non-list values → treated as []; logged as warning.
+    - Extra keys (not in batch) → ignored; logged as warning.
+    """
+    expected = set(batch)
+    actual = set(parsed.keys())
+    missing = expected - actual
+    extra = actual - expected
+
+    if missing:
+        _log.warning("[gemini_alias] %s: missing_keys=%s — treated as []", batch_label, sorted(missing))
+    if extra:
+        _log.warning("[gemini_alias] %s: extra_keys=%s — ignored", batch_label, sorted(extra))
+
+    result: dict[str, list[str]] = {}
+    for kw in batch:
+        raw = parsed.get(kw, [])
+        if not isinstance(raw, list):
+            _log.warning(
+                "[gemini_alias] %s: non-list value for kw=%r (%r) — treated as []",
+                batch_label, kw, type(raw).__name__,
+            )
+            raw = []
+        filtered = _filter_aliases(kw, raw, existing_keyword_names, max_aliases)
+        result[kw] = filtered
+    return result
+
 
 # ── Alias generation ──────────────────────────────────────────────────────────
+
+def generate_aliases_batch(
+    keyword_names: list[str],
+    existing_keyword_names: list[str] | None = None,
+    model: str = "gemini-2.5-flash",
+    batch_size: int = 10,
+    max_aliases_per_keyword: int = 5,
+    wait_for_available_key: bool = False,
+    max_wait_seconds: int = 3600,
+) -> dict[str, list[str] | None]:
+    """Generate filtered aliases for multiple keywords using batched Gemini requests.
+
+    Returns a dict mapping each input keyword to its filtered alias list, or None.
+    - list[str]: successful result for that keyword (may be empty).
+    - None: the batch that contained this keyword failed all parse retries.
+      Callers MUST NOT update the DB for keywords that map to None.
+
+    On quota stop condition (max_wait exceeded), re-raises RuntimeError so the
+    caller can record partial progress and stop.
+    """
+    if not keyword_names:
+        return {}
+    if existing_keyword_names is None:
+        existing_keyword_names = []
+
+    existing_section = (
+        f"Do NOT include aliases that duplicate any of these existing keywords: "
+        f"{json.dumps(existing_keyword_names, ensure_ascii=False)}\n"
+        if existing_keyword_names
+        else ""
+    )
+
+    _MAX_BATCH_PARSE_RETRIES = 2
+
+    results: dict[str, list[str] | None] = {}
+    batches = _chunks(keyword_names, batch_size)
+
+    for batch_idx, batch in enumerate(batches):
+        _log.info(
+            "[gemini_alias] batch_start %d/%d | keywords=%d | %s",
+            batch_idx + 1, len(batches), len(batch), batch,
+        )
+
+        prompt = _BATCH_PROMPT_TEMPLATE.format(
+            domain_context=_DOMAIN_CONTEXT,
+            keywords_json=json.dumps(batch, ensure_ascii=False, indent=2),
+            existing_section=existing_section,
+        )
+
+        # Inner retry loop handles transient parse/network errors (not quota — those are
+        # handled transparently by generate_text when wait_for_available_key=True).
+        parsed: dict | None = None
+        for parse_attempt in range(1, _MAX_BATCH_PARSE_RETRIES + 2):  # +2 → 1..N+1 attempts
+            try:
+                raw_response = generate_text(
+                    prompt,
+                    model=model,
+                    wait_for_available_key=wait_for_available_key,
+                    max_wait_seconds=max_wait_seconds,
+                )
+                candidate = extract_json(raw_response)
+                if not isinstance(candidate, dict):
+                    raise ValueError(f"response is not a JSON object: {str(candidate)[:80]}")
+                parsed = candidate
+                break  # success
+            except RuntimeError as e:
+                err_lower = str(e).lower()
+                if any(p in err_lower for p in ("exhausted", "cooldown", "all keys", "max wait")):
+                    _log.warning(
+                        "[gemini_alias] batch %d/%d stop condition — propagating: %s",
+                        batch_idx + 1, len(batches), str(e)[:200],
+                    )
+                    raise
+                _log.warning(
+                    "[gemini_alias] batch %d/%d attempt %d/%d runtime error: %s",
+                    batch_idx + 1, len(batches), parse_attempt, _MAX_BATCH_PARSE_RETRIES + 1, str(e)[:200],
+                )
+            except Exception as e:
+                _log.warning(
+                    "[gemini_alias] batch %d/%d attempt %d/%d parse/unexpected error: %s",
+                    batch_idx + 1, len(batches), parse_attempt, _MAX_BATCH_PARSE_RETRIES + 1, str(e)[:200],
+                )
+
+            if parse_attempt > _MAX_BATCH_PARSE_RETRIES:
+                _log.warning(
+                    "[gemini_alias] batch %d/%d all %d attempts failed — DB writes will be skipped for %d keywords",
+                    batch_idx + 1, len(batches), _MAX_BATCH_PARSE_RETRIES + 1, len(batch),
+                )
+
+        if parsed is None:
+            for kw in batch:
+                results[kw] = None  # sentinel: caller must NOT delete/overwrite DB for these
+            continue
+
+        batch_label = f"batch {batch_idx + 1}/{len(batches)}"
+        batch_results = _parse_batch_result(batch, parsed, existing_keyword_names, max_aliases_per_keyword, batch_label)
+        results.update(batch_results)
+
+        _log.info("[gemini_alias] batch_end %d/%d", batch_idx + 1, len(batches))
+
+    return results
+
 
 def generate_aliases(
     keyword_name: str,
