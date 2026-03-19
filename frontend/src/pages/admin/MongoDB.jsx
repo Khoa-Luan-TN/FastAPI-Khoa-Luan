@@ -402,7 +402,8 @@ export default function MongoDB() {
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(null); // {progress, message, collection} or null
+  const [importProgress, setImportProgress] = useState(null); // {progress, message, collection, processed_rows?, total_rows?}
+  const [importResult, setImportResult] = useState(null); // null | {status: 'completed'|'partial'|'failed', message}
 
   async function reloadCollections() {
     setErr("");
@@ -737,7 +738,7 @@ export default function MongoDB() {
       const { job_id } = await mongoApi.importExcelTracked(file, collectionName);
 
       // Poll job status every second until completed or failed
-      await new Promise((resolve, reject) => {
+      const finalJob = await new Promise((resolve, reject) => {
         importPollRef.current = setInterval(async () => {
           try {
             const s = await mongoApi.getImportJobStatus(job_id);
@@ -745,6 +746,8 @@ export default function MongoDB() {
               progress: s.progress ?? 0,
               message: s.message || "",
               collection: s.current_collection || "",
+              processed_rows: s.processed_rows,
+              total_rows: s.total_rows,
             });
             if (s.status === "completed" || s.status === "failed") {
               clearInterval(importPollRef.current);
@@ -759,17 +762,28 @@ export default function MongoDB() {
         }, 1000);
       });
 
+      const quotaStopped = finalJob.report?.collections?.keyword?.alias_stopped_due_to_quota;
+      setImportResult({
+        status: quotaStopped ? "partial" : "completed",
+        message: quotaStopped ? "Hoàn tất một phần (alias dừng do quota)" : "Hoàn tất import",
+      });
+      setImportProgress({ progress: 100, message: "Hoàn tất", collection: "" });
+
       if (isRoot) await reloadCollections();
       else await reloadDocs(currentCollection);
     } catch (err) {
+      setImportResult({ status: "failed", message: String(err?.message || err) });
       alert(String(err?.message || err));
     } finally {
       setImporting(false);
-      setImportProgress(null);
       if (importPollRef.current) {
         clearInterval(importPollRef.current);
         importPollRef.current = null;
       }
+      setTimeout(() => {
+        setImportProgress(null);
+        setImportResult(null);
+      }, 4000);
     }
   }
 
@@ -977,19 +991,50 @@ export default function MongoDB() {
         </div>
       </div> {/* end sticky */}
 
-      {/* Import progress bar */}
-      {importProgress && (
-        <div style={{ padding: "10px 0 2px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", marginBottom: 4 }}>
-            <span>
-              {importProgress.collection ? <strong>{importProgress.collection}: </strong> : null}
-              {importProgress.message}
+      {/* Import progress */}
+      {(importProgress || importResult) && (
+        <div style={{ padding: "10px 0 6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+            <span style={{
+              fontSize: 13, fontWeight: 600,
+              color: importResult?.status === "completed" ? "#16A34A"
+                : importResult?.status === "partial" ? "#D97706"
+                : importResult?.status === "failed" ? "#DC2626"
+                : "#1D4ED8",
+            }}>
+              {importResult ? importResult.message : "Import đang chạy..."}
             </span>
-            <span>{importProgress.progress}%</span>
+            {importProgress && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{importProgress.progress}%</span>
+            )}
           </div>
-          <div style={{ height: 6, background: "#E5E7EB", borderRadius: 4, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${importProgress.progress}%`, background: "#3B82F6", borderRadius: 4, transition: "width 0.4s ease" }} />
-          </div>
+          {importProgress && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", marginBottom: 5 }}>
+              <span>
+                {importProgress.collection ? <strong>{importProgress.collection}: </strong> : null}
+                {importProgress.message}
+              </span>
+              {(importProgress.total_rows > 0) && (
+                <span style={{ whiteSpace: "nowrap", marginLeft: 8 }}>
+                  {importProgress.processed_rows ?? 0} / {importProgress.total_rows}
+                </span>
+              )}
+            </div>
+          )}
+          {importProgress && (
+            <div style={{ height: 7, background: "#E5E7EB", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: `${importProgress.progress}%`,
+                background: importResult?.status === "completed" ? "#16A34A"
+                  : importResult?.status === "partial" ? "#D97706"
+                  : importResult?.status === "failed" ? "#DC2626"
+                  : "#3B82F6",
+                borderRadius: 4,
+                transition: "width 0.4s ease",
+              }} />
+            </div>
+          )}
         </div>
       )}
 

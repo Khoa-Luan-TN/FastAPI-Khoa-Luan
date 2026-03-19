@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, Callable, Optional, List, Tuple
 from datetime import datetime, timezone
 import json
+import logging
 import os
 import re
 import unicodedata
@@ -18,6 +19,9 @@ from app.services.keyword_alias_service import (
         _resolve_keyword_slug,
         enforce_canonical_name_precedence,
     )
+
+_log = logging.getLogger(__name__)
+
 
 def _load_env() -> None:
     env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
@@ -775,6 +779,7 @@ def _import_keyword_rows(
     from app.services.keyword_alias_service import refresh_keyword_aliases_batch
 
     # Phase 2: batch alias generation for newly inserted keywords only
+    phase2_slots = len(rows)
     batch_result = {"processed_keywords": 0, "inserted_aliases": 0, "stopped_due_to_quota": False, "remaining_keywords": []}
     if new_keywords:
         try:
@@ -782,26 +787,42 @@ def _import_keyword_rows(
                 db=db,
                 keyword_id_name_pairs=list(new_keywords.items()),
                 actor=actor,
-                batch_size=10,
+                batch_size=5,
+                screen_batch_size=25,
                 batch_sleep=6.0,
                 max_wait_seconds=3600,
+                progress_callback=progress_callback,
+                progress_state=progress_state,
+                phase2_total_slots=phase2_slots,
             )
         except Exception as batch_e:
             _log.warning("[import] alias batch failed: %s", batch_e)
 
-    # Advance progress for phase 2
-    phase2_slots = len(rows)
+    # Consume any remaining phase2 slots (e.g. no new keywords, or refresh threw before emitting all)
     if progress_callback is not None and progress_state is not None and phase2_slots > 0:
-        progress_state["processed_rows"] += phase2_slots
-        _pr = progress_state["processed_rows"]
-        _tot = progress_state["total_rows"]
-        progress_callback({
-            "current_collection": "keyword",
-            "processed_rows": _pr,
-            "total_rows": _tot,
-            "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-            "message": "Hoàn tất import keyword.",
-        })
+        already_emitted = progress_state.get("_alias_slots_emitted", 0)
+        remaining = phase2_slots - already_emitted
+        if remaining > 0:
+            progress_state["processed_rows"] = progress_state.get("processed_rows", 0) + remaining
+            _pr = progress_state["processed_rows"]
+            _tot = progress_state.get("total_rows", 0)
+            progress_callback({
+                "current_collection": "keyword",
+                "processed_rows": _pr,
+                "total_rows": _tot,
+                "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+                "message": "Hoàn tất import keyword.",
+            })
+        else:
+            _pr = progress_state.get("processed_rows", 0)
+            _tot = progress_state.get("total_rows", 0)
+            progress_callback({
+                "current_collection": "keyword",
+                "processed_rows": _pr,
+                "total_rows": _tot,
+                "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+                "message": "Hoàn tất import keyword.",
+            })
 
     return {
         "rows": len(rows),

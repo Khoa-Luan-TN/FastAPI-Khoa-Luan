@@ -290,6 +290,21 @@ def _is_concept_family_confusion(norm_alias: str, norm_keyword: str) -> bool:
     return norm_keyword not in canonical_set
 
 
+def _is_uninvented_viet_acronym(alias: str, keyword_name: str, norm_alias: str) -> bool:
+    """For Vietnamese keywords, short abbreviations not in the canonical allowlist are rejected.
+
+    Prevents fabricated initialisms like "NNLT" (for "Ngôn ngữ lập trình") from passing.
+    Only abbreviations explicitly listed in _TERM_CANONICAL are allowed for Vietnamese keywords.
+    """
+    if not _kw_has_viet_diacritics(keyword_name):
+        return False
+    if not alias.isascii():
+        return False
+    if not _is_short_abbreviation(alias):
+        return False
+    return norm_alias not in _TERM_CANONICAL
+
+
 # ── Layer 5: Exceptional blacklist (minimal, last resort) ─────────────────────
 
 _DISALLOWED_PAIRS: frozenset[tuple[str, str]] = frozenset({
@@ -450,8 +465,81 @@ All input keywords must appear as keys. No extra keys. No markdown. No explanati
 }}
 """
 
+_SCREEN_PROMPT_TEMPLATE = """\
+You are a terminology screener for Vietnamese high-school Informatics education
+(K\u1ebft n\u1ed1i tri th\u1ee9c series, grades 10\u201312).
+
+=== TASK ===
+For each keyword below, decide whether it is likely to have a real alias
+(a standard abbreviation, acronym, or alternative canonical name).
+Do NOT generate the alias itself \u2014 only decide yes or no.
+
+=== SCREENING RULES ===
+has_alias_potential = true for:
+- Canonical technical concepts with well-known abbreviations (e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 OS)
+- Standard protocols, encodings, hardware components, named systems
+- English terms that have well-known acronyms (e.g. "Internet of Things" \u2192 IoT)
+
+has_alias_potential = false for:
+- Descriptive or explanatory phrases
+- Benefit / opportunity / skill / outcome descriptions
+- Long lesson-style phrases not tied to a single canonical technical term
+- Generic or ambiguous terms too broad to have one established alias
+
+=== KEYWORDS ===
+{keywords_json}
+
+=== OUTPUT FORMAT ===
+Return ONLY a JSON object. No markdown. No explanation.
+Each item in "items" must use the keyword_name EXACTLY as given in input.
+{{
+  "items": [
+    {{"keyword_name": "...", "has_alias_potential": true, "reason": "short reason"}},
+    {{"keyword_name": "...", "has_alias_potential": false, "reason": "short reason"}}
+  ]
+}}
+"""
+
 
 # ── Batch response validation ─────────────────────────────────────────────────
+
+def _parse_screen_result(batch: list[str], parsed: dict, batch_label: str) -> dict[str, dict]:
+    """Validate and extract screening decisions from a parsed Gemini response."""
+    items = parsed.get("items", [])
+    if not isinstance(items, list):
+        _log.warning("[alias_screen] %s: 'items' is not a list — defaulting all to false", batch_label)
+        return {kw: {"has_alias_potential": False, "reason": "invalid response structure"} for kw in batch}
+
+    by_name: dict[str, dict] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("keyword_name", "")
+        if name:
+            by_name[name] = item
+
+    expected = set(batch)
+    actual = set(by_name.keys())
+    missing = expected - actual
+    extra = actual - expected
+
+    if missing:
+        _log.warning("[alias_screen] %s: missing_keywords=%s — defaulting to false", batch_label, sorted(missing))
+    if extra:
+        _log.warning("[alias_screen] %s: extra_keywords=%s — ignored", batch_label, sorted(extra))
+
+    result: dict[str, dict] = {}
+    for kw in batch:
+        if kw in by_name:
+            item = by_name[kw]
+            has_potential = bool(item.get("has_alias_potential", False))
+            reason = str(item.get("reason", ""))
+        else:
+            has_potential = False
+            reason = "missing from response"
+        result[kw] = {"has_alias_potential": has_potential, "reason": reason}
+    return result
+
 
 def _parse_batch_result(
     batch: list[str],
@@ -500,6 +588,7 @@ def generate_aliases_batch(
     max_aliases_per_keyword: int = 5,
     wait_for_available_key: bool = False,
     max_wait_seconds: int = 3600,
+    _raw_collector: dict | None = None,
 ) -> dict[str, list[str] | None]:
     """Generate filtered aliases for multiple keywords using batched Gemini requests.
 
@@ -583,7 +672,14 @@ def generate_aliases_batch(
         if parsed is None:
             for kw in batch:
                 results[kw] = None  # sentinel: caller must NOT delete/overwrite DB for these
+                if _raw_collector is not None:
+                    _raw_collector[kw] = None
             continue
+
+        if _raw_collector is not None:
+            for kw in batch:
+                raw_val = parsed.get(kw, [])
+                _raw_collector[kw] = raw_val if isinstance(raw_val, list) else []
 
         batch_label = f"batch {batch_idx + 1}/{len(batches)}"
         batch_results = _parse_batch_result(batch, parsed, existing_keyword_names, max_aliases_per_keyword, batch_label)
@@ -591,6 +687,104 @@ def generate_aliases_batch(
 
         _log.info("[gemini_alias] batch_end %d/%d", batch_idx + 1, len(batches))
 
+    return results
+
+
+def screen_keywords_for_alias_potential(
+    keyword_names: list[str],
+    model: str = "gemini-2.5-flash",
+    batch_size: int = 25,
+    wait_for_available_key: bool = False,
+    max_wait_seconds: int = 3600,
+) -> dict[str, dict]:
+    """Stage 1: screen keywords for alias potential using Gemini.
+
+    Returns dict: keyword_name \u2192 {"has_alias_potential": bool, "reason": str}
+    On batch parse failure: all keywords in that batch default to has_alias_potential=False.
+    On quota stop condition: re-raises RuntimeError so the caller can record partial progress.
+    """
+    if not keyword_names:
+        return {}
+
+    _MAX_RETRIES = 2
+    results: dict[str, dict] = {}
+    batches = _chunks(keyword_names, batch_size)
+
+    for batch_idx, batch in enumerate(batches):
+        batch_label = f"batch {batch_idx + 1}/{len(batches)}"
+        _log.info(
+            "[alias_screen] batch_start %d/%d | keywords=%d",
+            batch_idx + 1, len(batches), len(batch),
+        )
+
+        prompt = _SCREEN_PROMPT_TEMPLATE.format(
+            keywords_json=json.dumps(batch, ensure_ascii=False, indent=2),
+        )
+
+        parsed: dict | None = None
+        for attempt in range(1, _MAX_RETRIES + 2):
+            try:
+                raw_response = generate_text(
+                    prompt,
+                    model=model,
+                    wait_for_available_key=wait_for_available_key,
+                    max_wait_seconds=max_wait_seconds,
+                )
+                candidate = extract_json(raw_response)
+                if not isinstance(candidate, dict):
+                    raise ValueError("response root is not a JSON object")
+                parsed = candidate
+                break
+            except RuntimeError as e:
+                err_lower = str(e).lower()
+                if any(p in err_lower for p in ("exhausted", "cooldown", "all keys", "max wait")):
+                    _log.warning(
+                        "[alias_screen] %s stop condition — propagating: %s",
+                        batch_label, str(e)[:200],
+                    )
+                    raise
+                _log.warning(
+                    "[alias_screen] %s attempt %d/%d runtime error: %s",
+                    batch_label, attempt, _MAX_RETRIES + 1, str(e)[:200],
+                )
+            except Exception as e:
+                _log.warning(
+                    "[alias_screen] %s attempt %d/%d parse error: %s",
+                    batch_label, attempt, _MAX_RETRIES + 1, str(e)[:200],
+                )
+
+            if attempt > _MAX_RETRIES:
+                _log.warning(
+                    "[alias_screen] %s all %d attempts failed — defaulting all to false",
+                    batch_label, _MAX_RETRIES + 1,
+                )
+
+        if parsed is None:
+            for kw in batch:
+                results[kw] = {"has_alias_potential": False, "reason": "batch parse failed"}
+            continue
+
+        batch_results = _parse_screen_result(batch, parsed, batch_label)
+        results.update(batch_results)
+
+        for kw in batch:
+            r = results[kw]
+            _log.info(
+                "[alias_screen] keyword=%r has_alias_potential=%s reason=%r",
+                kw, r["has_alias_potential"], r["reason"],
+            )
+
+        candidates = sum(1 for kw in batch if results[kw]["has_alias_potential"])
+        _log.info(
+            "[alias_screen] batch_end %d/%d | candidates=%d skipped=%d",
+            batch_idx + 1, len(batches), candidates, len(batch) - candidates,
+        )
+
+    total_candidates = sum(1 for v in results.values() if v["has_alias_potential"])
+    _log.info(
+        "[alias_screen] total=%d candidates=%d skipped=%d",
+        len(keyword_names), total_candidates, len(keyword_names) - total_candidates,
+    )
     return results
 
 
@@ -710,6 +904,9 @@ def _filter_aliases(
             continue
         if _is_translation_only(keyword_name, alias):
             _log.info("[gemini_alias] rejected_translation_only | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_uninvented_viet_acronym(alias, keyword_name, norm):
+            _log.info("[gemini_alias] rejected_uninvented_acronym | kw=%r alias=%r", keyword_name, alias)
             continue
         if _is_subset_phrase(norm, norm_keyword, keyword_name, alias):
             _log.info("[gemini_alias] rejected_subset_phrase | kw=%r alias=%r", keyword_name, alias)
