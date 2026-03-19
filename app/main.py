@@ -11,9 +11,10 @@ logging.basicConfig(
 )
 for _logger_name in (
     "app",
-    "app.routers.ollama_debug_router",
+    "app.routers.gemini_debug_router",
     "app.services.keyword_alias_service",
-    "app.services.ollama_alias_service",
+    "app.services.gemini_alias_service",
+    "app.services.gemini_client",
 ):
     logging.getLogger(_logger_name).setLevel(logging.INFO)
 
@@ -33,10 +34,9 @@ from app.routers.debug_score_router import router as debug_score_router
 from app.routers.gemini_debug_router import router as gemini_debug_router
 from app.routers.gemini_keyword_debug_router import router as gemini_keyword_debug_router
 from app.routers.gemini_topic_keyword_debug_router import router as gemini_topic_keyword_debug_router
-from app.routers.ollama_debug_router import router as ollama_debug_router
 
 from app.services.postgre_client import engine, Base
-import app.models.model_postgre  
+import app.models.model_postgre
 
 
 @asynccontextmanager
@@ -76,4 +76,3 @@ app.include_router(debug_score_router)
 app.include_router(gemini_debug_router)
 app.include_router(gemini_keyword_debug_router)
 app.include_router(gemini_topic_keyword_debug_router)
-app.include_router(ollama_debug_router)

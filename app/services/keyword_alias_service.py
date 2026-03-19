@@ -48,7 +48,6 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
         {"_id": 1, "keyword_slug": 1},
     )
     if existing:
-        # Return Mongo _id as the identity reference (not PG business keyword_id)
         return existing["keyword_slug"], str(existing["_id"])
 
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
@@ -82,7 +81,7 @@ def ensure_keyword_alias_indexes(db) -> None:
     try:
         db["keyword_alias"].create_index("alias_norm")
     except Exception:
-        pass    
+        pass
 
     try:
         db["keyword_alias"].drop_index("keyword_id_1_alias_norm_1")
@@ -170,7 +169,6 @@ def handle_keyword_rename_cleanup(
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
-    # Reject if another active keyword already owns this name
     conflict = db["keyword"].find_one({
         "is_deleted": {"$ne": True},
         "_id": {"$ne": kw_oid},
@@ -179,15 +177,12 @@ def handle_keyword_rename_cleanup(
     if conflict:
         raise ValueError(f"keyword_name '{new_name}' already exists")
 
-    # Resolve unique slug: pass exclude_id so this keyword doesn't block its own base slug
     new_slug, _ = _resolve_keyword_slug(db, new_name, exclude_id=kw_oid)
 
     now = _now()
 
-    # Soft-delete any active alias (globally) whose norm matches the new canonical name
     result = enforce_canonical_name_precedence(db, new_name, actor)
 
-    # Update denormalized keyword_name on surviving active alias docs for this keyword
     db["keyword_alias"].update_many(
         {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
         {"$set": {"keyword_name": new_name, "updated_at": now, "updated_by": actor}},
@@ -204,24 +199,14 @@ def refresh_keyword_aliases(
     keyword_name: str,
     actor: str,
     max_aliases: int = 5,
-    model: str | None = None,
-    provider: str = "ollama",
+    model: str = "gemini-2.5-flash",
     context_text: str | None = None,
 ) -> dict:
-    from app.services.gemini_alias_service import normalize_for_compare
-
-    if provider == "gemini":
-        from app.services.gemini_alias_service import generate_aliases
-        effective_model = model if model is not None else "gemini-2.5-flash"
-    elif provider == "ollama":
-        from app.services.ollama_alias_service import generate_aliases
-        effective_model = model if model is not None else "qwen2.5:14b"
-    else:
-        raise ValueError(f"Unsupported provider: {provider!r}")
+    from app.services.gemini_alias_service import generate_aliases
 
     _log.info(
-        "[keyword_alias] refresh_keyword_aliases | provider=%s model=%s keyword_id=%s keyword_name=%r",
-        provider, effective_model, keyword_id, keyword_name,
+        "[keyword_alias] refresh_keyword_aliases | model=%s keyword_id=%s keyword_name=%r",
+        model, keyword_id, keyword_name,
     )
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
@@ -236,14 +221,17 @@ def refresh_keyword_aliases(
         if doc.get("keyword_name")
     ]
 
-    _log.debug("[keyword_alias] existing_keyword_names count=%d | keyword_id=%s", len(existing_keyword_names), keyword_id)
+    _log.info(
+        "[keyword_alias] existing_keyword_names count=%d | keyword_id=%s",
+        len(existing_keyword_names), keyword_id,
+    )
 
     result = generate_aliases(
         keyword_name=keyword_name,
         context_text=context_text,
         existing_keyword_names=existing_keyword_names,
         max_aliases=max_aliases,
-        model=effective_model,
+        model=model,
     )
     final_aliases: list[str] = result["filtered_aliases"]
 
@@ -262,7 +250,7 @@ def refresh_keyword_aliases(
                 "keyword_name": keyword_name,
                 "alias_name": alias_name,
                 "alias_norm": norm,
-                "source": provider,
+                "source": "gemini",
                 "context_text": context_text,
                 "is_deleted": False,
                 "deleted_at": None,
@@ -274,7 +262,10 @@ def refresh_keyword_aliases(
             inserted += 1
             _log.info("[keyword_alias] inserted alias=%r | keyword_id=%s", alias_name, keyword_id)
         except Exception as exc:
-            _log.warning("[keyword_alias] insert skipped alias=%r | keyword_id=%s | reason: %s", alias_name, keyword_id, exc)
+            _log.warning(
+                "[keyword_alias] insert skipped alias=%r | keyword_id=%s | reason: %s",
+                alias_name, keyword_id, exc,
+            )
 
     _log.info("[keyword_alias] inserted=%d total | keyword_id=%s", inserted, keyword_id)
 
@@ -286,8 +277,7 @@ def refresh_keyword_aliases(
     return {
         "keyword_id": keyword_id,
         "keyword_name": keyword_name,
-        "provider": provider,
-        "model": effective_model,
+        "model": model,
         "existing_keyword_names": existing_keyword_names,
         "raw_aliases": result.get("raw_aliases", []),
         "filtered_aliases": final_aliases,

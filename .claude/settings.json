@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//Users/tt/Documents/Khoa-Luan-Tot-Nghiep/Vector_keyword/**)",
-      "Read(//Users/tt/Documents/Khoa-Luan-Tot-Nghiep/**)"
+      "Read(//Users/tt/Documents/Khoa-Luan-Tot-Nghiep/**)",
+      "Bash(python3 scripts/eval_gemini_aliases.py)"
     ]
   }
 }
