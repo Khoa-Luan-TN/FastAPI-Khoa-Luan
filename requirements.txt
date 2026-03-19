@@ -13,3 +13,4 @@ sentence-transformers==5.2.2
 transformers==5.0.0
 torch==2.10.0
 google-generativeai>=0.8.0
+requests>=2.32.0

@@ -201,9 +201,20 @@ def refresh_keyword_aliases(
     keyword_name: str,
     actor: str,
     max_aliases: int = 5,
-    model: str = "gemini-2.5-flash",
+    model: str | None = None,
+    provider: str = "ollama",
+    context_text: str | None = None,
 ) -> dict:
-    from app.services.gemini_alias_service import generate_aliases, normalize_for_compare
+    from app.services.gemini_alias_service import normalize_for_compare
+
+    if provider == "gemini":
+        from app.services.gemini_alias_service import generate_aliases
+        effective_model = model if model is not None else "gemini-2.5-flash"
+    elif provider == "ollama":
+        from app.services.ollama_alias_service import generate_aliases
+        effective_model = model if model is not None else "qwen2.5:14b"
+    else:
+        raise ValueError(f"Unsupported provider: {provider!r}")
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
@@ -219,10 +230,10 @@ def refresh_keyword_aliases(
 
     result = generate_aliases(
         keyword_name=keyword_name,
-        context_text=None,
+        context_text=context_text,
         existing_keyword_names=existing_keyword_names,
         max_aliases=max_aliases,
-        model=model,
+        model=effective_model,
     )
     final_aliases: list[str] = result["filtered_aliases"]
 
@@ -237,8 +248,8 @@ def refresh_keyword_aliases(
                 "keyword_name": keyword_name,
                 "alias_name": alias_name,
                 "alias_norm": norm,
-                "source": "gemini",
-                "context_text": None,
+                "source": provider,
+                "context_text": context_text,
                 "is_deleted": False,
                 "deleted_at": None,
                 "created_at": now,
