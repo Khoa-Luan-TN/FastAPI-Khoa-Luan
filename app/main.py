@@ -42,6 +42,22 @@ import app.models.model_postgre
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+
+    # topic_embedding is a raw SQL table (not a SQLAlchemy model) — create it if absent.
+    from sqlalchemy import text as _sql_text
+    with engine.connect() as _conn:
+        _conn.execute(_sql_text("CREATE EXTENSION IF NOT EXISTS vector"))
+        _conn.execute(_sql_text("""
+            CREATE TABLE IF NOT EXISTS topic_embedding (
+                topic_id    TEXT PRIMARY KEY REFERENCES topic(topic_id) ON DELETE CASCADE,
+                search_text TEXT,
+                embedding   vector(768),
+                model_name  TEXT,
+                updated_at  TIMESTAMPTZ DEFAULT now()
+            )
+        """))
+        _conn.commit()
+
     yield
 
 

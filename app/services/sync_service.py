@@ -1,4 +1,5 @@
 # app/services/sync_service.py
+import logging
 import re
 from typing import Any, Optional
 
@@ -8,6 +9,8 @@ import app.models.model_postgre as pg_models
 from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
 from app.services.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
 
+_log = logging.getLogger(__name__)
+
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
@@ -15,14 +18,26 @@ _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 def _resolve_topic_keyword_text(db, doc: dict) -> tuple[list, str]:
     """Return (keywords_list, joined_text) for a topic doc.
 
-    Always re-extracts from topic_des so topic_keywords_extracted in Mongo
-    always reflects the current topic_des (never stale after an update).
-    Writes the result back to Mongo as the debug field.
-    Returns ([], "") when topic_des is empty — no fallback to topic_name.
-    """
-    topic_des = (doc.get("topic_des") or "").strip()
-    doc_id = doc.get("_id")
+    Primary path — reuses doc['topic_keywords_extracted'] when it is already a list.
+    This avoids a redundant Gemini call when the field was populated by a prior sync
+    or import.
 
+    Fallback path — calls Gemini when the field is absent (None / missing).
+    The result is written back to Mongo and used as the embedding source.
+
+    Returns ([], "") when no valid keywords are available.
+    Does NOT fall back to topic_name or topic_des as embedding text.
+    """
+    doc_id = doc.get("_id")
+    extracted = doc.get("topic_keywords_extracted")
+
+    # Primary: use what is already stored in Mongo
+    if isinstance(extracted, list):
+        kw_text = " | ".join(k for k in extracted if isinstance(k, str) and k)
+        return extracted, kw_text
+
+    # Fallback: extract from topic_des (field was absent / set to None to force refresh)
+    topic_des = (doc.get("topic_des") or "").strip()
     if not topic_des:
         if doc_id is not None:
             try:
@@ -560,21 +575,29 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
-            if not is_deleted:
-                if col == "topic" and isinstance(info, dict):
-                    pg_id = info.get("pg_id")
-                    if pg_id:
-                        try:
-                            emb = ensure_name_embedding(
-                                pg, col, pg_id, keyword_text=_topic_kw_text or ""
-                            )
-                            _attach_vec_to_neo_payload(
-                                info,
-                                emb.get("embedding") if isinstance(emb, dict) else None,
-                            )
-                        except Exception:
-                            # Embedding is best-effort; PG commit and Neo sync must not be blocked.
-                            pass
+        # ── Topic embedding: separate transaction so a SQL failure here cannot
+        #    roll back the topic row that was just committed above. ──────────────
+        if not is_deleted and col == "topic" and isinstance(info, dict):
+            pg_id = info.get("pg_id")
+            if pg_id:
+                try:
+                    with pg.begin():
+                        emb = ensure_name_embedding(
+                            pg, col, pg_id, keyword_text=_topic_kw_text or ""
+                        )
+                    _attach_vec_to_neo_payload(
+                        info,
+                        emb.get("embedding") if isinstance(emb, dict) else None,
+                    )
+                    info["embedding"] = {
+                        "ok": emb.get("ok", False),
+                        "skipped": emb.get("skipped", False),
+                        "model_name": emb.get("model_name"),
+                        "search_text": emb.get("search_text"),
+                    }
+                except Exception as _emb_err:
+                    _log.warning("topic_embedding upsert failed for pg_id=%s: %s", pg_id, _emb_err)
+                    info["embedding"] = {"ok": False, "error": str(_emb_err)}
 
         # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──
         # keyword is NOT in NEO_SYNCABLE_COLS (standalone sync skips Neo),

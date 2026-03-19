@@ -213,6 +213,11 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None
 
+    # When topic_des changes, clear cached keyword extraction so the shared sync
+    # regenerates topic_keywords_extracted and updates the Topic embedding.
+    if col == "topic" and "topic_des" in body:
+        body["topic_keywords_extracted"] = None
+
     body["updated_at"] = now
     body["updated_by"] = actor
 
