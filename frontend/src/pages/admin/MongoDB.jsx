@@ -393,6 +393,7 @@ export default function MongoDB() {
   const currentCollection = current;
   const isDocDetail = !!currentDocId;
   const importRef = useRef(null);
+  const importPollRef = useRef(null);
 
   // modals
   const [openCreateCol, setOpenCreateCol] = useState(false);
@@ -401,6 +402,7 @@ export default function MongoDB() {
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(null); // {progress, message, collection} or null
 
   async function reloadCollections() {
     setErr("");
@@ -724,26 +726,50 @@ export default function MongoDB() {
 
   async function onPickImportFile(e) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // ✅ để lần sau chọn lại cùng file vẫn trigger onChange
+    e.target.value = ""; // reset so same file can be re-picked
     if (!file) return;
 
     try {
       setImporting(true);
+      setImportProgress({ progress: 0, message: "Đang tải lên...", collection: "" });
 
-      // ✅ Mode 1: đang ở ROOT => import workbook (nhiều sheet)
-      if (isRoot) {
-        await mongoApi.importExcelWorkbook(file);
-        await reloadCollections();
-        return;
-      }
+      const collectionName = isRoot ? null : currentCollection;
+      const { job_id } = await mongoApi.importExcelTracked(file, collectionName);
 
-      // ✅ Mode 2: đang ở trong 1 collection => import vào collection đó
-      await mongoApi.importExcelToCollection(currentCollection, file);
-      await reloadDocs(currentCollection);
+      // Poll job status every second until completed or failed
+      await new Promise((resolve, reject) => {
+        importPollRef.current = setInterval(async () => {
+          try {
+            const s = await mongoApi.getImportJobStatus(job_id);
+            setImportProgress({
+              progress: s.progress ?? 0,
+              message: s.message || "",
+              collection: s.current_collection || "",
+            });
+            if (s.status === "completed" || s.status === "failed") {
+              clearInterval(importPollRef.current);
+              importPollRef.current = null;
+              s.status === "failed" ? reject(new Error(s.error || "Import failed")) : resolve(s);
+            }
+          } catch (pollErr) {
+            clearInterval(importPollRef.current);
+            importPollRef.current = null;
+            reject(pollErr);
+          }
+        }, 1000);
+      });
+
+      if (isRoot) await reloadCollections();
+      else await reloadDocs(currentCollection);
     } catch (err) {
       alert(String(err?.message || err));
     } finally {
       setImporting(false);
+      setImportProgress(null);
+      if (importPollRef.current) {
+        clearInterval(importPollRef.current);
+        importPollRef.current = null;
+      }
     }
   }
 
@@ -950,6 +976,22 @@ export default function MongoDB() {
           </div>
         </div>
       </div> {/* end sticky */}
+
+      {/* Import progress bar */}
+      {importProgress && (
+        <div style={{ padding: "10px 0 2px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", marginBottom: 4 }}>
+            <span>
+              {importProgress.collection ? <strong>{importProgress.collection}: </strong> : null}
+              {importProgress.message}
+            </span>
+            <span>{importProgress.progress}%</span>
+          </div>
+          <div style={{ height: 6, background: "#E5E7EB", borderRadius: 4, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${importProgress.progress}%`, background: "#3B82F6", borderRadius: 4, transition: "width 0.4s ease" }} />
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {err && (

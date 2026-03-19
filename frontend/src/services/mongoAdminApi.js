@@ -102,3 +102,16 @@ export function importExcelToCollection(collectionName, file) {
   url.searchParams.set("collection_name", collectionName);
   return httpUpload(url.toString(), fd);
 }
+
+// ✅ Tracked import: returns {ok, job_id} immediately; poll getImportJobStatus for progress
+export function importExcelTracked(file, collectionName) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const url = new URL(`${API_BASE}/admin/mongo/import/excel-tracked`);
+  if (collectionName) url.searchParams.set("collection_name", collectionName);
+  return httpUpload(url.toString(), fd);
+}
+
+export function getImportJobStatus(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/import-jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
+}

@@ -775,9 +775,37 @@ def _import_keyword_rows(
     alias_skipped = len(reused_keyword_ids - new_keywords.keys())
     alias_errors: List[Dict[str, Any]] = []
 
-    phase2_slots = len(rows)  # pre-allocated phase-2 budget
-    if progress_callback is not None and progress_state is not None and phase2_slots > 0:
-        progress_state["processed_rows"] += phase2_slots
+    from app.services.keyword_alias_service import refresh_keyword_aliases
+
+    # Phase 2: generate aliases for newly inserted keywords only
+    phase2_slots = len(rows)  # pre-allocated progress budget (same as phase 1)
+    phase2_ticked = 0
+
+    for kw_id, kw_name in new_keywords.items():
+        try:
+            result = refresh_keyword_aliases(db, keyword_id=kw_id, keyword_name=kw_name, actor=actor)
+            alias_inserted += result.get("inserted", 0)
+        except Exception as alias_e:
+            alias_errors.append({"keyword_id": kw_id, "keyword_name": kw_name, "error": str(alias_e)})
+        finally:
+            alias_processed_keywords += 1
+            if progress_callback is not None and progress_state is not None:
+                progress_state["processed_rows"] += 1
+                phase2_ticked += 1
+                _pr = progress_state["processed_rows"]
+                _tot = progress_state["total_rows"]
+                progress_callback({
+                    "current_collection": "keyword",
+                    "processed_rows": _pr,
+                    "total_rows": _tot,
+                    "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
+                    "message": f"Đang tạo alias cho keyword ({alias_processed_keywords}/{len(new_keywords)})...",
+                })
+
+    # Consume remaining pre-allocated slots (for reused keywords) in one tick
+    remaining_slots = phase2_slots - phase2_ticked
+    if progress_callback is not None and progress_state is not None and remaining_slots > 0:
+        progress_state["processed_rows"] += remaining_slots
         _pr = progress_state["processed_rows"]
         _tot = progress_state["total_rows"]
         progress_callback({
@@ -785,7 +813,7 @@ def _import_keyword_rows(
             "processed_rows": _pr,
             "total_rows": _tot,
             "progress": min(int(_pr * 100 / _tot), 99) if _tot > 0 else 99,
-            "message": "Hoàn tất import keyword (alias generation tạm thời bị tắt).",
+            "message": "Hoàn tất import keyword.",
         })
 
     return {

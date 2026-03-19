@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services.gemini_alias_service import generate_aliases
+from app.services.gemini_client import get_gemini_rotation_status
 
 router = APIRouter(prefix="/admin/gemini", tags=["Gemini Debug"])
 
@@ -57,3 +58,12 @@ def alias_debug(body: AliasDebugRequest):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini error: {e}")
+
+
+@router.get("/rotation-status", summary="Debug: current Gemini key rotation state (masked)")
+def rotation_status():
+    """Returns which key is next, how many calls/cycles completed. No raw keys exposed."""
+    try:
+        return {"ok": True, **get_gemini_rotation_status()}
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
