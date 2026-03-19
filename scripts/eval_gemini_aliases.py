@@ -27,69 +27,90 @@ def _case(group: str, keyword: str, raw: list[str], expected: list[str], note: s
 
 CASES: list[dict] = [
 
-    # ── Group 1: Valid established aliases — should PASS ──────────────────────
-    _case("valid", "H\u1ec7 \u0111i\u1ec1u h\u00e0nh", ["OS"], ["OS"],
-          "OS is the established abbreviation"),
-    _case("valid", "M\u1ea1ng c\u1ee5c b\u1ed9", ["LAN", "Local Area Network"], ["LAN", "Local Area Network"],
-          "Both abbreviation and full form valid"),
-    _case("valid", "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o", ["AI", "Artificial Intelligence"], ["AI", "Artificial Intelligence"],
-          "Established bilingual pair"),
-    _case("valid", "Internet of Things", ["IoT"], ["IoT"],
-          "IoT is the abbreviation of Internet of Things"),
-    _case("valid", "Internet of Things (IoT)", ["IoT"], ["IoT"],
-          "Parenthetical form should still map to IoT"),
-    _case("valid", "M\u1ea1ng m\u00e1y t\u00ednh", ["Computer Network"], ["Computer Network"],
-          "Computer Network is established CS term for M\u1ea1ng m\u00e1y t\u00ednh"),
-    _case("valid", "M\u1ea1ng di\u1ec7n r\u1ed9ng", ["WAN", "Wide Area Network"], ["WAN", "Wide Area Network"],
-          "WAN / Wide Area Network"),
-    _case("valid", "B\u1ed9 x\u1eed l\u00fd trung t\u00e2m", ["CPU", "Central Processing Unit"], ["CPU", "Central Processing Unit"],
-          "CPU family"),
-    _case("valid", "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean", ["RAM", "Random Access Memory"], ["RAM", "Random Access Memory"],
-          "RAM family"),
-    _case("valid", "M\u1ea1ng \u0111\u00f4 th\u1ecb", ["MAN", "Metropolitan Area Network"], ["MAN", "Metropolitan Area Network"],
-          "MAN family"),
+    # ── Group 1: Vietnamese keywords — abbreviation only (Vietnamese-first policy) ──
+    # English full forms are rejected; only standard abbreviations pass.
+    _case("viet_abbrev", "H\u1ec7 \u0111i\u1ec1u h\u00e0nh", ["OS"], ["OS"],
+          "OS is the only valid alias"),
+    _case("viet_abbrev", "H\u1ec7 \u0111i\u1ec1u h\u00e0nh", ["OS", "Operating System"], ["OS"],
+          "OS passes; Operating System rejected as English translation"),
+    _case("viet_abbrev", "M\u1ea1ng c\u1ee5c b\u1ed9", ["LAN"], ["LAN"],
+          "LAN is the only valid alias"),
+    _case("viet_abbrev", "M\u1ea1ng c\u1ee5c b\u1ed9", ["LAN", "Local Area Network"], ["LAN"],
+          "LAN passes; Local Area Network rejected as English translation"),
+    _case("viet_abbrev", "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o", ["AI"], ["AI"],
+          "AI is the only valid alias"),
+    _case("viet_abbrev", "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o", ["AI", "Artificial Intelligence"], ["AI"],
+          "AI passes; Artificial Intelligence rejected as English translation"),
+    _case("viet_abbrev", "M\u1ea1ng di\u1ec7n r\u1ed9ng", ["WAN"], ["WAN"],
+          "WAN only"),
+    _case("viet_abbrev", "M\u1ea1ng di\u1ec7n r\u1ed9ng", ["WAN", "Wide Area Network"], ["WAN"],
+          "WAN passes; Wide Area Network rejected"),
+    _case("viet_abbrev", "M\u1ea1ng \u0111\u00f4 th\u1ecb", ["MAN"], ["MAN"],
+          "MAN only"),
+    _case("viet_abbrev", "M\u1ea1ng \u0111\u00f4 th\u1ecb", ["MAN", "Metropolitan Area Network"], ["MAN"],
+          "MAN passes; Metropolitan Area Network rejected"),
+    _case("viet_abbrev", "B\u1ed9 x\u1eed l\u00fd trung t\u00e2m", ["CPU"], ["CPU"],
+          "CPU only"),
+    _case("viet_abbrev", "B\u1ed9 x\u1eed l\u00fd trung t\u00e2m", ["CPU", "Central Processing Unit"], ["CPU"],
+          "CPU passes; Central Processing Unit rejected"),
+    _case("viet_abbrev", "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean", ["RAM"], ["RAM"],
+          "RAM only"),
+    _case("viet_abbrev", "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean", ["RAM", "Random Access Memory"], ["RAM"],
+          "RAM passes; Random Access Memory rejected"),
+    _case("viet_abbrev", "B\u1ed9 nh\u1edb ch\u1ec9 \u0111\u1ecdc", ["ROM"], ["ROM"],
+          "ROM only"),
+    _case("viet_abbrev", "B\u1ed9 nh\u1edb ch\u1ec9 \u0111\u1ecdc", ["ROM", "Read Only Memory"], ["ROM"],
+          "ROM passes; Read Only Memory rejected"),
+    _case("viet_abbrev", "Giao di\u1ec7n ng\u01b0\u1eddi d\u00f9ng \u0111\u1ed3 h\u1ecda", ["GUI"], ["GUI"],
+          "GUI only"),
+    _case("viet_abbrev", "Giao di\u1ec7n ng\u01b0\u1eddi d\u00f9ng \u0111\u1ed3 h\u1ecda", ["GUI", "Graphical User Interface"], ["GUI"],
+          "GUI passes; Graphical User Interface rejected"),
+    _case("viet_abbrev", "C\u01a1 s\u1edf d\u1eef li\u1ec7u quan h\u1ec7", ["SQL"], ["SQL"],
+          "SQL is valid abbreviation for relational database"),
 
-    # ── Group 2: Should return [] — bad aliases must be filtered ──────────────
-    _case("empty", "Internet", ["World Wide Web", "WWW", "m\u1ea1ng to\u00e0n c\u1ea7u"], [],
-          "WWW \u2260 Internet; m\u1ea1ng to\u00e0n c\u1ea7u is descriptive"),
-    _case("empty", "Tin h\u1ecdc", ["Computer Science"], [],
+    # ── Group 2: Vietnamese keywords with NO standard abbreviation → [] ────────
+    _case("viet_no_abbrev", "M\u1ea1ng m\u00e1y t\u00ednh", ["Computer Network"], [],
+          "Computer Network is an English translation, not an alias"),
+    _case("viet_no_abbrev", "Tin h\u1ecdc", ["Computer Science"], [],
           "Computer Science is a translation, not an established alias"),
-    _case("empty", "T\u1ef1 \u0111\u1ed9ng ho\u00e1", ["Automation"], [],
+    _case("viet_no_abbrev", "T\u1ef1 \u0111\u1ed9ng ho\u00e1", ["Automation"], [],
           "Automation is a translation"),
-    _case("empty", "D\u1eef li\u1ec7u", ["Th\u00f4ng tin"], [],
-          "Th\u00f4ng tin is a near-synonym, not an alias"),
-    _case("empty", "Th\u00f4ng tin", ["D\u1eef li\u1ec7u"], [],
-          "D\u1eef li\u1ec7u is a near-synonym, not an alias"),
-    _case("empty", "Bit", ["b"], [],
-          "'b' is a unit symbol, not an alias"),
-    _case("empty", "Byte", ["B"], [],
-          "'B' is a unit symbol, not an alias"),
-    _case("empty", "Thi\u1ebft b\u1ecb th\u00f4ng minh", ["IoT", "Internet of Things"], [],
-          "Concept-family confusion: IoT is for Internet of Things, not Smart Device"),
-    _case("empty", "Dung l\u01b0\u1ee3ng l\u01b0u tr\u1eef", ["Storage Capacity"], [],
-          "Storage Capacity is a description, not an alias"),
-    _case("empty", "M\u00e1y t\u00ednh", ["Computer"], [],
-          "'Computer' is a translation"),
-
-    # ── Group 3: Translation-only traps ──────────────────────────────────────
-    _case("translation", "Ph\u1ea7n m\u1ec1m", ["Software"], [],
+    _case("viet_no_abbrev", "Ph\u1ea7n m\u1ec1m", ["Software"], [],
           "Software is a translation"),
-    _case("translation", "Ph\u1ea7n c\u1ee9ng", ["Hardware"], [],
+    _case("viet_no_abbrev", "Ph\u1ea7n c\u1ee9ng", ["Hardware"], [],
           "Hardware is a translation"),
-    _case("translation", "L\u1eadp tr\u00ecnh", ["Programming"], [],
+    _case("viet_no_abbrev", "L\u1eadp tr\u00ecnh", ["Programming"], [],
           "Programming is a translation"),
-    _case("translation", "C\u01a1 s\u1edf d\u1eef li\u1ec7u", ["Database"], [],
-          "Database is a translation (single word)"),
-    _case("translation", "B\u1ea3o m\u1eadt", ["Security"], [],
+    _case("viet_no_abbrev", "C\u01a1 s\u1edf d\u1eef li\u1ec7u", ["Database"], [],
+          "Database is a single-word translation"),
+    _case("viet_no_abbrev", "B\u1ea3o m\u1eadt", ["Security"], [],
           "Security is a translation"),
-    _case("translation", "M\u1ea1ng", ["Network"], [],
-          "Single Vietnamese word + translation = rejected"),
-    _case("translation", "L\u01b0u tr\u1eef", ["Storage"], [],
+    _case("viet_no_abbrev", "L\u01b0u tr\u1eef", ["Storage"], [],
           "Storage is a translation"),
+    _case("viet_no_abbrev", "M\u00e1y t\u00ednh", ["Computer"], [],
+          "Computer is a translation"),
+    _case("viet_no_abbrev", "M\u00e3 h\u00f3a", ["Encryption"], [],
+          "Encryption is a single-word English translation — rejected for Vietnamese keyword"),
 
-    # ── Group 4: Related-term traps ───────────────────────────────────────────
-    _case("related", "Internet", ["World Wide Web"], [],
+    # ── Group 3: English / mixed keywords — standard abbreviation behavior ─────
+    _case("english_kw", "Internet of Things", ["IoT"], ["IoT"],
+          "IoT is the abbreviation of Internet of Things"),
+    _case("english_kw", "Internet of Things (IoT)", ["IoT"], ["IoT"],
+          "Parenthetical form should still map to IoT"),
+    _case("english_kw", "Internet", ["World Wide Web", "WWW", "m\u1ea1ng to\u00e0n c\u1ea7u"], [],
+          "WWW \u2260 Internet; m\u1ea1ng to\u00e0n c\u1ea7u is descriptive"),
+    _case("english_kw", "Internet", ["World Wide Web"], [],
           "WWW is a related but distinct concept"),
+    _case("english_kw", "Internet", ["m\u1ea1ng to\u00e0n c\u1ea7u"], [],
+          "m\u1ea1ng to\u00e0n c\u1ea7u is a descriptive phrase"),
+
+    # ── Group 4: Near-synonym / related-term traps ────────────────────────────
+    _case("related", "D\u1eef li\u1ec7u", ["Th\u00f4ng tin"], [],
+          "Th\u00f4ng tin is a near-synonym, not an alias"),
+    _case("related", "Th\u00f4ng tin", ["D\u1eef li\u1ec7u"], [],
+          "D\u1eef li\u1ec7u is a near-synonym, not an alias"),
+    _case("related", "Thi\u1ebft b\u1ecb th\u00f4ng minh", ["IoT", "Internet of Things"], [],
+          "Concept-family confusion: IoT is for Internet of Things, not Smart Device"),
     _case("related", "Thi\u1ebft b\u1ecb th\u00f4ng minh", ["IoT"], [],
           "IoT is for Internet of Things, not smart devices"),
     _case("related", "M\u00e1y t\u00ednh", ["CPU", "B\u1ed9 x\u1eed l\u00fd"], [],
@@ -98,37 +119,54 @@ CASES: list[dict] = [
           "Internet is a type of network, not an alias for M\u1ea1ng"),
     _case("related", "D\u1eef li\u1ec7u", ["C\u01a1 s\u1edf d\u1eef li\u1ec7u"], [],
           "Database is narrower, not an alias"),
-    _case("related", "Internet", ["m\u1ea1ng to\u00e0n c\u1ea7u"], [],
-          "m\u1ea1ng to\u00e0n c\u1ea7u is a descriptive phrase"),
+    _case("related", "H\u1ec7 \u0111i\u1ec1u h\u00e0nh", ["RAM", "CPU"], [],
+          "RAM and CPU are not aliases for OS"),
+    _case("related", "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o", ["IoT", "LAN"], [],
+          "IoT and LAN are not aliases for AI"),
+    _case("related", "M\u1ea1ng c\u1ee5c b\u1ed9", ["WAN", "MAN"], [],
+          "WAN and MAN are different network types, not aliases for LAN"),
+    _case("related", "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean", ["ROM"], [],
+          "ROM is not an alias for RAM"),
+    _case("related", "Dung l\u01b0\u1ee3ng l\u01b0u tr\u1eef", ["Storage Capacity"], [],
+          "Storage Capacity is a description, not an alias"),
 
     # ── Group 5: Unit/symbol traps ────────────────────────────────────────────
+    _case("symbol", "Bit", ["b"], [],
+          "Single-char unit symbol rejected"),
+    _case("symbol", "Byte", ["B"], [],
+          "Single-char unit symbol rejected"),
     _case("symbol", "Bit", ["b", "B"], [],
-          "Single-char unit symbols rejected"),
+          "Both single-char symbols rejected"),
     _case("symbol", "Byte", ["B", "b"], [],
-          "Single-char unit symbols rejected"),
+          "Both single-char symbols rejected"),
     _case("symbol", "Ki-l\u00f4-byte", ["KB"], ["KB"],
-          "KB is a standard abbreviation (short abbr, not unit symbol)"),
+          "KB is a standard abbreviation, not a unit symbol"),
     _case("symbol", "M\u00ea-ga-byte", ["MB"], ["MB"],
           "MB is a standard abbreviation"),
     _case("symbol", "Gi-ga-byte", ["GB"], ["GB"],
           "GB is a standard abbreviation"),
+    _case("symbol", "M\u1ea1ng", ["KB", "MB"], [],
+          "KB/MB are byte-size abbreviations, not valid for Mang (concept-family)"),
 
     # ── Group 6: Ambiguous Vietnamese single-word terms ───────────────────────
     _case("ambiguous", "M\u1ea1ng", ["LAN", "WAN", "m\u1ea1ng m\u00e1y t\u00ednh"], [],
-          "Single Vietnamese word with no context: abbreviations need concept-family guard; "
-          "LAN/WAN not in canonical set for 'mang'"),
+          "LAN/WAN not in canonical set for 'mang'; mang may tinh is subset phrase"),
     _case("ambiguous", "H\u1ec7 th\u1ed1ng", ["OS", "System"], [],
           "H\u1ec7 th\u1ed1ng is too generic; OS is for H\u1ec7 \u0111i\u1ec1u h\u00e0nh"),
     _case("ambiguous", "X\u1eed l\u00fd", ["Processing"], [],
-          "Translation of ambiguous term"),
+          "Processing is English translation of ambiguous term"),
     _case("ambiguous", "K\u1ebft n\u1ed1i", ["Connection"], [],
-          "Translation of ambiguous term"),
+          "Connection is English translation of ambiguous term"),
+    _case("ambiguous", "M\u1ea1ng", ["m\u1ea1ng c\u1ee5c b\u1ed9", "m\u1ea1ng di\u1ec7n r\u1ed9ng"], [],
+          "Vietnamese aliases for single-word keyword rejected at Layer 3"),
+    _case("ambiguous", "M\u1ea1ng", ["ph\u00e2n t\u00edch", "x\u1eed l\u00fd"], [],
+          "Vietnamese aliases for single-word keyword rejected at Layer 3"),
 
     # ── Group 7: Script / form traps ─────────────────────────────────────────
-    _case("script", "M\u00e3 h\u00f3a", ["\u8a08\u7b97\u6a5f\u7db2\u7d61", "Encryption"], ["Encryption"],
-          "CJK rejected; Encryption is a valid English form for M\u00e3 h\u00f3a"),
-    _case("script", "M\u1ea1ng m\u00e1y t\u00ednh", ["mang may tinh", "Computer Network"], ["Computer Network"],
-          "Unaccented Vietnamese rejected; Computer Network allowed"),
+    _case("script", "M\u00e3 h\u00f3a", ["\u8a08\u7b97\u6a5f\u7db2\u7d61", "Encryption"], [],
+          "CJK rejected; Encryption is English translation of Vietnamese keyword — also rejected"),
+    _case("script", "M\u1ea1ng m\u00e1y t\u00ednh", ["mang may tinh", "Computer Network"], [],
+          "Unaccented Vietnamese rejected; Computer Network rejected as English translation"),
 ]
 
 
@@ -157,7 +195,6 @@ def run_eval() -> None:
 
         group_stats.setdefault(group, []).append(ok)
 
-        status = "\u2714 PASS" if ok else "\u2718 FAIL"
         if ok:
             passed += 1
         else:
@@ -171,13 +208,13 @@ def run_eval() -> None:
             )
 
         marker = "\u2714" if ok else "\u2718"
-        print(f"[{group:12s}] {marker} kw={keyword!r}")
+        print(f"[{group:14s}] {marker} kw={keyword!r}")
         if not ok:
-            print(f"              raw={raw}")
-            print(f"              got={filtered}")
-            print(f"              exp={expected}")
+            print(f"                raw={raw}")
+            print(f"                got={filtered}")
+            print(f"                exp={expected}")
         elif note:
-            print(f"              {note}")
+            print(f"                {note}")
 
     print()
     print("=" * 60)
@@ -189,7 +226,7 @@ def run_eval() -> None:
         p = sum(results)
         t = len(results)
         mark = "\u2714" if p == t else "\u26a0"
-        print(f"  {mark} {grp:12s}: {p}/{t}")
+        print(f"  {mark} {grp:14s}: {p}/{t}")
 
     if failures:
         print()
@@ -202,7 +239,6 @@ def run_eval() -> None:
 
 
 if __name__ == "__main__":
-    # Suppress info logs during eval for cleaner output.
     import logging
     logging.disable(logging.INFO)
     run_eval()

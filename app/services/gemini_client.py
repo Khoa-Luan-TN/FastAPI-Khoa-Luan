@@ -1,11 +1,14 @@
 # app/services/gemini_client.py
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 import threading
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,24 +19,26 @@ _log = logging.getLogger(__name__)
 _pool: list[tuple[str, str]] = []   # [(label, raw_key), ...]
 _loaded = False
 
-# ── Round-robin rotation state ────────────────────────────────────────────────
+# ── Rotation state ────────────────────────────────────────────────────────────
 _next_idx: int = 0
 _call_count: int = 0
 _cycle_count: int = 0
-_lock = threading.Lock()
+_lock = threading.Lock()       # guards rotation state only (short critical sections)
 
-# ── Per-key pacing and cooldown ───────────────────────────────────────────────
+# ── Per-key locks, pacing, cooldown ───────────────────────────────────────────
+# _key_locks[idx] serializes pacing + network call for a single key,
+# allowing different keys to be used concurrently.
+_key_locks: dict[int, threading.Lock] = {}
 _last_call_time: dict[int, float] = {}       # idx → monotonic time of last call
 _key_cooldown_until: dict[int, float] = {}   # idx → monotonic time cooldown expires
 
-_MIN_INTERVAL = 0.3       # minimum seconds between consecutive uses of the same key
-_COOLDOWN_SECONDS = 60    # seconds to cool a key after a quota/rate-limit error
-_MAX_RETRIES = 2          # retry attempts per key on transient non-rotatable errors
+_MIN_INTERVAL: float = 4.5    # overridden from env in _load_keys()
+_COOLDOWN_SECONDS: int = 300  # overridden from env in _load_keys()
 
 # ── Regex for numbered key format GEMINI_API_KEY_<N> ─────────────────────────
 _KEY_N_RE = re.compile(r"^GEMINI_API_KEY_(\d+)$", re.IGNORECASE)
 
-# ── Error patterns that warrant trying the next key ───────────────────────────
+# ── Error patterns that warrant rotating to the next key ─────────────────────
 _ROTATABLE_PATTERNS = [
     "resource_exhausted",
     "rate_limit",
@@ -50,12 +55,15 @@ _ROTATABLE_PATTERNS = [
 # ── Key loading ───────────────────────────────────────────────────────────────
 
 def _load_keys() -> None:
-    global _pool, _loaded
+    global _pool, _loaded, _key_locks, _MIN_INTERVAL, _COOLDOWN_SECONDS
     if _loaded:
         return
 
     env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
     load_dotenv(env_path)
+
+    _MIN_INTERVAL = float(os.getenv("GEMINI_MIN_INTERVAL", "4.5"))
+    _COOLDOWN_SECONDS = int(os.getenv("GEMINI_COOLDOWN_SECONDS", "300"))
 
     numbered: list[tuple[int, str]] = []
     for var, val in os.environ.items():
@@ -79,9 +87,14 @@ def _load_keys() -> None:
             "Set GEMINI_API_KEY_1..N or GEMINI_API_KEYS=key1,key2,... in config.env."
         )
 
+    _key_locks = {i: threading.Lock() for i in range(len(_pool))}
+
     _loaded = True
     labels = [lbl for lbl, _ in _pool]
-    _log.info("[gemini_client] Loaded %d key(s): %s", len(_pool), labels)
+    _log.info(
+        "[gemini_client] Loaded %d key(s): %s | min_interval=%.1fs cooldown=%ds",
+        len(_pool), labels, _MIN_INTERVAL, _COOLDOWN_SECONDS,
+    )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -104,37 +117,68 @@ def _is_key_in_cooldown(idx: int, now: float) -> bool:
 def _set_key_cooldown(idx: int) -> None:
     expires = time.monotonic() + _COOLDOWN_SECONDS
     _key_cooldown_until[idx] = expires
-    label = _pool[idx][0]
-    _log.info(
-        "[gemini_client] Key %s entering cooldown for %ds",
-        label, _COOLDOWN_SECONDS,
-    )
+    _log.info("[gemini_client] Key %s entering cooldown for %ds", _pool[idx][0], _COOLDOWN_SECONDS)
 
 
 def _pace_key(idx: int) -> None:
-    """Sleep if the key was used too recently."""
+    """Sleep if this key was used too recently. Caller must hold _key_locks[idx]."""
     last = _last_call_time.get(idx, 0.0)
     wait = _MIN_INTERVAL - (time.monotonic() - last)
     if wait > 0:
         time.sleep(wait)
 
 
-# ── Core API call with round-robin rotation + pacing + cooldown ───────────────
+def _call_gemini_http(prompt: str, api_key: str, model: str) -> str:
+    """Direct HTTP POST to Gemini REST API — no shared SDK state."""
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
+    req = urllib.request.Request(
+        url, data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode(errors="replace")
+        raise RuntimeError(f"HTTP {exc.code}: {error_body[:400]}")
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"URLError: {exc.reason}")
+
+    try:
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        raise RuntimeError(f"Unexpected Gemini response structure: {str(data)[:300]}")
+
+    if not text:
+        raise RuntimeError("Gemini returned empty response text")
+    return text
+
+
+# ── Core API call with round-robin rotation ───────────────────────────────────
 
 def generate_text(prompt: str, model: str = "gemini-2.5-flash") -> str:
-    """Call Gemini with round-robin key rotation, per-key pacing, and cooldown.
+    """Call Gemini REST API with round-robin key rotation, per-key pacing, and cooldown.
+
+    Concurrency model:
+    - _lock guards only the shared rotation counters (short critical sections).
+    - _key_locks[idx] serializes pacing + HTTP call for a specific key, so two threads
+      cannot bypass min-interval pacing for the same key.
+    - Different keys can be used concurrently — no global network bottleneck.
 
     Rotation rules:
-    - Each call starts from _next_idx.
-    - Keys in cooldown (hit quota/rate-limit recently) are skipped.
+    - Start from _next_idx, try each key in order.
+    - Keys in cooldown are skipped.
     - Min interval between consecutive uses of the same key is enforced.
-    - On success: pointer advances to the next key.
-    - On quota/rate-limit: key enters cooldown, next key tried.
-    - If all keys are exhausted or in cooldown: RuntimeError raised.
+    - On success: advance rotation pointer.
+    - On quota/rate-limit: key enters cooldown, try next key.
+    - If all keys exhausted or in cooldown: raise RuntimeError.
     """
     global _next_idx, _call_count, _cycle_count
-
-    import google.generativeai as genai
 
     _load_keys()
     n = len(_pool)
@@ -142,67 +186,60 @@ def generate_text(prompt: str, model: str = "gemini-2.5-flash") -> str:
     with _lock:
         start_idx = _next_idx
 
-    now = time.monotonic()
     last_err: Exception | None = None
     tried_labels: list[str] = []
-    text: str = ""
-    used_idx: int | None = None
 
     for attempt in range(n):
         idx = (start_idx + attempt) % n
         label, key = _pool[idx]
 
+        # Fast cooldown check before acquiring per-key lock
         if _is_key_in_cooldown(idx, time.monotonic()):
-            _log.info("[gemini_client] Key %s is in cooldown — skipping", label)
+            _log.info("[gemini_client] Key %s in cooldown — skipping", label)
             continue
 
         tried_labels.append(label)
-        _pace_key(idx)
 
-        try:
-            genai.configure(api_key=key)
-            response = genai.GenerativeModel(model).generate_content(prompt)
-            text = getattr(response, "text", None) or ""
-            if not text:
-                raise RuntimeError("Gemini returned empty response text")
-            _last_call_time[idx] = time.monotonic()
-            used_idx = idx
-            break
-
-        except Exception as e:
-            if _is_rotatable(e):
-                last_err = e
-                _log.info(
-                    "[gemini_client] Key %s quota/rate-limit (attempt %d/%d): %s",
-                    label, attempt + 1, n, str(e)[:120],
-                )
-                _set_key_cooldown(idx)
+        with _key_locks[idx]:
+            # Re-check cooldown now that we hold the per-key lock
+            if _is_key_in_cooldown(idx, time.monotonic()):
+                _log.info("[gemini_client] Key %s entered cooldown while waiting — skipping", label)
                 continue
-            raise
 
-    # ── Commit rotation state ─────────────────────────────────────────────────
-    with _lock:
-        if used_idx is not None:
-            _next_idx = (used_idx + 1) % n
+            _pace_key(idx)
+
+            try:
+                text = _call_gemini_http(prompt, key, model)
+                _last_call_time[idx] = time.monotonic()
+
+            except Exception as e:
+                if _is_rotatable(e):
+                    last_err = e
+                    _log.info(
+                        "[gemini_client] Key %s quota/rate-limit (attempt %d/%d): %s",
+                        label, attempt + 1, n, str(e)[:120],
+                    )
+                    _set_key_cooldown(idx)
+                    continue
+                raise
+
+        # Success — update rotation state
+        with _lock:
+            _next_idx = (idx + 1) % n
             _call_count += 1
             if _call_count % n == 0:
                 _cycle_count += 1
-            label_used = _pool[used_idx][0]
-            masked = _mask_key(_pool[used_idx][1])
+            masked = _mask_key(key)
             _log.info(
                 "[gemini_client] \u2713 %s (%s) | pool_idx=%d next_idx=%d calls=%d cycles=%d",
-                label_used, masked, used_idx, _next_idx, _call_count, _cycle_count,
+                label, masked, idx, _next_idx, _call_count, _cycle_count,
             )
-        else:
-            _next_idx = start_idx
+        return text
 
-    if used_idx is None:
-        raise RuntimeError(
-            f"All {n} Gemini API key(s) exhausted or in cooldown. "
-            f"Tried: {tried_labels}. Last error: {last_err}"
-        )
-
-    return text
+    raise RuntimeError(
+        f"All {n} Gemini API key(s) exhausted or in cooldown. "
+        f"Tried: {tried_labels}. Last error: {last_err}"
+    )
 
 
 # ── Observability ─────────────────────────────────────────────────────────────
@@ -212,6 +249,7 @@ def get_gemini_rotation_status() -> dict:
     _load_keys()
     n = len(_pool)
     now = time.monotonic()
+
     with _lock:
         idx = _next_idx
         calls = _call_count

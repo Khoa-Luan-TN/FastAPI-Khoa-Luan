@@ -106,7 +106,7 @@ def alias_save(body: AliasSaveRequest, x_actor_id: str | None = Header(default=N
         saved_aliases = [
             doc["alias_name"]
             for doc in db["keyword_alias"].find(
-                {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
+                {"keyword_id": kw_oid},
                 {"alias_name": 1},
             )
             if doc.get("alias_name")
@@ -124,6 +124,7 @@ def alias_save(body: AliasSaveRequest, x_actor_id: str | None = Header(default=N
             "filtered_aliases": result.get("filtered_aliases", []),
             "saved_aliases": saved_aliases,
             "inserted": result["inserted"],
+            "hard_deleted": result.get("hard_deleted", 0),
             "result": result,
             "error": None,
         }

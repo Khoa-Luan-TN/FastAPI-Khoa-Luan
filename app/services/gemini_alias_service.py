@@ -150,10 +150,11 @@ def _kw_is_broad_ambiguous(keyword_name: str) -> bool:
 
 
 def _is_weak_everyday_alias(alias: str, keyword_name: str, context_text: str | None) -> bool:
-    """Reject pure-Vietnamese aliases for broad single-word Vietnamese keywords without context.
+    """Reject Vietnamese aliases for broad single-word Vietnamese keywords without context.
 
-    Abbreviations and English terms (e.g. AI, IoT) always pass.
-    Only applies to Vietnamese keywords, not ASCII abbreviations like LAN or IoT.
+    Short abbreviations (AI, OS, LAN, IoT, KB) and ASCII terms always pass here;
+    ASCII terms are filtered by _is_translation_only in Layer 4 if needed.
+    Only non-ASCII (Vietnamese-diacritic) aliases are rejected at this layer.
     """
     if not _kw_has_viet_diacritics(keyword_name):
         return False
@@ -162,54 +163,12 @@ def _is_weak_everyday_alias(alias: str, keyword_name: str, context_text: str | N
     ctx = (context_text or "").strip()
     if len(ctx) >= 15:
         return False
-    return not any(c.isascii() and c.isalpha() for c in alias)
+    if _is_short_abbreviation(alias):
+        return False
+    return not alias.isascii()
 
 
 # ── Layer 4: Semantic policy ──────────────────────────────────────────────────
-
-# Established CS multi-word English terms that are always valid as aliases
-# (assuming concept-family check passes).
-_ALLOWED_ENGLISH_TERMS: frozenset[str] = frozenset({
-    # Networks
-    "local area network", "wide area network", "metropolitan area network",
-    "personal area network", "wireless local area network", "computer network",
-    "virtual private network", "wireless network",
-    # AI/ML
-    "artificial intelligence", "machine learning", "deep learning", "neural network",
-    "natural language processing", "computer vision",
-    # Internet/Web
-    "internet of things", "world wide web", "hypertext markup language",
-    "hypertext transfer protocol", "hypertext transfer protocol secure",
-    # OS/System
-    "operating system", "file system", "database management system",
-    # Hardware
-    "personal computer", "central processing unit", "graphics processing unit",
-    "random access memory", "read only memory", "solid state drive", "hard disk drive",
-    # Software/Dev
-    "application programming interface", "structured query language",
-    "graphical user interface", "user interface", "integrated development environment",
-    "object oriented programming", "open source software",
-    # Security
-    "public key infrastructure",
-    # Data
-    "relational database",
-})
-
-# Single-word English tokens that are dictionary translations, not CS aliases.
-_TRANSLATION_ONLY_SINGLES: frozenset[str] = frozenset({
-    "computer", "network", "software", "hardware", "automation", "information",
-    "data", "technology", "system", "science", "processing", "storage",
-    "security", "communication", "programming", "database", "device", "capacity",
-})
-
-# Normalized alias phrases that are descriptive paraphrases, never valid aliases.
-_GENERIC_DESCRIPTIVE_NORMS: frozenset[str] = frozenset({
-    "mang toan cau", "mang may tinh toan cau", "he thong toan cau",
-    "he thong thong tin", "cong nghe thong tin", "may tinh dien tu",
-    "du lieu thong tin", "thong tin du lieu", "he thong may tinh",
-    "mang thong tin", "dung luong luu tru", "thiet bi thong minh",
-    "kha nang luu tru", "bo nho luu tru",
-})
 
 # Concept-family guard: each alias norm maps to the set of keyword norms it is valid for.
 # Aliases outside their allowed family are rejected as concept-family confusion.
@@ -241,10 +200,29 @@ _TERM_CANONICAL: dict[str, frozenset[str]] = {
     # ROM
     "rom": frozenset({"bo nho chi doc", "read only memory", "rom"}),
     "read only memory": frozenset({"bo nho chi doc", "read only memory", "rom"}),
+    # GUI
+    "gui": frozenset({"giao dien nguoi dung do hoa", "graphical user interface", "gui"}),
+    "graphical user interface": frozenset({"giao dien nguoi dung do hoa", "graphical user interface", "gui"}),
+    # SQL
+    "sql": frozenset({"co so du lieu quan he", "structured query language", "sql"}),
+    "structured query language": frozenset({"co so du lieu quan he", "structured query language", "sql"}),
     # WWW — valid only for World Wide Web, NOT for Internet
     "www": frozenset({"world wide web", "www"}),
     "world wide web": frozenset({"world wide web", "www"}),
+    # Storage units — only valid for their own byte-size keywords
+    "kb": frozenset({"ki-lo-byte"}),
+    "mb": frozenset({"me-ga-byte"}),
+    "gb": frozenset({"gi-ga-byte"}),
 }
+
+# Normalized alias phrases that are descriptive paraphrases, never valid aliases.
+_GENERIC_DESCRIPTIVE_NORMS: frozenset[str] = frozenset({
+    "mang toan cau", "mang may tinh toan cau", "he thong toan cau",
+    "he thong thong tin", "cong nghe thong tin", "may tinh dien tu",
+    "du lieu thong tin", "thong tin du lieu", "he thong may tinh",
+    "mang thong tin", "dung luong luu tru", "thiet bi thong minh",
+    "kha nang luu tru", "bo nho luu tru",
+})
 
 
 def _is_short_abbreviation(alias: str) -> bool:
@@ -264,10 +242,14 @@ def _is_short_abbreviation(alias: str) -> bool:
     return upper_count >= 2 or alias.isupper()
 
 
-def _is_translation_only(keyword_name: str, alias: str, norm_alias: str) -> bool:
-    """Reject plain English aliases that are dictionary translations of Vietnamese keywords.
+def _is_translation_only(keyword_name: str, alias: str) -> bool:
+    """Vietnamese-first: for Vietnamese keywords, reject all ASCII aliases except abbreviations.
 
-    Uses raw keyword_name for language detection — normalized form loses diacritics.
+    Only short abbreviations (AI, OS, LAN, IoT, CPU, RAM ...) are valid ASCII aliases
+    for Vietnamese keywords. Everything else — single-word or multi-word English — is
+    treated as a translation and rejected.
+
+    For non-Vietnamese (ASCII/mixed) keywords, no restriction here; other layers apply.
     """
     if not _kw_has_viet_diacritics(keyword_name):
         return False
@@ -275,21 +257,7 @@ def _is_translation_only(keyword_name: str, alias: str, norm_alias: str) -> bool
         return False
     if _is_short_abbreviation(alias):
         return False
-    if norm_alias in _ALLOWED_ENGLISH_TERMS:
-        return False
-    if norm_alias in _TRANSLATION_ONLY_SINGLES:
-        return True
-    words = alias.split()
-    # Single-word ASCII for a broad/ambiguous Vietnamese keyword: reject if not an abbreviation.
-    # e.g. "Internet" for "Mạng", "Connection" for "Kết nối".
-    if len(words) == 1 and _kw_is_broad_ambiguous(keyword_name):
-        return True
-    # Multi-word English phrase for Vietnamese keyword: reject unless it has an abbreviation token.
-    if len(words) >= 2:
-        if any(_is_short_abbreviation(w) for w in words):
-            return False
-        return True
-    return False
+    return True
 
 
 def _is_generic_descriptive(norm_alias: str) -> bool:
@@ -300,8 +268,8 @@ def _is_subset_phrase(norm_alias: str, norm_keyword: str, keyword_name: str, ali
     """True when a Vietnamese alias is a more-specific phrase containing the keyword norm.
 
     Catches narrower-concept traps like:
-    - "Dữ liệu" (du lieu) → "Cơ sở dữ liệu" (co so du lieu) — Database is narrower
-    - "Mạng" (mang) → "mạng máy tính" — a specific type of network, not an alias
+    - "Dữ liệu" → "Cơ sở dữ liệu" — Database is narrower
+    - "Mạng" → "mạng máy tính" — a specific type of network, not an alias
     """
     if not _kw_has_viet_diacritics(keyword_name):
         return False
@@ -327,16 +295,11 @@ def _is_concept_family_confusion(norm_alias: str, norm_keyword: str) -> bool:
 
 # ── Layer 5: Exceptional blacklist (minimal, last resort) ─────────────────────
 
-# Only pairs not catchable by the general rules above.
 _DISALLOWED_PAIRS: frozenset[tuple[str, str]] = frozenset({
-    # Internet ≠ WWW (both are ASCII, concept-family guard covers "www" but not "world wide web"
-    # already handled by _TERM_CANONICAL; kept here as safety net)
     ("internet", "world wide web"),
     ("internet", "www"),
-    # Near-synonyms: same language, close meaning, different concept
     ("du lieu", "thong tin"),
     ("thong tin", "du lieu"),
-    # Part-of relationships mistaken for aliases
     ("may tinh", "bo xu ly"),
 })
 
@@ -350,8 +313,7 @@ def _is_disallowed_pair(norm_kw: str, norm_alias: str) -> bool:
 _DOMAIN_CONTEXT = (
     "This term belongs to Vietnamese high-school Informatics textbooks "
     "(K\u1ebft n\u1ed1i tri th\u1ee9c series). Interpret it strictly in the academic and "
-    "technical computer-science / informatics context of that curriculum, "
-    "not in everyday-language context."
+    "technical computer-science / informatics context of that curriculum."
 )
 
 _PROMPT_TEMPLATE = """\
@@ -367,24 +329,34 @@ An alias must refer to EXACTLY the same concept in the SAME domain and context.
 Keyword: "{keyword_name}"
 {extra_context_section}
 
-=== WHAT IS A VALID ALIAS ===
-Only these types qualify:
-- Official standardized abbreviations for exactly this concept (e.g. OS, LAN, AI, IoT)
-- Widely-used full forms of abbreviations (e.g. "Local Area Network" for LAN)
-- Established bilingual equivalents actually used interchangeably in CS textbooks
+=== VIETNAMESE-FIRST RULE (most important) ===
+If the keyword is Vietnamese (has diacritics like ă, â, ê, ô, ơ, ư, đ, etc.):
+- Return ONLY standard abbreviations/acronyms that are exact for this concept.
+  e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] only. NOT "Operating System".
+  e.g. "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] only. NOT "Artificial Intelligence".
+  e.g. "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] only. NOT "Local Area Network".
+- English full-form translations are NOT valid aliases for Vietnamese keywords.
+- If there is no well-known abbreviation, return [].
+
+If the keyword is already English, an abbreviation, or a mixed official form:
+- Normal rules apply.
+  e.g. "Internet of Things" \u2192 ["IoT"] \u2714
+  e.g. "Internet of Things (IoT)" \u2192 ["IoT"] \u2714
 
 === WHAT IS NOT A VALID ALIAS ===
 Reject ALL of the following \u2014 return [] instead:
-- Translations: a word-for-word translation is NOT an alias
-  e.g. "Computer Science" \u2260 alias for "Tin h\u1ecdc"; "Automation" \u2260 alias for "T\u1ef1 \u0111\u1ed9ng ho\u00e1"
-- Related but distinct concepts: must be the SAME concept, not merely related
-  e.g. "World Wide Web" \u2260 alias for "Internet" (WWW and Internet are different concepts)
-  e.g. "IoT" \u2260 alias for "Thi\u1ebft b\u1ecb th\u00f4ng minh" (IoT is "Internet of Things", not "Smart Device")
+- English translations (full-form or single-word) for Vietnamese keywords
+  e.g. "Computer Science" \u2260 alias for "Tin h\u1ecdc"
+  e.g. "Automation" \u2260 alias for "T\u1ef1 \u0111\u1ed9ng ho\u00e1"
+  e.g. "Operating System" \u2260 alias for "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" (OS is valid; "Operating System" is not)
+- Related but distinct concepts
+  e.g. "World Wide Web" \u2260 alias for "Internet"
+  e.g. "IoT" \u2260 alias for "Thi\u1ebft b\u1ecb th\u00f4ng minh"
 - Descriptive phrases and paraphrases
-  e.g. "m\u1ea1ng to\u00e0n c\u1ea7u" \u2260 alias for "Internet"; "dung l\u01b0\u1ee3ng l\u01b0u tr\u1eef" \u2260 alias for anything
+  e.g. "m\u1ea1ng to\u00e0n c\u1ea7u" \u2260 alias for "Internet"
 - Near-synonyms or broader/narrower terms
   e.g. "Th\u00f4ng tin" \u2260 alias for "D\u1eef li\u1ec7u"
-- Unit symbols: a single letter like "b" or "B" is a unit symbol, not an alias
+- Unit symbols: a single letter like "b" or "B"
   e.g. "Bit" \u2192 "b" is rejected; "Byte" \u2192 "B" is rejected
 - Ambiguous or generic terms with no single established CS meaning
 - The keyword itself repeated or slightly rephrased
@@ -394,24 +366,27 @@ If you are not certain the alias is a real, established, interchangeable term: r
 Prefer [] over any weak or uncertain output.
 
 {existing_section}=== LANGUAGE RULES ===
-- Proper Vietnamese with correct diacritics, OR standard English abbreviations/established terms only.
-- NEVER: unaccented Vietnamese, CJK characters, mixed-script forms.
+- Standard abbreviations only for ASCII output (OS, LAN, AI, IoT, CPU, RAM ...).
+- NEVER: unaccented Vietnamese, CJK characters, English full-form translations of Vietnamese keywords.
 
 === EXAMPLES (follow exactly) ===
-- "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] \u2714 (OS is the established abbreviation)
-- "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN", "Local Area Network"] \u2714
-- "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI", "Artificial Intelligence"] \u2714
+- "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] \u2714
+- "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] \u2714 (NOT ["LAN", "Local Area Network"])
+- "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] \u2714 (NOT ["AI", "Artificial Intelligence"])
+- "B\u1ed9 x\u1eed l\u00fd trung t\u00e2m" \u2192 ["CPU"] \u2714
+- "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean" \u2192 ["RAM"] \u2714
+- "Ki-l\u00f4-byte" \u2192 ["KB"] \u2714
 - "Internet of Things" \u2192 ["IoT"] \u2714
 - "Internet of Things (IoT)" \u2192 ["IoT"] \u2714
+- "M\u1ea1ng m\u00e1y t\u00ednh" \u2192 [] \u2718 (no standard abbreviation exists for this)
 - "Internet" \u2192 [] \u2718 (WWW \u2260 Internet; "m\u1ea1ng to\u00e0n c\u1ea7u" is a description)
 - "Tin h\u1ecdc" \u2192 [] \u2718 ("Computer Science" is a translation, not an alias)
 - "T\u1ef1 \u0111\u1ed9ng ho\u00e1" \u2192 [] \u2718 ("Automation" is a translation)
-- "D\u1eef li\u1ec7u" \u2192 [] \u2718 ("Th\u00f4ng tin" is a near-synonym, not the same concept)
-- "Bit" \u2192 [] \u2718 ("b" is a unit symbol, not an alias)
-- "Byte" \u2192 [] \u2718 ("B" is a unit symbol, not an alias)
+- "D\u1eef li\u1ec7u" \u2192 [] \u2718 ("Th\u00f4ng tin" is a near-synonym)
+- "Bit" \u2192 [] \u2718 ("b" is a unit symbol)
+- "Byte" \u2192 [] \u2718 ("B" is a unit symbol)
 - "Thi\u1ebft b\u1ecb th\u00f4ng minh" \u2192 [] \u2718 ("IoT" is for Internet of Things, not Smart Device)
-- "Dung l\u01b0\u1ee3ng l\u01b0u tr\u1eef" \u2192 [] \u2718 (descriptive phrase, not an alias)
-- "M\u00e1y t\u00ednh" \u2192 [] \u2718 ("Computer" is a translation; "CPU" is a part, not the same concept)
+- "M\u00e1y t\u00ednh" \u2192 [] \u2718 ("Computer" is a translation; "CPU" is a part, not an alias)
 
 === OUTPUT ===
 Return at most {max_aliases} aliases.
@@ -536,7 +511,7 @@ def _filter_aliases(
         if _is_generic_descriptive(norm):
             _log.info("[gemini_alias] rejected_descriptive_phrase | kw=%r alias=%r", keyword_name, alias)
             continue
-        if _is_translation_only(keyword_name, alias, norm):
+        if _is_translation_only(keyword_name, alias):
             _log.info("[gemini_alias] rejected_translation_only | kw=%r alias=%r", keyword_name, alias)
             continue
         if _is_subset_phrase(norm, norm_keyword, keyword_name, alias):

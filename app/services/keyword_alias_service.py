@@ -235,9 +235,12 @@ def refresh_keyword_aliases(
     )
     final_aliases: list[str] = result["filtered_aliases"]
 
-    _log.info("[keyword_alias] final_aliases before insert=%s | keyword_id=%s", final_aliases, keyword_id)
-    if not final_aliases:
-        _log.info("[keyword_alias] no aliases to insert | keyword_id=%s keyword_name=%r", keyword_id, keyword_name)
+    _log.info("[keyword_alias] filtered_aliases=%s | keyword_id=%s", final_aliases, keyword_id)
+
+    # Hard delete all existing aliases for this keyword, then insert fresh set
+    del_result = db["keyword_alias"].delete_many({"keyword_id": kw_oid})
+    hard_deleted = del_result.deleted_count
+    _log.info("[keyword_alias] hard_deleted=%d | keyword_id=%s", hard_deleted, keyword_id)
 
     now = _now()
     inserted = 0
@@ -253,7 +256,6 @@ def refresh_keyword_aliases(
                 "source": "gemini",
                 "context_text": context_text,
                 "is_deleted": False,
-                "deleted_at": None,
                 "created_at": now,
                 "updated_at": now,
                 "created_by": actor,
@@ -267,9 +269,8 @@ def refresh_keyword_aliases(
                 alias_name, keyword_id, exc,
             )
 
-    _log.info("[keyword_alias] inserted=%d total | keyword_id=%s", inserted, keyword_id)
+    _log.info("[keyword_alias] inserted=%d | keyword_id=%s", inserted, keyword_id)
 
-    # Mirror active alias docs to keyword.aliases
     final_mirrored = sync_keyword_alias_array(db, keyword_id, actor=actor)
 
     _log.info("[keyword_alias] final_mirrored=%s | keyword_id=%s", final_mirrored, keyword_id)
@@ -283,5 +284,5 @@ def refresh_keyword_aliases(
         "filtered_aliases": final_aliases,
         "final_aliases": final_mirrored,
         "inserted": inserted,
-        "deleted": 0,
+        "hard_deleted": hard_deleted,
     }
