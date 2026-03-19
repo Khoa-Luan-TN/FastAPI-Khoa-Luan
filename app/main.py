@@ -1,5 +1,24 @@
 # app/main.py
 
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    force=True,
+    format="%(levelname)s: %(name)s: %(message)s",
+)
+for _logger_name in (
+    "app",
+    "app.routers.ollama_debug_router",
+    "app.services.keyword_alias_service",
+    "app.services.ollama_alias_service",
+):
+    logging.getLogger(_logger_name).setLevel(logging.INFO)
+
+logging.getLogger("app").info("Logging configured — custom app logs active")
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 

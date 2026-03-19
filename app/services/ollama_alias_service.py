@@ -5,7 +5,11 @@ import json
 import re
 import unicodedata
 
+import logging
+
 from app.services.ollama_client import generate_text
+
+_log = logging.getLogger(__name__)
 
 
 # ── Normalization ─────────────────────────────────────────────────────────────
@@ -236,19 +240,36 @@ def generate_aliases(
         existing_section=existing_section,
     )
 
+    _log.info(
+        "[ollama_alias] generate_aliases called | keyword=%r model=%s existing_count=%d",
+        keyword_name, model, len(existing_keyword_names),
+    )
+
     raw_response = generate_text(
         prompt,
         model=model,
         system=_SYSTEM_PROMPT,
         response_format="json",
     )
+    _log.info("[ollama_alias] raw_response | keyword=%r | %s", keyword_name, raw_response[:500])
+
     parsed = _extract_json(raw_response)
 
     raw_aliases: list[str] = parsed.get("aliases", [])
     if not isinstance(raw_aliases, list):
         raw_aliases = []
 
+    if not raw_aliases:
+        _log.info("[ollama_alias] raw_aliases=[] | keyword=%r model=%s — Ollama returned no aliases", keyword_name, model)
+    else:
+        _log.info("[ollama_alias] raw_aliases=%s | keyword=%r model=%s", raw_aliases, keyword_name, model)
+
     filtered = _filter_aliases(keyword_name, raw_aliases, existing_keyword_names, max_aliases)
+
+    if not filtered:
+        _log.info("[ollama_alias] filtered_aliases=[] | keyword=%r — all aliases were filtered out", keyword_name)
+    else:
+        _log.info("[ollama_alias] filtered_aliases=%s | keyword=%r", filtered, keyword_name)
 
     return {
         "raw_aliases": raw_aliases,

@@ -5,10 +5,14 @@ from bson import ObjectId
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
+import logging
+
 from app.services.keyword_alias_service import refresh_keyword_aliases
 from app.services.mongo_client import get_mongo_db
 from app.services.ollama_alias_service import generate_aliases
 from app.services.ollama_client import get_ollama_status
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/ollama", tags=["Ollama Debug"])
 
@@ -78,6 +82,8 @@ def alias_save(body: AliasSaveRequest, x_actor_id: str | None = Header(default=N
         raise HTTPException(status_code=404, detail=f"Keyword '{body.keyword_id}' not found")
 
     effective_name = (body.keyword_name or "").strip() or keyword_doc["keyword_name"]
+
+    _log.info("[ollama_router] alias-save | keyword_id=%s keyword_name=%r model=%s actor=%s", body.keyword_id, effective_name, body.model, x_actor_id)
 
     try:
         result = refresh_keyword_aliases(

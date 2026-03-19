@@ -1,10 +1,13 @@
 # app/services/keyword_alias_service.py
 from __future__ import annotations
 
+import logging
 import re
 import unicodedata
 from datetime import datetime, timezone
 from typing import Any
+
+_log = logging.getLogger(__name__)
 
 from bson import ObjectId
 from app.services.gemini_alias_service import normalize_for_compare
@@ -216,6 +219,11 @@ def refresh_keyword_aliases(
     else:
         raise ValueError(f"Unsupported provider: {provider!r}")
 
+    _log.info(
+        "[keyword_alias] refresh_keyword_aliases | provider=%s model=%s keyword_id=%s keyword_name=%r",
+        provider, effective_model, keyword_id, keyword_name,
+    )
+
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
     # All active keyword names excluding this one — used for collision filtering
@@ -228,6 +236,8 @@ def refresh_keyword_aliases(
         if doc.get("keyword_name")
     ]
 
+    _log.debug("[keyword_alias] existing_keyword_names count=%d | keyword_id=%s", len(existing_keyword_names), keyword_id)
+
     result = generate_aliases(
         keyword_name=keyword_name,
         context_text=context_text,
@@ -236,6 +246,10 @@ def refresh_keyword_aliases(
         model=effective_model,
     )
     final_aliases: list[str] = result["filtered_aliases"]
+
+    _log.info("[keyword_alias] final_aliases before insert=%s | keyword_id=%s", final_aliases, keyword_id)
+    if not final_aliases:
+        _log.info("[keyword_alias] no aliases to insert | keyword_id=%s keyword_name=%r", keyword_id, keyword_name)
 
     now = _now()
     inserted = 0
@@ -258,15 +272,25 @@ def refresh_keyword_aliases(
                 "updated_by": actor,
             })
             inserted += 1
-        except Exception:
-            pass  # duplicate key race or transient error — skip
+            _log.info("[keyword_alias] inserted alias=%r | keyword_id=%s", alias_name, keyword_id)
+        except Exception as exc:
+            _log.warning("[keyword_alias] insert skipped alias=%r | keyword_id=%s | reason: %s", alias_name, keyword_id, exc)
+
+    _log.info("[keyword_alias] inserted=%d total | keyword_id=%s", inserted, keyword_id)
 
     # Mirror active alias docs to keyword.aliases
     final_mirrored = sync_keyword_alias_array(db, keyword_id, actor=actor)
 
+    _log.info("[keyword_alias] final_mirrored=%s | keyword_id=%s", final_mirrored, keyword_id)
+
     return {
         "keyword_id": keyword_id,
         "keyword_name": keyword_name,
+        "provider": provider,
+        "model": effective_model,
+        "existing_keyword_names": existing_keyword_names,
+        "raw_aliases": result.get("raw_aliases", []),
+        "filtered_aliases": final_aliases,
         "final_aliases": final_mirrored,
         "inserted": inserted,
         "deleted": 0,
