@@ -14,7 +14,8 @@ from app.services.search_plan_builder import SearchPlan
 from app.services.search_strategy_builder import SearchStrategy
 from app.services.neo_search_service import (
     resolve_structure_neo,
-    run_semantic_search_neo,    
+    run_semantic_search_neo,
+    search_top_topics_by_embedding,
 )
 
 # Confidence thresholds
@@ -513,6 +514,166 @@ def _build_structure_result(
     )
 
 # ---------------------------------------------------------------------------
+# Gemini keyword → Topic → topic_bag → keyword/aliases → chunk pipeline
+# ---------------------------------------------------------------------------
+
+def _norm_kw(s: str) -> str:
+    return " ".join(str(s or "").lower().strip().split())
+
+
+def _run_single_keyword_pipeline(
+    neo: Session,
+    keyword: str,
+    class_ids: List[str],
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Run topic-anchored semantic pipeline for one Gemini-extracted keyword.
+
+    Flow:
+    1. Embed keyword → top Topics (Neo4j topic_embedding_idx)
+    2. For each top Topic: PG topic.mongo_id → Mongo topic_bag
+    3. Iterate topic_bag.keyword_refs → read keyword docs
+    4. Compare normalized keyword vs keyword_name + aliases (exact lowercase)
+    5. Matched keyword _ids → Mongo chunk_keyword → mongo chunk_ids
+    6. mongo chunk_id → PG chunk_id
+    Returns (chunk_hits, notes). Each hit carries chunk_id (PG) + rerank_score.
+    """
+    from bson import ObjectId
+    from sqlalchemy import text as _sql
+    from app.services.mongo_client import get_mongo_db
+    from app.services.postgre_client import SessionLocal as _SL
+
+    notes: List[str] = []
+    hits: Dict[str, Dict[str, Any]] = {}
+    kw_norm = _norm_kw(keyword)
+
+    top_topics = search_top_topics_by_embedding(neo, keyword, class_ids, k=3)
+    if not top_topics:
+        notes.append(f"gemini_kw '{keyword}': no topic embedding hits")
+        return [], notes
+
+    db = get_mongo_db()
+    pg = _SL()
+    try:
+        for topic_row in top_topics:
+            pg_topic_id = str(topic_row.get("topic_id") or "").strip()
+            if not pg_topic_id:
+                continue
+
+            topic_score = float(topic_row.get("score", 0.6))
+
+            # PG → mongo_id
+            row = pg.execute(
+                _sql("SELECT mongo_id FROM topic WHERE topic_id = :tid LIMIT 1"),
+                {"tid": pg_topic_id},
+            ).fetchone()
+            if not row or not row[0]:
+                continue
+            mongo_topic_id = str(row[0]).strip()
+            if not ObjectId.is_valid(mongo_topic_id):
+                continue
+
+            # Mongo topic_bag
+            bag = db["topic_bag"].find_one(
+                {"topic_id": ObjectId(mongo_topic_id), "is_deleted": {"$ne": True}},
+                {"keyword_refs": 1},
+            )
+            if not bag:
+                continue
+
+            keyword_refs = bag.get("keyword_refs") or []
+
+            # Match extracted keyword against keyword_name + aliases
+            matched_kw_oids: List[Any] = []
+            for ref in keyword_refs:
+                kw_oid = ref.get("keyword_id")
+                if kw_oid is None:
+                    continue
+                kw_doc = db["keyword"].find_one(
+                    {"_id": kw_oid, "is_deleted": {"$ne": True}},
+                    {"keyword_name": 1, "aliases": 1},
+                )
+                if not kw_doc:
+                    continue
+                if _norm_kw(kw_doc.get("keyword_name", "")) == kw_norm:
+                    matched_kw_oids.append(kw_oid)
+                    continue
+                for alias in (kw_doc.get("aliases") or []):
+                    if _norm_kw(alias) == kw_norm:
+                        matched_kw_oids.append(kw_oid)
+                        break
+
+            if not matched_kw_oids:
+                continue
+
+            # chunk_keyword → mongo chunk_ids
+            ck_docs = list(db["chunk_keyword"].find(
+                {"keyword_id": {"$in": matched_kw_oids}, "is_deleted": {"$ne": True}},
+                {"chunk_id": 1},
+            ))
+            if not ck_docs:
+                continue
+
+            mongo_chunk_ids = [
+                str(ck["chunk_id"])
+                for ck in ck_docs
+                if ck.get("chunk_id") is not None
+            ]
+            if not mongo_chunk_ids:
+                continue
+
+            # mongo_id → PG chunk_id
+            pg_rows = pg.execute(
+                _sql("SELECT chunk_id FROM chunk WHERE mongo_id = ANY(:ids)"),
+                {"ids": mongo_chunk_ids},
+            ).fetchall()
+
+            score = round(topic_score, 4)
+            for pg_row in pg_rows:
+                cid = str(pg_row[0])
+                if cid not in hits or score > hits[cid]["rerank_score"]:
+                    hits[cid] = {
+                        "chunk_id": cid,
+                        "chunk_name": None,
+                        "chunk_num": None,
+                        "keyword_name": keyword,
+                        "rerank_score": score,
+                        "semantic_score": score,
+                        "lexical_bonus": 0.0,
+                        "exact_keyword_match": True,
+                        "source": "gemini_topic_bag",
+                    }
+    finally:
+        pg.close()
+
+    notes.append(f"gemini_kw '{keyword}': {len(hits)} chunk(s) via topic_bag")
+    return list(hits.values()), notes
+
+
+def _run_gemini_semantic_pipeline(
+    neo: Session,
+    semantic_keywords: List[str],
+    resolved: Dict[str, Any],
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Run the new Gemini keyword → Topic → topic_bag pipeline for all extracted keywords.
+    Merges results across keywords, deduplicates by chunk_id (keeps best score)."""
+    class_ids: List[str] = [r["class_id"] for r in resolved.get("class", [])]
+    all_hits: Dict[str, Dict[str, Any]] = {}
+    all_notes: List[str] = []
+
+    for kw in semantic_keywords:
+        hits, notes = _run_single_keyword_pipeline(neo, kw, class_ids)
+        all_notes.extend(notes)
+        for h in hits:
+            cid = h["chunk_id"]
+            if cid not in all_hits or h["rerank_score"] > all_hits[cid]["rerank_score"]:
+                all_hits[cid] = h
+
+    merged = sorted(all_hits.values(), key=lambda x: x["rerank_score"], reverse=True)
+    all_notes.append(f"gemini_pipeline: {len(merged)} unique chunk(s) from {len(semantic_keywords)} keyword(s)")
+    return merged, all_notes
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -565,8 +726,16 @@ def execute_search(
         if failure_reason:
             notes.append(failure_reason)
         else:
-            _, keyword_hits, sem_notes = run_semantic_search_neo(neo, plan, resolved)
-            notes.extend(sem_notes)
+            if plan.semantic_keywords:
+                # New path: Gemini keyword → Topic → topic_bag → keyword/aliases → chunk
+                keyword_hits, sem_notes = _run_gemini_semantic_pipeline(
+                    neo, plan.semantic_keywords, resolved
+                )
+                notes.extend(sem_notes)
+            else:
+                # Fallback: old keyword embedding index path
+                _, keyword_hits, sem_notes = run_semantic_search_neo(neo, plan, resolved)
+                notes.extend(sem_notes)
     semantic_end = perf_counter()
     timings["semantic_ms"] = round((semantic_end - semantic_start) * 1000, 2)
 

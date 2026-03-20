@@ -1,10 +1,13 @@
 # app/services/search_plan_builder.py
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Optional
+import logging
+from dataclasses import asdict, dataclass, field
+from typing import List, Optional
 
 from app.services.query_parser import ParsedQuery
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -27,12 +30,24 @@ class SearchPlan:
     chunk_requested: bool = False
 
     semantic_query: str = ""
+    semantic_keywords: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 def build_search_plan(parsed: ParsedQuery) -> SearchPlan:
+    primary_kw = (parsed.primary_keyword or "").strip()
+    semantic_keywords: List[str] = []
+
+    if primary_kw:
+        try:
+            from app.services.gemini_keyword_service import extract_query_keywords
+            result = extract_query_keywords(parsed.original_query)
+            semantic_keywords = result.get("filtered_keywords") or []
+        except Exception as exc:
+            _log.warning("Gemini keyword extraction failed: %s", exc)
+
     return SearchPlan(
         original_query=parsed.original_query,
         class_hint=parsed.class_hint,
@@ -45,5 +60,6 @@ def build_search_plan(parsed: ParsedQuery) -> SearchPlan:
         chunk_num=parsed.chunk_num,
         chunk_name=parsed.chunk_name,
         chunk_requested=parsed.chunk_requested,
-        semantic_query=parsed.primary_keyword,
+        semantic_query=primary_kw,
+        semantic_keywords=semantic_keywords,
     )

@@ -52,7 +52,7 @@ def build_search_strategy(plan: SearchPlan) -> SearchStrategy:
     has_topic_requested = plan.topic_requested
 
     has_class = plan.class_hint is not None
-    has_keyword = bool((plan.semantic_query or "").strip())
+    has_keyword = bool((plan.semantic_query or "").strip()) or bool(plan.semantic_keywords)
 
     has_chunk = has_chunk_num or has_chunk_name or has_chunk_requested
     has_lesson = has_lesson_num or has_lesson_name or has_lesson_requested

@@ -1035,6 +1035,24 @@ def run_semantic_search_neo(
     )
     return [], keyword_hits, notes
 # ---------------------------------------------------------------------------
+# Public helper for Gemini semantic pipeline
+# ---------------------------------------------------------------------------
+
+def search_top_topics_by_embedding(
+    neo: Session,
+    keyword: str,
+    class_ids: List[str],
+    k: int = 3,
+) -> List[Dict[str, Any]]:
+    """Embed keyword and return top-k Topic rows from the Neo4j topic embedding index.
+    Used by the Gemini keyword → topic_bag semantic pipeline in search_executor."""
+    vec = embed_query(keyword)
+    if not vec:
+        return []
+    return _q_topic_embedding(neo, vec, class_ids, k)
+
+
+# ---------------------------------------------------------------------------
 # Debug scoring helpers — used by /search/debug/score endpoint
 # ---------------------------------------------------------------------------
 
