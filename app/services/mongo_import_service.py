@@ -16,9 +16,9 @@ from dotenv import load_dotenv
 from openpyxl import load_workbook
 from app.services.keyword_alias_service import ensure_keyword_alias_indexes
 from app.services.keyword_alias_service import (
-        _resolve_keyword_slug,
-        enforce_canonical_name_precedence,
-    )
+    _resolve_keyword_slug,
+    enforce_canonical_name_precedence,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ def _load_env() -> None:
     load_dotenv(env_path)
 
 
+
 IMPORT_ORDER = ["class", "subject", "topic", "lesson", "chunk", "keyword"]
 
-# ref columns -> mongo id field  (keyword handled separately)
 REF_MAP = {
     "subject": ("class_ref", "class_id", "class"),
     "topic": ("subject_ref", "subject_id", "subject"),
@@ -40,7 +40,6 @@ REF_MAP = {
 
 JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", "table_url"}
 
-# ====== MinIO auto-mapping config ======
 
 def _minio_base_dir() -> str:
     _load_env()
@@ -57,8 +56,7 @@ def _minio_public_base_url() -> str:
     return (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
 
 
-
-AUTO_MINIO_COLS = {"subject", "topic", "lesson", "chunk"}  # bạn nói: trừ class + keyword
+AUTO_MINIO_COLS = {"subject", "topic", "lesson", "chunk"}
 
 
 def _now():
@@ -139,7 +137,7 @@ def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
     headers = [_norm_header(x) for x in rows[0]]
     out = []
 
-    for idx, r in enumerate(rows[1:], start=2):  # excel row number (1-based)
+    for idx, r in enumerate(rows[1:], start=2):
         rec = {}
         empty = True
         for h, cell in zip(headers, r):
@@ -158,7 +156,6 @@ def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
 
 
 def _ensure_import_index(db, col: str):
-    # optional but recommended
     try:
         db[col].create_index("import_key", unique=True)
     except Exception:
@@ -173,12 +170,8 @@ def _upsert_by_import_key(
     *,
     actor: str,
 ) -> Tuple[str, str]:
-    """
-    Return: (mongo_id_str, op) where op in {"insert","update","noop"}
-    """
     now = _now()
 
-    # Lấy doc hiện có để so sánh (projection theo keys trong doc cho nhẹ)
     proj = {"_id": 1, "deleted_at": 1}
     for k in doc.keys():
         proj[k] = 1
@@ -188,7 +181,6 @@ def _upsert_by_import_key(
     if existing:
         patch = dict(doc)
 
-        # soft delete normalize để không làm "đổi" mỗi lần import lại
         if "is_deleted" in patch:
             is_del = patch["is_deleted"]
             if isinstance(is_del, str):
@@ -197,12 +189,10 @@ def _upsert_by_import_key(
             patch["is_deleted"] = is_del
 
             if is_del:
-                # giữ deleted_at cũ nếu đã có, tránh update liên tục
                 patch["deleted_at"] = existing.get("deleted_at") or now
             else:
                 patch["deleted_at"] = None
 
-        # So sánh core fields (bỏ audit)
         IGNORE = {"_id", "created_at", "created_by", "updated_at", "updated_by"}
         same = True
         for k, v in patch.items():
@@ -215,13 +205,11 @@ def _upsert_by_import_key(
         if same:
             return str(existing["_id"]), "noop"
 
-        # có đổi thật -> mới update + audit
         patch["updated_at"] = now
         patch["updated_by"] = actor
         db[col].update_one({"_id": existing["_id"]}, {"$set": patch})
         return str(existing["_id"]), "update"
 
-    # insert
     ins = dict(doc)
     ins["import_key"] = import_key
     ins.setdefault("is_deleted", False)
@@ -239,10 +227,7 @@ def _upsert_by_import_key(
     return str(r.inserted_id), "insert"
 
 
-# ===================== AUTO MINIO: helpers =====================
-
 def _pick_bucket_from_row(rec: Dict[str, Any]) -> str:
-    # bạn có thể thêm cột bucket_name/bucket trong excel (ưu tiên bucket_name)
     b = (
         str(rec.get("bucket_name") or "").strip()
         or str(rec.get("bucket") or "").strip()
@@ -287,12 +272,10 @@ def _get_subject_base_prefix(db, subject_ref: str, ctx: Dict[str, Any]) -> Tuple
     ok = (m.get("object_key") or "").strip()
     bucket = (m.get("bucket") or "").strip() or _default_bucket()
 
-    # Nếu subject đã có minio trước đó => derive base_prefix từ object_key
     base_prefix = ""
     if ok and "/sgk/" in ok:
         base_prefix = ok.rsplit("/sgk/", 1)[0].strip("/")
 
-    # Nếu chưa có minio => compute lại từ fields
     if not base_prefix:
         class_ref = (d.get("class_ref") or "").strip()
         class_slug = _get_class_slug(db, class_ref, ctx)
@@ -413,7 +396,7 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         subj_slug = _slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
 
         if not (bucket and class_slug and type_slug and subj_slug):
-            return  # thiếu dữ liệu -> bỏ qua, user tự set minio
+            return
 
         base_prefix = f"{_minio_base_dir()}/{type_slug}/{class_slug}/{subj_slug}"
         object_key = f"{base_prefix}/sgk/sgk.pdf"
@@ -485,6 +468,7 @@ def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: 
         }
         return
 
+
 def _ensure_keyword_related_indexes(db) -> None:
     ensure_keyword_alias_indexes(db)
 
@@ -510,7 +494,6 @@ def _ensure_keyword_related_indexes(db) -> None:
     except Exception:
         pass
 
-    # keyword_name must also be unique among active keywords
     try:
         db["keyword"].drop_index("keyword_name_1")
     except Exception:
@@ -551,10 +534,7 @@ def _ensure_keyword_related_indexes(db) -> None:
         pass
 
 
-# ===================== KEYWORD HELPERS =====================
-
 def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
-    """Return (mongo_keyword_id_str, op) where mongo_keyword_id_str is str(keyword._id)."""
     keyword_slug, existing_mongo_id = _resolve_keyword_slug(db, keyword_name)
     if existing_mongo_id:
         return existing_mongo_id, "noop"
@@ -577,11 +557,6 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
 
 
 def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
-    """
-    Upsert (chunk_id, keyword_id) pair into chunk_keyword.
-    chunk_id and keyword_id are stored as BSON ObjectId.
-    Return op in {"insert", "noop"}.
-    """
     chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
@@ -609,12 +584,6 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
 def _upsert_topic_bag(
     db, topic_id: str, topic_name: Optional[str], keyword_id: str, keyword_name: str, actor: str
 ) -> str:
-    """
-    Upsert topic_bag for topic_id.
-    topic_id and keyword_refs[].keyword_id are stored as BSON ObjectId.
-    keyword_refs stores [{keyword_id: ObjectId(<Mongo keyword _id>), keyword_name: <str>}].
-    Returns op in {"insert", "update", "noop"}.
-    """
     topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
@@ -638,7 +607,6 @@ def _upsert_topic_bag(
                 "$set": set_fields,
             },
         )
-        # recompute total_keywords
         updated_doc = db["topic_bag"].find_one({"_id": existing["_id"]}, {"keyword_refs": 1})
         total = len(updated_doc.get("keyword_refs") or [])
         db["topic_bag"].update_one({"_id": existing["_id"]}, {"$set": {"total_keywords": total}})
@@ -667,28 +635,55 @@ def _finalize_topic_embeddings(
 ) -> Dict[str, Any]:
     """Sync each affected topic once after the full topic_bag is populated.
 
-    Called after all keyword rows are processed and alias generation is done.
-    Reads the final topic_bag state, calls Gemini once per topic to filter keywords,
-    persists keyword_embedding_text, then syncs PG + Neo.
+    Rebuilds keyword_embedding_candidates / keyword_embedding_selected /
+    keyword_embedding_text / keyword_embedding_used_fallback in Mongo and
+    pushes the updated embedding to PG + Neo4j.
     """
     finalized = 0
     finalize_errors: List[Dict[str, Any]] = []
+
+    _log.info("[import] _finalize_topic_embeddings: starting for %d topic(s)", len(affected_topic_ids))
 
     for topic_id in affected_topic_ids:
         try:
             topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
             topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
             if not topic_doc:
-                _log.warning("[import] topic '%s' not found or deleted — skipping finalization", topic_id)
+                _log.warning(
+                    "[import] finalize: topic id=%s not found or deleted — skipped",
+                    topic_id,
+                )
                 continue
+
+            _import_key = topic_doc.get("import_key") or ""
+            _topic_name = topic_doc.get("topic_name") or ""
+            _log.info(
+                "[import] finalize: syncing topic id=%s import_key=%s name=%s",
+                topic_id, _import_key, _topic_name,
+            )
+
             result = sync_one("topic", topic_doc)
             if isinstance(result, dict) and result.get("ok"):
                 finalized += 1
+                _log.info(
+                    "[import] finalize: OK topic id=%s import_key=%s",
+                    topic_id, _import_key,
+                )
             else:
                 err = result.get("error", "no detail") if isinstance(result, dict) else "no detail"
-                finalize_errors.append({"topic_id": topic_id, "error": f"sync_failed: {err}"})
+                _log.warning(
+                    "[import] finalize: FAILED topic id=%s import_key=%s error=%s",
+                    topic_id, _import_key, err,
+                )
+                finalize_errors.append({"topic_id": topic_id, "import_key": _import_key, "error": f"sync_failed: {err}"})
         except Exception as e:
+            _log.warning("[import] finalize: EXCEPTION topic id=%s: %s", topic_id, e)
             finalize_errors.append({"topic_id": topic_id, "error": str(e)})
+
+    _log.info(
+        "[import] _finalize_topic_embeddings: done — finalized=%d/%d errors=%d",
+        finalized, len(affected_topic_ids), len(finalize_errors),
+    )
 
     if finalize_errors:
         errors.extend(finalize_errors)
@@ -723,7 +718,6 @@ def _import_keyword_rows(
             if not keyword_name:
                 raise ValueError("missing keyword_name")
 
-            # resolve chunk (exclude soft-deleted)
             chunk_doc = db["chunk"].find_one(
                 {"import_key": chunk_ref, "is_deleted": {"$ne": True}},
                 {"_id": 1, "lesson_id": 1},
@@ -732,7 +726,6 @@ def _import_keyword_rows(
                 raise ValueError(f"chunk with import_key='{chunk_ref}' not found")
             chunk_id = str(chunk_doc["_id"])
 
-            # resolve lesson -> topic (exclude soft-deleted)
             lesson_id = str(chunk_doc.get("lesson_id") or "").strip()
             if not lesson_id:
                 raise ValueError(f"chunk '{chunk_ref}' has no lesson_id")
@@ -754,7 +747,6 @@ def _import_keyword_rows(
             if not topic_id:
                 raise ValueError(f"lesson '{lesson_id}' has no topic_id")
 
-            # resolve topic_name for topic_bag storage
             topic_doc = None
             if ObjectId.is_valid(topic_id):
                 topic_doc = db["topic"].find_one(
@@ -780,11 +772,17 @@ def _import_keyword_rows(
                 reused += 1
 
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
-            _bag_op = _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
+            _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
 
-            # Track topics whose topic_bag changed; embedding will be finalized in bulk later.
-            if _bag_op != "noop":
-                affected_topic_ids.add(topic_id)
+            # Always mark topic for finalization regardless of bag_op.
+            # Topics with a pre-existing topic_bag (noop) still need their
+            # keyword_embedding_* fields rebuilt when they were empty (e.g. on re-import).
+            if topic_id not in affected_topic_ids:
+                _log.debug(
+                    "[import] topic marked for finalization: id=%s name=%s",
+                    topic_id, topic_name or "",
+                )
+            affected_topic_ids.add(topic_id)
 
             if sync_one is not None:
                 try:
@@ -819,12 +817,17 @@ def _import_keyword_rows(
 
     alias_skipped = len(reused_keyword_ids - new_keywords.keys())
 
-    from app.services.keyword_alias_service import refresh_keyword_aliases_batch
-
-    # Phase 2: batch alias generation for newly inserted keywords only
     phase2_slots = len(rows)
-    batch_result = {"processed_keywords": 0, "inserted_aliases": 0, "stopped_due_to_quota": False, "remaining_keywords": []}
+    batch_result = {
+        "processed_keywords": 0,
+        "inserted_aliases": 0,
+        "stopped_due_to_quota": False,
+        "remaining_keywords": [],
+    }
+
     if new_keywords:
+        from app.services.keyword_alias_service import refresh_keyword_aliases_batch
+
         try:
             batch_result = refresh_keyword_aliases_batch(
                 db=db,
@@ -841,7 +844,6 @@ def _import_keyword_rows(
         except Exception as batch_e:
             _log.warning("[import] alias batch failed: %s", batch_e)
 
-    # Consume any remaining phase2 slots (e.g. no new keywords, or refresh threw before emitting all)
     if progress_callback is not None and progress_state is not None and phase2_slots > 0:
         already_emitted = progress_state.get("_alias_slots_emitted", 0)
         remaining = phase2_slots - already_emitted
@@ -867,7 +869,6 @@ def _import_keyword_rows(
                 "message": "Hoàn tất import keyword.",
             })
 
-    # Phase 3: finalize topic embeddings once per affected topic, after topic_bag is fully populated.
     topic_finalize_summary: Dict[str, Any] = {"affected_topics": 0, "finalized_topics": 0, "topic_finalize_errors": []}
     if sync_one is not None and affected_topic_ids:
         _log.info("[import] finalizing topic embeddings for %d affected topic(s)", len(affected_topic_ids))
@@ -922,7 +923,6 @@ def import_excel_to_mongo(
             report["collections"][col] = {"rows": 0, "inserted": 0, "updated": 0, "synced": 0, "skipped": True}
             continue
 
-        # keyword has its own dedicated import path
         if col == "keyword":
             _ensure_keyword_related_indexes(db)
             _progress_state = (
@@ -951,7 +951,6 @@ def import_excel_to_mongo(
                 if not import_key:
                     raise ValueError("missing import_key")
 
-                # build doc from columns
                 doc: Dict[str, Any] = {}
                 for k, v in rec.items():
                     if k is None:
@@ -965,11 +964,9 @@ def import_excel_to_mongo(
                     else:
                         doc[key] = _cell_to_value(v)
 
-                # normalize minio empty
                 if "minio" in doc and (doc["minio"] in ("", None)):
                     doc["minio"] = None
 
-                # resolve parent ref -> Mongo _id stored as BSON ObjectId
                 if col in REF_MAP:
                     ref_col, target_field, parent_col = REF_MAP[col]
                     ref_key = str(rec.get(ref_col) or "").strip()
@@ -984,18 +981,14 @@ def import_excel_to_mongo(
                             raise ValueError(
                                 f"cannot resolve {ref_col}='{ref_key}' (parent '{parent_col}' not imported yet)"
                             )
-                        # store as BSON ObjectId so Mongo refs are real ObjectId, not strings
                         doc[target_field] = ObjectId(parent_id) if ObjectId.is_valid(parent_id) else parent_id
 
-                # ====== AUTO ATTACH MINIO (subject/topic/lesson/chunk) ======
                 _auto_attach_minio(db, col, import_key, rec, doc, ctx)
 
-                # always store import_key in doc
                 doc["import_key"] = import_key
 
                 mongo_id, op = _upsert_by_import_key(db, col, import_key, doc, actor=actor)
 
-                # store map for later children
                 id_map[col][import_key] = mongo_id
 
                 if op == "insert":

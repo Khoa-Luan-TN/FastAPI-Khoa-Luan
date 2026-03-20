@@ -254,7 +254,7 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
 
     r = db[col].update_one(id_filter, {"$set": body})
 
-    # After keyword rename: rebuild keyword.aliases from active keyword_alias docs
+    # After keyword rename: rebuild keyword.aliases from active keyword_alias docs.
     if col == "keyword" and "keyword_name" in body:
         from app.services.keyword_alias_service import sync_keyword_alias_array
         kw_doc = db[col].find_one(id_filter, {"_id": 1})

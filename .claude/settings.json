@@ -10,7 +10,8 @@
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f -name *.jsx -o -name *.tsx -o -name *.js -o -name *.ts)",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f \\\\\\(-name *.sql -o -name init*.py -o -name schema*.py -o -name db*.py \\\\\\))",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f -name *.md -o -name *.txt -o -name README*)",
-      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 2 -type f \\\\\\(-name *.sql -o -name *schema* -o -name *init* \\\\\\))"
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 2 -type f \\\\\\(-name *.sql -o -name *schema* -o -name *init* \\\\\\))",
+      "Bash(python3:*)"
     ]
   }
 }
