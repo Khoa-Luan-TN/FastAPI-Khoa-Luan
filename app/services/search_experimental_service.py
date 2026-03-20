@@ -21,7 +21,7 @@ from app.services.mongo_client import get_mongo_db
 from app.services.neo_search_service import search_top_topics_by_embedding
 from app.services.postgre_client import SessionLocal
 from app.services.search_experimental_debug_service import build_chunk_debug_description
-from app.services.search_experimental_gemini_description_service import generate_chunk_description
+from app.services.search_experimental_gemini_description_service import generate_hierarchy_descriptions
 
 _log = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ def _build_chunk_hit(
         chunk_name=chunk_name,
     )
 
-    generated_description = generate_chunk_description(
+    descriptions = generate_hierarchy_descriptions(
         debug_description=debug_description,
         keyword=keyword,
     )
@@ -344,7 +344,9 @@ def _build_chunk_hit(
         "class_id":    class_id,
         "class_name":  class_name,
         "debug_description": debug_description,
-        "generated_description": generated_description,
+        "topic_description": descriptions["topic_description"],
+        "lesson_description": descriptions["lesson_description"],
+        "chunk_description": descriptions["chunk_description"],
     }
 
 
