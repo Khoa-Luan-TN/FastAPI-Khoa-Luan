@@ -28,92 +28,148 @@ const CloseIcon = ({ size = 15 }) => (
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
-const AttachIcon = ({ size = 13 }) => (
+const ChevronDownIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+const ChevronUpIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+
+// Section icons
+const TopicIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+    <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+  </svg>
+);
+const LessonIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+const ChunkIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
   </svg>
 );
 
 // ---- Search suggestions ----
 const SUGGESTIONS = [
-  "Phương trình vi phân",
-  "Lý thuyết tập hợp",
-  "Phản ứng oxi hoá khử",
-  "Văn học Việt Nam",
-  "Cơ học lượng tử",
+  "Mạng máy tính",
   "Lập trình Python",
+  "Cơ sở dữ liệu",
+  "Thuật toán sắp xếp",
+  "An toàn thông tin",
+  "Trí tuệ nhân tạo",
 ];
-
-// ---- Description fallback (used until topic_des / lesson_des / chunk_des arrive from MongoDB) ----
-const MOCK_DESC = {
-  topic: "Chủ đề này tổng hợp các kiến thức lý thuyết và thực hành quan trọng. Nội dung được trình bày theo cấu trúc rõ ràng, hỗ trợ học sinh nắm vững nền tảng và phát triển tư duy phân tích.",
-  lesson: "Bài học cung cấp kiến thức lý thuyết kết hợp bài tập minh hoạ phong phú. Nội dung được sắp xếp theo từng bước tiến logic, phù hợp với học sinh ở mọi trình độ.",
-  chunk: "Phần này trình bày chi tiết một khái niệm hoặc kỹ năng cụ thể, bao gồm định nghĩa, ví dụ minh hoạ và các lưu ý quan trọng giúp học sinh hiểu sâu và ghi nhớ lâu hơn.",
-  class: "Tổng hợp các môn học và chủ đề thuộc lớp học này.",
-};
 
 const LEVEL_LABEL = {
   topic: "Chủ đề",
   lesson: "Bài học",
   chunk: "Phần nội dung",
-  class: "Lớp học",
 };
 
-// ---- Confidence meta helper ----
-// Returns display metadata for a given score (0-100), or null if score < 50 (should be filtered out).
-function getConfidenceMeta(score) {
-  if (score > 80) return { label: "Độ tin cậy cao", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
-  if (score >= 60) return { label: "Độ tin cậy vừa phải", color: "#92400e", bg: "#fef3c7", border: "#fcd34d" };
-  if (score >= 30) return { label: "Độ tin cậy thấp", color: "#c2410c", bg: "#ffedd5", border: "#fdba74" };
-  return null;
-}
+// ---- Adapter: map new API response (topic_documents/lesson_documents/chunk_documents) ----
+function buildSearchGroups(data) {
+  const topicMap = new Map();
+  const lessonMap = new Map();
+  const chunkMap = new Map();
 
-// ---- Hierarchy formatters ----
-function fmtTopic(num, name) {
-  if (!name) return null;
-  return num != null ? `Chủ đề ${num}. ${name}` : name;
-}
-function fmtLesson(num, name) {
-  if (!name) return null;
-  return num != null ? `Bài ${num}. ${name}` : name;
-}
-// ---- View model mapper ----
-// Maps a backend ResultItem (from /search?q=...) into a UI-ready card object.
-// Backend fields: result_type, id, title, class_name, subject_name,
-//                 topic_name, topic_num, lesson_name, lesson_num,
-//                 chunk_name, chunk_label, description, minio_url,
-//                 keywords, score_display, source
-function resultItemToViewModel(item) {
-  const level = item.result_type || "topic";
-  const descFull = item.description || MOCK_DESC[level] || "Mô tả đang được cập nhật.";
-  const relevance = parseInt(item.score_display) || 0;
-  const classBadge = item.class_name || null;
+  for (const kwr of (data.per_keyword_results || [])) {
+    for (const doc of (kwr.topic_documents || [])) {
+      if (doc.id && !topicMap.has(doc.id)) {
+        topicMap.set(doc.id, {
+          id: doc.id,
+          level: "topic",
+          title: doc.num != null
+            ? `Chủ đề ${doc.num}: ${doc.name || ""}`
+            : (doc.name || doc.id),
+          description: doc.description || "",
+          context: [doc.class_name, doc.subject_name, doc.subject_type]
+            .filter(Boolean).join(" · "),
+          topicId: doc.id,
+          topicName: doc.name || null,
+          topicNum: doc.num ?? null,
+          lessonName: null,
+          lessonNum: null,
+          chunkName: null,
+          chunkNum: null,
+          className: doc.class_name || null,
+          subjectName: doc.subject_name || null,
+          subjectType: doc.subject_type || null,
+          minio: doc.minio || null,
+        });
+      }
+    }
 
-  const topicContext = fmtTopic(item.topic_num, item.topic_name);
-  const lessonContext = fmtLesson(item.lesson_num, item.lesson_name);
+    for (const doc of (kwr.lesson_documents || [])) {
+      if (doc.id && !lessonMap.has(doc.id)) {
+        lessonMap.set(doc.id, {
+          id: doc.id,
+          level: "lesson",
+          title: doc.num != null
+            ? `Bài ${doc.num}: ${doc.name || ""}`
+            : (doc.name || doc.id),
+          description: doc.description || "",
+          context: doc.topic_name
+            ? (doc.topic_num != null
+                ? `Chủ đề ${doc.topic_num}: ${doc.topic_name}`
+                : doc.topic_name)
+            : "",
+          topicId: doc.topic_id || null,
+          topicName: doc.topic_name || null,
+          topicNum: doc.topic_num ?? null,
+          lessonName: doc.name || null,
+          lessonNum: doc.num ?? null,
+          chunkName: null,
+          chunkNum: null,
+          className: doc.class_name || null,
+          subjectName: doc.subject_name || null,
+          subjectType: null,
+          minio: doc.minio || null,
+        });
+      }
+    }
+
+    for (const doc of (kwr.chunk_documents || [])) {
+      if (doc.id && !chunkMap.has(doc.id)) {
+        const lessonCtx = doc.lesson_name
+          ? (doc.lesson_num != null ? `Bài ${doc.lesson_num}: ${doc.lesson_name}` : doc.lesson_name)
+          : "";
+        const topicCtx = doc.topic_name
+          ? (doc.topic_num != null ? `Chủ đề ${doc.topic_num}: ${doc.topic_name}` : doc.topic_name)
+          : "";
+        chunkMap.set(doc.id, {
+          id: doc.id,
+          level: "chunk",
+          title: doc.num != null
+            ? `Mục ${doc.num}: ${doc.name || ""}`
+            : (doc.name || doc.id),
+          description: doc.description || "",
+          context: [lessonCtx, topicCtx].filter(Boolean).join(" · "),
+          topicId: doc.topic_id || null,
+          topicName: doc.topic_name || null,
+          topicNum: doc.topic_num ?? null,
+          lessonName: doc.lesson_name || null,
+          lessonNum: doc.lesson_num ?? null,
+          chunkName: doc.name || null,
+          chunkNum: doc.num ?? null,
+          className: doc.class_name || null,
+          subjectName: doc.subject_name || null,
+          subjectType: null,
+          minio: doc.minio || null,
+        });
+      }
+    }
+  }
 
   return {
-    id: item.id,
-    level,
-    title: item.title || item.id,
-    descShort: descFull,
-    descFull,
-    subjectBadge: item.subject_name || null,
-    classBadge,
-    topicContext,                              // "Chủ đề 2. Mạng máy tính và Internet"
-    lessonContext,                             // "Bài 8. Mạng máy tính trong cuộc sống"
-    chunkNum: item.chunk_num ?? null,
-    chunkName: item.chunk_name || null,
-    topicNum: item.topic_num ?? null,
-    topicName: item.topic_name || null,
-    lessonNum: item.lesson_num ?? null,
-    lessonName: item.lesson_name || null,
-    relevance,
-    score: item.score_display,
-    keywords: item.keywords || [],
-    minioUrl: item.minio_url || null,
-    isLowConfidence: relevance >= 30 && relevance < 60,
-    matchNote: item.match_note || null,
+    topics: [...topicMap.values()],
+    lessons: [...lessonMap.values()],
+    chunks: [...chunkMap.values()],
   };
 }
 
@@ -121,15 +177,15 @@ function resultItemToViewModel(item) {
 function SkeletonCard() {
   return (
     <div className="u-skeleton-card">
-      <div style={{ display: "flex", gap: 8 }}>
-        <div className="u-skeleton" style={{ height: 20, width: 80 }} />
-        <div className="u-skeleton" style={{ height: 20, width: 100 }} />
+      <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+        <div className="u-skeleton" style={{ height: 22, width: 72, borderRadius: 100 }} />
+        <div className="u-skeleton" style={{ height: 22, width: 96, borderRadius: 100 }} />
       </div>
-      <div className="u-skeleton" style={{ height: 17, width: "78%" }} />
-      <div className="u-skeleton" style={{ height: 17, width: "55%" }} />
-      <div className="u-skeleton" style={{ height: 13, width: "100%", marginTop: 4 }} />
-      <div className="u-skeleton" style={{ height: 13, width: "88%" }} />
-      <div className="u-skeleton" style={{ height: 13, width: "70%" }} />
+      <div className="u-skeleton" style={{ height: 18, width: "80%" }} />
+      <div className="u-skeleton" style={{ height: 18, width: "62%" }} />
+      <div className="u-skeleton" style={{ height: 13, width: "100%", marginTop: 6 }} />
+      <div className="u-skeleton" style={{ height: 13, width: "90%" }} />
+      <div className="u-skeleton" style={{ height: 13, width: "72%" }} />
     </div>
   );
 }
@@ -151,27 +207,18 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
           </div>
           <div className="u-modal-badges">
             <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
-            {doc.subjectBadge && (
-              <span className="u-modal-badge-subject">{doc.subjectBadge}</span>
+            {doc.subjectName && (
+              <span className="u-modal-badge-subject">{doc.subjectName}</span>
             )}
-            {doc.classBadge && (
-              <span className="u-modal-badge-class">{doc.classBadge}</span>
+            {doc.className && (
+              <span className="u-modal-badge-class">{doc.className}</span>
             )}
-            {(() => {
-              const cm = getConfidenceMeta(doc.relevance);
-              return cm ? (
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 20, color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
-                  {cm.label} · {doc.relevance}%
-                </span>
-              ) : null;
-            })()}
           </div>
         </div>
 
         <div className="u-modal-body">
-
-          {/* Context panel for lesson / chunk */}
-          {(doc.topicName && doc.level !== "topic" || doc.lessonName || doc.chunkName) && (
+          {/* Hierarchy context panel */}
+          {(doc.topicName || doc.lessonName) && (
             <div className="u-ctx-panel">
               {doc.topicName && doc.level !== "topic" && (
                 <div className="u-ctx-row">
@@ -181,7 +228,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
                   <span className="u-ctx-value">{doc.topicName}</span>
                 </div>
               )}
-              {doc.lessonName && (
+              {doc.lessonName && doc.level === "chunk" && (
                 <div className="u-ctx-row">
                   <span className="u-ctx-label">
                     {doc.lessonNum != null ? `Bài ${doc.lessonNum}` : "Bài học"}
@@ -189,49 +236,36 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
                   <span className="u-ctx-value">{doc.lessonName}</span>
                 </div>
               )}
-              {doc.chunkName && (
-                <div className="u-ctx-row">
-                  <span className="u-ctx-label">
-                    {doc.chunkNum != null ? `Mục ${doc.chunkNum}` : "Mục"}
-                  </span>
-                  <span className="u-ctx-value">{doc.chunkName}</span>
-                </div>
-              )}
             </div>
           )}
 
-          {/* Name note — shown when embedding similarity < 0.80 */}
-          {doc.matchNote && (
-            <p className="u-name-note u-name-note-modal">{doc.matchNote}</p>
-          )}
-
-          {/* Description */}
           <div>
             <p className="u-modal-section-label">Mô tả</p>
-            <p className="u-modal-desc">{doc.descFull}</p>
+            <p className="u-modal-desc">
+              {doc.description || "Mô tả đang được cập nhật."}
+            </p>
           </div>
 
-          {/* Attachment */}
           <div>
             <p className="u-modal-section-label">Tài liệu đính kèm</p>
-            {doc.minioUrl ? (
-              <a href={doc.minioUrl} target="_blank" rel="noopener noreferrer" className="u-attach-btn">
-                <AttachIcon /> Tải tài liệu
+            {doc.minio?.url ? (
+              <a
+                href={doc.minio.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="u-attach-btn"
+              >
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Tải xuống
               </a>
             ) : (
-              <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>Chưa có tài liệu đính kèm.</p>
+              <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>
+                Chưa có tài liệu đính kèm.
+              </p>
             )}
           </div>
-
-          {/* Keywords */}
-          {doc.keywords && doc.keywords.length > 0 && (
-            <div>
-              <p className="u-modal-section-label">Từ khoá</p>
-              <div className="u-doc-tags">
-                {doc.keywords.map((k) => <span key={k} className="u-tag">{k}</span>)}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="u-modal-footer">
@@ -256,24 +290,16 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
 
   return (
     <div
-      className={`u-doc-card u-fadein${doc.isLowConfidence ? " u-card-dim" : ""}`}
-      style={{ animationDelay: `${index * 0.05}s` }}
+      className={`u-doc-card u-doc-card--${doc.level} u-fadein`}
+      style={{ animationDelay: `${index * 0.04}s` }}
       onClick={() => onOpen(doc)}
     >
       <div className="u-doc-card-top">
         <div className="u-doc-badges">
           <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
-          {doc.subjectBadge && (
-            <span className="u-subject-badge">{doc.subjectBadge}</span>
+          {doc.subjectName && (
+            <span className="u-subject-badge">{doc.subjectName}</span>
           )}
-          {(() => {
-            const cm = getConfidenceMeta(doc.relevance);
-            return cm ? (
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20, color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
-                {cm.label} · {doc.relevance}%
-              </span>
-            ) : null;
-          })()}
         </div>
         <button
           className={`u-save-btn ${isSaved ? "saved" : ""}`}
@@ -285,36 +311,77 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
       </div>
 
       <h3 className="u-doc-title">{doc.title}</h3>
-      {doc.matchNote && (
-        <p className="u-name-note">{doc.matchNote}</p>
-      )}
-      <p className="u-doc-desc">{doc.descShort}</p>
 
-      <div className="u-doc-divider" />
-      <div className="u-doc-meta">
-        {doc.classBadge && (
-          <span className="u-meta-item u-meta-class-pill">{doc.classBadge}</span>
+      <p className="u-doc-desc">
+        {doc.description || "Mô tả đang được cập nhật."}
+      </p>
+
+      <div className="u-doc-footer">
+        {doc.className && (
+          <span className="u-meta-class-pill">{doc.className}</span>
         )}
-        {doc.topicContext && doc.level !== "topic" && (
-          <span className="u-meta-item u-meta-breadcrumb" title={doc.topicContext}>
-            {doc.topicContext.length > 28 ? doc.topicContext.slice(0, 28) + "…" : doc.topicContext}
+        {doc.context && (
+          <span className="u-meta-breadcrumb" title={doc.context}>
+            {doc.context.length > 44 ? doc.context.slice(0, 44) + "…" : doc.context}
           </span>
-        )}
-        {doc.lessonContext && doc.level === "chunk" && (
-          <span className="u-meta-item u-meta-breadcrumb" title={doc.lessonContext}>
-            {doc.lessonContext.length > 28 ? doc.lessonContext.slice(0, 28) + "…" : doc.lessonContext}
-          </span>
-        )}
-        {doc.isLowConfidence && (
-          <span className="u-meta-item u-low-confidence-tag">Tin cậy thấp</span>
         )}
         <button
           className="u-detail-btn"
           onClick={(e) => { e.stopPropagation(); onOpen(doc); }}
         >
-          Xem <ArrowRightIcon />
+          Chi tiết <ArrowRightIcon />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ---- ResultSection ----
+const SECTION_META = {
+  topic:  { Icon: TopicIcon,  accent: "#7C3AED", label: "Chủ đề" },
+  lesson: { Icon: LessonIcon, accent: "#1D4ED8", label: "Bài học" },
+  chunk:  { Icon: ChunkIcon,  accent: "#047857", label: "Phần nội dung" },
+};
+
+function ResultSection({ level, items, savedIds, onToggleSave, onOpen, indexOffset = 0 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  if (items.length === 0) return null;
+
+  const { Icon, accent, label } = SECTION_META[level] || { Icon: TopicIcon, accent: "#64748B", label: level };
+
+  return (
+    <div className="u-section">
+      <button
+        className="u-section-header"
+        style={{ "--accent": accent }}
+        onClick={() => setCollapsed((c) => !c)}
+      >
+        <span className="u-section-header-left">
+          <span className="u-section-icon" style={{ color: accent }}>
+            <Icon size={15} />
+          </span>
+          <span className="u-section-title" style={{ color: accent }}>{label}</span>
+          <span className="u-section-count">{items.length}</span>
+        </span>
+        <span className="u-section-toggle" style={{ color: accent }}>
+          {collapsed ? <ChevronDownIcon size={15} /> : <ChevronUpIcon size={15} />}
+        </span>
+      </button>
+
+      {!collapsed && (
+        <div className="u-doc-grid">
+          {items.map((doc, i) => (
+            <SearchResultCard
+              key={doc.id}
+              doc={doc}
+              index={indexOffset + i}
+              savedIds={savedIds}
+              onToggleSave={onToggleSave}
+              onOpen={onOpen}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -323,8 +390,7 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
 export default function UserHome() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
-  const [results, setResults] = useState(null);       // null = idle, [] = searched
-  const [searchMeta, setSearchMeta] = useState(null); // { status, reason, notes }
+  const [groups, setGroups] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -351,16 +417,15 @@ export default function UserHome() {
     if (willSave) {
       filtered.push({
         id: doc.id,
+        level: doc.level || "chunk",
         title: doc.title,
-        descShort: doc.descShort,
-        desc: doc.descFull,
-        category: doc.subjectBadge || "Tài liệu",
-        subject: doc.subjectBadge || "Tài liệu",
-        tags: doc.keywords || [],
-        author: "—",
-        date: "—",
-        pages: "—",
-        relevance: doc.relevance,
+        descShort: doc.description || "",
+        desc: doc.description || "",
+        category: doc.subjectName || "Tài liệu",
+        subject: doc.subjectName || "Tài liệu",
+        className: doc.className || null,
+        tags: [],
+        minio: doc.minio || null,
       });
     }
     localStorage.setItem("u_saved_docs", JSON.stringify(filtered));
@@ -372,34 +437,23 @@ export default function UserHome() {
     setQuery(trimmed);
     setSubmittedQuery(trimmed);
     setLoading(true);
-    setResults(null);
-    setSearchMeta(null);
+    setGroups(null);
     setError(null);
 
     try {
       const data = await executeSearch(trimmed);
-      const { items = [], status = "no_match", message = "", mode = "" } = data;
+      const g = buildSearchGroups(data);
+      setGroups(g);
 
-      const cards = items
-        .map((item) => resultItemToViewModel(item))
-        .filter((card) => card.relevance >= 30);
-
-      setResults(cards);
-      setSearchMeta({ status, reason: message, mode });
-
+      const totalCount = g.topics.length + g.lessons.length + g.chunks.length;
       const hist = JSON.parse(localStorage.getItem("u_history") || "[]");
-      const entry = {
-        id: Date.now(),
-        query: trimmed,
-        count: cards.length,
-        date: new Date().toLocaleString("vi-VN"),
-      };
-      localStorage.setItem("u_history", JSON.stringify([entry, ...hist.slice(0, 19)]));
-
-    } catch (err) {
+      localStorage.setItem("u_history", JSON.stringify([
+        { id: Date.now(), query: trimmed, count: totalCount, date: new Date().toLocaleString("vi-VN") },
+        ...hist.slice(0, 19),
+      ]));
+    } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
-      setResults([]);
-      setSearchMeta({ status: "no_match", reason: "Lỗi kết nối.", notes: [] });
+      setGroups({ topics: [], lessons: [], chunks: [] });
     } finally {
       setLoading(false);
     }
@@ -410,26 +464,28 @@ export default function UserHome() {
   }
 
   function clearResults() {
-    setResults(null);
-    setSearchMeta(null);
+    setGroups(null);
     setError(null);
     setQuery("");
     setSubmittedQuery("");
     setTimeout(() => textareaRef.current?.focus(), 40);
   }
 
-  const isNoMatch = searchMeta?.status === "no_match";
+  const totalCount = groups
+    ? groups.topics.length + groups.lessons.length + groups.chunks.length
+    : 0;
+  const isEmpty = groups !== null && totalCount === 0;
 
   return (
     <div className="u-home-wrap">
 
-      {/* Search panel — always visible */}
+      {/* Search panel */}
       <div className="u-search-panel">
-        <div className="u-search-label">Nhập yêu cầu tìm kiếm</div>
+        <div className="u-search-label">Tìm kiếm tài liệu học tập</div>
         <textarea
           ref={textareaRef}
           className="u-textarea"
-          placeholder="Ví dụ: Giải phương trình vi phân bậc nhất và các ứng dụng trong vật lý..."
+          placeholder="Ví dụ: Mạng máy tính và Internet, thuật toán sắp xếp, lập trình Python..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKey}
@@ -457,19 +513,17 @@ export default function UserHome() {
       {/* Loading */}
       {loading && (
         <div className="u-doc-grid">
-          {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
+          {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonCard key={i} />)}
         </div>
       )}
 
-      {/* Connection error */}
+      {/* Error */}
       {error && !loading && (
-        <div className="u-confidence-banner u-banner-error">
-          {error}
-        </div>
+        <div className="u-confidence-banner u-banner-error">{error}</div>
       )}
 
-      {/* Idle state */}
-      {!loading && results === null && !error && (
+      {/* Idle */}
+      {!loading && groups === null && !error && (
         <div className="u-idle-state">
           <div className="u-idle-icon"><SearchIcon size={52} /></div>
           <p className="u-idle-title">Nhập từ khoá để bắt đầu</p>
@@ -478,44 +532,55 @@ export default function UserHome() {
       )}
 
       {/* Results */}
-      {!loading && results !== null && (
+      {!loading && groups !== null && (
         <>
-          <div className="u-results-header">
-            <span className="u-results-label">
+          <div className="u-results-bar">
+            <span className="u-results-bar-query">
               Kết quả cho <strong>"{submittedQuery}"</strong>
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="u-results-count">{results.length} kết quả</span>
-              <button className="u-clear-btn" onClick={clearResults}>Xoá kết quả</button>
+              <span className="u-results-count">{totalCount} kết quả</span>
+              <button className="u-clear-btn" onClick={clearResults}>Xoá</button>
             </div>
           </div>
 
-          {results.length === 0 || isNoMatch ? (
+          {isEmpty ? (
             <div className="u-empty">
               <div className="u-empty-icon"><SearchIcon size={42} /></div>
-              <p className="u-empty-title">Không tìm thấy kết quả học tập đủ độ liên quan</p>
-              <p className="u-empty-desc">
-                {searchMeta?.reason || "Thử điều chỉnh từ khoá hoặc chọn một gợi ý."}
-              </p>
+              <p className="u-empty-title">Không tìm thấy kết quả phù hợp</p>
+              <p className="u-empty-desc">Thử điều chỉnh từ khoá hoặc chọn một gợi ý.</p>
             </div>
           ) : (
-            <div className="u-doc-grid">
-              {results.map((doc, i) => (
-                <SearchResultCard
-                  key={doc.id}
-                  doc={doc}
-                  index={i}
-                  savedIds={savedIds}
-                  onToggleSave={toggleSave}
-                  onOpen={setSelectedDoc}
-                />
-              ))}
+            <div className="u-results-body">
+              <ResultSection
+                level="topic"
+                items={groups.topics}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                onOpen={setSelectedDoc}
+                indexOffset={0}
+              />
+              <ResultSection
+                level="lesson"
+                items={groups.lessons}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                onOpen={setSelectedDoc}
+                indexOffset={groups.topics.length}
+              />
+              <ResultSection
+                level="chunk"
+                items={groups.chunks}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                onOpen={setSelectedDoc}
+                indexOffset={groups.topics.length + groups.lessons.length}
+              />
             </div>
           )}
         </>
       )}
 
-      {/* Detail modal */}
       {selectedDoc && (
         <SearchResultDetailModal
           doc={selectedDoc}

@@ -1,3 +1,4 @@
+// frontend/src/pages/user/Profile.jsx
 import { useNavigate } from "react-router-dom";
 
 const LogoutIcon = ({ size = 14 }) => (
@@ -44,6 +45,11 @@ const HistoryIcon = ({ size = 15 }) => (
     <path d="M3.05 11a9 9 0 1 0 .5-4.5" /><polyline points="3 3 3 8 8 8" />
   </svg>
 );
+const ArrowRightIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -63,8 +69,12 @@ export default function Profile() {
 
   return (
     <div className="u-page-wrap">
-      <h1 className="u-page-title">Tài khoản</h1>
-      <p className="u-page-sub">Thông tin tài khoản của bạn</p>
+      <div className="u-page-header">
+        <div>
+          <h1 className="u-page-title">Tài khoản</h1>
+          <p className="u-page-sub">Thông tin tài khoản của bạn</p>
+        </div>
+      </div>
 
       <div className="u-profile-grid">
         {/* Avatar card */}
@@ -91,7 +101,6 @@ export default function Profile() {
 
         {/* Info + shortcuts */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Account info */}
           <div className="u-info-card">
             <div className="u-info-card-title">Thông tin tài khoản</div>
             <div className="u-info-rows">
@@ -103,19 +112,13 @@ export default function Profile() {
               <div className="u-info-row">
                 <div className="u-info-row-icon"><HashIcon /></div>
                 <div className="u-info-row-label">User ID</div>
-                <div className="u-info-row-value" style={{ fontFamily: "monospace", fontSize: 12.5, color: "#64748B" }}>{userId}</div>
+                <div className="u-info-row-value u-monospace">{userId}</div>
               </div>
               <div className="u-info-row">
                 <div className="u-info-row-icon"><ShieldIcon /></div>
                 <div className="u-info-row-label">Vai trò</div>
                 <div className="u-info-row-value">
-                  <span style={{
-                    display: "inline-block", padding: "3px 11px", borderRadius: 100,
-                    fontSize: 12, fontWeight: 700,
-                    background: role === "admin" ? "#F3E8FF" : "#EFF6FF",
-                    color: role === "admin" ? "#7C3AED" : "#2563EB",
-                    border: `1px solid ${role === "admin" ? "#DDD6FE" : "#BFDBFE"}`,
-                  }}>
+                  <span className={`u-role-badge u-role-badge--${role}`}>
                     {role === "admin" ? "Admin" : "User"}
                   </span>
                 </div>
@@ -123,29 +126,43 @@ export default function Profile() {
               <div className="u-info-row">
                 <div className="u-info-row-icon"><KeyIcon /></div>
                 <div className="u-info-row-label">Mật khẩu</div>
-                <div className="u-info-row-value" style={{ color: "#94A3B8", letterSpacing: 2 }}>••••••••</div>
+                <div className="u-info-row-value u-password-dots">••••••••</div>
               </div>
             </div>
           </div>
 
-          {/* Quick access */}
           <div className="u-info-card">
             <div className="u-info-card-title">Truy cập nhanh</div>
             <div className="u-info-rows">
-              <div className="u-info-row" style={{ cursor: "pointer" }} onClick={() => navigate("/user")}>
-                <div className="u-info-row-icon" style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}><SearchIcon /></div>
-                <div className="u-info-row-label">Tìm kiếm</div>
-                <div className="u-info-row-value" style={{ color: "#64748B" }}>Tìm tài liệu học tập</div>
+              <div className="u-quick-nav-row" onClick={() => navigate("/user")}>
+                <div className="u-info-row-icon" style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
+                  <SearchIcon />
+                </div>
+                <div>
+                  <div className="u-quick-nav-label">Tìm kiếm</div>
+                  <div className="u-quick-nav-desc">Tìm tài liệu học tập</div>
+                </div>
+                <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
-              <div className="u-info-row" style={{ cursor: "pointer" }} onClick={() => navigate("/user/history")}>
-                <div className="u-info-row-icon" style={{ background: "#F0F9FF", color: "#0369A1", border: "1px solid #BAE6FD" }}><HistoryIcon /></div>
-                <div className="u-info-row-label">Lịch sử</div>
-                <div className="u-info-row-value" style={{ color: "#64748B" }}>{historyCount} lần tìm kiếm</div>
+              <div className="u-quick-nav-row" onClick={() => navigate("/user/history")}>
+                <div className="u-info-row-icon" style={{ background: "#F0F9FF", color: "#0369A1", border: "1px solid #BAE6FD" }}>
+                  <HistoryIcon />
+                </div>
+                <div>
+                  <div className="u-quick-nav-label">Lịch sử</div>
+                  <div className="u-quick-nav-desc">{historyCount} lần tìm kiếm</div>
+                </div>
+                <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
-              <div className="u-info-row" style={{ cursor: "pointer" }} onClick={() => navigate("/user/saved")}>
-                <div className="u-info-row-icon" style={{ background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE" }}><BookmarkIcon /></div>
-                <div className="u-info-row-label">Đã lưu</div>
-                <div className="u-info-row-value" style={{ color: "#64748B" }}>{savedCount} tài liệu</div>
+              <div className="u-quick-nav-row" onClick={() => navigate("/user/saved")}>
+                <div className="u-info-row-icon" style={{ background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE" }}>
+                  <BookmarkIcon />
+                </div>
+                <div>
+                  <div className="u-quick-nav-label">Đã lưu</div>
+                  <div className="u-quick-nav-desc">{savedCount} tài liệu</div>
+                </div>
+                <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
             </div>
           </div>

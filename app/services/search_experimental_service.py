@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from neo4j import Session
@@ -92,7 +92,9 @@ def _probe_keyword(
         "top_topic": None,
         "topic_bag": None,
         "matched_keyword": None,
-        "chunk_hits": [],
+        "topic_documents": [],
+        "lesson_documents": [],
+        "chunk_documents": [],
     }
 
     top_topic = _probe_top_topic(neo, keyword, class_ids)
@@ -126,7 +128,11 @@ def _probe_keyword(
 
     matched_kw_oid = matched_kw["_oid"]
     base["matched_keyword"] = {k: v for k, v in matched_kw.items() if k != "_oid"}
-    base["chunk_hits"] = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+
+    chunk_hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+    base["topic_documents"], base["lesson_documents"], base["chunk_documents"] = (
+        _build_documents_from_hits(chunk_hits)
+    )
     return base
 
 
@@ -143,6 +149,17 @@ def _to_oid(v: Any) -> Optional[ObjectId]:
         return v
     s = str(v).strip()
     return ObjectId(s) if ObjectId.is_valid(s) else None
+
+
+def _extract_minio(raw: Any) -> Optional[Dict[str, Any]]:
+    if not raw or not isinstance(raw, dict):
+        return None
+    bucket = raw.get("bucket")
+    object_key = raw.get("object_key")
+    url = raw.get("url")
+    if not any([bucket, object_key, url]):
+        return None
+    return {"bucket": bucket, "object_key": object_key, "url": url}
 
 
 def _probe_top_topic(
@@ -187,7 +204,6 @@ def _fetch_topic_bag(db: Any, mongo_topic_id: str) -> Optional[Dict[str, Any]]:
     )
 
 
-# lấy keyword và tìm keyword trong túi
 def _match_keyword_in_bag(
     db: Any,
     bag: Dict[str, Any],
@@ -249,44 +265,49 @@ def _build_chunk_hit(
 
     chunk_doc = db["chunk"].find_one(
         {"_id": chunk_oid, "is_deleted": {"$ne": True}},
-        {"chunk_name": 1, "chunk_num": 1, "lesson_id": 1},
+        {"chunk_name": 1, "chunk_num": 1, "lesson_id": 1, "minio": 1},
     )
     if not chunk_doc:
         return None
 
-    chunk_id  = str(chunk_oid)
+    chunk_id   = str(chunk_oid)
     chunk_name = chunk_doc.get("chunk_name")
     chunk_num  = chunk_doc.get("chunk_num")
+    chunk_minio = _extract_minio(chunk_doc.get("minio"))
 
     # chunk → lesson
     lesson_oid = _to_oid(chunk_doc.get("lesson_id"))
     lesson_id = lesson_name = lesson_num = None
+    lesson_minio = None
     topic_id = topic_name = topic_num = None
+    topic_minio = None
     subject_id = subject_name = subject_type = None
     class_id = class_name = None
 
     if lesson_oid is not None:
         lesson_doc = db["lesson"].find_one(
             {"_id": lesson_oid, "is_deleted": {"$ne": True}},
-            {"lesson_name": 1, "lesson_num": 1, "topic_id": 1},
+            {"lesson_name": 1, "lesson_num": 1, "topic_id": 1, "minio": 1},
         )
         if lesson_doc:
-            lesson_id   = str(lesson_oid)
-            lesson_name = lesson_doc.get("lesson_name")
-            lesson_num  = lesson_doc.get("lesson_num")
+            lesson_id    = str(lesson_oid)
+            lesson_name  = lesson_doc.get("lesson_name")
+            lesson_num   = lesson_doc.get("lesson_num")
+            lesson_minio = _extract_minio(lesson_doc.get("minio"))
 
-            # lesson → topic  (topic_id stored as string)
+            # lesson → topic
             raw_tid = lesson_doc.get("topic_id")
             topic_oid = _to_oid(raw_tid)
             if topic_oid is not None:
                 topic_doc = db["topic"].find_one(
                     {"_id": topic_oid, "is_deleted": {"$ne": True}},
-                    {"topic_name": 1, "topic_num": 1, "subject_id": 1},
+                    {"topic_name": 1, "topic_num": 1, "subject_id": 1, "minio": 1},
                 )
                 if topic_doc:
-                    topic_id   = str(topic_oid)
-                    topic_name = topic_doc.get("topic_name")
-                    topic_num  = topic_doc.get("topic_num")
+                    topic_id    = str(topic_oid)
+                    topic_name  = topic_doc.get("topic_name")
+                    topic_num   = topic_doc.get("topic_num")
+                    topic_minio = _extract_minio(topic_doc.get("minio"))
 
                     # topic → subject
                     subject_oid = _to_oid(topic_doc.get("subject_id"))
@@ -332,22 +353,84 @@ def _build_chunk_hit(
         "chunk_id":    chunk_id,
         "chunk_name":  chunk_name,
         "chunk_num":   chunk_num,
+        "chunk_minio": chunk_minio,
         "lesson_id":   lesson_id,
         "lesson_name": lesson_name,
         "lesson_num":  lesson_num,
+        "lesson_minio": lesson_minio,
         "topic_id":    topic_id,
         "topic_name":  topic_name,
         "topic_num":   topic_num,
+        "topic_minio": topic_minio,
         "subject_id":  subject_id,
         "subject_name": subject_name,
         "subject_type": subject_type,
         "class_id":    class_id,
         "class_name":  class_name,
-        "debug_description": debug_description,
-        "topic_description": descriptions["topic_description"],
+        "debug_description":  debug_description,
+        "topic_description":  descriptions["topic_description"],
         "lesson_description": descriptions["lesson_description"],
-        "chunk_description": descriptions["chunk_description"],
+        "chunk_description":  descriptions["chunk_description"],
     }
+
+
+def _build_documents_from_hits(
+    hits: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Deduplicate chunk hits into separate topic / lesson / chunk document lists."""
+    topic_map: Dict[str, Dict[str, Any]] = {}
+    lesson_map: Dict[str, Dict[str, Any]] = {}
+    chunk_map: Dict[str, Dict[str, Any]] = {}
+
+    for hit in hits:
+        tid = hit.get("topic_id")
+        if tid and tid not in topic_map:
+            topic_map[tid] = {
+                "id":           tid,
+                "name":         hit.get("topic_name"),
+                "num":          hit.get("topic_num"),
+                "description":  hit.get("topic_description", ""),
+                "subject_name": hit.get("subject_name"),
+                "subject_type": hit.get("subject_type"),
+                "class_id":     hit.get("class_id"),
+                "class_name":   hit.get("class_name"),
+                "minio":        hit.get("topic_minio"),
+            }
+
+        lid = hit.get("lesson_id")
+        if lid and lid not in lesson_map:
+            lesson_map[lid] = {
+                "id":          lid,
+                "name":        hit.get("lesson_name"),
+                "num":         hit.get("lesson_num"),
+                "description": hit.get("lesson_description", ""),
+                "topic_id":    hit.get("topic_id"),
+                "topic_name":  hit.get("topic_name"),
+                "topic_num":   hit.get("topic_num"),
+                "subject_name": hit.get("subject_name"),
+                "class_name":  hit.get("class_name"),
+                "minio":       hit.get("lesson_minio"),
+            }
+
+        cid = hit.get("chunk_id")
+        if cid and cid not in chunk_map:
+            chunk_map[cid] = {
+                "id":          cid,
+                "name":        hit.get("chunk_name"),
+                "num":         hit.get("chunk_num"),
+                "description": hit.get("chunk_description", ""),
+                "lesson_id":   hit.get("lesson_id"),
+                "lesson_name": hit.get("lesson_name"),
+                "lesson_num":  hit.get("lesson_num"),
+                "topic_id":    hit.get("topic_id"),
+                "topic_name":  hit.get("topic_name"),
+                "topic_num":   hit.get("topic_num"),
+                "subject_name": hit.get("subject_name"),
+                "class_name":  hit.get("class_name"),
+                "minio":       hit.get("chunk_minio"),
+            }
+
+    return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values())
 
 
 def _resolve_class_ids(neo: Session, class_hint: Optional[int]) -> List[str]:

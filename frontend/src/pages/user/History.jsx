@@ -1,3 +1,4 @@
+// frontend/src/pages/user/History.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -56,19 +57,15 @@ export default function History() {
 
   return (
     <div className="u-page-wrap">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 26, gap: 12, flexWrap: "wrap" }}>
+      <div className="u-page-header">
         <div>
           <h1 className="u-page-title">Lịch sử tìm kiếm</h1>
-          <p className="u-page-sub">Các truy vấn bạn đã thực hiện gần đây</p>
+          <p className="u-page-sub">
+            {history.length > 0 ? `${history.length} truy vấn gần đây` : "Các truy vấn bạn đã thực hiện"}
+          </p>
         </div>
         {history.length > 0 && (
-          <button onClick={clearAll} style={{
-            height: 34, padding: "0 14px", borderRadius: 8,
-            border: "1.5px solid #FECDD3", background: "#FFF1F2",
-            color: "#DC2626", fontSize: 12.5, fontWeight: 600,
-            cursor: "pointer", fontFamily: "var(--us-font)",
-            display: "inline-flex", alignItems: "center", gap: 6,
-          }}>
+          <button className="u-danger-btn" onClick={clearAll}>
             <TrashIcon /> Xoá tất cả
           </button>
         )}
@@ -79,12 +76,7 @@ export default function History() {
           <div className="u-empty-icon"><SearchIcon size={42} /></div>
           <p className="u-empty-title">Chưa có lịch sử tìm kiếm</p>
           <p className="u-empty-desc">Thực hiện một tìm kiếm để bắt đầu.</p>
-          <button onClick={() => navigate("/user")} style={{
-            marginTop: 18, height: 38, padding: "0 20px", borderRadius: 9,
-            border: "none", background: "linear-gradient(135deg, #2563EB, #4F46E5)",
-            color: "#fff", fontSize: 13.5, fontWeight: 700,
-            cursor: "pointer", fontFamily: "var(--us-font)",
-          }}>
+          <button className="u-cta-btn" onClick={() => navigate("/user")}>
             Tìm kiếm ngay
           </button>
         </div>
@@ -99,22 +91,17 @@ export default function History() {
                 <div className="u-history-query">{item.query}</div>
                 <div className="u-history-meta">
                   <span>{item.date}</span>
-                  <span className="u-history-count">{item.count} tài liệu</span>
+                  {item.count > 0 && (
+                    <span className="u-history-count">{item.count} kết quả</span>
+                  )}
                 </div>
               </div>
               <button className="u-history-run" onClick={() => runSearch(item.query)}>
                 Tìm lại <ArrowRightIcon />
               </button>
               <button
+                className="u-icon-btn u-icon-btn--danger"
                 onClick={() => removeEntry(item.id)}
-                style={{
-                  width: 30, height: 30, borderRadius: 7, border: "none",
-                  background: "transparent", color: "#CBD5E1",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "color 0.14s, background 0.14s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#DC2626"; e.currentTarget.style.background = "#FFF1F2"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "#CBD5E1"; e.currentTarget.style.background = "transparent"; }}
                 title="Xoá"
               >
                 <TrashIcon />
