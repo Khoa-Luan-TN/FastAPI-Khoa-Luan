@@ -18,44 +18,13 @@ _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 def _resolve_topic_keyword_text(db, doc: dict) -> tuple[list, str]:
     """Return (keywords_list, joined_text) for a topic doc.
 
-    Primary path — reuses doc['topic_keywords_extracted'] when it is already a list.
-    This avoids a redundant Gemini call when the field was populated by a prior sync
-    or import.
-
-    Fallback path — calls Gemini when the field is absent (None / missing).
-    The result is written back to Mongo and used as the embedding source.
-
-    Returns ([], "") when no valid keywords are available.
-    Does NOT fall back to topic_name or topic_des as embedding text.
+    Builds embedding text from the active topic_bag.keyword_refs[].keyword_name.
+    Returns ([], "") when no active topic_bag exists or no valid keywords are found.
+    Does NOT use topic_des or topic_keywords_extracted as embedding source.
     """
-    doc_id = doc.get("_id")
-    extracted = doc.get("topic_keywords_extracted")
-
-    # Primary: use what is already stored in Mongo
-    if isinstance(extracted, list):
-        kw_text = " | ".join(k for k in extracted if isinstance(k, str) and k)
-        return extracted, kw_text
-
-    # Fallback: extract from topic_des (field was absent / set to None to force refresh)
-    topic_des = (doc.get("topic_des") or "").strip()
-    if not topic_des:
-        if doc_id is not None:
-            try:
-                db["topic"].update_one({"_id": doc_id}, {"$set": {"topic_keywords_extracted": []}})
-            except Exception:
-                pass
-        return [], ""
-
-    from app.services.gemini_topic_keyword_service import get_topic_keyword_text
-    kw_list, kw_text = get_topic_keyword_text(topic_des)
-
-    if doc_id is not None:
-        try:
-            db["topic"].update_one({"_id": doc_id}, {"$set": {"topic_keywords_extracted": kw_list}})
-        except Exception:
-            pass
-
-    return kw_list, kw_text
+    from app.services.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
+    result = build_topic_embedding_text_from_topic_bag(db, doc)
+    return result["keywords"], result["keyword_text"]
 
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
@@ -536,8 +505,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     is_deleted = doc.get("is_deleted") is True
 
-    # Resolve topic keyword text before opening the PG transaction so the Gemini
-    # call (if needed) doesn't block inside pg.begin().
+    # Resolve topic keyword text from topic_bag before opening the PG transaction.
     _topic_kw_text: Optional[str] = None
     if col == "topic" and not is_deleted:
         _, _topic_kw_text = _resolve_topic_keyword_text(db, doc)

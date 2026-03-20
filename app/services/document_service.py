@@ -101,6 +101,42 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             enforce_canonical_name_precedence(db, kw_name, actor)
             body["keyword_slug"] = kw_slug
 
+    # topic: validate + coerce subject_id to ObjectId
+    if col == "topic":
+        from bson import ObjectId as _OID
+        subj_ref = str(body.get("subject_id") or "").strip()
+        if not subj_ref:
+            raise HTTPException(status_code=422, detail="topic.subject_id is required")
+        if not _OID.is_valid(subj_ref):
+            raise HTTPException(status_code=422, detail=f"topic.subject_id '{subj_ref}' is not a valid ObjectId")
+        if not db["subject"].find_one({"_id": _OID(subj_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"subject '{subj_ref}' not found or is deleted")
+        body["subject_id"] = _OID(subj_ref)
+
+    # lesson: validate + coerce topic_id to ObjectId
+    if col == "lesson":
+        from bson import ObjectId as _OID
+        topic_ref = str(body.get("topic_id") or "").strip()
+        if not topic_ref:
+            raise HTTPException(status_code=422, detail="lesson.topic_id is required")
+        if not _OID.is_valid(topic_ref):
+            raise HTTPException(status_code=422, detail=f"lesson.topic_id '{topic_ref}' is not a valid ObjectId")
+        if not db["topic"].find_one({"_id": _OID(topic_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"topic '{topic_ref}' not found or is deleted")
+        body["topic_id"] = _OID(topic_ref)
+
+    # chunk: validate + coerce lesson_id to ObjectId
+    if col == "chunk":
+        from bson import ObjectId as _OID
+        lesson_ref = str(body.get("lesson_id") or "").strip()
+        if not lesson_ref:
+            raise HTTPException(status_code=422, detail="chunk.lesson_id is required")
+        if not _OID.is_valid(lesson_ref):
+            raise HTTPException(status_code=422, detail=f"chunk.lesson_id '{lesson_ref}' is not a valid ObjectId")
+        if not db["lesson"].find_one({"_id": _OID(lesson_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"lesson '{lesson_ref}' not found or is deleted")
+        body["lesson_id"] = _OID(lesson_ref)
+
     # chunk_keyword: validate both refs before Mongo write
     if col == "chunk_keyword":
         from bson import ObjectId as _OID

@@ -742,7 +742,21 @@ def _import_keyword_rows(
                 reused += 1
 
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
-            _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
+            _bag_op = _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
+
+            # Re-sync topic to rebuild Topic embedding from updated topic_bag.
+            # Skip when topic_bag was unchanged (noop) to avoid redundant embedding calls.
+            if sync_one is not None and _bag_op != "noop":
+                try:
+                    _topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
+                    _fresh_topic = db["topic"].find_one({"_id": _topic_oid, "is_deleted": {"$ne": True}})
+                    if _fresh_topic:
+                        _topic_sync_result = sync_one("topic", _fresh_topic)
+                        if isinstance(_topic_sync_result, dict) and not _topic_sync_result.get("ok"):
+                            errors.append({"row": rowno, "error": f"topic_resync_failed: {_topic_sync_result.get('error') or 'no detail'}", "collection": "topic"})
+                except Exception as _topic_sync_e:
+                    errors.append({"row": rowno, "error": f"topic_resync_exception: {_topic_sync_e}", "collection": "topic"})
+
             if sync_one is not None:
                 try:
                     _ck_chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id

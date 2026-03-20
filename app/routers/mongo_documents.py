@@ -191,6 +191,39 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
 
     _handle_keyword_update(col, body, id_filter, actor)
 
+    # topic: validate + coerce subject_id when being changed
+    if col == "topic" and "subject_id" in body:
+        _subj_ref = str(body["subject_id"] or "").strip()
+        if not _subj_ref:
+            raise HTTPException(status_code=422, detail="topic.subject_id cannot be empty")
+        if not ObjectId.is_valid(_subj_ref):
+            raise HTTPException(status_code=422, detail=f"topic.subject_id '{_subj_ref}' is not a valid ObjectId")
+        if not db["subject"].find_one({"_id": ObjectId(_subj_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"subject '{_subj_ref}' not found or is deleted")
+        body["subject_id"] = ObjectId(_subj_ref)
+
+    # lesson: validate + coerce topic_id when being changed
+    if col == "lesson" and "topic_id" in body:
+        _topic_ref = str(body["topic_id"] or "").strip()
+        if not _topic_ref:
+            raise HTTPException(status_code=422, detail="lesson.topic_id cannot be empty")
+        if not ObjectId.is_valid(_topic_ref):
+            raise HTTPException(status_code=422, detail=f"lesson.topic_id '{_topic_ref}' is not a valid ObjectId")
+        if not db["topic"].find_one({"_id": ObjectId(_topic_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"topic '{_topic_ref}' not found or is deleted")
+        body["topic_id"] = ObjectId(_topic_ref)
+
+    # chunk: validate + coerce lesson_id when being changed
+    if col == "chunk" and "lesson_id" in body:
+        _lesson_ref = str(body["lesson_id"] or "").strip()
+        if not _lesson_ref:
+            raise HTTPException(status_code=422, detail="chunk.lesson_id cannot be empty")
+        if not ObjectId.is_valid(_lesson_ref):
+            raise HTTPException(status_code=422, detail=f"chunk.lesson_id '{_lesson_ref}' is not a valid ObjectId")
+        if not db["lesson"].find_one({"_id": ObjectId(_lesson_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"lesson '{_lesson_ref}' not found or is deleted")
+        body["lesson_id"] = ObjectId(_lesson_ref)
+
     # chunk_keyword: validate refs if being changed; convert to ObjectId for storage
     if col == "chunk_keyword" and ("keyword_id" in body or "chunk_id" in body):
         if "chunk_id" in body:
@@ -212,11 +245,6 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None
-
-    # When topic_des changes, clear cached keyword extraction so the shared sync
-    # regenerates topic_keywords_extracted and updates the Topic embedding.
-    if col == "topic" and "topic_des" in body:
-        body["topic_keywords_extracted"] = None
 
     body["updated_at"] = now
     body["updated_by"] = actor
