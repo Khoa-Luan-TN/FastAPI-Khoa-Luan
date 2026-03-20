@@ -153,6 +153,126 @@ def _filter_keywords(keywords: list, max_keywords: int = 20) -> list[str]:
     return result[:max_keywords]
 
 
+# ===================== TOPIC BAG KEYWORD FILTERING =====================
+
+_FILTER_PROMPT_TEMPLATE = """\
+You are a retrieval-keyword selector for Vietnamese high-school Informatics education.
+
+=== CONTEXT ===
+The input keywords were collected from one topic's content.
+Select keywords that are most useful for SEARCH and RETRIEVAL.
+
+=== INPUT KEYWORDS ===
+{input_keywords}
+
+=== STRICT SUBSET RULE ===
+You MUST output only keywords taken verbatim from the input list above.
+Do NOT rewrite, rename, translate, expand, or abbreviate any keyword.
+Do NOT introduce any term not present in the input list.
+
+=== KEEP ===
+- Concrete, searchable Informatics / CS terms: named concepts, tools, methods, data structures, formats, protocols, units, components, technical noun phrases.
+- Specific subtopic technical terms that are valid search entry points, even if not the main topic title.
+- Both abbreviation and full form when both appear in the input and are independently useful search forms.
+- Valid domain terms that improve retrieval recall, even if they appear only once.
+- Default to KEEPING when uncertain about a valid technical term.
+
+=== REMOVE ONLY ===
+- Standalone verbs / action words with no search value.
+- Generic filler or classroom/activity language.
+- Terms so broad they add almost no retrieval value.
+- Near-duplicates — keep the more specific or complete form.
+
+=== DO NOT ===
+- Output explanations or markdown.
+- Invent, translate, rename, or paraphrase keywords.
+
+=== OUTPUT FORMAT ===
+Return ONLY this JSON object:
+{{"keywords": ["...", "..."]}}
+
+If no keyword qualifies, return:
+{{"keywords": []}}
+"""
+
+
+def _intersect_with_input(gemini_candidates: list[str], input_keywords: list[str]) -> list[str]:
+    """Return input keywords whose normalized form matches any Gemini candidate.
+
+    Enforces strict-subset: output wording always comes from input_keywords, not Gemini.
+    Preserves original input order. Deduplicates by normalized key.
+    """
+    # Build normalized set from Gemini output
+    gemini_norms: set[str] = {normalize_for_compare(c) for c in gemini_candidates if isinstance(c, str)}
+
+    seen: set[str] = set()
+    result: list[str] = []
+    for kw in input_keywords:
+        norm = normalize_for_compare(kw)
+        if norm in gemini_norms and norm not in seen:
+            seen.add(norm)
+            result.append(kw)
+    return result
+
+
+def filter_topic_bag_keywords(
+    keywords: list[str],
+    model: str = "gemini-2.5-flash",
+) -> dict:
+    """Filter topic-bag keywords via Gemini, enforcing output as a strict subset of input.
+
+    Gemini selects which input keywords to keep. Its response is then intersected with
+    the original input list so that output wording is always taken from input_keywords —
+    never from Gemini's text directly. No invented, renamed, or translated terms can
+    appear in the result.
+
+    Returns:
+        {
+            "selected_keywords": list[str],  # strict subset of input keywords
+            "raw_response":      str,
+            "used_fallback":     bool,        # True when local filter was used
+        }
+
+    Falls back to local _filter_keywords(input) when:
+      - Gemini call fails
+      - Gemini output intersects to an empty usable list
+    """
+    import json as _json
+
+    if not keywords:
+        return {"selected_keywords": [], "raw_response": "", "used_fallback": False}
+
+    formatted = _json.dumps(keywords, ensure_ascii=False)
+    prompt = _FILTER_PROMPT_TEMPLATE.format(input_keywords=formatted)
+
+    raw_response = ""
+    gemini_ok = False
+    gemini_candidates: list[str] = []
+
+    try:
+        raw_response = generate_text(prompt, model=model)
+        parsed = extract_json(raw_response)
+        candidate = parsed.get("keywords", [])
+        if isinstance(candidate, list):
+            gemini_candidates = [c for c in candidate if isinstance(c, str)]
+        gemini_ok = True
+    except Exception:
+        gemini_ok = False
+
+    if gemini_ok and gemini_candidates:
+        # Enforce strict subset: map Gemini candidates back to original input wording,
+        # then apply local quality filter to remove any residual weak terms.
+        intersected = _intersect_with_input(gemini_candidates, keywords)
+        if intersected:
+            selected = _filter_keywords(intersected, max_keywords=len(keywords))
+            if selected:
+                return {"selected_keywords": selected, "raw_response": raw_response, "used_fallback": False}
+
+    # Fallback: apply local filter to the original input keywords
+    fallback = _filter_keywords(keywords, max_keywords=len(keywords))
+    return {"selected_keywords": fallback, "raw_response": raw_response, "used_fallback": True}
+
+
 # ===================== CONVENIENCE HELPER =====================
 
 def get_topic_keyword_text(topic_des: str) -> tuple[list[str], str]:

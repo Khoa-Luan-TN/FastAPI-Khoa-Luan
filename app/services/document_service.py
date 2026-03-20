@@ -137,27 +137,27 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             raise HTTPException(status_code=422, detail=f"lesson '{lesson_ref}' not found or is deleted")
         body["lesson_id"] = _OID(lesson_ref)
 
-    # chunk_keyword: validate both refs before Mongo write
+    # chunk_keyword: both refs must be valid ObjectId strings
     if col == "chunk_keyword":
         from bson import ObjectId as _OID
         chunk_ref = str(body.get("chunk_id") or "").strip()
         if not chunk_ref:
             raise HTTPException(status_code=422, detail="chunk_keyword.chunk_id is required")
-        _chunk_q = {"_id": _OID(chunk_ref), "is_deleted": {"$ne": True}} if _OID.is_valid(chunk_ref) else {"_id": chunk_ref, "is_deleted": {"$ne": True}}
-        if not db["chunk"].find_one(_chunk_q):
+        if not _OID.is_valid(chunk_ref):
+            raise HTTPException(status_code=422, detail=f"chunk_keyword.chunk_id '{chunk_ref}' is not a valid ObjectId")
+        if not db["chunk"].find_one({"_id": _OID(chunk_ref), "is_deleted": {"$ne": True}}):
             raise HTTPException(status_code=422, detail=f"chunk '{chunk_ref}' not found or is deleted")
 
-        # keyword_id is Mongo keyword _id (ObjectId string)
         kw_ref = str(body.get("keyword_id") or "").strip()
         if not kw_ref:
             raise HTTPException(status_code=422, detail="chunk_keyword.keyword_id is required")
-        _kw_q = {"_id": _OID(kw_ref), "is_deleted": {"$ne": True}} if _OID.is_valid(kw_ref) else {"_id": kw_ref, "is_deleted": {"$ne": True}}
-        if not db["keyword"].find_one(_kw_q):
+        if not _OID.is_valid(kw_ref):
+            raise HTTPException(status_code=422, detail=f"chunk_keyword.keyword_id '{kw_ref}' is not a valid ObjectId")
+        if not db["keyword"].find_one({"_id": _OID(kw_ref), "is_deleted": {"$ne": True}}):
             raise HTTPException(status_code=422, detail=f"keyword '{kw_ref}' not found or is deleted")
 
-        # Store as BSON ObjectId so Mongo refs are real ObjectIds, not strings
-        body["chunk_id"] = _OID(chunk_ref) if _OID.is_valid(chunk_ref) else chunk_ref
-        body["keyword_id"] = _OID(kw_ref) if _OID.is_valid(kw_ref) else kw_ref
+        body["chunk_id"] = _OID(chunk_ref)
+        body["keyword_id"] = _OID(kw_ref)
 
     result = db[col].insert_one(body)
     inserted_doc = db[col].find_one({"_id": result.inserted_id})

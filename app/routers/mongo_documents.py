@@ -224,23 +224,26 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             raise HTTPException(status_code=422, detail=f"lesson '{_lesson_ref}' not found or is deleted")
         body["lesson_id"] = ObjectId(_lesson_ref)
 
-    # chunk_keyword: validate refs if being changed; convert to ObjectId for storage
-    if col == "chunk_keyword" and ("keyword_id" in body or "chunk_id" in body):
+    # chunk_keyword: both refs must be valid ObjectId strings when being changed
+    if col == "chunk_keyword" and ("chunk_id" in body or "keyword_id" in body):
         if "chunk_id" in body:
             _chunk_ref = str(body["chunk_id"] or "").strip()
-            _oid_valid = ObjectId.is_valid(_chunk_ref)
-            _chunk_q = {"_id": ObjectId(_chunk_ref), "is_deleted": {"$ne": True}} if _oid_valid else {"_id": _chunk_ref, "is_deleted": {"$ne": True}}
-            if not db["chunk"].find_one(_chunk_q):
+            if not _chunk_ref:
+                raise HTTPException(status_code=422, detail="chunk_keyword.chunk_id cannot be empty")
+            if not ObjectId.is_valid(_chunk_ref):
+                raise HTTPException(status_code=422, detail=f"chunk_keyword.chunk_id '{_chunk_ref}' is not a valid ObjectId")
+            if not db["chunk"].find_one({"_id": ObjectId(_chunk_ref), "is_deleted": {"$ne": True}}):
                 raise HTTPException(status_code=422, detail=f"chunk '{_chunk_ref}' not found or is deleted")
-            body["chunk_id"] = ObjectId(_chunk_ref) if _oid_valid else _chunk_ref
+            body["chunk_id"] = ObjectId(_chunk_ref)
         if "keyword_id" in body:
-            # keyword_id is Mongo keyword _id (ObjectId string)
-            kw_ref = str(body["keyword_id"] or "").strip()
-            _kw_valid = ObjectId.is_valid(kw_ref)
-            _kw_q = {"_id": ObjectId(kw_ref), "is_deleted": {"$ne": True}} if _kw_valid else {"_id": kw_ref, "is_deleted": {"$ne": True}}
-            if not db["keyword"].find_one(_kw_q):
-                raise HTTPException(status_code=422, detail=f"keyword '{kw_ref}' not found or is deleted")
-            body["keyword_id"] = ObjectId(kw_ref) if _kw_valid else kw_ref
+            _kw_ref = str(body["keyword_id"] or "").strip()
+            if not _kw_ref:
+                raise HTTPException(status_code=422, detail="chunk_keyword.keyword_id cannot be empty")
+            if not ObjectId.is_valid(_kw_ref):
+                raise HTTPException(status_code=422, detail=f"chunk_keyword.keyword_id '{_kw_ref}' is not a valid ObjectId")
+            if not db["keyword"].find_one({"_id": ObjectId(_kw_ref), "is_deleted": {"$ne": True}}):
+                raise HTTPException(status_code=422, detail=f"keyword '{_kw_ref}' not found or is deleted")
+            body["keyword_id"] = ObjectId(_kw_ref)
 
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")

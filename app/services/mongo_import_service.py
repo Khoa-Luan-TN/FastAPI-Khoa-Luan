@@ -659,6 +659,43 @@ def _upsert_topic_bag(
     return "insert"
 
 
+def _finalize_topic_embeddings(
+    db,
+    affected_topic_ids: set[str],
+    sync_one: Callable[[str, Dict[str, Any]], Dict[str, Any]],
+    errors: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Sync each affected topic once after the full topic_bag is populated.
+
+    Called after all keyword rows are processed and alias generation is done.
+    Reads the final topic_bag state, calls Gemini once per topic to filter keywords,
+    persists keyword_embedding_text, then syncs PG + Neo.
+    """
+    finalized = 0
+    finalize_errors: List[Dict[str, Any]] = []
+
+    for topic_id in affected_topic_ids:
+        try:
+            topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
+            topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
+            if not topic_doc:
+                _log.warning("[import] topic '%s' not found or deleted — skipping finalization", topic_id)
+                continue
+            result = sync_one("topic", topic_doc)
+            if isinstance(result, dict) and result.get("ok"):
+                finalized += 1
+            else:
+                err = result.get("error", "no detail") if isinstance(result, dict) else "no detail"
+                finalize_errors.append({"topic_id": topic_id, "error": f"sync_failed: {err}"})
+        except Exception as e:
+            finalize_errors.append({"topic_id": topic_id, "error": str(e)})
+
+    if finalize_errors:
+        errors.extend(finalize_errors)
+
+    return {"affected_topics": len(affected_topic_ids), "finalized_topics": finalized, "topic_finalize_errors": finalize_errors}
+
+
 def _import_keyword_rows(
     db,
     rows: List[Dict[str, Any]],
@@ -673,6 +710,7 @@ def _import_keyword_rows(
     errors: List[Dict[str, Any]] = []
     new_keywords: Dict[str, str] = {}
     reused_keyword_ids: set[str] = set()
+    affected_topic_ids: set[str] = set()
 
     for rec in rows:
         rowno = rec.pop("_row", None)
@@ -744,18 +782,9 @@ def _import_keyword_rows(
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
             _bag_op = _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
 
-            # Re-sync topic to rebuild Topic embedding from updated topic_bag.
-            # Skip when topic_bag was unchanged (noop) to avoid redundant embedding calls.
-            if sync_one is not None and _bag_op != "noop":
-                try:
-                    _topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
-                    _fresh_topic = db["topic"].find_one({"_id": _topic_oid, "is_deleted": {"$ne": True}})
-                    if _fresh_topic:
-                        _topic_sync_result = sync_one("topic", _fresh_topic)
-                        if isinstance(_topic_sync_result, dict) and not _topic_sync_result.get("ok"):
-                            errors.append({"row": rowno, "error": f"topic_resync_failed: {_topic_sync_result.get('error') or 'no detail'}", "collection": "topic"})
-                except Exception as _topic_sync_e:
-                    errors.append({"row": rowno, "error": f"topic_resync_exception: {_topic_sync_e}", "collection": "topic"})
+            # Track topics whose topic_bag changed; embedding will be finalized in bulk later.
+            if _bag_op != "noop":
+                affected_topic_ids.add(topic_id)
 
             if sync_one is not None:
                 try:
@@ -838,6 +867,12 @@ def _import_keyword_rows(
                 "message": "Hoàn tất import keyword.",
             })
 
+    # Phase 3: finalize topic embeddings once per affected topic, after topic_bag is fully populated.
+    topic_finalize_summary: Dict[str, Any] = {"affected_topics": 0, "finalized_topics": 0, "topic_finalize_errors": []}
+    if sync_one is not None and affected_topic_ids:
+        _log.info("[import] finalizing topic embeddings for %d affected topic(s)", len(affected_topic_ids))
+        topic_finalize_summary = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, errors)
+
     return {
         "rows": len(rows),
         "inserted": inserted,
@@ -851,6 +886,7 @@ def _import_keyword_rows(
         "alias_errors": [],
         "alias_stopped_due_to_quota": batch_result["stopped_due_to_quota"],
         "alias_remaining_keywords": batch_result["remaining_keywords"],
+        **topic_finalize_summary,
     }
 
 

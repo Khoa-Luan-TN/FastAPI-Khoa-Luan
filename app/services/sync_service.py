@@ -15,16 +15,17 @@ _log = logging.getLogger(__name__)
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
 
-def _resolve_topic_keyword_text(db, doc: dict) -> tuple[list, str]:
-    """Return (keywords_list, joined_text) for a topic doc.
+def _resolve_topic_keyword_text(db, doc: dict) -> tuple[list, str, dict]:
+    """Return (selected_keywords, keyword_embedding_text, full_result) for a topic doc.
 
-    Builds embedding text from the active topic_bag.keyword_refs[].keyword_name.
-    Returns ([], "") when no active topic_bag exists or no valid keywords are found.
-    Does NOT use topic_des or topic_keywords_extracted as embedding source.
+    Reads topic_bag.keyword_refs, calls Gemini to filter down to search-useful keywords,
+    with fallback to local filter on Gemini failure.
+    Returns ([], "", {}) when no active topic_bag or no valid keywords.
+    Does NOT use topic_des as embedding source.
     """
     from app.services.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
     result = build_topic_embedding_text_from_topic_bag(db, doc)
-    return result["keywords"], result["keyword_text"]
+    return result["selected_keywords"], result["keyword_embedding_text"], result
 
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
@@ -505,10 +506,25 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     is_deleted = doc.get("is_deleted") is True
 
-    # Resolve topic keyword text from topic_bag before opening the PG transaction.
+    # Resolve topic keyword text: read topic_bag -> Gemini filter -> keyword_embedding_text.
+    # Done before the PG transaction to avoid blocking inside pg.begin().
     _topic_kw_text: Optional[str] = None
     if col == "topic" and not is_deleted:
-        _, _topic_kw_text = _resolve_topic_keyword_text(db, doc)
+        _, _topic_kw_text, _topic_kw_result = _resolve_topic_keyword_text(db, doc)
+        doc_id = doc.get("_id")
+        if doc_id is not None:
+            try:
+                db["topic"].update_one(
+                    {"_id": doc_id},
+                    {"$set": {
+                        "keyword_embedding_text": _topic_kw_text or "",
+                        "keyword_embedding_candidates": _topic_kw_result.get("raw_keywords") or [],
+                        "keyword_embedding_selected": _topic_kw_result.get("selected_keywords") or [],
+                        "keyword_embedding_used_fallback": _topic_kw_result.get("used_fallback", False),
+                    }},
+                )
+            except Exception as _persist_err:
+                _log.warning("Failed to persist keyword_embedding fields for topic _id=%s: %s", doc_id, _persist_err)
 
     pg = SessionLocal()
     try:
