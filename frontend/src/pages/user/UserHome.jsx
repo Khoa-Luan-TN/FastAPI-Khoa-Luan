@@ -73,12 +73,9 @@ const ChunkIcon = ({ size = 14 }) => (
 
 // ---- Search suggestions ----
 const SUGGESTIONS = [
-  "Mạng máy tính",
-  "Lập trình Python",
-  "Cơ sở dữ liệu",
-  "Thuật toán sắp xếp",
-  "An toàn thông tin",
-  "Trí tuệ nhân tạo",
+  "Byte",
+  "WAN",
+  "Thiết bị số",
 ];
 
 const LEVEL_LABEL = {

@@ -40,25 +40,6 @@ export async function minioList(path = "") {
   return httpJson(url.toString(), { method: "GET" });
 }
 
-export async function createFolder(fullPath) {
-  return httpJson(`${API_BASE}/admin/minio/folders`, {
-    method: "POST",
-    body: JSON.stringify({ full_path: fullPath }),
-  });
-}
-
-export async function renameFolder(oldPath, newPath) {
-  return httpJson(`${API_BASE}/admin/minio/folders/`, {
-    method: "PUT",
-    body: JSON.stringify({ old_path: oldPath, new_path: newPath }),
-  });
-}
-
-export async function deleteFolder(path) {
-  const url = new URL(`${API_BASE}/admin/minio/folders`);
-  url.searchParams.set("path", path);
-  return httpJson(url.toString(), { method: "DELETE" });
-}
 
 export async function uploadFiles(path, files) {
   const fd = new FormData();

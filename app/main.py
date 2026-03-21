@@ -21,6 +21,7 @@ for _logger_name in (
     "app.services.keyword_alias_service",
     "app.services.gemini_alias_service",
     "app.services.gemini_client",
+    "app.services.mongo_minio_service",
 ):
     logging.getLogger(_logger_name).setLevel(logging.INFO)
 

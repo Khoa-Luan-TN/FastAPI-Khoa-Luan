@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import * as minioApi from "../../services/minioAdminApi";
 import "../../styles/admin/page.css";
 import "../../styles/admin/minio.css";
-import CreateFolderModal from "../../components/CreateFolderModal";
 import UploadFileModal from "../../components/UploadFileModal";
 import FilterModal from "../../components/FilterModal";
 import RenameModal from "../../components/RenameModal";
@@ -51,7 +50,41 @@ function lastName(path) {
   return parts[parts.length - 1] || "";
 }
 
-const DOC_FIXED = ["sgk", "topic", "lesson", "chunk"];
+/**
+ * Returns true when `path` is a valid leaf folder that accepts file uploads.
+ *
+ * Valid leaf paths:
+ *   documents/<class>/<subject>/subject
+ *   documents/<class>/<subject>/topic/<id>
+ *   documents/<class>/<subject>/lesson/<id>
+ *   documents/<class>/<subject>/chunk/<id>
+ *   images/keyword/<id>
+ *   videos/keyword/<id>
+ *   images/<class>/<subject>/topic/<id>
+ *   images/<class>/<subject>/lesson/<id>
+ *   images/<class>/<subject>/chunk/<id>
+ *   videos/<class>/<subject>/topic/<id>
+ *   videos/<class>/<subject>/lesson/<id>
+ *   videos/<class>/<subject>/chunk/<id>
+ */
+function isLeafUploadPath(path) {
+  const p = splitPath(path);
+  const sec = p[0];
+  if (sec === "documents") {
+    if (p.length === 4 && p[3] === "subject") return true;
+    if (p.length === 5 && ["topic", "lesson", "chunk"].includes(p[3])) return true;
+  }
+  if (sec === "images" || sec === "videos") {
+    if (p.length === 3 && p[1] === "keyword") return true;
+    if (p.length === 5 && ["topic", "lesson", "chunk"].includes(p[3])) return true;
+  }
+  return false;
+}
+
+function isKeywordAssetFolder(path) {
+  const p = splitPath(path);
+  return (p[0] === "images" || p[0] === "videos") && p[1] === "keyword" && p.length === 3;
+}
 
 // ---- SVG icons ----
 const FolderIcon = ({ size = 20 }) => (
@@ -132,14 +165,6 @@ const FilterIcon = () => (
   </svg>
 );
 
-const FolderPlusIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-    <line x1="12" y1="11" x2="12" y2="17" />
-    <line x1="9" y1="14" x2="15" y2="14" />
-  </svg>
-);
-
 // ---- Section label + icon mapping ----
 const SECTION_LABELS = { documents: "Tài liệu", videos: "Videos", images: "Hình ảnh" };
 const SECTION_ICONS = { documents: FolderIcon, videos: VideoIcon, images: ImageIcon };
@@ -159,7 +184,6 @@ const ROOT_SECTIONS = [
 export default function MinIO() {
   const [currentPath, setCurrentPath] = useState("");
   const [q, setQ] = useState("");
-  const [openCreateFolder, setOpenCreateFolder] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openFilter, setOpenFilter] = useState(false);
   const [filters, setFilters] = useState({ type: "all" });
@@ -174,13 +198,8 @@ export default function MinIO() {
   const parts = splitPath(currentPath);
   const section = parts[0] || "";
   const isRoot = currentPath === "";
-  const isDocuments = section === "documents";
-  const isImages = currentPath === "images";
-  const isVideos = currentPath === "videos";
-  const isDocsSubject = isDocuments && parts.length === 4;
-  const isDocsLeaf = isDocuments && parts.length === 5 && DOC_FIXED.includes(parts[4]);
-  const isFileView = isImages || isVideos || isDocsLeaf;
-  const isFolderView = isRoot || (isDocuments && !isDocsLeaf);
+  const isLeaf = isLeafUploadPath(currentPath);
+  const isFolderView = !isRoot && !isLeaf;
 
   useEffect(() => {
     let alive = true;
@@ -202,99 +221,29 @@ export default function MinIO() {
   }, [currentPath, isRoot]);
 
   const folderRows = useMemo(() => {
-    if (!isFolderView) return [];
     const s = q.trim().toLowerCase();
-    if (isDocsSubject) {
-      const items = DOC_FIXED.map((cat) => ({ id: `fixed-${currentPath}/${cat}`, name: cat, fullPath: `${currentPath}/${cat}`, isFixed: true }));
-      return !s ? items : items.filter((x) => x.name.toLowerCase().includes(s));
-    }
-    const items = (remote.folders || []).map((f) => ({ id: `f-${f.fullPath}`, name: f.name, fullPath: f.fullPath, isFixed: false }));
+    const items = (remote.folders || []).map((f) => ({ id: `f-${f.fullPath}`, name: f.name, fullPath: f.fullPath }));
     return (!s ? items : items.filter((x) => x.name.toLowerCase().includes(s))).sort((a, b) => a.name.localeCompare(b.name));
-  }, [isFolderView, isDocsSubject, remote.folders, q, currentPath]);
+  }, [remote.folders, q]);
 
   const fileRows = useMemo(() => {
-    if (!isFileView) return [];
+    if (!isLeaf) return [];
     const list = (remote.files || []).map((x) => ({ id: x.object_key, name: x.name, size: x.size || 0, updatedAt: x.last_modified ? (() => { const d = x.last_modified.slice(0, 10).split("-"); return d.length === 3 ? `${d[2]}/${d[1]}/${d[0]}` : x.last_modified.slice(0, 10); })() : "", object_key: x.object_key, url: x.url }));
     const byType = filters.type === "all" ? list : list.filter((r) => getFileType(r.name) === filters.type);
     const s = q.trim().toLowerCase();
     return (!s ? byType : byType.filter((r) => r.name.toLowerCase().includes(s))).sort((a, b) => a.name.localeCompare(b.name));
-  }, [remote.files, q, filters, isFileView]);
-
-  function canCreateFolderHere() {
-    return isDocuments && (parts.length === 1 || parts.length === 2 || parts.length === 3);
-  }
-
-  function canEditDeleteFolder(row) {
-    if (row?.isFixed) return false;
-    const len = splitPath(row.fullPath).length;
-    return row.fullPath.startsWith("documents/") && (len === 2 || len === 3 || len === 4);
-  }
+  }, [remote.files, q, filters, isLeaf]);
 
   function navigateTo(path) {
     setCurrentPath(path);
     setQ("");
     setFilters({ type: "all" });
-    setOpenCreateFolder(false);
     setOpenUpload(false);
     setOpenFilter(false);
   }
 
-  async function createFolder(name) {
-    const n = name.trim();
-    if (!n || !canCreateFolderHere()) return;
-    if (n.includes("/")) return alert("Tên folder không được chứa '/'.");
-    try {
-      await minioApi.createFolder(currentPath ? `${currentPath}/${n}` : n);
-      setOpenCreateFolder(false);
-      const data = await minioApi.minioList(currentPath);
-      setRemote({ folders: data.folders || [], files: data.files || [] });
-    } catch (e) { alert(String(e?.message || e)); }
-  }
-
-  async function editFolder(row, e) {
-    e.stopPropagation();
-    const oldPath = row.fullPath;
-    const oldName = lastName(oldPath);
-
-    setRenameModal({
-      open: true,
-      initialName: oldName,
-      onConfirm: async (newName) => {
-        setRenameModal({ open: false });
-        const p = parentPath(oldPath);
-        const newPath = p ? `${p}/${newName}` : newName;
-        try {
-          await minioApi.renameFolder(oldPath, newPath);
-          setCurrentPath((cp) => cp === oldPath ? newPath : cp.startsWith(oldPath + "/") ? newPath + cp.slice(oldPath.length) : cp);
-          const parent = parentPath(newPath) || parentPath(oldPath);
-          const data = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
-          setRemote({ folders: data.folders || [], files: data.files || [] });
-        } catch (err) { alert(String(err?.message || err)); }
-      }
-    });
-  }
-
-  async function deleteFolderCascade(row, e) {
-    e.stopPropagation();
-    setConfirmModal({
-      open: true,
-      title: "Xoá thư mục",
-      message: `Bạn có chắc chắn muốn xoá folder "${lastName(row.fullPath)}" và toàn bộ dữ liệu bên trong không?`,
-      onConfirm: async () => {
-        setConfirmModal({ open: false });
-        try {
-          await minioApi.deleteFolder(row.fullPath);
-          setCurrentPath((cp) => cp === row.fullPath || cp.startsWith(row.fullPath + "/") ? parentPath(row.fullPath) : cp);
-          const parent = parentPath(row.fullPath);
-          const data = parent ? await minioApi.minioList(parent) : await minioApi.minioList("");
-          setRemote({ folders: data.folders || [], files: data.files || [] });
-        } catch (err) { alert(String(err?.message || err)); }
-      }
-    });
-  }
-
   async function uploadManyFiles(files) {
-    if (!isFileView) return;
+    if (!isLeaf) return;
     try {
       await minioApi.uploadFiles(currentPath, files);
       setOpenUpload(false);
@@ -349,7 +298,7 @@ export default function MinIO() {
           <div className="mrh-icon"><StorageIcon size={26} /></div>
           <div>
             <h2 className="mrh-title">MinIO Storage</h2>
-            <p className="mrh-subtitle">Quản lý tệp tin và thư mục lưu trữ</p>
+            <p className="mrh-subtitle">Cấu trúc thư mục được tạo tự động khi import — upload file vào thư mục lá</p>
           </div>
         </div>
       )}
@@ -387,30 +336,38 @@ export default function MinIO() {
           <div className="minio-search">
             <span className="minio-search-icon"><SearchIcon /></span>
             <input
-              placeholder={isFileView ? "Tìm kiếm file..." : "Tìm kiếm thư mục..."}
+              placeholder={isLeaf ? "Tìm kiếm file..." : "Tìm kiếm thư mục..."}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          {(canCreateFolderHere() || isFileView) && (
+          {isLeaf && (
             <div className="minio-actions">
-              {canCreateFolderHere() && (
-                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateFolder(true)}>
-                  <FolderPlusIcon /> Tạo thư mục
-                </button>
-              )}
-              {isFileView && (
-                <>
-                  <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenUpload(true)}>
-                    <UploadIcon /> Upload
-                  </button>
-                  <button className="minio-btn minio-btn-secondary mab-btn" onClick={() => setOpenFilter(true)}>
-                    <FilterIcon /> Lọc
-                  </button>
-                </>
-              )}
+              <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenUpload(true)}>
+                <UploadIcon /> Upload
+              </button>
+              <button className="minio-btn minio-btn-secondary mab-btn" onClick={() => setOpenFilter(true)}>
+                <FilterIcon /> Lọc
+              </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Leaf path info banner */}
+      {!isRoot && isLeaf && (
+        <div className="minio-leaf-info">
+          {isKeywordAssetFolder(currentPath)
+            ? "Thư mục asset từ khoá — tải file lên tại đây"
+            : "Thư mục lá — tải file lên tại đây"}
+        </div>
+      )}
+
+      {/* Non-leaf folder hint */}
+      {isFolderView && !loading && remote.folders.length === 0 && !err && (
+        <div className="minio-empty">
+          <div className="minio-empty-icon"><FolderIcon /></div>
+          <p>Chưa có thư mục nào — cấu trúc được tạo tự động khi import dữ liệu</p>
         </div>
       )}
 
@@ -443,37 +400,24 @@ export default function MinIO() {
       )}
 
       {/* FOLDER list */}
-      {!loading && !isRoot && isFolderView && (
-        folderRows.length === 0 ? (
-          <div className="minio-empty">
-            <div className="minio-empty-icon"><FolderIcon /></div>
-            <p>Chưa có folder nào</p>
-          </div>
-        ) : (
-          <div className="minio-folder-list">
-            {folderRows.map((row) => (
-              <div key={row.id} className="minio-folder-row" onClick={() => navigateTo(row.fullPath)}>
-                <div className="mfr-icon"><FolderIcon /></div>
-                <span className="mfr-name">{row.name}</span>
-                {canEditDeleteFolder(row) && (
-                  <div className="mfr-actions">
-                    <button className="mfi-action-btn" onClick={(e) => editFolder(row, e)}><EditIcon /> Sửa</button>
-                    <button className="mfi-action-btn danger" onClick={(e) => deleteFolderCascade(row, e)}><TrashIcon /> Xoá</button>
-                  </div>
-                )}
-                <span className="mfr-arrow">›</span>
-              </div>
-            ))}
-          </div>
-        )
+      {!loading && !isRoot && isFolderView && folderRows.length > 0 && (
+        <div className="minio-folder-list">
+          {folderRows.map((row) => (
+            <div key={row.id} className="minio-folder-row" onClick={() => navigateTo(row.fullPath)}>
+              <div className="mfr-icon"><FolderIcon /></div>
+              <span className="mfr-name">{row.name}</span>
+              <span className="mfr-arrow">›</span>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* FILE list */}
-      {!loading && isFileView && (
+      {!loading && isLeaf && (
         fileRows.length === 0 ? (
           <div className="minio-empty">
             <div className="minio-empty-icon"><FileIcon /></div>
-            <p>Chưa có file nào{q ? ` khớp "${q}"` : ""}</p>
+            <p>Chưa có file nào{q ? ` khớp "${q}"` : " — nhấn Upload để tải lên"}</p>
           </div>
         ) : (
           <div className="minio-file-list">
@@ -509,7 +453,6 @@ export default function MinIO() {
         )
       )}
 
-      <CreateFolderModal open={openCreateFolder} onClose={() => setOpenCreateFolder(false)} onCreate={createFolder} />
       <UploadFileModal open={openUpload} onClose={() => setOpenUpload(false)} folderName={currentPath} onUpload={uploadManyFiles} />
       <FilterModal open={openFilter} onClose={() => setOpenFilter(false)} initialValue={filters} onApply={(v) => setFilters(v)} />
 
