@@ -12,7 +12,9 @@
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f -name *.md -o -name *.txt -o -name README*)",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 2 -type f \\\\\\(-name *.sql -o -name *schema* -o -name *init* \\\\\\))",
       "Bash(python3:*)",
-      "Bash(wc -l /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src/pages/admin/*.jsx)"
+      "Bash(wc -l /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src/pages/admin/*.jsx)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

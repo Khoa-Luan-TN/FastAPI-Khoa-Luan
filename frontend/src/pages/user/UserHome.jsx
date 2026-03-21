@@ -38,6 +38,21 @@ const ChevronUpIcon = ({ size = 14 }) => (
     <polyline points="18 15 12 9 6 15" />
   </svg>
 );
+const EyeIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const DownloadIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+const WarnIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
 
 // Section icons
 const TopicIcon = ({ size = 14 }) => (
@@ -173,6 +188,97 @@ function buildSearchGroups(data) {
   };
 }
 
+// ---- File preview overlay ----
+function FilePreviewOverlay({ url, onClose }) {
+  return (
+    <div className="u-preview-overlay" onClick={onClose}>
+      <div className="u-preview-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="u-preview-header">
+          <span className="u-preview-title">Xem trước tài liệu</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="u-file-btn u-file-btn--download"
+              style={{ height: 30, fontSize: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DownloadIcon size={12} /> Tải xuống
+            </a>
+            <button className="u-modal-close" onClick={onClose}><CloseIcon /></button>
+          </div>
+        </div>
+        <div className="u-preview-body">
+          <iframe src={url} className="u-preview-frame" title="Xem trước tài liệu" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- File section with availability check ----
+function FileSection({ minio }) {
+  const [fileState, setFileState] = useState("idle"); // idle | checking | ok | unavailable
+  const [showPreview, setShowPreview] = useState(false);
+
+  if (!minio?.url) {
+    return (
+      <>
+        <p className="u-modal-section-label">Tài liệu đính kèm</p>
+        <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>
+          Chưa có tài liệu đính kèm.
+        </p>
+      </>
+    );
+  }
+
+  async function verify(onOk) {
+    if (fileState === "ok") { onOk(); return; }
+    if (fileState === "unavailable") return;
+    if (fileState === "checking") return;
+    setFileState("checking");
+    try {
+      const res = await fetch(minio.url, { method: "HEAD" });
+      if (res.ok) { setFileState("ok"); onOk(); }
+      else setFileState("unavailable");
+    } catch {
+      setFileState("unavailable");
+    }
+  }
+
+  return (
+    <>
+      <p className="u-modal-section-label">Tài liệu đính kèm</p>
+      {fileState === "unavailable" ? (
+        <div className="u-file-unavailable">
+          <WarnIcon size={14} /> Tài liệu hiện chưa sẵn sàng
+        </div>
+      ) : (
+        <div className="u-file-actions">
+          <button
+            className="u-file-btn u-file-btn--preview"
+            onClick={() => verify(() => setShowPreview(true))}
+            disabled={fileState === "checking"}
+          >
+            {fileState === "checking" ? "Đang kiểm tra..." : <><EyeIcon size={13} /> Xem trước</>}
+          </button>
+          <button
+            className="u-file-btn u-file-btn--download"
+            onClick={() => verify(() => window.open(minio.url, "_blank"))}
+            disabled={fileState === "checking"}
+          >
+            <DownloadIcon size={13} /> Tải xuống
+          </button>
+        </div>
+      )}
+      {showPreview && (
+        <FilePreviewOverlay url={minio.url} onClose={() => setShowPreview(false)} />
+      )}
+    </>
+  );
+}
+
 // ---- Skeleton card ----
 function SkeletonCard() {
   return (
@@ -246,26 +352,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
             </p>
           </div>
 
-          <div>
-            <p className="u-modal-section-label">Tài liệu đính kèm</p>
-            {doc.minio?.url ? (
-              <a
-                href={doc.minio.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="u-attach-btn"
-              >
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Tải xuống
-              </a>
-            ) : (
-              <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>
-                Chưa có tài liệu đính kèm.
-              </p>
-            )}
-          </div>
+          <FileSection minio={doc.minio} />
         </div>
 
         <div className="u-modal-footer">

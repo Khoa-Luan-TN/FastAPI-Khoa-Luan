@@ -1584,3 +1584,133 @@
   border-color: #6EE7B7;
   border-top-color: #047857;
 }
+
+/* =====================================================
+   FILE ATTACHMENT SECTION (preview + download)
+   ===================================================== */
+.u-file-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.u-file-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--us-font);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.14s;
+  flex-shrink: 0;
+  border: 1.5px solid;
+  text-decoration: none;
+}
+
+.u-file-btn--preview {
+  background: var(--us-primary-light);
+  color: var(--us-primary);
+  border-color: #BFDBFE;
+}
+.u-file-btn--preview:hover:not(:disabled) {
+  background: var(--us-primary);
+  border-color: var(--us-primary);
+  color: #fff;
+}
+
+.u-file-btn--download {
+  background: #F0FDF4;
+  color: #047857;
+  border-color: #A7F3D0;
+}
+.u-file-btn--download:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+  color: #fff;
+}
+
+.u-file-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.u-file-unavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  color: #C2410C;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =====================================================
+   FILE PREVIEW OVERLAY (full-screen iframe)
+   ===================================================== */
+.u-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.u-preview-modal {
+  background: var(--us-white);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 960px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+  animation: u-modal-in 0.2s ease;
+}
+
+.u-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--us-border);
+  flex-shrink: 0;
+  background: var(--us-bg);
+  gap: 12px;
+}
+
+.u-preview-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--us-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.u-preview-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #f1f5f9;
+}
+
+.u-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
