@@ -25,7 +25,7 @@ MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1
 
 # ====== FIXED STRUCTURE ======
 ROOT_FOLDERS = ("documents", "videos", "images")
-DOC_FIXED_FOLDERS = ("sgk", "topic", "lesson", "chunk")
+EDU_KINDS = ("topic", "lesson", "chunk")
 
 
 # ===================== HELPERS =====================
@@ -95,83 +95,68 @@ def _put_marker_if_missing(client, full_path: str) -> None:
     )
 
 
-def _is_docs_subject(parts: List[str]) -> bool:
-    # documents/<type>/<class>/<subject>
-    return len(parts) == 4 and parts[0] == "documents"
+def _is_edu_type_level(parts: List[str]) -> bool:
+    # root/<class>/<subject>/<type> — depth 4, any root
+    return len(parts) == 4 and parts[0] in ROOT_FOLDERS
 
 
-def _is_docs_leaf(parts: List[str]) -> bool:
-    # documents/<type>/<class>/<subject>/<fixed>
-    return len(parts) == 5 and parts[0] == "documents" and parts[4] in DOC_FIXED_FOLDERS
+def _is_edu_leaf(parts: List[str]) -> bool:
+    # root/<class>/<subject>/<type>/<kind>/<id> — depth 6
+    return len(parts) == 6 and parts[0] in ROOT_FOLDERS and parts[4] in EDU_KINDS
 
 
-def _ensure_docs_fixed_folders(client, subject_path: str) -> None:
-    # subject_path = documents/<type>/<class>/<subject>
-    for cat in DOC_FIXED_FOLDERS:
-        _put_marker_if_missing(client, f"{subject_path}/{cat}")
+def _is_keyword_leaf(parts: List[str]) -> bool:
+    # images/keyword/<slug__id> or videos/keyword/<slug__id> — depth 3
+    return len(parts) == 3 and parts[0] in ("images", "videos") and parts[1] == "keyword"
+
+
+def _ensure_edu_kind_folders(client, type_path: str) -> None:
+    for kind in EDU_KINDS:
+        _put_marker_if_missing(client, f"{type_path}/{kind}")
 
 
 def _assert_can_create_folder(full_path: str) -> None:
     ps = _parts(full_path)
     if not ps:
         raise HTTPException(status_code=400, detail="full_path is required")
-
-    # disallow creating root fixed folders (documents/videos/images)
     if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
         raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be created")
-
-    # Only allow under documents: create type/class/subject
-    # documents/<type> (len 2) => create type
-    # documents/<type>/<class> (len 3) => create class
-    # documents/<type>/<class>/<subject> (len 4) => create subject
-    if ps[0] != "documents":
-        raise HTTPException(status_code=400, detail="Only documents/* supports creating folders right now")
-
-    if len(ps) not in (2, 3, 4):
-        raise HTTPException(
-            status_code=400,
-            detail="You can only create folders at documents/<type>, documents/<type>/<class>, documents/<type>/<class>/<subject>",
-        )
-
-    # never allow creating fixed folders manually
-    if len(ps) == 5 and ps[4] in DOC_FIXED_FOLDERS:
-        raise HTTPException(status_code=400, detail="Fixed folders (sgk/topic/lesson/chunk) are auto-created")
+    if ps[0] not in ROOT_FOLDERS:
+        raise HTTPException(status_code=400, detail="Folders can only be created under documents, images, or videos")
+    if not (2 <= len(ps) <= 6):
+        raise HTTPException(status_code=400, detail="Folder depth must be between 2 and 6 levels")
 
 
 def _assert_can_rename_or_delete_folder(path: str) -> None:
     ps = _parts(path)
     if not ps:
         raise HTTPException(status_code=400, detail="path is required")
-
-    # block root fixed folders
     if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
         raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be renamed/deleted")
-
-    # block docs fixed leaf folders
-    if _is_docs_leaf(ps):
-        raise HTTPException(status_code=400, detail="Fixed folders (sgk/topic/lesson/chunk) cannot be renamed/deleted")
-
-    # allow rename/delete only type/class/subject levels under documents
-    if ps[0] != "documents" or len(ps) not in (2, 3, 4):
-        raise HTTPException(status_code=400, detail="Only documents/<type>/<class>/<subject> folders can be renamed/deleted")
+    if ps[0] not in ROOT_FOLDERS:
+        raise HTTPException(status_code=400, detail="Only folders under documents, images, or videos can be renamed/deleted")
+    if not (2 <= len(ps) <= 6):
+        raise HTTPException(status_code=400, detail="Folder depth must be between 2 and 6 levels")
 
 
 def _assert_can_upload_to_path(path: str) -> None:
     ps = _parts(path)
     if not ps:
         raise HTTPException(status_code=400, detail="path is required")
-
-    # images/videos: currently flat upload
+    if ps[0] not in ROOT_FOLDERS:
+        raise HTTPException(status_code=400, detail="Upload only allowed under documents, images, or videos")
+    # flat media: images/ or videos/ directly
     if len(ps) == 1 and ps[0] in ("images", "videos"):
         return
-
-    # documents leaf only
-    if _is_docs_leaf(ps):
+    # keyword media: images/keyword/<slug__id> or videos/keyword/<slug__id>
+    if _is_keyword_leaf(ps):
         return
-
+    # edu leaf: root/<class>/<subject>/<type>/<kind>/<id>
+    if _is_edu_leaf(ps):
+        return
     raise HTTPException(
         status_code=400,
-        detail="Upload is only allowed in images/, videos/, or documents/<type>/<class>/<subject>/{sgk,topic,lesson,chunk}/",
+        detail="Upload is only allowed in images/, videos/, images/keyword/<id>/, videos/keyword/<id>/, or root/<class>/<subject>/<type>/{topic,lesson,chunk}/<id>/",
     )
 
 
@@ -186,9 +171,9 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
     ps = _parts(p)
     prefix = f"{p}/" if p else ""
 
-    # If listing a subject folder => ensure fixed folders exist
-    if _is_docs_subject(ps):
-        _ensure_docs_fixed_folders(client, p)
+    # At edu type level (depth 4) ensure kind folders exist
+    if _is_edu_type_level(ps):
+        _ensure_edu_kind_folders(client, p)
 
     try:
         objects = client.list_objects(BUCKET, prefix=prefix, recursive=False)
@@ -219,16 +204,13 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                     }
                 )
 
-        # Enforce fixed folders at subject level (only show sgk/topic/lesson/chunk)
-        if _is_docs_subject(ps):
-            fixed = []
-            for cat in DOC_FIXED_FOLDERS:
-                fixed.append({"name": cat, "fullPath": f"{p}/{cat}"})
-            folders = fixed
-            files = []  # subject level is folder-only
+        # At edu type level: show only fixed kind folders
+        if _is_edu_type_level(ps):
+            folders = [{"name": kind, "fullPath": f"{p}/{kind}"} for kind in EDU_KINDS]
+            files = []
 
-        # Enforce leaf level: files only (ignore nested folders)
-        if _is_docs_leaf(ps) or (len(ps) == 1 and ps[0] in ("images", "videos")):
+        # At leaf levels: files only
+        if _is_edu_leaf(ps) or _is_keyword_leaf(ps) or (len(ps) == 1 and ps[0] in ("images", "videos")):
             folders = []
 
         folders.sort(key=lambda x: x["name"].lower())
@@ -265,10 +247,10 @@ def create_folder(body: CreateFolderBody):
             content_type="application/octet-stream",
         )
 
-        # if created subject => auto create fixed subfolders
+        # if created at edu type level => auto create kind subfolders
         ps = _parts(full_path)
-        if _is_docs_subject(ps):
-            _ensure_docs_fixed_folders(client, full_path)
+        if _is_edu_type_level(ps):
+            _ensure_edu_kind_folders(client, full_path)
 
         return {"status": "created", "bucket": BUCKET, "folder": {"fullPath": full_path, "marker": marker}}
 
@@ -294,11 +276,11 @@ async def upload_files_to_path(
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
 
-    # ensure fixed folders exist if uploading to docs leaf
+    # at edu leaf: ensure kind folders exist under type level
     ps = _parts(p)
-    if _is_docs_leaf(ps):
-        subject_path = "/".join(ps[:4])
-        _ensure_docs_fixed_folders(client, subject_path)
+    if _is_edu_leaf(ps):
+        type_path = "/".join(ps[:4])
+        _ensure_edu_kind_folders(client, type_path)
 
     # ensure root markers for images/videos (nice-to-have)
     if p in ("images", "videos"):

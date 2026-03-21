@@ -5,14 +5,9 @@ from typing import Any, Dict, Callable, Optional, List, Tuple
 from datetime import datetime, timezone
 import json
 import logging
-import os
 import re
 import unicodedata
-from pathlib import Path
-from urllib.parse import quote
-
 from bson import ObjectId
-from dotenv import load_dotenv
 from openpyxl import load_workbook
 from app.services.keyword_alias_service import ensure_keyword_alias_indexes
 from app.services.keyword_alias_service import (
@@ -21,12 +16,6 @@ from app.services.keyword_alias_service import (
 )
 
 _log = logging.getLogger(__name__)
-
-
-def _load_env() -> None:
-    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
-    load_dotenv(env_path)
-
 
 
 IMPORT_ORDER = ["class", "subject", "topic", "lesson", "chunk", "keyword"]
@@ -39,24 +28,6 @@ REF_MAP = {
 }
 
 JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", "table_url"}
-
-
-def _minio_base_dir() -> str:
-    _load_env()
-    return (os.getenv("MINIO_DOC_PREFIX") or "documents").strip().strip("/")
-
-
-def _default_bucket() -> str:
-    _load_env()
-    return (os.getenv("MINIO_BUCKET") or "data-edu").strip()
-
-
-def _minio_public_base_url() -> str:
-    _load_env()
-    return (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
-
-
-AUTO_MINIO_COLS = {"subject", "topic", "lesson", "chunk"}
 
 
 def _now():
@@ -117,12 +88,6 @@ def _two_digit(v: Any) -> str:
         return f"{int(v):02d}"
     except Exception:
         return ""
-
-
-def _minio_public_url(bucket: str, object_key: str) -> str:
-    b = (bucket or _default_bucket()).strip()
-    ok = (object_key or "").lstrip("/")
-    return f"{_minio_public_base_url()}/{b}/{quote(ok, safe='/')}"
 
 
 def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
@@ -227,15 +192,6 @@ def _upsert_by_import_key(
     return str(r.inserted_id), "insert"
 
 
-def _pick_bucket_from_row(rec: Dict[str, Any]) -> str:
-    b = (
-        str(rec.get("bucket_name") or "").strip()
-        or str(rec.get("bucket") or "").strip()
-        or str(rec.get("minio_bucket") or "").strip()
-    )
-    return b or _default_bucket()
-
-
 def _get_class_slug(db, class_ref: str, ctx: Dict[str, Any]) -> str:
     class_ref = (class_ref or "").strip()
     if not class_ref:
@@ -252,221 +208,164 @@ def _get_class_slug(db, class_ref: str, ctx: Dict[str, Any]) -> str:
     return slug
 
 
-def _get_subject_base_prefix(db, subject_ref: str, ctx: Dict[str, Any]) -> Tuple[str, str]:
+def _get_subject_path_info(db, subject_ref: str, ctx: Dict[str, Any]) -> dict:
     subject_ref = (subject_ref or "").strip()
     if not subject_ref:
-        return "", ""
-
-    cached = ctx.get("subject", {}).get(subject_ref) or {}
-    if cached.get("base_prefix") and cached.get("bucket"):
-        return cached["bucket"], cached["base_prefix"]
-
+        return {}
+    cached = ctx.get("_subject_path", {}).get(subject_ref)
+    if cached:
+        return cached
     d = db["subject"].find_one(
         {"import_key": subject_ref},
-        {"minio": 1, "subject_type": 1, "subject_name": 1, "class_ref": 1},
+        {"subject_type": 1, "subject_name": 1, "class_ref": 1},
     )
     if not d:
-        return "", ""
-
-    m = d.get("minio") or {}
-    ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or _default_bucket()
-
-    base_prefix = ""
-    if ok and "/sgk/" in ok:
-        base_prefix = ok.rsplit("/sgk/", 1)[0].strip("/")
-
-    if not base_prefix:
-        class_ref = (d.get("class_ref") or "").strip()
-        class_slug = _get_class_slug(db, class_ref, ctx)
-        type_slug = _slugify_vi(d.get("subject_type"))
-        subj_slug = _slugify_vi(d.get("subject_name"))
-        if class_slug and type_slug and subj_slug:
-            base_prefix = f"{_minio_base_dir()}/{type_slug}/{class_slug}/{subj_slug}"
-
-    if base_prefix:
-        ctx.setdefault("subject", {})[subject_ref] = {"bucket": bucket, "base_prefix": base_prefix}
-    return bucket, base_prefix
+        return {}
+    class_ref = (d.get("class_ref") or "").strip()
+    class_slug = _get_class_slug(db, class_ref, ctx)
+    subject_slug = _slugify_vi(d.get("subject_name"))
+    type_slug = _slugify_vi(d.get("subject_type"))
+    if not (class_slug and subject_slug and type_slug):
+        return {}
+    info = {"class_slug": class_slug, "subject_slug": subject_slug, "type_slug": type_slug}
+    ctx.setdefault("_subject_path", {})[subject_ref] = info
+    return info
 
 
-def _get_topic_base_prefix(db, topic_ref: str, ctx: Dict[str, Any]) -> Tuple[str, str]:
+def _get_topic_path_info(db, topic_ref: str, ctx: Dict[str, Any]) -> dict:
     topic_ref = (topic_ref or "").strip()
     if not topic_ref:
-        return "", ""
-
-    cached = ctx.get("topic", {}).get(topic_ref) or {}
-    if cached.get("base_prefix") and cached.get("bucket"):
-        return cached["bucket"], cached["base_prefix"]
-
-    d = db["topic"].find_one({"import_key": topic_ref}, {"minio": 1, "subject_ref": 1})
+        return {}
+    cached = ctx.get("_topic_path", {}).get(topic_ref)
+    if cached:
+        return cached
+    d = db["topic"].find_one({"import_key": topic_ref}, {"subject_ref": 1, "topic_num": 1})
     if not d:
-        return "", ""
-
-    m = d.get("minio") or {}
-    ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or _default_bucket()
-
-    base_prefix = ""
-    if ok and "/topic/" in ok:
-        base_prefix = ok.split("/topic/")[0].strip("/")
-
-    if not base_prefix:
-        subject_ref = (d.get("subject_ref") or "").strip()
-        bucket2, base2 = _get_subject_base_prefix(db, subject_ref, ctx)
-        bucket = bucket2 or bucket
-        base_prefix = base2
-
-    if base_prefix:
-        ctx.setdefault("topic", {})[topic_ref] = {"bucket": bucket, "base_prefix": base_prefix}
-    return bucket, base_prefix
+        return {}
+    subj_info = _get_subject_path_info(db, (d.get("subject_ref") or "").strip(), ctx)
+    if not subj_info:
+        return {}
+    topic_num = _two_digit(d.get("topic_num"))
+    if not topic_num:
+        return {}
+    info = {**subj_info, "topic_num": topic_num}
+    ctx.setdefault("_topic_path", {})[topic_ref] = info
+    return info
 
 
-def _get_lesson_base_prefix(db, lesson_ref: str, ctx: Dict[str, Any]) -> Tuple[str, str]:
+def _get_lesson_path_info(db, lesson_ref: str, ctx: Dict[str, Any]) -> dict:
     lesson_ref = (lesson_ref or "").strip()
     if not lesson_ref:
-        return "", ""
-
-    cached = ctx.get("lesson", {}).get(lesson_ref) or {}
-    if cached.get("base_prefix") and cached.get("bucket"):
-        return cached["bucket"], cached["base_prefix"]
-
-    d = db["lesson"].find_one({"import_key": lesson_ref}, {"minio": 1, "topic_ref": 1})
+        return {}
+    cached = ctx.get("_lesson_path", {}).get(lesson_ref)
+    if cached:
+        return cached
+    d = db["lesson"].find_one({"import_key": lesson_ref}, {"topic_ref": 1, "lesson_num": 1})
     if not d:
-        return "", ""
-
-    m = d.get("minio") or {}
-    ok = (m.get("object_key") or "").strip()
-    bucket = (m.get("bucket") or "").strip() or _default_bucket()
-
-    base_prefix = ""
-    if ok and "/lesson/" in ok:
-        base_prefix = ok.split("/lesson/")[0].strip("/")
-
-    if not base_prefix:
-        topic_ref = (d.get("topic_ref") or "").strip()
-        bucket2, base2 = _get_topic_base_prefix(db, topic_ref, ctx)
-        bucket = bucket2 or bucket
-        base_prefix = base2
-
-    if base_prefix:
-        ctx.setdefault("lesson", {})[lesson_ref] = {"bucket": bucket, "base_prefix": base_prefix}
-    return bucket, base_prefix
+        return {}
+    topic_info = _get_topic_path_info(db, (d.get("topic_ref") or "").strip(), ctx)
+    if not topic_info:
+        return {}
+    lesson_num = _two_digit(d.get("lesson_num"))
+    if not lesson_num:
+        return {}
+    info = {**topic_info, "lesson_num": lesson_num}
+    ctx.setdefault("_lesson_path", {})[lesson_ref] = info
+    return info
 
 
-def _get_lesson_num_from_ref(db, lesson_ref: str, ctx: Dict[str, Any]) -> str:
-    lesson_ref = (lesson_ref or "").strip()
-    if not lesson_ref:
-        return ""
-
-    cached = (ctx.get("lesson", {}) or {}).get(lesson_ref) or {}
-    if cached.get("lesson_num"):
-        return cached["lesson_num"]
-
-    d = db["lesson"].find_one({"import_key": lesson_ref}, {"lesson_num": 1})
-    if not d:
-        return ""
-
-    n = _two_digit(d.get("lesson_num"))
-    if n:
-        ctx.setdefault("lesson", {}).setdefault(lesson_ref, {})["lesson_num"] = n
-    return n
-
-
-def _auto_attach_minio(db, col: str, import_key: str, rec: Dict[str, Any], doc: Dict[str, Any], ctx: Dict[str, Any]):
+def _compute_asset_prefixes(
+    col: str,
+    doc: Dict[str, Any],
+    rec: Dict[str, Any],
+    db,
+    ctx: Dict[str, Any],
+    import_key: str,
+) -> Optional[Dict[str, Any]]:
+    """Compute deterministic asset_prefixes for educational entities."""
     if col == "class":
         cn = doc.get("class_name")
         if cn:
             ctx.setdefault("class", {})[import_key] = {"class_slug": _slugify_vi(cn)}
-        return
-
-    if col not in AUTO_MINIO_COLS:
-        return
-
-    m = doc.get("minio")
-    if isinstance(m, dict) and (m.get("object_key") or m.get("url")):
-        return
+        return None
 
     if col == "subject":
-        bucket = _pick_bucket_from_row(rec)
-
         class_ref = str(rec.get("class_ref") or doc.get("class_ref") or "").strip()
         class_slug = _get_class_slug(db, class_ref, ctx)
-
         type_slug = _slugify_vi(rec.get("subject_type") or doc.get("subject_type"))
         subj_slug = _slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
-
-        if not (bucket and class_slug and type_slug and subj_slug):
-            return
-
-        base_prefix = f"{_minio_base_dir()}/{type_slug}/{class_slug}/{subj_slug}"
-        object_key = f"{base_prefix}/sgk/sgk.pdf"
-
-        doc["minio"] = {
-            "bucket": bucket,
-            "object_key": object_key,
-            "url": _minio_public_url(bucket, object_key),
+        if not (class_slug and type_slug and subj_slug):
+            return None
+        base = f"{class_slug}/{subj_slug}/{type_slug}"
+        ctx.setdefault("_subject_path", {})[import_key] = {
+            "class_slug": class_slug, "subject_slug": subj_slug, "type_slug": type_slug,
         }
-
-        ctx.setdefault("subject", {})[import_key] = {"bucket": bucket, "base_prefix": base_prefix}
-        return
+        return {
+            "documents": f"documents/{base}",
+            "images": f"images/{base}",
+            "videos": f"videos/{base}",
+        }
 
     if col == "topic":
         subject_ref = str(rec.get("subject_ref") or doc.get("subject_ref") or "").strip()
-        bucket, base_prefix = _get_subject_base_prefix(db, subject_ref, ctx)
-        if not (bucket and base_prefix):
-            return
-
+        subj_info = _get_subject_path_info(db, subject_ref, ctx)
+        if not subj_info:
+            return None
         n = _two_digit(rec.get("topic_num") or doc.get("topic_num"))
         if not n:
-            return
-
-        object_key = f"{base_prefix}/topic/{n}.pdf"
-        doc["minio"] = {
-            "bucket": bucket,
-            "object_key": object_key,
-            "url": _minio_public_url(bucket, object_key),
+            return None
+        base = f"{subj_info['class_slug']}/{subj_info['subject_slug']}/{subj_info['type_slug']}"
+        identifier = f"topic_{n}"
+        ctx.setdefault("_topic_path", {})[import_key] = {**subj_info, "topic_num": n}
+        return {
+            "documents": f"documents/{base}/topic/{identifier}",
+            "images": f"images/{base}/topic/{identifier}",
+            "videos": f"videos/{base}/topic/{identifier}",
         }
-        ctx.setdefault("topic", {})[import_key] = {"bucket": bucket, "base_prefix": base_prefix}
-        return
 
     if col == "lesson":
         topic_ref = str(rec.get("topic_ref") or doc.get("topic_ref") or "").strip()
-        bucket, base_prefix = _get_topic_base_prefix(db, topic_ref, ctx)
-        if not (bucket and base_prefix):
-            return
-
+        topic_info = _get_topic_path_info(db, topic_ref, ctx)
+        if not topic_info:
+            return None
         n = _two_digit(rec.get("lesson_num") or doc.get("lesson_num"))
         if not n:
-            return
-
-        object_key = f"{base_prefix}/lesson/{n}.pdf"
-        doc["minio"] = {
-            "bucket": bucket,
-            "object_key": object_key,
-            "url": _minio_public_url(bucket, object_key),
+            return None
+        base = f"{topic_info['class_slug']}/{topic_info['subject_slug']}/{topic_info['type_slug']}"
+        identifier = f"topic_{topic_info['topic_num']}-lesson_{n}"
+        ctx.setdefault("_lesson_path", {})[import_key] = {**topic_info, "lesson_num": n}
+        return {
+            "documents": f"documents/{base}/lesson/{identifier}",
+            "images": f"images/{base}/lesson/{identifier}",
+            "videos": f"videos/{base}/lesson/{identifier}",
         }
-        ctx.setdefault("lesson", {})[import_key] = {"bucket": bucket, "base_prefix": base_prefix, "lesson_num": n}
-        return
 
     if col == "chunk":
         lesson_ref = str(rec.get("lesson_ref") or doc.get("lesson_ref") or "").strip()
-        bucket, base_prefix = _get_lesson_base_prefix(db, lesson_ref, ctx)
-        if not (bucket and base_prefix):
-            return
-
-        lesson_num = _get_lesson_num_from_ref(db, lesson_ref, ctx)
-        chunk_num = _two_digit(rec.get("chunk_num") or doc.get("chunk_num"))
-
-        if not lesson_num or not chunk_num:
-            return
-
-        object_key = f"{base_prefix}/chunk/lesson_{lesson_num}-chunk_{chunk_num}.pdf"
-        doc["minio"] = {
-            "bucket": bucket,
-            "object_key": object_key,
-            "url": _minio_public_url(bucket, object_key),
+        lesson_info = _get_lesson_path_info(db, lesson_ref, ctx)
+        if not lesson_info:
+            return None
+        n = _two_digit(rec.get("chunk_num") or doc.get("chunk_num"))
+        if not n:
+            return None
+        base = f"{lesson_info['class_slug']}/{lesson_info['subject_slug']}/{lesson_info['type_slug']}"
+        identifier = f"topic_{lesson_info['topic_num']}-lesson_{lesson_info['lesson_num']}-chunk_{n}"
+        return {
+            "documents": f"documents/{base}/chunk/{identifier}",
+            "images": f"images/{base}/chunk/{identifier}",
+            "videos": f"videos/{base}/chunk/{identifier}",
         }
-        return
+
+    return None
+
+
+def _keyword_asset_prefixes(keyword_slug: str, mongo_id_str: str) -> Dict[str, str]:
+    short_id = (mongo_id_str or "")[-6:]
+    identifier = f"{keyword_slug}__{short_id}"
+    return {
+        "images": f"images/keyword/{identifier}",
+        "videos": f"videos/keyword/{identifier}",
+    }
 
 
 def _ensure_keyword_related_indexes(db) -> None:
@@ -537,14 +436,27 @@ def _ensure_keyword_related_indexes(db) -> None:
 def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
     keyword_slug, existing_mongo_id = _resolve_keyword_slug(db, keyword_name)
     if existing_mongo_id:
+        # backfill asset_prefixes if missing
+        oid = ObjectId(existing_mongo_id) if ObjectId.is_valid(existing_mongo_id) else existing_mongo_id
+        existing_doc = db["keyword"].find_one({"_id": oid}, {"asset_prefixes": 1, "keyword_slug": 1})
+        if existing_doc and not existing_doc.get("asset_prefixes"):
+            slug = existing_doc.get("keyword_slug") or keyword_slug
+            db["keyword"].update_one(
+                {"_id": oid},
+                {"$set": {"asset_prefixes": _keyword_asset_prefixes(slug, existing_mongo_id)}},
+            )
         return existing_mongo_id, "noop"
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
     now = _now()
+    new_id = ObjectId()
+    mongo_id_str = str(new_id)
     doc = {
+        "_id": new_id,
         "keyword_name": keyword_name,
         "keyword_slug": keyword_slug,
         "aliases": [],
+        "asset_prefixes": _keyword_asset_prefixes(keyword_slug, mongo_id_str),
         "is_deleted": False,
         "deleted_at": None,
         "created_at": now,
@@ -552,8 +464,8 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
         "created_by": actor,
         "updated_by": actor,
     }
-    result = db["keyword"].insert_one(doc)
-    return str(result.inserted_id), "insert"
+    db["keyword"].insert_one(doc)
+    return mongo_id_str, "insert"
 
 
 def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
@@ -906,7 +818,7 @@ def import_excel_to_mongo(
     all_cols = set(IMPORT_ORDER) | set(cols)
     id_map: Dict[str, Dict[str, str]] = {c: {} for c in all_cols}
 
-    ctx: Dict[str, Any] = {"class": {}, "subject": {}, "topic": {}, "lesson": {}}
+    ctx: Dict[str, Any] = {"class": {}, "_subject_path": {}, "_topic_path": {}, "_lesson_path": {}}
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
@@ -983,7 +895,9 @@ def import_excel_to_mongo(
                             )
                         doc[target_field] = ObjectId(parent_id) if ObjectId.is_valid(parent_id) else parent_id
 
-                _auto_attach_minio(db, col, import_key, rec, doc, ctx)
+                asset_prefixes = _compute_asset_prefixes(col, doc, rec, db, ctx, import_key)
+                if asset_prefixes is not None:
+                    doc["asset_prefixes"] = asset_prefixes
 
                 doc["import_key"] = import_key
 

@@ -92,6 +92,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         body.pop("keyword_slug", None)
         if not body.get("is_deleted"):
             from app.services.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
+            from bson import ObjectId as _OID
             kw_name = str(body.get("keyword_name") or "").strip()
             if not kw_name:
                 raise HTTPException(status_code=422, detail="keyword_name is required")
@@ -100,6 +101,15 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 raise HTTPException(status_code=409, detail=f"keyword_name '{kw_name}' already exists")
             enforce_canonical_name_precedence(db, kw_name, actor)
             body["keyword_slug"] = kw_slug
+            # Pre-generate _id so asset_prefixes can use a stable short suffix
+            new_id = _OID()
+            mongo_id_str = str(new_id)
+            short_id = mongo_id_str[-6:]
+            body["_id"] = new_id
+            body["asset_prefixes"] = {
+                "images": f"images/keyword/{kw_slug}__{short_id}",
+                "videos": f"videos/keyword/{kw_slug}__{short_id}",
+            }
 
     # topic: validate + coerce subject_id to ObjectId
     if col == "topic":
