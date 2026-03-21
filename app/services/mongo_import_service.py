@@ -1,15 +1,17 @@
 # app/services/mongo_import_service.py
 from __future__ import annotations
 
-from typing import Any, Dict, Callable, Optional, List, Tuple
+from typing import Any, Dict, Callable, Optional, List, Set, Tuple
 from datetime import datetime, timezone
 import json
 import logging
+import os
 import re
 import unicodedata
 from bson import ObjectId
 from openpyxl import load_workbook
 from app.services.keyword_alias_service import ensure_keyword_alias_indexes
+from app.services.minio_marker_service import ensure_asset_prefix_markers
 from app.services.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
@@ -32,6 +34,18 @@ JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", 
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _get_import_minio():
+    """Return (client, bucket) or (None, None) if MinIO is not configured."""
+    bucket = (os.getenv("MINIO_BUCKET") or "").strip()
+    if not bucket:
+        return None, None
+    try:
+        from app.services.minio_client import get_minio_client
+        return get_minio_client(), bucket
+    except Exception:
+        return None, None
 
 
 def _norm_header(h: Any) -> str:
@@ -217,17 +231,16 @@ def _get_subject_path_info(db, subject_ref: str, ctx: Dict[str, Any]) -> dict:
         return cached
     d = db["subject"].find_one(
         {"import_key": subject_ref},
-        {"subject_type": 1, "subject_name": 1, "class_ref": 1},
+        {"subject_name": 1, "class_ref": 1},
     )
     if not d:
         return {}
     class_ref = (d.get("class_ref") or "").strip()
     class_slug = _get_class_slug(db, class_ref, ctx)
     subject_slug = _slugify_vi(d.get("subject_name"))
-    type_slug = _slugify_vi(d.get("subject_type"))
-    if not (class_slug and subject_slug and type_slug):
+    if not (class_slug and subject_slug):
         return {}
-    info = {"class_slug": class_slug, "subject_slug": subject_slug, "type_slug": type_slug}
+    info = {"class_slug": class_slug, "subject_slug": subject_slug}
     ctx.setdefault("_subject_path", {})[subject_ref] = info
     return info
 
@@ -292,18 +305,14 @@ def _compute_asset_prefixes(
     if col == "subject":
         class_ref = str(rec.get("class_ref") or doc.get("class_ref") or "").strip()
         class_slug = _get_class_slug(db, class_ref, ctx)
-        type_slug = _slugify_vi(rec.get("subject_type") or doc.get("subject_type"))
         subj_slug = _slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
-        if not (class_slug and type_slug and subj_slug):
+        if not (class_slug and subj_slug):
             return None
-        base = f"{class_slug}/{subj_slug}/{type_slug}"
         ctx.setdefault("_subject_path", {})[import_key] = {
-            "class_slug": class_slug, "subject_slug": subj_slug, "type_slug": type_slug,
+            "class_slug": class_slug, "subject_slug": subj_slug,
         }
         return {
-            "documents": f"documents/{base}",
-            "images": f"images/{base}",
-            "videos": f"videos/{base}",
+            "documents": f"documents/{class_slug}/{subj_slug}/subject",
         }
 
     if col == "topic":
@@ -314,7 +323,7 @@ def _compute_asset_prefixes(
         n = _two_digit(rec.get("topic_num") or doc.get("topic_num"))
         if not n:
             return None
-        base = f"{subj_info['class_slug']}/{subj_info['subject_slug']}/{subj_info['type_slug']}"
+        base = f"{subj_info['class_slug']}/{subj_info['subject_slug']}"
         identifier = f"topic_{n}"
         ctx.setdefault("_topic_path", {})[import_key] = {**subj_info, "topic_num": n}
         return {
@@ -331,7 +340,7 @@ def _compute_asset_prefixes(
         n = _two_digit(rec.get("lesson_num") or doc.get("lesson_num"))
         if not n:
             return None
-        base = f"{topic_info['class_slug']}/{topic_info['subject_slug']}/{topic_info['type_slug']}"
+        base = f"{topic_info['class_slug']}/{topic_info['subject_slug']}"
         identifier = f"topic_{topic_info['topic_num']}-lesson_{n}"
         ctx.setdefault("_lesson_path", {})[import_key] = {**topic_info, "lesson_num": n}
         return {
@@ -348,7 +357,7 @@ def _compute_asset_prefixes(
         n = _two_digit(rec.get("chunk_num") or doc.get("chunk_num"))
         if not n:
             return None
-        base = f"{lesson_info['class_slug']}/{lesson_info['subject_slug']}/{lesson_info['type_slug']}"
+        base = f"{lesson_info['class_slug']}/{lesson_info['subject_slug']}"
         identifier = f"topic_{lesson_info['topic_num']}-lesson_{lesson_info['lesson_num']}-chunk_{n}"
         return {
             "documents": f"documents/{base}/chunk/{identifier}",
@@ -611,6 +620,10 @@ def _import_keyword_rows(
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     progress_state: Optional[Dict[str, Any]] = None,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
+    minio_client=None,
+    minio_bucket: Optional[str] = None,
+    minio_seen: Optional[Set[str]] = None,
+    minio_errors: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
 
     inserted = reused = synced = 0
@@ -675,6 +688,15 @@ def _import_keyword_rows(
             topic_name: Optional[str] = topic_doc.get("topic_name") or None
 
             keyword_id, kw_op = _find_or_create_keyword(db, keyword_name, actor)
+
+            if minio_client and minio_bucket:
+                _kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
+                _kw_doc = db["keyword"].find_one({"_id": _kw_oid}, {"asset_prefixes": 1})
+                if _kw_doc and _kw_doc.get("asset_prefixes"):
+                    ensure_asset_prefix_markers(
+                        minio_client, minio_bucket, _kw_doc["asset_prefixes"],
+                        seen=minio_seen, errors=minio_errors,
+                    )
 
             if kw_op == "insert":
                 new_keywords.setdefault(keyword_id, keyword_name)
@@ -820,6 +842,10 @@ def import_excel_to_mongo(
 
     ctx: Dict[str, Any] = {"class": {}, "_subject_path": {}, "_topic_path": {}, "_lesson_path": {}}
 
+    minio_client, minio_bucket = _get_import_minio()
+    minio_seen: Set[str] = set()
+    minio_errors: List[Dict[str, Any]] = []
+
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
     rows_by_col: Dict[str, List[Dict[str, Any]]] = {col: _read_sheet_rows(wb, col) for col in cols}
@@ -846,6 +872,10 @@ def import_excel_to_mongo(
                 progress_callback=progress_callback,
                 progress_state=_progress_state,
                 sync_one=sync_one,
+                minio_client=minio_client,
+                minio_bucket=minio_bucket,
+                minio_seen=minio_seen,
+                minio_errors=minio_errors,
             )
             if _progress_state is not None:
                 processed_rows = _progress_state["processed_rows"]
@@ -905,6 +935,12 @@ def import_excel_to_mongo(
 
                 id_map[col][import_key] = mongo_id
 
+                if asset_prefixes and minio_client:
+                    ensure_asset_prefix_markers(
+                        minio_client, minio_bucket, asset_prefixes,
+                        seen=minio_seen, errors=minio_errors,
+                    )
+
                 if op == "insert":
                     inserted += 1
                 elif op == "update":
@@ -942,5 +978,8 @@ def import_excel_to_mongo(
             "synced": synced,
             "errors": errors[:50],
         }
+
+    if minio_errors:
+        report["minio_errors"] = minio_errors[:50]
 
     return report

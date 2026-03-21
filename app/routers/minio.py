@@ -1,5 +1,4 @@
 # app/routers/minio.py
-import io
 import os
 import json
 from typing import List
@@ -7,10 +6,9 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Request
 from minio.commonconfig import CopySource
-from minio.deleteobjects import DeleteObject
 from minio.error import S3Error
 
-from app.schemas.minio_schemas import CreateFolderBody, RenameFolderBody, RenameObjectBody
+from app.schemas.minio_schemas import RenameObjectBody
 from app.services.minio_client import get_minio_client
 from app.services.mongo_minio_service import (
     on_minio_insert_to_mongo,
@@ -25,7 +23,8 @@ MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1
 
 # ====== FIXED STRUCTURE ======
 ROOT_FOLDERS = ("documents", "videos", "images")
-EDU_KINDS = ("topic", "lesson", "chunk")
+EDU_KINDS = ("topic", "lesson", "chunk")            # non-subject identifier kinds
+DOC_ALL_KINDS = ("subject", "topic", "lesson", "chunk")  # all kinds for documents
 
 
 # ===================== HELPERS =====================
@@ -75,34 +74,20 @@ def prefix_has_anything(client, prefix: str) -> bool:
     return False
 
 
-def _put_marker_if_missing(client, full_path: str) -> None:
-    """Create folder marker if not exists (idempotent)."""
-    marker = folder_marker(full_path)
-    if not marker:
-        return
-    try:
-        client.stat_object(BUCKET, marker)
-        return
-    except S3Error:
-        pass
 
-    client.put_object(
-        BUCKET,
-        marker,
-        data=io.BytesIO(b""),
-        length=0,
-        content_type="application/octet-stream",
-    )
+def _is_subject_level(parts: List[str]) -> bool:
+    # root/<class>/<subject> — depth 3, not a keyword path
+    return len(parts) == 3 and parts[0] in ROOT_FOLDERS and parts[1] != "keyword"
 
 
-def _is_edu_type_level(parts: List[str]) -> bool:
-    # root/<class>/<subject>/<type> — depth 4, any root
-    return len(parts) == 4 and parts[0] in ROOT_FOLDERS
+def _is_subject_leaf(parts: List[str]) -> bool:
+    # documents/<class>/<subject>/subject — depth 4, documents only
+    return len(parts) == 4 and parts[0] == "documents" and parts[3] == "subject"
 
 
 def _is_edu_leaf(parts: List[str]) -> bool:
-    # root/<class>/<subject>/<type>/<kind>/<id> — depth 6
-    return len(parts) == 6 and parts[0] in ROOT_FOLDERS and parts[4] in EDU_KINDS
+    # root/<class>/<subject>/<kind>/<id> — depth 5, kind in EDU_KINDS
+    return len(parts) == 5 and parts[0] in ROOT_FOLDERS and parts[3] in EDU_KINDS
 
 
 def _is_keyword_leaf(parts: List[str]) -> bool:
@@ -110,33 +95,17 @@ def _is_keyword_leaf(parts: List[str]) -> bool:
     return len(parts) == 3 and parts[0] in ("images", "videos") and parts[1] == "keyword"
 
 
-def _ensure_edu_kind_folders(client, type_path: str) -> None:
-    for kind in EDU_KINDS:
-        _put_marker_if_missing(client, f"{type_path}/{kind}")
+def _target_folder_exists(client, path: str) -> bool:
+    """Return True if the folder marker for path exists in MinIO."""
+    marker = folder_marker(path)
+    if not marker:
+        return False
+    try:
+        client.stat_object(BUCKET, marker)
+        return True
+    except S3Error:
+        return False
 
-
-def _assert_can_create_folder(full_path: str) -> None:
-    ps = _parts(full_path)
-    if not ps:
-        raise HTTPException(status_code=400, detail="full_path is required")
-    if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
-        raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be created")
-    if ps[0] not in ROOT_FOLDERS:
-        raise HTTPException(status_code=400, detail="Folders can only be created under documents, images, or videos")
-    if not (2 <= len(ps) <= 6):
-        raise HTTPException(status_code=400, detail="Folder depth must be between 2 and 6 levels")
-
-
-def _assert_can_rename_or_delete_folder(path: str) -> None:
-    ps = _parts(path)
-    if not ps:
-        raise HTTPException(status_code=400, detail="path is required")
-    if len(ps) == 1 and ps[0] in ROOT_FOLDERS:
-        raise HTTPException(status_code=400, detail="Root folders are fixed and cannot be renamed/deleted")
-    if ps[0] not in ROOT_FOLDERS:
-        raise HTTPException(status_code=400, detail="Only folders under documents, images, or videos can be renamed/deleted")
-    if not (2 <= len(ps) <= 6):
-        raise HTTPException(status_code=400, detail="Folder depth must be between 2 and 6 levels")
 
 
 def _assert_can_upload_to_path(path: str) -> None:
@@ -145,18 +114,18 @@ def _assert_can_upload_to_path(path: str) -> None:
         raise HTTPException(status_code=400, detail="path is required")
     if ps[0] not in ROOT_FOLDERS:
         raise HTTPException(status_code=400, detail="Upload only allowed under documents, images, or videos")
-    # flat media: images/ or videos/ directly
-    if len(ps) == 1 and ps[0] in ("images", "videos"):
-        return
-    # keyword media: images/keyword/<slug__id> or videos/keyword/<slug__id>
+    # keyword: images/keyword/<slug__id> or videos/keyword/<slug__id>
     if _is_keyword_leaf(ps):
         return
-    # edu leaf: root/<class>/<subject>/<type>/<kind>/<id>
+    # subject document leaf: documents/<class>/<subject>/subject
+    if _is_subject_leaf(ps):
+        return
+    # edu leaf: root/<class>/<subject>/<kind>/<id>
     if _is_edu_leaf(ps):
         return
     raise HTTPException(
         status_code=400,
-        detail="Upload is only allowed in images/, videos/, images/keyword/<id>/, videos/keyword/<id>/, or root/<class>/<subject>/<type>/{topic,lesson,chunk}/<id>/",
+        detail="Upload allowed in: images/keyword/<id>/, videos/keyword/<id>/, documents/<class>/<subject>/subject/, root/<class>/<subject>/{topic,lesson,chunk}/<id>/",
     )
 
 
@@ -170,10 +139,6 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
     p = clean_path(path or "")
     ps = _parts(p)
     prefix = f"{p}/" if p else ""
-
-    # At edu type level (depth 4) ensure kind folders exist
-    if _is_edu_type_level(ps):
-        _ensure_edu_kind_folders(client, p)
 
     try:
         objects = client.list_objects(BUCKET, prefix=prefix, recursive=False)
@@ -204,13 +169,14 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                     }
                 )
 
-        # At edu type level: show only fixed kind folders
-        if _is_edu_type_level(ps):
-            folders = [{"name": kind, "fullPath": f"{p}/{kind}"} for kind in EDU_KINDS]
+        # At subject level: show only fixed kind folders
+        if _is_subject_level(ps):
+            kinds = DOC_ALL_KINDS if ps[0] == "documents" else EDU_KINDS
+            folders = [{"name": kind, "fullPath": f"{p}/{kind}"} for kind in kinds]
             files = []
 
         # At leaf levels: files only
-        if _is_edu_leaf(ps) or _is_keyword_leaf(ps) or (len(ps) == 1 and ps[0] in ("images", "videos")):
+        if _is_subject_leaf(ps) or _is_edu_leaf(ps) or _is_keyword_leaf(ps):
             folders = []
 
         folders.sort(key=lambda x: x["name"].lower())
@@ -223,41 +189,6 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
 
 
 # ===================== POST =====================
-
-@router.post("/folders", summary="Create folder (only documents/type/class/subject)")
-def create_folder(body: CreateFolderBody):
-    _require_bucket()
-    client = get_minio_client()
-
-    full_path = clean_path(body.full_path)
-    _assert_can_create_folder(full_path)
-
-    marker = folder_marker(full_path)
-
-    try:
-        if prefix_has_anything(client, marker):
-            raise HTTPException(status_code=409, detail="Folder already exists")
-
-        # create marker
-        client.put_object(
-            BUCKET,
-            marker,
-            data=io.BytesIO(b""),
-            length=0,
-            content_type="application/octet-stream",
-        )
-
-        # if created at edu type level => auto create kind subfolders
-        ps = _parts(full_path)
-        if _is_edu_type_level(ps):
-            _ensure_edu_kind_folders(client, full_path)
-
-        return {"status": "created", "bucket": BUCKET, "folder": {"fullPath": full_path, "marker": marker}}
-
-    except HTTPException:
-        raise
-    except S3Error as e:
-        raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
 @router.post("/files/", summary="Upload MANY files to a leaf folder + sync Mongo/PG")
@@ -276,15 +207,11 @@ async def upload_files_to_path(
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
 
-    # at edu leaf: ensure kind folders exist under type level
-    ps = _parts(p)
-    if _is_edu_leaf(ps):
-        type_path = "/".join(ps[:4])
-        _ensure_edu_kind_folders(client, type_path)
-
-    # ensure root markers for images/videos (nice-to-have)
-    if p in ("images", "videos"):
-        _put_marker_if_missing(client, p)
+    if not _target_folder_exists(client, p):
+        raise HTTPException(
+            status_code=404,
+            detail="Target folder does not exist. Build/import the MinIO structure first.",
+        )
 
     prefix = folder_marker(p)
 
@@ -447,141 +374,8 @@ def rename_object(body: RenameObjectBody, request: Request):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-@router.put("/folders/", summary="Rename folder (cascade) + sync Mongo/PG")
-def rename_folder(body: RenameFolderBody, request: Request):
-    _require_bucket()
-    client = get_minio_client()
-    actor = get_actor(request)
-
-    old_path = clean_path(body.old_path)
-    new_path = clean_path(body.new_path)
-
-    _assert_can_rename_or_delete_folder(old_path)
-    _assert_can_rename_or_delete_folder(new_path)
-
-    if old_path == new_path:
-        raise HTTPException(status_code=400, detail="new_path is the same as old_path")
-
-    old_prefix = folder_marker(old_path)
-    new_prefix = folder_marker(new_path)
-
-    if new_prefix.startswith(old_prefix):
-        raise HTTPException(status_code=400, detail="new_path must not be inside old_path")
-
-    try:
-        if not prefix_has_anything(client, old_prefix):
-            raise HTTPException(status_code=404, detail="Folder not found")
-        if prefix_has_anything(client, new_prefix):
-            raise HTTPException(status_code=409, detail="Target folder already exists")
-
-        objs = list(client.list_objects(BUCKET, prefix=old_prefix, recursive=True))
-        keys = [o.object_name for o in objs]
-
-        try:
-            client.stat_object(BUCKET, old_prefix)
-            if old_prefix not in keys:
-                keys.append(old_prefix)
-        except S3Error:
-            pass
-
-        copied = 0
-        mongo_updates = []
-
-        for old_key in keys:
-            if not old_key.startswith(old_prefix):
-                continue
-            suffix = old_key[len(old_prefix):]
-            new_key = new_prefix + suffix
-
-            client.copy_object(BUCKET, new_key, CopySource(BUCKET, old_key))
-            copied += 1
-
-            if not old_key.endswith("/"):
-                mongo_updates.append(
-                    on_minio_rename_object(
-                        old_object_key=old_key,
-                        new_object_key=new_key,
-                        old_url=public_url(old_key),
-                        new_url=public_url(new_key),
-                        actor=actor,
-                        sync_pg=True,
-                    )
-                )
-
-        del_keys = set(keys)
-        to_delete = [DeleteObject(k) for k in del_keys]
-        errors = list(client.remove_objects(BUCKET, to_delete))
-        if errors:
-            raise HTTPException(status_code=500, detail=f"Delete errors: {[str(e) for e in errors]}")
-
-        return {
-            "status": "renamed",
-            "bucket": BUCKET,
-            "old_path": old_path,
-            "new_path": new_path,
-            "copied_objects": copied,
-            "mongo_updates_count": len(mongo_updates),
-        }
-
-    except HTTPException:
-        raise
-    except S3Error as e:
-        raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
-
 
 # ===================== DELETE =====================
-
-@router.delete("/folders", summary="Delete folder (cascade) + sync Mongo/PG")
-def delete_folder(request: Request, path: str = Query(..., min_length=1)):
-    _require_bucket()
-    client = get_minio_client()
-    actor = get_actor(request)
-
-    p = clean_path(path)
-    _assert_can_rename_or_delete_folder(p)
-
-    prefix = folder_marker(p)
-
-    try:
-        if not prefix_has_anything(client, prefix):
-            raise HTTPException(status_code=404, detail="Folder not found")
-
-        objs = list(client.list_objects(BUCKET, prefix=prefix, recursive=True))
-        keys = [o.object_name for o in objs]
-
-        try:
-            client.stat_object(BUCKET, prefix)
-            if prefix not in keys:
-                keys.append(prefix)
-        except S3Error:
-            pass
-
-        del_keys = set(keys)
-        to_delete = [DeleteObject(k) for k in del_keys]
-
-        errors = list(client.remove_objects(BUCKET, to_delete))
-        if errors:
-            raise HTTPException(status_code=500, detail=f"Delete errors: {[str(e) for e in errors]}")
-
-        mongo_updates = []
-        for k in del_keys:
-            if k.endswith("/"):
-                continue
-            mongo_updates.append(
-                on_minio_unlink_object(
-                    object_key=k,
-                    url=public_url(k),
-                    actor=actor,
-                    sync_pg=True,
-                )
-            )
-
-        return {"status": "deleted", "bucket": BUCKET, "path": p, "mongo_updates_count": len(mongo_updates)}
-
-    except HTTPException:
-        raise
-    except S3Error as e:
-        raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
 @router.delete("/files", summary="Delete 1 file + sync Mongo/PG")
