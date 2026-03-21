@@ -1,6 +1,5 @@
 # app/routers/minio.py
 import os
-import json
 from typing import List
 from urllib.parse import quote
 
@@ -10,6 +9,7 @@ from minio.error import S3Error
 
 from app.schemas.minio_schemas import RenameObjectBody
 from app.services.minio_client import get_minio_client
+from app.services.minio_marker_service import ensure_root_folders
 from app.services.mongo_minio_service import (
     on_minio_insert_to_mongo,
     on_minio_rename_object,
@@ -23,8 +23,7 @@ MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1
 
 # ====== FIXED STRUCTURE ======
 ROOT_FOLDERS = ("documents", "videos", "images")
-EDU_KINDS = ("topic", "lesson", "chunk")            # non-subject identifier kinds
-DOC_ALL_KINDS = ("subject", "topic", "lesson", "chunk")  # all kinds for documents
+EDU_KINDS = ("topic", "lesson", "chunk")
 
 
 # ===================== HELPERS =====================
@@ -65,19 +64,6 @@ def public_url(object_key: str) -> str:
     _require_bucket()
     encoded = quote(object_key, safe="/")
     return f"{MINIO_PUBLIC_BASE_URL}/{BUCKET}/{encoded}"
-
-
-def prefix_has_anything(client, prefix: str) -> bool:
-    it = client.list_objects(BUCKET, prefix=prefix, recursive=True)
-    for _ in it:
-        return True
-    return False
-
-
-
-def _is_subject_level(parts: List[str]) -> bool:
-    # root/<class>/<subject> — depth 3, not a keyword path
-    return len(parts) == 3 and parts[0] in ROOT_FOLDERS and parts[1] != "keyword"
 
 
 def _is_subject_leaf(parts: List[str]) -> bool:
@@ -141,6 +127,11 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
     prefix = f"{p}/" if p else ""
 
     try:
+        ensure_root_folders(client, BUCKET)
+    except Exception:
+        pass
+
+    try:
         objects = client.list_objects(BUCKET, prefix=prefix, recursive=False)
 
         folders = []
@@ -168,12 +159,6 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                         "url": public_url(object_key),
                     }
                 )
-
-        # At subject level: show only fixed kind folders
-        if _is_subject_level(ps):
-            kinds = DOC_ALL_KINDS if ps[0] == "documents" else EDU_KINDS
-            folders = [{"name": kind, "fullPath": f"{p}/{kind}"} for kind in kinds]
-            files = []
 
         # At leaf levels: files only
         if _is_subject_leaf(ps) or _is_edu_leaf(ps) or _is_keyword_leaf(ps):

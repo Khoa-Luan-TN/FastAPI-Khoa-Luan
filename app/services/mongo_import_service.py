@@ -11,7 +11,7 @@ import unicodedata
 from bson import ObjectId
 from openpyxl import load_workbook
 from app.services.keyword_alias_service import ensure_keyword_alias_indexes
-from app.services.minio_marker_service import ensure_asset_prefix_markers
+from app.services.minio_marker_service import ensure_asset_prefix_markers, ensure_root_folders
 from app.services.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
@@ -845,6 +845,8 @@ def import_excel_to_mongo(
     minio_client, minio_bucket = _get_import_minio()
     minio_seen: Set[str] = set()
     minio_errors: List[Dict[str, Any]] = []
+    if minio_client:
+        ensure_root_folders(minio_client, minio_bucket, errors=minio_errors)
 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 

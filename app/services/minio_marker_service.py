@@ -9,6 +9,24 @@ from minio.error import S3Error
 
 _log = logging.getLogger(__name__)
 
+ROOT_FOLDERS = ("documents", "images", "videos")
+
+
+def ensure_root_folders(
+    client,
+    bucket: str,
+    *,
+    errors: Optional[List[Dict]] = None,
+) -> None:
+    """Idempotently create the three top-level root folder markers."""
+    for root in ROOT_FOLDERS:
+        try:
+            _put_marker(client, bucket, f"{root}/")
+        except Exception as exc:
+            _log.warning("[minio_marker] failed to ensure root '%s/': %s", root, exc)
+            if errors is not None:
+                errors.append({"prefix": f"{root}/", "error": str(exc)})
+
 
 def _put_marker(client, bucket: str, marker: str) -> None:
     """Idempotently create a single zero-byte folder marker."""
