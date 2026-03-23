@@ -1,12 +1,4 @@
-# app/services/search_experimental_service.py
-#
-# Experimental parallel search pipeline — DO NOT wire into production yet.
-# Current scope:
-#   keyword extraction → Topic embedding top-1
-#   → PostgreSQL topic.mongo_id → Mongo topic_bag
-#   → keyword/alias exact-match → chunk_keyword
-#   → chunk → lesson → topic → subject → class (full upward path)
-
+# app/services/search_service.py
 from __future__ import annotations
 
 import logging
@@ -20,24 +12,21 @@ from app.services.gemini_keyword_service import extract_query_keywords
 from app.services.mongo_client import get_mongo_db
 from app.services.neo_search_service import search_top_topics_by_embedding
 from app.services.postgre_client import SessionLocal
-from app.services.search_experimental_debug_service import build_chunk_debug_description
-from app.services.search_experimental_gemini_description_service import generate_hierarchy_descriptions
+from app.services.search_description_service import generate_hierarchy_descriptions
 
 _log = logging.getLogger(__name__)
 
+_TOP_K = 3
 
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
 
-def run_experimental_topic_probe(
+def run_topic_probe(
     neo: Session,
     query: str,
     class_hint: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Experimental pipeline per extracted keyword:
+    """Search pipeline per extracted keyword:
     1. Gemini keyword extraction
-    2. embed → Neo4j Topic embedding top-1
+    2. embed → Neo4j Topic embedding top-k
     3. PG topic.mongo_id → Mongo topic_bag
     4. keyword_refs → exact alias/name match
     5. chunk_keyword → chunk hits enriched with full upward path
@@ -76,10 +65,6 @@ def run_experimental_topic_probe(
         "per_keyword_results": per_keyword_results,
     }
 
-
-# ---------------------------------------------------------------------------
-# Per-keyword pipeline
-# ---------------------------------------------------------------------------
 
 def _probe_keyword(
     neo: Session,
@@ -140,10 +125,6 @@ def _probe_keyword(
     return base
 
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
 def _norm(s: str) -> str:
     return " ".join(str(s or "").lower().strip().split())
 
@@ -199,7 +180,6 @@ def _fetch_owner_assets(
 
 
 def _first_document_minio(assets: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
-    """Return {bucket, object_key, url} for the first document asset, or None."""
     docs = assets.get("documents", [])
     if not docs:
         return None
@@ -207,14 +187,11 @@ def _first_document_minio(assets: Dict[str, List[Dict[str, Any]]]) -> Optional[D
     return {"bucket": d.get("bucket"), "object_key": d.get("object_key"), "url": d.get("url")}
 
 
-_EXPERIMENTAL_TOP_K = 3
-
-
 def _probe_top_topics(
     neo: Session,
     keyword: str,
     class_ids: List[str],
-    k: int = _EXPERIMENTAL_TOP_K,
+    k: int = _TOP_K,
 ) -> List[Dict[str, Any]]:
     rows = search_top_topics_by_embedding(neo, keyword, class_ids, k=k)
     result = []
@@ -303,6 +280,50 @@ def _fetch_chunk_hits(
     return hits
 
 
+def _build_path_description(
+    *,
+    class_name: Optional[str] = None,
+    subject_name: Optional[str] = None,
+    subject_type: Optional[str] = None,
+    topic_num: Optional[Any] = None,
+    topic_name: Optional[str] = None,
+    lesson_num: Optional[Any] = None,
+    lesson_name: Optional[str] = None,
+    chunk_num: Optional[Any] = None,
+    chunk_name: Optional[str] = None,
+) -> str:
+    """Build a pipe-separated breadcrumb string for a chunk hit.
+
+    Example:
+        Lớp 10 | Tin học | SGK | Chủ đề 1: Máy tính và xã hội tri thức | Bài 2: ... | Mục 2: ...
+    """
+    parts: list[str] = []
+
+    if class_name:
+        cn = str(class_name).strip()
+        parts.append(f"Lớp {cn}" if cn.isdigit() else cn)
+
+    if subject_name:
+        parts.append(str(subject_name).strip())
+
+    if subject_type:
+        parts.append(str(subject_type).strip())
+
+    if topic_name:
+        prefix = f"Chủ đề {topic_num}: " if topic_num is not None else "Chủ đề: "
+        parts.append(f"{prefix}{str(topic_name).strip()}")
+
+    if lesson_name:
+        prefix = f"Bài {lesson_num}: " if lesson_num is not None else "Bài: "
+        parts.append(f"{prefix}{str(lesson_name).strip()}")
+
+    if chunk_name:
+        prefix = f"Mục {chunk_num}: " if chunk_num is not None else "Mục: "
+        parts.append(f"{prefix}{str(chunk_name).strip()}")
+
+    return " | ".join(parts)
+
+
 def _build_chunk_hit(
     db: Any,
     raw_chunk_id: Any,
@@ -325,7 +346,6 @@ def _build_chunk_hit(
     chunk_assets = _fetch_owner_assets(db, "chunk", chunk_id)
     chunk_minio  = _first_document_minio(chunk_assets)
 
-    # chunk → lesson
     lesson_oid = _to_oid(chunk_doc.get("lesson_id"))
     lesson_id = lesson_name = lesson_num = None
     lesson_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
@@ -348,9 +368,7 @@ def _build_chunk_hit(
             lesson_assets = _fetch_owner_assets(db, "lesson", lesson_id)
             lesson_minio  = _first_document_minio(lesson_assets)
 
-            # lesson → topic
-            raw_tid = lesson_doc.get("topic_id")
-            topic_oid = _to_oid(raw_tid)
+            topic_oid = _to_oid(lesson_doc.get("topic_id"))
             if topic_oid is not None:
                 topic_doc = db["topic"].find_one(
                     {"_id": topic_oid, "is_deleted": {"$ne": True}},
@@ -363,7 +381,6 @@ def _build_chunk_hit(
                     topic_assets = _fetch_owner_assets(db, "topic", topic_id)
                     topic_minio  = _first_document_minio(topic_assets)
 
-                    # topic → subject
                     subject_oid = _to_oid(topic_doc.get("subject_id"))
                     if subject_oid is not None:
                         subj_doc = db["subject"].find_one(
@@ -375,7 +392,6 @@ def _build_chunk_hit(
                             subject_name = subj_doc.get("subject_name")
                             subject_type = subj_doc.get("subject_type")
 
-                            # subject → class
                             class_oid = _to_oid(subj_doc.get("class_id"))
                             if class_oid is not None:
                                 class_doc = db["class"].find_one(
@@ -386,7 +402,7 @@ def _build_chunk_hit(
                                     class_id   = str(class_oid)
                                     class_name = class_doc.get("class_name")
 
-    debug_description = build_chunk_debug_description(
+    debug_description = _build_path_description(
         class_name=class_name,
         subject_name=subject_name,
         subject_type=subject_type,
@@ -399,7 +415,7 @@ def _build_chunk_hit(
     )
 
     descriptions = generate_hierarchy_descriptions(
-        debug_description=debug_description,
+        path_description=debug_description,
         keyword=keyword,
     )
 

@@ -1,8 +1,4 @@
-# app/services/search_experimental_gemini_description_service.py
-#
-# Gemini-based hierarchical description generator for experimental chunk hits.
-# Experimental/debug only — not wired into production search.
-
+# app/services/search_description_service.py
 from __future__ import annotations
 
 import logging
@@ -17,7 +13,7 @@ _PROMPT_TEMPLATE = """\
 Bạn là trợ lý viết mô tả học liệu tiếng Việt cho nội dung sách giáo khoa.
 
 Dưới đây là đường dẫn phân cấp của một nội dung học:
-{debug_description}
+{path_description}
 {keyword_line}
 Nhiệm vụ:
 Từ đúng đường dẫn trên, hãy sinh ra 3 mô tả khác nhau bằng tiếng Việt:
@@ -69,7 +65,7 @@ _EMPTY: Dict[str, str] = {
 
 
 def generate_hierarchy_descriptions(
-    debug_description: str,
+    path_description: str,
     keyword: Optional[str] = None,
     model: str = "gemini-2.5-flash",
 ) -> Dict[str, str]:
@@ -83,14 +79,14 @@ def generate_hierarchy_descriptions(
         }
     All values are empty strings on failure or missing input.
     """
-    if not debug_description or not debug_description.strip():
+    if not path_description or not path_description.strip():
         return dict(_EMPTY)
 
     keyword_line = (
         f'Từ khóa khớp: "{keyword.strip()}"\n' if keyword and keyword.strip() else ""
     )
     prompt = _PROMPT_TEMPLATE.format(
-        debug_description=debug_description.strip(),
+        path_description=path_description.strip(),
         keyword_line=keyword_line,
     )
 

@@ -13,7 +13,7 @@ def topic_probe(
     q: str = Query(..., min_length=1, description="Raw Vietnamese query"),
     class_hint: int = Query(None, description="Optional class number to narrow topic scope"),
 ):
-    from app.services.search_experimental_service import run_experimental_topic_probe
+    from app.services.search_service import run_topic_probe
     driver = neo4j_driver()
     with driver.session() as neo:
-        return run_experimental_topic_probe(neo, q, class_hint=class_hint)
+        return run_topic_probe(neo, q, class_hint=class_hint)

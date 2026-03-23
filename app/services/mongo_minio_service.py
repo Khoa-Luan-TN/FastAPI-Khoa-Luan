@@ -79,7 +79,7 @@ def _find_asset_by_object_key(object_key: str) -> Optional[Dict[str, Any]]:
 def _write_minio_to_owner_doc(owner_type: str, owner_id: str, minio_data: Optional[Dict]) -> None:
     """Write or clear the minio field on the owner Mongo document.
 
-    This ensures search_experimental_service can read doc.get("minio") correctly
+    This ensures search_service can read doc.get("minio") correctly
     when building topic/lesson/chunk document results.
     """
     if owner_type not in ASSET_OWNER_COLS or not owner_id:
