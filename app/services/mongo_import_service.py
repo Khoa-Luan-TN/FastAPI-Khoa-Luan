@@ -29,7 +29,7 @@ REF_MAP = {
     "chunk": ("lesson_ref", "lesson_id", "lesson"),
 }
 
-JSON_FIELDS = {"minio", "images", "videos", "tables", "image_url", "video_url", "table_url"}
+JSON_FIELDS = {"images", "videos", "image_url", "video_url"}
 
 
 def _now():

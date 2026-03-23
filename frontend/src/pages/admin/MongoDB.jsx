@@ -163,7 +163,7 @@ function defaultPairsForCollection(col) {
       ];
 
     default:
-      return [{ k: "name", v: "" }, minioPrefix, { k: "is_deleted", v: "false" }];
+      return [{ k: "name", v: "" }, { k: "is_deleted", v: "false" }];
   }
 }
 
@@ -242,10 +242,8 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
     const k = (keyName || "").trim();
     if (!k) return "Nhập giá trị...";
 
-    if (k === "minio")
-      return '{"bucket":"data-edu","prefix":""} hoặc {"bucket":"data-edu","object_key":"","url":""}';
     if (k.endsWith("_id")) return "Nhập ID (vd: class_id/subject_id...)";
-    if (k === "images" || k === "tables" || k.endsWith("_url")) return "[]";
+    if (k === "images" || k === "videos" || k.endsWith("_url")) return "[]";
     if (k === "is_deleted" || k === "is_active") return "true / false";
     if (k.endsWith("_num") || k.endsWith("_label")) return "Số (vd: 1)";
     if (k.endsWith("_name")) return `Nhập ${k}`;
@@ -370,7 +368,6 @@ export default function MongoDB() {
 
   const [collections, setCollections] = useState([]);
   const [docs, setDocs] = useState([]);
-  const [totalDocs, setTotalDocs] = useState(0);
 
   const [err, setErr] = useState("");
 
@@ -411,11 +408,9 @@ export default function MongoDB() {
     try {
       const data = await mongoApi.listDocuments(collectionName, 200, 0);
       setDocs(data.documents || []);
-      setTotalDocs(data.total ?? (data.documents || []).length);
     } catch (e) {
       setErr(String(e?.message || e));
       setDocs([]);
-      setTotalDocs(0);
     }
   }
 
@@ -504,27 +499,6 @@ export default function MongoDB() {
     if (isEditingDoc) return;
     setDetailPairs(buildPairsFromDoc(selectedDoc));
   }, [selectedDoc, isEditingDoc]);
-
-  const headerTitle = useMemo(() => {
-    if (isRoot) return "MongoDB";
-    return currentCollection;
-  }, [isRoot, currentCollection]);
-
-  const breadcrumbParts = useMemo(() => {
-    if (isRoot) return [];
-    return ["mongo", currentCollection];
-  }, [isRoot, currentCollection]);
-
-  function goBack() {
-    if (currentDocId) {
-      setIsEditingDoc(false);
-      setCurrentDocId("");
-      setQ("");
-      return;
-    }
-    setCurrent("");
-    setQ("");
-  }
 
   const collectionRows = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -667,14 +641,6 @@ export default function MongoDB() {
     }
   }
 
-  function docToModalFields(doc) {
-    const entries = Object.entries(doc || {}).filter(([k]) => k !== "_id");
-    return entries.map(([k, v]) => ({
-      k,
-      v: typeof v === "string" ? v : JSON.stringify(v),
-    }));
-  }
-
   async function onPickImportFile(e) {
     const file = e.target.files?.[0];
     e.target.value = ""; // reset so same file can be re-picked
@@ -759,27 +725,9 @@ export default function MongoDB() {
   }
 
   function changePair(id, key, value) {
-    setDetailPairs((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, [key]: value } : p));
-
-      // Auto-derive minio.url when bucket or object_key changes
-      if (id === "minio.bucket" || id === "minio.object_key") {
-        const bucket = updated.find((p) => p.id === "minio.bucket")?.v ?? "";
-        const objKey = updated.find((p) => p.id === "minio.object_key")?.v ?? "";
-        const urlPair = updated.find((p) => p.id === "minio.url");
-        if (urlPair && bucket && objKey) {
-          const currentUrl = urlPair.v;
-          const oldBucket = prev.find((p) => p.id === "minio.bucket")?.v ?? bucket;
-          const markerIdx = currentUrl.indexOf("/" + oldBucket + "/");
-          const newUrl = markerIdx >= 0
-            ? currentUrl.slice(0, markerIdx + 1) + bucket + "/" + objKey
-            : currentUrl;
-          return updated.map((p) => (p.id === "minio.url" ? { ...p, v: newUrl } : p));
-        }
-      }
-
-      return updated;
-    });
+    setDetailPairs((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [key]: value } : p))
+    );
   }
 
   function removePair(id) {
@@ -887,7 +835,7 @@ export default function MongoDB() {
           <div className="minio-search">
             <span className="minio-search-icon"><SearchIcon /></span>
             <input
-              placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id/minio)..."}
+              placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id)..."}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               disabled={isDocDetail}
@@ -1026,9 +974,9 @@ export default function MongoDB() {
             {!isEditingDoc ? (
               /* ===== VIEW MODE ===== */
               <>
-                {detailPairs.filter(p => !p.locked && !p._isMinioSub).length > 0 && (
+                {detailPairs.filter(p => !p.locked).length > 0 && (
                   <div className="doc-props">
-                    {detailPairs.filter(p => !p.locked && !p._isMinioSub).map((p) => (
+                    {detailPairs.filter(p => !p.locked).map((p) => (
                       <div key={p.id} className="doc-prop-row">
                         <span className="doc-prop-key">{p.k}</span>
                         <span className="doc-prop-val">{p.v || <span className="doc-prop-empty">—</span>}</span>
@@ -1036,26 +984,13 @@ export default function MongoDB() {
                     ))}
                   </div>
                 )}
-                {detailPairs.some(p => p._isMinioSub) && (
-                  <div className="doc-minio-card">
-                    <div className="doc-minio-header">MinIO</div>
-                    <div className="doc-minio-props">
-                      {detailPairs.filter(p => p._isMinioSub).map((p) => (
-                        <div key={p.id} className="doc-minio-prop">
-                          <span className="doc-minio-key">{p._minioField}</span>
-                          <span className="doc-minio-val">{p.v || <span className="doc-prop-empty">—</span>}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               /* ===== EDIT MODE ===== */
               <>
-                {detailPairs.filter(p => !p.locked && !p._isMinioSub).length > 0 && (
+                {detailPairs.filter(p => !p.locked).length > 0 && (
                   <div className="doc-form-fields">
-                    {detailPairs.filter(p => !p.locked && !p._isMinioSub).map((p) => {
+                    {detailPairs.filter(p => !p.locked).map((p) => {
                       const isBool = p.k === "is_deleted" || p.k === "is_active";
                       return (
                         <div key={p.id} className="doc-form-row">
@@ -1074,21 +1009,6 @@ export default function MongoDB() {
                         </div>
                       );
                     })}
-                  </div>
-                )}
-                {detailPairs.some(p => p._isMinioSub) && (
-                  <div className="doc-minio-form">
-                    <div className="doc-minio-form-header">MinIO</div>
-                    {detailPairs.filter(p => p._isMinioSub).map((p) => (
-                      <div key={p.id} className="doc-minio-form-row">
-                        <span className="doc-minio-form-key">{p._minioField}</span>
-                        {p._minioField === "url" ? (
-                          <span className="doc-minio-url-derived">{p.v || <span className="doc-prop-empty">—</span>}</span>
-                        ) : (
-                          <input className="kv-input" value={p.v} placeholder={p._minioField} onChange={(e) => changePair(p.id, "v", e.target.value)} />
-                        )}
-                      </div>
-                    ))}
                   </div>
                 )}
               </>

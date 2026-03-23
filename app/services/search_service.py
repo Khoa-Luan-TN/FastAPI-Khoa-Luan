@@ -179,14 +179,6 @@ def _fetch_owner_assets(
     return grouped
 
 
-def _first_document_minio(assets: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
-    docs = assets.get("documents", [])
-    if not docs:
-        return None
-    d = docs[0]
-    return {"bucket": d.get("bucket"), "object_key": d.get("object_key"), "url": d.get("url")}
-
-
 def _probe_top_topics(
     neo: Session,
     keyword: str,
@@ -344,15 +336,12 @@ def _build_chunk_hit(
     chunk_name = chunk_doc.get("chunk_name")
     chunk_num  = chunk_doc.get("chunk_num")
     chunk_assets = _fetch_owner_assets(db, "chunk", chunk_id)
-    chunk_minio  = _first_document_minio(chunk_assets)
 
     lesson_oid = _to_oid(chunk_doc.get("lesson_id"))
     lesson_id = lesson_name = lesson_num = None
     lesson_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
-    lesson_minio = None
     topic_id = topic_name = topic_num = None
     topic_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
-    topic_minio = None
     subject_id = subject_name = subject_type = None
     class_id = class_name = None
 
@@ -366,7 +355,6 @@ def _build_chunk_hit(
             lesson_name   = lesson_doc.get("lesson_name")
             lesson_num    = lesson_doc.get("lesson_num")
             lesson_assets = _fetch_owner_assets(db, "lesson", lesson_id)
-            lesson_minio  = _first_document_minio(lesson_assets)
 
             topic_oid = _to_oid(lesson_doc.get("topic_id"))
             if topic_oid is not None:
@@ -379,7 +367,6 @@ def _build_chunk_hit(
                     topic_name   = topic_doc.get("topic_name")
                     topic_num    = topic_doc.get("topic_num")
                     topic_assets = _fetch_owner_assets(db, "topic", topic_id)
-                    topic_minio  = _first_document_minio(topic_assets)
 
                     subject_oid = _to_oid(topic_doc.get("subject_id"))
                     if subject_oid is not None:
@@ -423,17 +410,14 @@ def _build_chunk_hit(
         "chunk_id":     chunk_id,
         "chunk_name":   chunk_name,
         "chunk_num":    chunk_num,
-        "chunk_minio":  chunk_minio,
         "chunk_assets": chunk_assets,
         "lesson_id":    lesson_id,
         "lesson_name":  lesson_name,
         "lesson_num":   lesson_num,
-        "lesson_minio":  lesson_minio,
         "lesson_assets": lesson_assets,
         "topic_id":     topic_id,
         "topic_name":   topic_name,
         "topic_num":    topic_num,
-        "topic_minio":  topic_minio,
         "topic_assets": topic_assets,
         "subject_id":   subject_id,
         "subject_name": subject_name,
@@ -467,7 +451,6 @@ def _build_documents_from_hits(
                 "subject_type": hit.get("subject_type"),
                 "class_id":     hit.get("class_id"),
                 "class_name":   hit.get("class_name"),
-                "minio":        hit.get("topic_minio"),
                 "assets":       hit.get("topic_assets", {"documents": [], "images": [], "videos": []}),
             }
 
@@ -483,7 +466,6 @@ def _build_documents_from_hits(
                 "topic_num":   hit.get("topic_num"),
                 "subject_name": hit.get("subject_name"),
                 "class_name":  hit.get("class_name"),
-                "minio":       hit.get("lesson_minio"),
                 "assets":      hit.get("lesson_assets", {"documents": [], "images": [], "videos": []}),
             }
 
@@ -502,7 +484,6 @@ def _build_documents_from_hits(
                 "topic_num":   hit.get("topic_num"),
                 "subject_name": hit.get("subject_name"),
                 "class_name":  hit.get("class_name"),
-                "minio":       hit.get("chunk_minio"),
                 "assets":      hit.get("chunk_assets", {"documents": [], "images": [], "videos": []}),
             }
 

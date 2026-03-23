@@ -7,16 +7,25 @@ function splitPath(path) {
 
 function detectKind(folderName) {
   const p = (folderName || "").trim();
-
-  if (p === "images") return "image";
-  if (p === "video") return "video";
-
   const parts = splitPath(p);
-  // documents/class-10/tin-hoc/topic
+
+  if (parts.length === 0) return "unknown";
+
+  // images root or images/<class>/<subject>/<kind>/<id> or images/keyword/<slug>
+  if (parts[0] === "images") return "image";
+
+  // videos root or videos/<class>/<subject>/<kind>/<id> or videos/keyword/<slug>
+  if (parts[0] === "videos") return "video";
+
+  // documents/<class>/<subject>/subject  (depth 4)
+  // documents/<class>/<subject>/topic/<id>  (depth 5)
+  // documents/<class>/<subject>/lesson/<id>  (depth 5)
+  // documents/<class>/<subject>/chunk/<id>  (depth 5)
   if (parts[0] === "documents" && parts.length >= 4) {
     const cat = parts[3];
     if (["subject", "topic", "lesson", "chunk"].includes(cat)) return cat;
   }
+
   return "unknown";
 }
 
@@ -142,7 +151,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
   function validate() {
     if (kind === "unknown") {
       alert(
-        "Folder này chưa map được loại metadata. Hãy vào đúng folder (subject/topic/lesson/chunk/images/video)."
+        "Folder này chưa map được loại metadata. Hãy vào đúng folder (subject/topic/lesson/chunk/images/videos)."
       );
       return false;
     }
@@ -225,8 +234,8 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/topic</li>
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/lesson</li>
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/chunk</li>
-                  <li>images</li>
-                  <li>video</li>
+                  <li>images/keyword/&lt;slug&gt; or images/&lt;class&gt;/&lt;subject&gt;/&lt;kind&gt;/&lt;id&gt;</li>
+                  <li>videos/keyword/&lt;slug&gt; or videos/&lt;class&gt;/&lt;subject&gt;/&lt;kind&gt;/&lt;id&gt;</li>
                 </ul>
               </div>
             </div>
