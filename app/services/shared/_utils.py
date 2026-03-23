@@ -1,12 +1,13 @@
-# app/services/_utils.py
+# app/services/shared/_utils.py
 """Shared pure helpers used internally across app/services.
 
 Not a public API — import only from within app/services.
 """
-from datetime import datetime, timezone
-from typing import Any
+import json
 import re
 import unicodedata
+from datetime import datetime, timezone
+from typing import Any
 
 
 def utc_now() -> datetime:
@@ -30,3 +31,43 @@ def slugify_vi(text: Any) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", s)
     s = re.sub(r"-{2,}", "-", s).strip("-")
     return s
+
+
+def extract_json(text: str) -> dict:
+    """Extract the first valid JSON object from a Gemini response string.
+
+    Tries three strategies in order:
+    1. Direct parse (clean JSON output).
+    2. Fenced code block extraction (```json ... ```).
+    3. Brace-delimited substring scan.
+
+    Raises ValueError if all strategies fail.
+    """
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if m:
+        try:
+            return json.loads(m.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            pass
+    raise ValueError(f"Could not extract valid JSON from response: {text[:400]!r}")
+
+
+def normalize_for_compare(text: str) -> str:
+    """Lowercase, collapse whitespace, strip Vietnamese diacritics for string comparison."""
+    text = text.lower().strip()
+    text = " ".join(text.split())
+    text = text.replace("\u0111", "d").replace("\u0110", "d")
+    text = unicodedata.normalize("NFD", text)
+    return "".join(c for c in text if unicodedata.category(c) != "Mn")
+

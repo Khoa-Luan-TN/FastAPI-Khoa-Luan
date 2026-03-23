@@ -1,12 +1,10 @@
-# app/services/gemini_keyword_service.py
+# app/services/ai/gemini_keyword_service.py
 from __future__ import annotations
 
 import json
 
 from app.services.infrastructure.gemini_client import generate_text
-from app.services.ai.gemini_alias_service import extract_json, normalize_for_compare
-
-# ===================== QUERY KEYWORD EXTRACTION =====================
+from app.services.shared._utils import extract_json, normalize_for_compare
 
 _PROMPT_TEMPLATE = """\
 You are a strict query-keyword extraction assistant for Vietnamese high-school Informatics education.
@@ -103,6 +101,31 @@ _BAD_PREFIXES = (
 _MAX_QUERY_KW_WORDS = 6
 
 
+def _filter_keywords(keywords: list, max_keywords: int = 10) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+
+    for kw in keywords:
+        if not isinstance(kw, str):
+            continue
+        kw = kw.strip()
+        if not kw:
+            continue
+        if len(kw.split()) > _MAX_QUERY_KW_WORDS:
+            continue
+        norm = normalize_for_compare(kw)
+        if norm in _NOISE_TERMS:
+            continue
+        if any(norm.startswith(p) for p in _BAD_PREFIXES):
+            continue
+        if norm in seen:
+            continue
+        seen.add(norm)
+        result.append(kw)
+
+    return result[:max_keywords]
+
+
 def extract_query_keywords(
     input_text: str,
     max_keywords: int = 10,
@@ -128,37 +151,3 @@ def extract_query_keywords(
         "filtered_keywords": filtered,
         "raw_response": raw_response,
     }
-
-
-# ===================== FILTERING =====================
-
-def _filter_keywords(keywords: list, max_keywords: int = 10) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-
-    for kw in keywords:
-        if not isinstance(kw, str):
-            continue
-
-        kw = kw.strip()
-        if not kw:
-            continue
-
-        if len(kw.split()) > _MAX_QUERY_KW_WORDS:
-            continue
-
-        norm = normalize_for_compare(kw)
-
-        if norm in _NOISE_TERMS:
-            continue
-
-        if any(norm.startswith(p) for p in _BAD_PREFIXES):
-            continue
-
-        if norm in seen:
-            continue
-
-        seen.add(norm)
-        result.append(kw)
-
-    return result[:max_keywords]

@@ -1,14 +1,13 @@
-# app/services/search_description_service.py
+# app/services/ai/search_description_service.py
 # Gemini-powered description generator for the search result hierarchy.
 # Called by search_service._build_chunk_hit only.
 # Generates topic/lesson/chunk level descriptions from a breadcrumb path string.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
 
-from app.services.ai.gemini_alias_service import extract_json
 from app.services.infrastructure.gemini_client import generate_text
+from app.services.shared._utils import extract_json
 
 _log = logging.getLogger(__name__)
 
@@ -60,7 +59,7 @@ Trả lời đúng định dạng JSON sau và không có gì khác:
 }}
 """
 
-_EMPTY: Dict[str, str] = {
+_EMPTY: dict[str, str] = {
     "topic_description": "",
     "lesson_description": "",
     "chunk_description": "",
@@ -69,9 +68,9 @@ _EMPTY: Dict[str, str] = {
 
 def generate_hierarchy_descriptions(
     path_description: str,
-    keyword: Optional[str] = None,
+    keyword: str | None = None,
     model: str = "gemini-2.5-flash",
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Generate topic / lesson / chunk level descriptions from a hierarchy path string.
 
     Returns:

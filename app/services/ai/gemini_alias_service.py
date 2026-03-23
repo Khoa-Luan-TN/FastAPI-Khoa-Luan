@@ -1,49 +1,23 @@
-# app/services/gemini_alias_service.py
+# app/services/ai/gemini_alias_service.py
 from __future__ import annotations
 
 import json
 import logging
-import re
 import unicodedata
 
 from app.services.infrastructure.gemini_client import generate_text
+from app.services.shared._utils import extract_json, normalize_for_compare
 
 _log = logging.getLogger(__name__)
 
-
-# ── JSON extraction ───────────────────────────────────────────────────────────
-
-def extract_json(text: str) -> dict:
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
-    if m:
-        try:
-            return json.loads(m.group(1).strip())
-        except json.JSONDecodeError:
-            pass
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        try:
-            return json.loads(text[start : end + 1])
-        except json.JSONDecodeError:
-            pass
-    raise ValueError(f"Could not extract valid JSON from Gemini response: {text[:400]!r}")
-
-
-# ── Normalization ─────────────────────────────────────────────────────────────
-
-def normalize_for_compare(text: str) -> str:
-    text = text.lower().strip()
-    text = " ".join(text.split())
-    text = text.replace("\u0111", "d").replace("\u0110", "d")
-    text = unicodedata.normalize("NFD", text)
-    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
-    return text
+# Re-export for callers that import these from this module directly.
+__all__ = [
+    "extract_json",
+    "normalize_for_compare",
+    "generate_aliases",
+    "generate_aliases_batch",
+    "screen_keywords_for_alias_potential",
+]
 
 
 # ── Layer 1: Script / form validation ────────────────────────────────────────
@@ -116,11 +90,6 @@ def _is_unit_symbol(alias: str) -> bool:
 _MAX_ALIAS_WORDS = 8
 
 
-# ── Layer 2: Identity / dedup (uses normalized forms, handled in _filter_aliases) ─
-
-# (no helpers needed here; logic is inline)
-
-
 # ── Layer 3: Broad/ambiguous keyword detection ────────────────────────────────
 
 def _kw_has_viet_diacritics(keyword_name: str) -> bool:
@@ -147,6 +116,23 @@ def _kw_is_broad_ambiguous(keyword_name: str) -> bool:
     if len(keyword_name.strip().split()) == 1:
         return True
     return normalize_for_compare(keyword_name) in _BROAD_AMBIGUOUS_NORMS
+
+
+def _is_short_abbreviation(alias: str) -> bool:
+    """True for short tokens that look like CS abbreviations (OS, LAN, IoT, UTF-8).
+
+    Requires ≥2 uppercase letters (or all-caps) to distinguish from title-case words
+    like 'Computer' or 'Network' which have only one leading capital.
+    """
+    if " " in alias.strip():
+        return False
+    if len(alias) > 8:
+        return False
+    alpha = [c for c in alias if c.isalpha()]
+    if not alpha:
+        return False
+    upper_count = sum(1 for c in alpha if c.isupper())
+    return upper_count >= 2 or alias.isupper()
 
 
 def _is_weak_everyday_alias(alias: str, keyword_name: str, context_text: str | None) -> bool:
@@ -222,23 +208,6 @@ _GENERIC_DESCRIPTIVE_NORMS: frozenset[str] = frozenset({
 })
 
 
-def _is_short_abbreviation(alias: str) -> bool:
-    """True for short tokens that look like CS abbreviations (OS, LAN, IoT, UTF-8).
-
-    Requires ≥2 uppercase letters (or all-caps) to distinguish from title-case words
-    like 'Computer' or 'Network' which have only one leading capital.
-    """
-    if " " in alias.strip():
-        return False
-    if len(alias) > 8:
-        return False
-    alpha = [c for c in alias if c.isalpha()]
-    if not alpha:
-        return False
-    upper_count = sum(1 for c in alpha if c.isupper())
-    return upper_count >= 2 or alias.isupper()
-
-
 def _is_translation_only(keyword_name: str, alias: str) -> bool:
     """Vietnamese-first: for Vietnamese keywords, reject all ASCII aliases except abbreviations.
 
@@ -305,7 +274,7 @@ def _is_uninvented_viet_acronym(alias: str, keyword_name: str, norm_alias: str) 
     return norm_alias not in _TERM_CANONICAL
 
 
-# ── Layer 5: Exceptional blacklist (minimal, last resort) ─────────────────────
+# ── Layer 5: Exceptional blacklist ────────────────────────────────────────────
 
 _DISALLOWED_PAIRS: frozenset[tuple[str, str]] = frozenset({
     ("internet", "world wide web"),
@@ -320,7 +289,7 @@ def _is_disallowed_pair(norm_kw: str, norm_alias: str) -> bool:
     return (norm_kw, norm_alias) in _DISALLOWED_PAIRS
 
 
-# ── Chunking helper ───────────────────────────────────────────────────────────
+# ── Small helpers ─────────────────────────────────────────────────────────────
 
 def _chunks(lst: list, size: int) -> list:
     return [lst[i : i + size] for i in range(0, len(lst), size)]
@@ -330,7 +299,7 @@ def _chunks(lst: list, size: int) -> list:
 
 _DOMAIN_CONTEXT = (
     "This term belongs to Vietnamese high-school Informatics textbooks "
-    "(K\u1ebft n\u1ed1i tri th\u1ee9c series). Interpret it strictly in the academic and "
+    "(Kết nối tri thức series). Interpret it strictly in the academic and "
     "technical computer-science / informatics context of that curriculum."
 )
 
@@ -350,32 +319,32 @@ Keyword: "{keyword_name}"
 === VIETNAMESE-FIRST RULE (most important) ===
 If the keyword is Vietnamese (has diacritics like ă, â, ê, ô, ơ, ư, đ, etc.):
 - Return ONLY standard abbreviations/acronyms that are exact for this concept.
-  e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] only. NOT "Operating System".
-  e.g. "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] only. NOT "Artificial Intelligence".
-  e.g. "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] only. NOT "Local Area Network".
+  e.g. "Hệ điều hành" → ["OS"] only. NOT "Operating System".
+  e.g. "Trí tuệ nhân tạo" → ["AI"] only. NOT "Artificial Intelligence".
+  e.g. "Mạng cục bộ" → ["LAN"] only. NOT "Local Area Network".
 - English full-form translations are NOT valid aliases for Vietnamese keywords.
 - If there is no well-known abbreviation, return [].
 
 If the keyword is already English, an abbreviation, or a mixed official form:
 - Normal rules apply.
-  e.g. "Internet of Things" \u2192 ["IoT"] \u2714
-  e.g. "Internet of Things (IoT)" \u2192 ["IoT"] \u2714
+  e.g. "Internet of Things" → ["IoT"] ✔
+  e.g. "Internet of Things (IoT)" → ["IoT"] ✔
 
 === WHAT IS NOT A VALID ALIAS ===
-Reject ALL of the following \u2014 return [] instead:
+Reject ALL of the following — return [] instead:
 - English translations (full-form or single-word) for Vietnamese keywords
-  e.g. "Computer Science" \u2260 alias for "Tin h\u1ecdc"
-  e.g. "Automation" \u2260 alias for "T\u1ef1 \u0111\u1ed9ng ho\u00e1"
-  e.g. "Operating System" \u2260 alias for "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" (OS is valid; "Operating System" is not)
+  e.g. "Computer Science" ≠ alias for "Tin học"
+  e.g. "Automation" ≠ alias for "Tự động hoá"
+  e.g. "Operating System" ≠ alias for "Hệ điều hành" (OS is valid; "Operating System" is not)
 - Related but distinct concepts
-  e.g. "World Wide Web" \u2260 alias for "Internet"
-  e.g. "IoT" \u2260 alias for "Thi\u1ebft b\u1ecb th\u00f4ng minh"
+  e.g. "World Wide Web" ≠ alias for "Internet"
+  e.g. "IoT" ≠ alias for "Thiết bị thông minh"
 - Descriptive phrases and paraphrases
-  e.g. "m\u1ea1ng to\u00e0n c\u1ea7u" \u2260 alias for "Internet"
+  e.g. "mạng toàn cầu" ≠ alias for "Internet"
 - Near-synonyms or broader/narrower terms
-  e.g. "Th\u00f4ng tin" \u2260 alias for "D\u1eef li\u1ec7u"
+  e.g. "Thông tin" ≠ alias for "Dữ liệu"
 - Unit symbols: a single letter like "b" or "B"
-  e.g. "Bit" \u2192 "b" is rejected; "Byte" \u2192 "B" is rejected
+  e.g. "Bit" → "b" is rejected; "Byte" → "B" is rejected
 - Ambiguous or generic terms with no single established CS meaning
 - The keyword itself repeated or slightly rephrased
 
@@ -388,27 +357,27 @@ Prefer [] over any weak or uncertain output.
 - NEVER: unaccented Vietnamese, CJK characters, English full-form translations of Vietnamese keywords.
 
 === EXAMPLES (follow exactly) ===
-- "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] \u2714
-- "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] \u2714 (NOT ["LAN", "Local Area Network"])
-- "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] \u2714 (NOT ["AI", "Artificial Intelligence"])
-- "B\u1ed9 x\u1eed l\u00fd trung t\u00e2m" \u2192 ["CPU"] \u2714
-- "B\u1ed9 nh\u1edb truy c\u1eadp ng\u1eabu nhi\u00ean" \u2192 ["RAM"] \u2714
-- "Ki-l\u00f4-byte" \u2192 ["KB"] \u2714
-- "Internet of Things" \u2192 ["IoT"] \u2714
-- "Internet of Things (IoT)" \u2192 ["IoT"] \u2714
-- "M\u1ea1ng m\u00e1y t\u00ednh" \u2192 [] \u2718 (no standard abbreviation exists for this)
-- "Internet" \u2192 [] \u2718 (WWW \u2260 Internet; "m\u1ea1ng to\u00e0n c\u1ea7u" is a description)
-- "Tin h\u1ecdc" \u2192 [] \u2718 ("Computer Science" is a translation, not an alias)
-- "T\u1ef1 \u0111\u1ed9ng ho\u00e1" \u2192 [] \u2718 ("Automation" is a translation)
-- "D\u1eef li\u1ec7u" \u2192 [] \u2718 ("Th\u00f4ng tin" is a near-synonym)
-- "Bit" \u2192 [] \u2718 ("b" is a unit symbol)
-- "Byte" \u2192 [] \u2718 ("B" is a unit symbol)
-- "Thi\u1ebft b\u1ecb th\u00f4ng minh" \u2192 [] \u2718 ("IoT" is for Internet of Things, not Smart Device)
-- "M\u00e1y t\u00ednh" \u2192 [] \u2718 ("Computer" is a translation; "CPU" is a part, not an alias)
+- "Hệ điều hành" → ["OS"] ✔
+- "Mạng cục bộ" → ["LAN"] ✔ (NOT ["LAN", "Local Area Network"])
+- "Trí tuệ nhân tạo" → ["AI"] ✔ (NOT ["AI", "Artificial Intelligence"])
+- "Bộ xử lý trung tâm" → ["CPU"] ✔
+- "Bộ nhớ truy cập ngẫu nhiên" → ["RAM"] ✔
+- "Ki-lô-byte" → ["KB"] ✔
+- "Internet of Things" → ["IoT"] ✔
+- "Internet of Things (IoT)" → ["IoT"] ✔
+- "Mạng máy tính" → [] ✘ (no standard abbreviation exists for this)
+- "Internet" → [] ✘ (WWW ≠ Internet; "mạng toàn cầu" is a description)
+- "Tin học" → [] ✘ ("Computer Science" is a translation, not an alias)
+- "Tự động hoá" → [] ✘ ("Automation" is a translation)
+- "Dữ liệu" → [] ✘ ("Thông tin" is a near-synonym)
+- "Bit" → [] ✘ ("b" is a unit symbol)
+- "Byte" → [] ✘ ("B" is a unit symbol)
+- "Thiết bị thông minh" → [] ✘ ("IoT" is for Internet of Things, not Smart Device)
+- "Máy tính" → [] ✘ ("Computer" is a translation; "CPU" is a part, not an alias)
 
 === OUTPUT ===
 Return at most {max_aliases} aliases.
-Respond with ONLY this JSON object \u2014 no explanation, no markdown:
+Respond with ONLY this JSON object — no explanation, no markdown:
 {{"aliases": ["...", "..."]}}
 """
 
@@ -426,20 +395,20 @@ Keywords:
 {keywords_json}
 
 === VIETNAMESE-FIRST RULE (most important) ===
-If a keyword is Vietnamese (has diacritics like \u0103, \u00e2, \u00ea, \u00f4, \u01a1, \u01b0, \u0111, etc.):
+If a keyword is Vietnamese (has diacritics like ă, â, ê, ô, ơ, ư, đ, etc.):
 - Return ONLY standard abbreviations/acronyms that are exact for that concept.
-  e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 ["OS"] only. NOT "Operating System".
-  e.g. "Tr\u00ed tu\u1ec7 nh\u00e2n t\u1ea1o" \u2192 ["AI"] only. NOT "Artificial Intelligence".
-  e.g. "M\u1ea1ng c\u1ee5c b\u1ed9" \u2192 ["LAN"] only. NOT "Local Area Network".
+  e.g. "Hệ điều hành" → ["OS"] only. NOT "Operating System".
+  e.g. "Trí tuệ nhân tạo" → ["AI"] only. NOT "Artificial Intelligence".
+  e.g. "Mạng cục bộ" → ["LAN"] only. NOT "Local Area Network".
 - English full-form translations are NOT valid aliases for Vietnamese keywords.
 - If there is no well-known abbreviation, return [].
 
 If a keyword is already English, an abbreviation, or a mixed official form:
 - Normal rules apply.
-  e.g. "Internet of Things" \u2192 ["IoT"] \u2714
+  e.g. "Internet of Things" → ["IoT"] ✔
 
 === WHAT IS NOT A VALID ALIAS ===
-Reject ALL of the following \u2014 return [] instead:
+Reject ALL of the following — return [] instead:
 - English translations (full-form or single-word) for Vietnamese keywords
 - Related but distinct concepts
 - Descriptive phrases and paraphrases
@@ -457,28 +426,28 @@ All input keywords must appear as keys. No extra keys. No markdown. No explanati
 
 === EXAMPLE OUTPUT (for illustration only, do not copy values) ===
 {{
-  "H\u1ec7 \u0111i\u1ec1u h\u00e0nh": ["OS"],
-  "M\u1ea1ng c\u1ee5c b\u1ed9": ["LAN"],
+  "Hệ điều hành": ["OS"],
+  "Mạng cục bộ": ["LAN"],
   "Internet of Things": ["IoT"],
-  "Tin h\u1ecdc": [],
+  "Tin học": [],
   "Internet": []
 }}
 """
 
 _SCREEN_PROMPT_TEMPLATE = """\
 You are a terminology screener for Vietnamese high-school Informatics education
-(K\u1ebft n\u1ed1i tri th\u1ee9c series, grades 10\u201312).
+(Kết nối tri thức series, grades 10–12).
 
 === TASK ===
 For each keyword below, decide whether it is likely to have a real alias
 (a standard abbreviation, acronym, or alternative canonical name).
-Do NOT generate the alias itself \u2014 only decide yes or no.
+Do NOT generate the alias itself — only decide yes or no.
 
 === SCREENING RULES ===
 has_alias_potential = true for:
-- Canonical technical concepts with well-known abbreviations (e.g. "H\u1ec7 \u0111i\u1ec1u h\u00e0nh" \u2192 OS)
+- Canonical technical concepts with well-known abbreviations (e.g. "Hệ điều hành" → OS)
 - Standard protocols, encodings, hardware components, named systems
-- English terms that have well-known acronyms (e.g. "Internet of Things" \u2192 IoT)
+- English terms that have well-known acronyms (e.g. "Internet of Things" → IoT)
 
 has_alias_potential = false for:
 - Descriptive or explanatory phrases
@@ -501,7 +470,7 @@ Each item in "items" must use the keyword_name EXACTLY as given in input.
 """
 
 
-# ── Batch response validation ─────────────────────────────────────────────────
+# ── Response parsers ──────────────────────────────────────────────────────────
 
 def _parse_screen_result(batch: list[str], parsed: dict, batch_label: str) -> dict[str, dict]:
     """Validate and extract screening decisions from a parsed Gemini response."""
@@ -519,9 +488,8 @@ def _parse_screen_result(batch: list[str], parsed: dict, batch_label: str) -> di
             by_name[name] = item
 
     expected = set(batch)
-    actual = set(by_name.keys())
-    missing = expected - actual
-    extra = actual - expected
+    missing = expected - set(by_name)
+    extra = set(by_name) - expected
 
     if missing:
         _log.warning("[alias_screen] %s: missing_keywords=%s — defaulting to false", batch_label, sorted(missing))
@@ -548,16 +516,15 @@ def _parse_batch_result(
     max_aliases: int,
     batch_label: str,
 ) -> dict[str, list[str]]:
-    """Validate a parsed Gemini batch response dict and return per-keyword filtered aliases.
+    """Validate a parsed Gemini batch-response dict and return per-keyword filtered aliases.
 
     - Missing keys → treated as []; logged as warning.
     - Non-list values → treated as []; logged as warning.
     - Extra keys (not in batch) → ignored; logged as warning.
     """
     expected = set(batch)
-    actual = set(parsed.keys())
-    missing = expected - actual
-    extra = actual - expected
+    missing = expected - set(parsed)
+    extra = set(parsed) - expected
 
     if missing:
         _log.warning("[gemini_alias] %s: missing_keys=%s — treated as []", batch_label, sorted(missing))
@@ -573,12 +540,92 @@ def _parse_batch_result(
                 batch_label, kw, type(raw).__name__,
             )
             raw = []
-        filtered = _filter_aliases(kw, raw, existing_keyword_names, max_aliases)
-        result[kw] = filtered
+        result[kw] = _filter_aliases(kw, raw, existing_keyword_names, max_aliases)
     return result
 
 
-# ── Alias generation ──────────────────────────────────────────────────────────
+# ── Filter (layered policy) ───────────────────────────────────────────────────
+
+def _filter_aliases(
+    keyword_name: str,
+    aliases: list,
+    existing_keyword_names: list[str],
+    max_aliases: int = 5,
+    context_text: str | None = None,
+) -> list[str]:
+    norm_keyword = normalize_for_compare(keyword_name)
+    norm_existing = {normalize_for_compare(k) for k in existing_keyword_names}
+    seen: set[str] = set()
+    result: list[str] = []
+
+    for alias in aliases:
+        if not isinstance(alias, str):
+            continue
+        alias = alias.strip()
+        if not alias:
+            continue
+
+        norm = normalize_for_compare(alias)
+
+        # Layer 1: script / form
+        if not _is_valid_script(alias):
+            _log.info("[gemini_alias] rejected_invalid_script | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_unaccented_viet(alias):
+            _log.info("[gemini_alias] rejected_unaccented_viet | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_unit_symbol(alias):
+            _log.info("[gemini_alias] rejected_unit_symbol | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if len(alias.split()) > _MAX_ALIAS_WORDS:
+            _log.info("[gemini_alias] rejected_too_long | kw=%r alias=%r", keyword_name, alias)
+            continue
+
+        # Layer 2: identity / dedup
+        if norm == norm_keyword:
+            _log.info("[gemini_alias] rejected_same_as_keyword | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if norm in norm_existing:
+            _log.info("[gemini_alias] rejected_existing_keyword | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if norm in seen:
+            continue
+
+        # Layer 3: broad ambiguity
+        if _is_weak_everyday_alias(alias, keyword_name, context_text):
+            _log.info("[gemini_alias] rejected_weak_everyday | kw=%r alias=%r", keyword_name, alias)
+            continue
+
+        # Layer 4: semantic policy
+        if _is_generic_descriptive(norm):
+            _log.info("[gemini_alias] rejected_descriptive_phrase | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_translation_only(keyword_name, alias):
+            _log.info("[gemini_alias] rejected_translation_only | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_uninvented_viet_acronym(alias, keyword_name, norm):
+            _log.info("[gemini_alias] rejected_uninvented_acronym | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_subset_phrase(norm, norm_keyword, keyword_name, alias):
+            _log.info("[gemini_alias] rejected_subset_phrase | kw=%r alias=%r", keyword_name, alias)
+            continue
+        if _is_concept_family_confusion(norm, norm_keyword):
+            _log.info("[gemini_alias] rejected_concept_family | kw=%r alias=%r", keyword_name, alias)
+            continue
+
+        # Layer 5: exceptional blacklist
+        if _is_disallowed_pair(norm_keyword, norm):
+            _log.info("[gemini_alias] rejected_disallowed_pair | kw=%r alias=%r", keyword_name, alias)
+            continue
+
+        seen.add(norm)
+        result.append(alias)
+        _log.info("[gemini_alias] accepted | kw=%r alias=%r", keyword_name, alias)
+
+    return result[:max_aliases]
+
+
+# ── Public entry points ───────────────────────────────────────────────────────
 
 def generate_aliases_batch(
     keyword_names: list[str],
@@ -613,7 +660,6 @@ def generate_aliases_batch(
     )
 
     _MAX_BATCH_PARSE_RETRIES = 2
-
     results: dict[str, list[str] | None] = {}
     batches = _chunks(keyword_names, batch_size)
 
@@ -699,7 +745,7 @@ def screen_keywords_for_alias_potential(
 ) -> dict[str, dict]:
     """Stage 1: screen keywords for alias potential using Gemini.
 
-    Returns dict: keyword_name \u2192 {"has_alias_potential": bool, "reason": str}
+    Returns dict: keyword_name → {"has_alias_potential": bool, "reason": str}
     On batch parse failure: all keywords in that batch default to has_alias_potential=False.
     On quota stop condition: re-raises RuntimeError so the caller can record partial progress.
     """
@@ -827,101 +873,20 @@ def generate_aliases(
     if not isinstance(raw_aliases, list):
         raw_aliases = []
 
-    if not raw_aliases:
-        _log.info("[gemini_alias] raw_aliases=[] | kw=%r", keyword_name)
-    else:
+    if raw_aliases:
         _log.info("[gemini_alias] raw_aliases=%s | kw=%r", raw_aliases, keyword_name)
+    else:
+        _log.info("[gemini_alias] raw_aliases=[] | kw=%r", keyword_name)
 
     filtered = _filter_aliases(keyword_name, raw_aliases, existing_keyword_names, max_aliases, context_text)
 
-    if not filtered:
-        _log.info("[gemini_alias] filtered_aliases=[] | kw=%r", keyword_name)
-    else:
+    if filtered:
         _log.info("[gemini_alias] filtered_aliases=%s | kw=%r", filtered, keyword_name)
+    else:
+        _log.info("[gemini_alias] filtered_aliases=[] | kw=%r", keyword_name)
 
     return {
         "raw_aliases": raw_aliases,
         "filtered_aliases": filtered,
         "raw_response": raw_response,
     }
-
-
-# ── Filter (layered policy) ───────────────────────────────────────────────────
-
-def _filter_aliases(
-    keyword_name: str,
-    aliases: list,
-    existing_keyword_names: list[str],
-    max_aliases: int = 5,
-    context_text: str | None = None,
-) -> list[str]:
-    norm_keyword = normalize_for_compare(keyword_name)
-    norm_existing = {normalize_for_compare(k) for k in existing_keyword_names}
-    seen: set[str] = set()
-    result: list[str] = []
-
-    for alias in aliases:
-        if not isinstance(alias, str):
-            continue
-        alias = alias.strip()
-        if not alias:
-            continue
-
-        norm = normalize_for_compare(alias)
-
-        # ── Layer 1: script / form ────────────────────────────────────────────
-        if not _is_valid_script(alias):
-            _log.info("[gemini_alias] rejected_invalid_script | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_unaccented_viet(alias):
-            _log.info("[gemini_alias] rejected_unaccented_viet | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_unit_symbol(alias):
-            _log.info("[gemini_alias] rejected_unit_symbol | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if len(alias.split()) > _MAX_ALIAS_WORDS:
-            _log.info("[gemini_alias] rejected_too_long | kw=%r alias=%r", keyword_name, alias)
-            continue
-
-        # ── Layer 2: identity / dedup ─────────────────────────────────────────
-        if norm == norm_keyword:
-            _log.info("[gemini_alias] rejected_same_as_keyword | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if norm in norm_existing:
-            _log.info("[gemini_alias] rejected_existing_keyword | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if norm in seen:
-            continue
-
-        # ── Layer 3: broad ambiguity ──────────────────────────────────────────
-        if _is_weak_everyday_alias(alias, keyword_name, context_text):
-            _log.info("[gemini_alias] rejected_weak_everyday | kw=%r alias=%r", keyword_name, alias)
-            continue
-
-        # ── Layer 4: semantic policy ──────────────────────────────────────────
-        if _is_generic_descriptive(norm):
-            _log.info("[gemini_alias] rejected_descriptive_phrase | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_translation_only(keyword_name, alias):
-            _log.info("[gemini_alias] rejected_translation_only | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_uninvented_viet_acronym(alias, keyword_name, norm):
-            _log.info("[gemini_alias] rejected_uninvented_acronym | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_subset_phrase(norm, norm_keyword, keyword_name, alias):
-            _log.info("[gemini_alias] rejected_subset_phrase | kw=%r alias=%r", keyword_name, alias)
-            continue
-        if _is_concept_family_confusion(norm, norm_keyword):
-            _log.info("[gemini_alias] rejected_concept_family | kw=%r alias=%r", keyword_name, alias)
-            continue
-
-        # ── Layer 5: exceptional blacklist ────────────────────────────────────
-        if _is_disallowed_pair(norm_keyword, norm):
-            _log.info("[gemini_alias] rejected_disallowed_pair | kw=%r alias=%r", keyword_name, alias)
-            continue
-
-        seen.add(norm)
-        result.append(alias)
-        _log.info("[gemini_alias] accepted | kw=%r alias=%r", keyword_name, alias)
-
-    return result[:max_aliases]
