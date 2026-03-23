@@ -1,10 +1,7 @@
-# app/services/entity_embedding_service.py
-# PG vector embedding upsert layer. Called by sync_service only (not by routers directly).
-# This module only handles topic embedding.
-# Topic embedding is built from keyword_text (the joined keyword string from topic_bag),
-# NOT from topic_name.
-# Lesson / chunk / keyword embedding has been removed from this service.
-
+# app/services/sync/entity_embedding_service.py
+# PG vector embedding upsert/clear for topic entities.
+# Called by sync_service only.
+# Topic embedding is built from keyword_text (joined keywords from topic_bag), not topic_name.
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -13,18 +10,10 @@ from sqlalchemy import text as sql_text
 from app.services.ai.embedder import embed_passage_prepared, MODEL_SHORT, normalize_embedding_text
 
 
-# ---------------------------------------------------------------------------
-# PG vector helper
-# ---------------------------------------------------------------------------
-
 def _vec_to_pg(vec: list[float]) -> str:
     """Convert float list to PostgreSQL vector literal '[x,y,z]'."""
     return "[" + ",".join(f"{float(x):.6f}" for x in vec) + "]"
 
-
-# ---------------------------------------------------------------------------
-# Topic upsert helper
-# ---------------------------------------------------------------------------
 
 def _upsert_topic_embedding(pg: Session, topic_id: str, vec: list[float]) -> None:
     pg.execute(sql_text("""
@@ -38,41 +27,29 @@ def _upsert_topic_embedding(pg: Session, topic_id: str, vec: list[float]) -> Non
     """), {"topic_id": topic_id, "v": _vec_to_pg(vec), "model_name": MODEL_SHORT})
 
 
-# ---------------------------------------------------------------------------
-# Public topic embedding function
-# ---------------------------------------------------------------------------
-
 def ensure_topic_embedding(pg: Session, topic_id: str, keyword_text: str) -> dict:
     """Embed and upsert a topic vector built from its joined keyword text.
 
     keyword_text is the concatenated keyword string from topic_bag, not the topic name.
-    Returns ok=False if keyword_text normalizes to empty.
+    Caller is responsible for routing to clear_topic_embedding() when keyword_text is empty.
     """
     text = normalize_embedding_text(keyword_text)
     if not text:
-        return {"ok": False, "error": "keyword_text is empty"}
+        # Should not normally be reached — sync_service branches before calling this.
+        return {"ok": True, "skipped": True, "reason": "keyword_text is empty"}
     vec = [float(x) for x in embed_passage_prepared(text)]
     _upsert_topic_embedding(pg, topic_id, vec)
     return {"ok": True, "model_name": MODEL_SHORT, "embedding": vec}
 
 
-# ---------------------------------------------------------------------------
-# Public dispatch entry point
-# ---------------------------------------------------------------------------
+def clear_topic_embedding(pg: Session, topic_id: str) -> dict:
+    """Remove the PG topic_embedding row for topic_id, if it exists.
 
-def ensure_entity_embedding(pg: Session, col: str, entity_id: str, **kwargs) -> dict:
-    """Dispatch embedding by entity type.
-
-    Only topic is supported. All other entity types return skipped.
-
-    Topic: requires keyword_text kwarg (joined keyword string from topic_bag).
-           Returns skipped if keyword_text is empty or missing.
-           Does NOT fall back to topic_name.
-    All other cols (lesson, chunk, keyword, ...): return skipped immediately.
+    Called when keyword_text becomes empty so stale vectors don't remain searchable.
     """
-    if col == "topic":
-        kw_text = (kwargs.get("keyword_text") or "").strip()
-        if not kw_text:
-            return {"ok": True, "skipped": True, "reason": "keyword_text is empty"}
-        return ensure_topic_embedding(pg, entity_id, kw_text)
-    return {"ok": True, "skipped": True}
+    result = pg.execute(
+        sql_text("DELETE FROM topic_embedding WHERE topic_id = :topic_id"),
+        {"topic_id": topic_id},
+    )
+    deleted = result.rowcount if hasattr(result, "rowcount") else None
+    return {"ok": True, "cleared": True, "pg_rows_deleted": deleted}

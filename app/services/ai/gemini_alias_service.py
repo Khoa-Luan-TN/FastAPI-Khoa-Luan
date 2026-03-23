@@ -10,15 +10,6 @@ from app.services.shared._utils import extract_json, normalize_for_compare
 
 _log = logging.getLogger(__name__)
 
-# Re-export for callers that import these from this module directly.
-__all__ = [
-    "extract_json",
-    "normalize_for_compare",
-    "generate_aliases",
-    "generate_aliases_batch",
-    "screen_keywords_for_alias_potential",
-]
-
 
 # ── Layer 1: Script / form validation ────────────────────────────────────────
 
@@ -98,24 +89,6 @@ def _kw_has_viet_diacritics(keyword_name: str) -> bool:
         if not ch.isascii() and unicodedata.name(ch, "").startswith("LATIN"):
             return True
     return False
-
-
-_BROAD_AMBIGUOUS_NORMS: frozenset[str] = frozenset({
-    "thong tin", "du lieu", "may tinh", "phan mem", "phan cung",
-    "mang", "he thong", "cong nghe", "tin hoc", "tu dong hoa",
-    "tu dong", "giao tiep", "xu ly", "ket noi", "luu tru",
-    "bao mat", "xu ly thong tin", "cong nghe thong tin",
-    "thiet bi", "lap trinh", "co so du lieu",
-})
-
-
-def _kw_is_broad_ambiguous(keyword_name: str) -> bool:
-    """True for Vietnamese keywords that are too broad/generic to have firm aliases."""
-    if not _kw_has_viet_diacritics(keyword_name):
-        return False
-    if len(keyword_name.strip().split()) == 1:
-        return True
-    return normalize_for_compare(keyword_name) in _BROAD_AMBIGUOUS_NORMS
 
 
 def _is_short_abbreviation(alias: str) -> bool:

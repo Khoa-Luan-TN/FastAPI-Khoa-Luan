@@ -1,14 +1,14 @@
-# app/services/topic_embedding_text_service.py
+# app/services/search/topic_embedding_text_service.py
 # Builds the keyword embedding text for a topic from its topic_bag.keyword_refs.
 # Called by sync_service._resolve_topic_keyword_text only.
 # Does NOT call Gemini. Does NOT filter keywords — returns all active keyword names joined by " | ".
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from bson import ObjectId
-from app.services.ai.gemini_alias_service import normalize_for_compare
+from app.services.shared._utils import normalize_for_compare
 
 
 _COLLAPSE_RE = re.compile(r"\s+")
@@ -20,7 +20,7 @@ def _normalize_kw_name(name: Any) -> str:
     return _COLLAPSE_RE.sub(" ", name).strip()
 
 
-def build_topic_embedding_text_from_topic_bag(db, topic_doc: Dict[str, Any]) -> Dict[str, Any]:
+def build_topic_embedding_text_from_topic_bag(db, topic_doc: dict[str, Any]) -> dict[str, Any]:
     """Build Topic embedding text from active topic_bag.keyword_refs.
 
     Flow:
@@ -38,7 +38,7 @@ def build_topic_embedding_text_from_topic_bag(db, topic_doc: Dict[str, Any]) -> 
     Returns empty shape when no active topic_bag or no valid keyword names.
     Does NOT call Gemini. Does NOT filter keywords.
     """
-    _empty: Dict[str, Any] = {
+    _empty: dict[str, Any] = {
         "keyword_embedding_text": "",
         "raw_keywords": [],
         "topic_bag_id": None,
@@ -58,10 +58,10 @@ def build_topic_embedding_text_from_topic_bag(db, topic_doc: Dict[str, Any]) -> 
         return _empty
 
     topic_bag_id = str(bag["_id"])
-    refs: List[Any] = bag.get("keyword_refs") or []
+    refs: list[Any] = bag.get("keyword_refs") or []
 
     seen: set[str] = set()
-    raw_keywords: List[str] = []
+    raw_keywords: list[str] = []
     for ref in refs:
         if not isinstance(ref, dict):
             continue

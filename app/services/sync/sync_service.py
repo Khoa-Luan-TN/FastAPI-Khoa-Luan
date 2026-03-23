@@ -10,8 +10,8 @@ from typing import Any, Optional
 from bson import ObjectId
 from app.services.infrastructure.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
-from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
-from app.services.sync.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
+from app.services.sync.entity_embedding_service import ensure_topic_embedding, clear_topic_embedding
+from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity, clear_topic_embedding_neo
 
 _log = logging.getLogger(__name__)
 
@@ -534,22 +534,35 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         if not is_deleted and col == "topic" and isinstance(info, dict):
             pg_id = info.get("pg_id")
             if pg_id:
+                kw_text = (_topic_kw_text or "").strip()
                 try:
-                    with pg.begin():
-                        emb = ensure_name_embedding(
-                            pg, col, pg_id, keyword_text=_topic_kw_text or ""
+                    if kw_text:
+                        # Non-empty keyword_text: upsert fresh embedding in PG, attach to Neo.
+                        with pg.begin():
+                            emb = ensure_topic_embedding(pg, pg_id, kw_text)
+                        _attach_vec_to_neo_payload(
+                            info,
+                            emb.get("embedding") if isinstance(emb, dict) else None,
                         )
-                    _attach_vec_to_neo_payload(
-                        info,
-                        emb.get("embedding") if isinstance(emb, dict) else None,
-                    )
-                    info["embedding"] = {
-                        "ok": emb.get("ok", False),
-                        "skipped": emb.get("skipped", False),
-                        "model_name": emb.get("model_name"),
-                    }
+                        info["embedding"] = {
+                            "ok": emb.get("ok", False),
+                            "skipped": emb.get("skipped", False),
+                            "model_name": emb.get("model_name"),
+                        }
+                    else:
+                        # Empty keyword_text: remove stale embedding from PG and Neo.
+                        with pg.begin():
+                            pg_clear = clear_topic_embedding(pg, pg_id)
+                        neo_clear = clear_topic_embedding_neo(pg_id)
+                        info["embedding"] = {
+                            "ok": pg_clear.get("ok", True) and neo_clear.get("ok", True),
+                            "cleared": True,
+                            "reason": "keyword_text is empty",
+                            "pg": pg_clear,
+                            "neo": neo_clear,
+                        }
                 except Exception as _emb_err:
-                    _log.warning("topic_embedding upsert failed for pg_id=%s: %s", pg_id, _emb_err)
+                    _log.warning("topic_embedding upsert/clear failed for pg_id=%s: %s", pg_id, _emb_err)
                     info["embedding"] = {"ok": False, "error": str(_emb_err)}
 
         # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──

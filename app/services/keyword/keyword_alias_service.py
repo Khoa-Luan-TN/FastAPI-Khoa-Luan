@@ -11,8 +11,7 @@ from typing import Any, Callable
 _log = logging.getLogger(__name__)
 
 from bson import ObjectId
-from app.services.ai.gemini_alias_service import normalize_for_compare
-from app.services.shared._utils import utc_now, slugify_vi
+from app.services.shared._utils import utc_now, slugify_vi, normalize_for_compare
 
 
 # ===================== INDEXES =====================

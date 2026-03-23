@@ -535,3 +535,24 @@ def detach_delete_entity(col: str, entity_id: str) -> dict:
         return {"ok": True, "deleted": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+def clear_topic_embedding_neo(topic_id: str) -> dict:
+    """Remove the embedding property from a Topic node without deleting the node.
+
+    Called when keyword_text becomes empty so the stale vector is no longer
+    present in Neo4j topic search. Uses REMOVE (not SET to null) so the
+    property is fully absent rather than null.
+    """
+    try:
+        with neo_session() as s:
+            s.run(
+                """
+                MATCH (t:Topic {topic_id: $topic_id})
+                REMOVE t.embedding
+                """,
+                topic_id=topic_id,
+            ).consume()
+        return {"ok": True, "cleared": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
