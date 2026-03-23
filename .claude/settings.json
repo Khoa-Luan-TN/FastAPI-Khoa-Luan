@@ -23,7 +23,9 @@
       "Bash(ls -la /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)",
       "Bash(grep -n \"parents\\\\[1\\\\]\" /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/infrastructure/*.py)",
       "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)",
-      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -name *.sql -o -name schema* -o -name init_db* -o -name create_tables*)"
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -name *.sql -o -name schema* -o -name init_db* -o -name create_tables*)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 4 \\\\\\(-name *.sql -o -name init_db* -o -name schema* -o -name create_db* -o -name database* \\\\\\))",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 3 -name docker-compose* -o -name Dockerfile*)"
     ]
   }
 }

@@ -50,11 +50,6 @@
   refresh by calling gemini_alias_service. These are three distinct abstraction layers; merging
   them would mix DB concerns with AI prompt concerns.
 
-- **postgre_client / postgres_bootstrap_service**: `postgre_client` is the connection factory
-  (engine + SessionLocal + Base). `postgres_bootstrap_service` is a startup-time DDL migration
-  runner. Kept separate so the connection factory has no migration logic and can be imported safely
-  without side effects.
-
 - **minio_client / minio_marker_service**: `minio_client` returns a raw Minio SDK client (no
   business logic). `minio_marker_service` contains stateless folder marker helpers that accept a
   client as a parameter. The separation allows minio_marker_service to be tested or reused without

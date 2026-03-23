@@ -38,14 +38,12 @@ from app.routers.neo4j import router as neo_router
 from app.routers.search import router as search_router
 
 from app.services.infrastructure.postgre_client import engine, Base
-from app.services.maintenance.postgres_bootstrap_service import ensure_postgres_bootstrap
 import app.models.model_postgre
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    ensure_postgres_bootstrap()
     yield
 
 
