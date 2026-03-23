@@ -17,7 +17,6 @@ logging.basicConfig(
 )
 for _logger_name in (
     "app",
-    "app.routers.gemini_debug_router",
     "app.services.keyword_alias_service",
     "app.services.gemini_alias_service",
     "app.services.gemini_client",
