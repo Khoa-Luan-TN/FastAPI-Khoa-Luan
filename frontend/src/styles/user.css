@@ -1714,3 +1714,92 @@
   border: none;
   display: block;
 }
+
+/* image preview modal variant */
+.u-preview-modal--image {
+  height: auto;
+  max-height: 90vh;
+}
+.u-preview-body--image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #0f172a;
+  min-height: 200px;
+}
+.u-preview-img {
+  max-width: 100%;
+  max-height: calc(90vh - 64px);
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* =====================================================
+   ASSET LIST (multi-type: docs / images / videos)
+   ===================================================== */
+.u-asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.u-asset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--us-bg);
+  border: 1px solid var(--us-border);
+}
+
+.u-asset-row-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--us-text-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.u-asset-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.u-asset-row-actions .u-file-btn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.u-asset-unavail {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #C2410C;
+  flex-shrink: 0;
+}
+
+.u-asset-video-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.u-asset-video-player {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  max-height: 260px;
+  display: block;
+}

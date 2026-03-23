@@ -89,49 +89,53 @@ def _probe_keyword(
 ) -> Dict[str, Any]:
     base: Dict[str, Any] = {
         "keyword": keyword,
-        "top_topic": None,
-        "topic_bag": None,
-        "matched_keyword": None,
+        "top_topics": [],
+        "matched_keywords": [],
         "topic_documents": [],
         "lesson_documents": [],
         "chunk_documents": [],
     }
 
-    top_topic = _probe_top_topic(neo, keyword, class_ids)
-    if not top_topic:
+    top_topics = _probe_top_topics(neo, keyword, class_ids)
+    if not top_topics:
         return base
-    base["top_topic"] = top_topic
-
-    pg_topic_id = top_topic.get("topic_id")
-    if not pg_topic_id:
-        return base
-
-    mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
-    if not mongo_topic_id:
-        _log.debug("No mongo_id for pg topic_id=%s", pg_topic_id)
-        return base
-
-    bag = _fetch_topic_bag(db, mongo_topic_id)
-    if bag is None:
-        return base
-    base["topic_bag"] = {
-        "_id": str(bag["_id"]),
-        "topic_id": str(bag.get("topic_id", "")),
-        "topic_name": bag.get("topic_name"),
-        "total_keywords": bag.get("total_keywords"),
-    }
+    base["top_topics"] = top_topics
 
     kw_norm = _norm(keyword)
-    matched_kw = _match_keyword_in_bag(db, bag, kw_norm)
-    if matched_kw is None:
-        return base
+    all_hits: List[Dict[str, Any]] = []
+    seen_kw_oids: set = set()
 
-    matched_kw_oid = matched_kw["_oid"]
-    base["matched_keyword"] = {k: v for k, v in matched_kw.items() if k != "_oid"}
+    for candidate in top_topics:
+        pg_topic_id = candidate.get("topic_id")
+        if not pg_topic_id:
+            continue
 
-    chunk_hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+        mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
+        if not mongo_topic_id:
+            _log.debug("No mongo_id for pg topic_id=%s", pg_topic_id)
+            continue
+
+        bag = _fetch_topic_bag(db, mongo_topic_id)
+        if bag is None:
+            continue
+
+        matched_kw = _match_keyword_in_bag(db, bag, kw_norm)
+        if matched_kw is None:
+            continue
+
+        matched_kw_oid = matched_kw["_oid"]
+        if matched_kw_oid in seen_kw_oids:
+            continue
+        seen_kw_oids.add(matched_kw_oid)
+
+        base["matched_keywords"].append({
+            k: v for k, v in matched_kw.items() if k != "_oid"
+        })
+        hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+        all_hits.extend(hits)
+
     base["topic_documents"], base["lesson_documents"], base["chunk_documents"] = (
-        _build_documents_from_hits(chunk_hits)
+        _build_documents_from_hits(all_hits)
     )
     return base
 
@@ -151,34 +155,79 @@ def _to_oid(v: Any) -> Optional[ObjectId]:
     return ObjectId(s) if ObjectId.is_valid(s) else None
 
 
-def _extract_minio(raw: Any) -> Optional[Dict[str, Any]]:
-    if not raw or not isinstance(raw, dict):
-        return None
-    bucket = raw.get("bucket")
-    object_key = raw.get("object_key")
-    url = raw.get("url")
-    if not any([bucket, object_key, url]):
-        return None
-    return {"bucket": bucket, "object_key": object_key, "url": url}
+def _fetch_owner_assets(
+    db: Any,
+    owner_type: str,
+    owner_id: str,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Fetch all active assets for an owner grouped by type.
+
+    Returns {"documents": [...], "images": [...], "videos": [...]}
+    Each entry: {bucket, object_key, url, file_name, content_type, asset_type}
+    """
+    docs = list(db["asset"].find(
+        {
+            "owner_type": owner_type,
+            "owner_id": owner_id,
+            "is_deleted": {"$ne": True},
+        },
+        {"bucket": 1, "object_key": 1, "url": 1, "file_name": 1, "content_type": 1, "asset_type": 1},
+    ))
+    grouped: Dict[str, List[Dict[str, Any]]] = {"documents": [], "images": [], "videos": []}
+    for doc in docs:
+        bucket = doc.get("bucket")
+        object_key = doc.get("object_key")
+        url = doc.get("url")
+        if not any([bucket, object_key, url]):
+            continue
+        asset_type = doc.get("asset_type", "document")
+        entry: Dict[str, Any] = {
+            "bucket": bucket,
+            "object_key": object_key,
+            "url": url,
+            "file_name": doc.get("file_name"),
+            "content_type": doc.get("content_type"),
+            "asset_type": asset_type,
+        }
+        if asset_type == "image":
+            grouped["images"].append(entry)
+        elif asset_type == "video":
+            grouped["videos"].append(entry)
+        else:
+            grouped["documents"].append(entry)
+    return grouped
 
 
-def _probe_top_topic(
+def _first_document_minio(assets: Dict[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
+    """Return {bucket, object_key, url} for the first document asset, or None."""
+    docs = assets.get("documents", [])
+    if not docs:
+        return None
+    d = docs[0]
+    return {"bucket": d.get("bucket"), "object_key": d.get("object_key"), "url": d.get("url")}
+
+
+_EXPERIMENTAL_TOP_K = 3
+
+
+def _probe_top_topics(
     neo: Session,
     keyword: str,
     class_ids: List[str],
-) -> Optional[Dict[str, Any]]:
-    rows = search_top_topics_by_embedding(neo, keyword, class_ids, k=1)
-    if not rows:
-        return None
-    r = rows[0]
-    return {
-        "topic_id":   r.get("topic_id"),
-        "topic_name": r.get("topic_name"),
-        "topic_num":  r.get("topic_num"),
-        "score":      round(float(r.get("score", 0.0)), 4),
-        "class_id":   r.get("class_id"),
-        "class_name": r.get("class_name"),
-    }
+    k: int = _EXPERIMENTAL_TOP_K,
+) -> List[Dict[str, Any]]:
+    rows = search_top_topics_by_embedding(neo, keyword, class_ids, k=k)
+    result = []
+    for r in rows:
+        result.append({
+            "topic_id":   r.get("topic_id"),
+            "topic_name": r.get("topic_name"),
+            "topic_num":  r.get("topic_num"),
+            "score":      round(float(r.get("score", 0.0)), 4),
+            "class_id":   r.get("class_id"),
+            "class_name": r.get("class_name"),
+        })
+    return result
 
 
 def _pg_topic_mongo_id(pg_topic_id: str) -> Optional[str]:
@@ -265,7 +314,7 @@ def _build_chunk_hit(
 
     chunk_doc = db["chunk"].find_one(
         {"_id": chunk_oid, "is_deleted": {"$ne": True}},
-        {"chunk_name": 1, "chunk_num": 1, "lesson_id": 1, "minio": 1},
+        {"chunk_name": 1, "chunk_num": 1, "lesson_id": 1},
     )
     if not chunk_doc:
         return None
@@ -273,13 +322,16 @@ def _build_chunk_hit(
     chunk_id   = str(chunk_oid)
     chunk_name = chunk_doc.get("chunk_name")
     chunk_num  = chunk_doc.get("chunk_num")
-    chunk_minio = _extract_minio(chunk_doc.get("minio"))
+    chunk_assets = _fetch_owner_assets(db, "chunk", chunk_id)
+    chunk_minio  = _first_document_minio(chunk_assets)
 
     # chunk → lesson
     lesson_oid = _to_oid(chunk_doc.get("lesson_id"))
     lesson_id = lesson_name = lesson_num = None
+    lesson_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
     lesson_minio = None
     topic_id = topic_name = topic_num = None
+    topic_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
     topic_minio = None
     subject_id = subject_name = subject_type = None
     class_id = class_name = None
@@ -287,13 +339,14 @@ def _build_chunk_hit(
     if lesson_oid is not None:
         lesson_doc = db["lesson"].find_one(
             {"_id": lesson_oid, "is_deleted": {"$ne": True}},
-            {"lesson_name": 1, "lesson_num": 1, "topic_id": 1, "minio": 1},
+            {"lesson_name": 1, "lesson_num": 1, "topic_id": 1},
         )
         if lesson_doc:
-            lesson_id    = str(lesson_oid)
-            lesson_name  = lesson_doc.get("lesson_name")
-            lesson_num   = lesson_doc.get("lesson_num")
-            lesson_minio = _extract_minio(lesson_doc.get("minio"))
+            lesson_id     = str(lesson_oid)
+            lesson_name   = lesson_doc.get("lesson_name")
+            lesson_num    = lesson_doc.get("lesson_num")
+            lesson_assets = _fetch_owner_assets(db, "lesson", lesson_id)
+            lesson_minio  = _first_document_minio(lesson_assets)
 
             # lesson → topic
             raw_tid = lesson_doc.get("topic_id")
@@ -301,13 +354,14 @@ def _build_chunk_hit(
             if topic_oid is not None:
                 topic_doc = db["topic"].find_one(
                     {"_id": topic_oid, "is_deleted": {"$ne": True}},
-                    {"topic_name": 1, "topic_num": 1, "subject_id": 1, "minio": 1},
+                    {"topic_name": 1, "topic_num": 1, "subject_id": 1},
                 )
                 if topic_doc:
-                    topic_id    = str(topic_oid)
-                    topic_name  = topic_doc.get("topic_name")
-                    topic_num   = topic_doc.get("topic_num")
-                    topic_minio = _extract_minio(topic_doc.get("minio"))
+                    topic_id     = str(topic_oid)
+                    topic_name   = topic_doc.get("topic_name")
+                    topic_num    = topic_doc.get("topic_num")
+                    topic_assets = _fetch_owner_assets(db, "topic", topic_id)
+                    topic_minio  = _first_document_minio(topic_assets)
 
                     # topic → subject
                     subject_oid = _to_oid(topic_doc.get("subject_id"))
@@ -350,23 +404,26 @@ def _build_chunk_hit(
     )
 
     return {
-        "chunk_id":    chunk_id,
-        "chunk_name":  chunk_name,
-        "chunk_num":   chunk_num,
-        "chunk_minio": chunk_minio,
-        "lesson_id":   lesson_id,
-        "lesson_name": lesson_name,
-        "lesson_num":  lesson_num,
-        "lesson_minio": lesson_minio,
-        "topic_id":    topic_id,
-        "topic_name":  topic_name,
-        "topic_num":   topic_num,
-        "topic_minio": topic_minio,
-        "subject_id":  subject_id,
+        "chunk_id":     chunk_id,
+        "chunk_name":   chunk_name,
+        "chunk_num":    chunk_num,
+        "chunk_minio":  chunk_minio,
+        "chunk_assets": chunk_assets,
+        "lesson_id":    lesson_id,
+        "lesson_name":  lesson_name,
+        "lesson_num":   lesson_num,
+        "lesson_minio":  lesson_minio,
+        "lesson_assets": lesson_assets,
+        "topic_id":     topic_id,
+        "topic_name":   topic_name,
+        "topic_num":    topic_num,
+        "topic_minio":  topic_minio,
+        "topic_assets": topic_assets,
+        "subject_id":   subject_id,
         "subject_name": subject_name,
         "subject_type": subject_type,
-        "class_id":    class_id,
-        "class_name":  class_name,
+        "class_id":     class_id,
+        "class_name":   class_name,
         "debug_description":  debug_description,
         "topic_description":  descriptions["topic_description"],
         "lesson_description": descriptions["lesson_description"],
@@ -395,6 +452,7 @@ def _build_documents_from_hits(
                 "class_id":     hit.get("class_id"),
                 "class_name":   hit.get("class_name"),
                 "minio":        hit.get("topic_minio"),
+                "assets":       hit.get("topic_assets", {"documents": [], "images": [], "videos": []}),
             }
 
         lid = hit.get("lesson_id")
@@ -410,6 +468,7 @@ def _build_documents_from_hits(
                 "subject_name": hit.get("subject_name"),
                 "class_name":  hit.get("class_name"),
                 "minio":       hit.get("lesson_minio"),
+                "assets":      hit.get("lesson_assets", {"documents": [], "images": [], "videos": []}),
             }
 
         cid = hit.get("chunk_id")
@@ -428,6 +487,7 @@ def _build_documents_from_hits(
                 "subject_name": hit.get("subject_name"),
                 "class_name":  hit.get("class_name"),
                 "minio":       hit.get("chunk_minio"),
+                "assets":      hit.get("chunk_assets", {"documents": [], "images": [], "videos": []}),
             }
 
     return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values())

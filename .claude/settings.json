@@ -18,7 +18,8 @@
       "Bash(python -c \"from app.routers.minio import router; print\\(''minio ok''\\)\")",
       "Bash(python -c \"from app.services.mongo_minio_service import on_minio_insert_to_mongo; print\\(''minio_service ok''\\)\")",
       "Bash(python -c \"from app.services.mongo_import_service import import_excel_to_mongo; print\\(''import_service ok''\\)\")",
-      "Bash(python -c \"from app.services.document_service import create_document_core; print\\(''document_service ok''\\)\")"
+      "Bash(python -c \"from app.services.document_service import create_document_core; print\\(''document_service ok''\\)\")",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend -type f \\\\\\(-name *.jsx -o -name *.js -o -name *.tsx \\\\\\))"
     ]
   }
 }

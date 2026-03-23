@@ -53,6 +53,21 @@ const WarnIcon = ({ size = 14 }) => (
     <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
+const ImageIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+  </svg>
+);
+const VideoIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+);
+const FileIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+  </svg>
+);
 
 // Section icons
 const TopicIcon = ({ size = 14 }) => (
@@ -113,6 +128,7 @@ function buildSearchGroups(data) {
           subjectName: doc.subject_name || null,
           subjectType: doc.subject_type || null,
           minio: doc.minio || null,
+          assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
     }
@@ -142,6 +158,7 @@ function buildSearchGroups(data) {
           subjectName: doc.subject_name || null,
           subjectType: null,
           minio: doc.minio || null,
+          assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
     }
@@ -173,6 +190,7 @@ function buildSearchGroups(data) {
           subjectName: doc.subject_name || null,
           subjectType: null,
           minio: doc.minio || null,
+          assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
     }
@@ -185,8 +203,8 @@ function buildSearchGroups(data) {
   };
 }
 
-// ---- File preview overlay ----
-function FilePreviewOverlay({ url, onClose }) {
+// ---- Document preview overlay ----
+function DocPreviewOverlay({ url, onClose }) {
   return (
     <div className="u-preview-overlay" onClick={onClose}>
       <div className="u-preview-modal" onClick={(e) => e.stopPropagation()}>
@@ -214,12 +232,158 @@ function FilePreviewOverlay({ url, onClose }) {
   );
 }
 
-// ---- File section with availability check ----
-function FileSection({ minio }) {
-  const [fileState, setFileState] = useState("idle"); // idle | checking | ok | unavailable
+// ---- Image overlay ----
+function ImagePreviewOverlay({ url, fileName, onClose }) {
+  return (
+    <div className="u-preview-overlay" onClick={onClose}>
+      <div className="u-preview-modal u-preview-modal--image" onClick={(e) => e.stopPropagation()}>
+        <div className="u-preview-header">
+          <span className="u-preview-title">{fileName || "Hình ảnh"}</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="u-file-btn u-file-btn--download"
+              style={{ height: 30, fontSize: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DownloadIcon size={12} /> Tải xuống
+            </a>
+            <button className="u-modal-close" onClick={onClose}><CloseIcon /></button>
+          </div>
+        </div>
+        <div className="u-preview-body u-preview-body--image">
+          <img src={url} alt={fileName || "preview"} className="u-preview-img" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Single document row ----
+function DocRow({ doc }) {
+  const [state, setState] = useState("idle"); // idle | checking | ok | unavailable
   const [showPreview, setShowPreview] = useState(false);
 
-  if (!minio?.url) {
+  async function verify(onOk) {
+    if (state === "ok") { onOk(); return; }
+    if (state === "unavailable" || state === "checking") return;
+    setState("checking");
+    try {
+      const res = await fetch(doc.url, { method: "HEAD" });
+      if (res.ok) { setState("ok"); onOk(); }
+      else setState("unavailable");
+    } catch {
+      setState("unavailable");
+    }
+  }
+
+  const label = doc.file_name || "Tài liệu";
+  return (
+    <div className="u-asset-row">
+      <span className="u-asset-row-name" title={label}>
+        <FileIcon size={13} /> {label.length > 36 ? label.slice(0, 36) + "…" : label}
+      </span>
+      {state === "unavailable" ? (
+        <span className="u-asset-unavail"><WarnIcon size={12} /> Không khả dụng</span>
+      ) : (
+        <div className="u-asset-row-actions">
+          <button
+            className="u-file-btn u-file-btn--preview"
+            onClick={() => verify(() => setShowPreview(true))}
+            disabled={state === "checking"}
+          >
+            {state === "checking" ? "…" : <><EyeIcon size={12} /> Xem</>}
+          </button>
+          <button
+            className="u-file-btn u-file-btn--download"
+            onClick={() => verify(() => window.open(doc.url, "_blank"))}
+            disabled={state === "checking"}
+          >
+            <DownloadIcon size={12} /> Tải
+          </button>
+        </div>
+      )}
+      {showPreview && <DocPreviewOverlay url={doc.url} onClose={() => setShowPreview(false)} />}
+    </div>
+  );
+}
+
+// ---- Single image row ----
+function ImageRow({ img }) {
+  const [showOverlay, setShowOverlay] = useState(false);
+  const label = img.file_name || "Hình ảnh";
+  return (
+    <div className="u-asset-row">
+      <span className="u-asset-row-name" title={label}>
+        <ImageIcon size={13} /> {label.length > 36 ? label.slice(0, 36) + "…" : label}
+      </span>
+      <div className="u-asset-row-actions">
+        <button className="u-file-btn u-file-btn--preview" onClick={() => setShowOverlay(true)}>
+          <EyeIcon size={12} /> Xem
+        </button>
+        <a
+          href={img.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="u-file-btn u-file-btn--download"
+        >
+          <DownloadIcon size={12} /> Tải
+        </a>
+      </div>
+      {showOverlay && (
+        <ImagePreviewOverlay url={img.url} fileName={img.file_name} onClose={() => setShowOverlay(false)} />
+      )}
+    </div>
+  );
+}
+
+// ---- Single video row ----
+function VideoRow({ vid }) {
+  const [showPlayer, setShowPlayer] = useState(false);
+  const label = vid.file_name || "Video";
+  return (
+    <div className="u-asset-video-wrap">
+      <div className="u-asset-row">
+        <span className="u-asset-row-name" title={label}>
+          <VideoIcon size={13} /> {label.length > 36 ? label.slice(0, 36) + "…" : label}
+        </span>
+        <div className="u-asset-row-actions">
+          <button className="u-file-btn u-file-btn--preview" onClick={() => setShowPlayer((s) => !s)}>
+            {showPlayer ? "Ẩn" : <><EyeIcon size={12} /> Phát</>}
+          </button>
+          <a
+            href={vid.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="u-file-btn u-file-btn--download"
+          >
+            <DownloadIcon size={12} /> Tải
+          </a>
+        </div>
+      </div>
+      {showPlayer && (
+        <video
+          className="u-asset-video-player"
+          controls
+          src={vid.url}
+        >
+          Trình duyệt không hỗ trợ phát video.
+        </video>
+      )}
+    </div>
+  );
+}
+
+// ---- Assets section (documents + images + videos) ----
+function AssetsSection({ assets, minio }) {
+  const docs   = assets?.documents || [];
+  const images = assets?.images    || [];
+  const videos = assets?.videos    || [];
+  const hasAny = docs.length + images.length + videos.length > 0;
+
+  if (!hasAny) {
     return (
       <>
         <p className="u-modal-section-label">Tài liệu đính kèm</p>
@@ -230,47 +394,36 @@ function FileSection({ minio }) {
     );
   }
 
-  async function verify(onOk) {
-    if (fileState === "ok") { onOk(); return; }
-    if (fileState === "unavailable") return;
-    if (fileState === "checking") return;
-    setFileState("checking");
-    try {
-      const res = await fetch(minio.url, { method: "HEAD" });
-      if (res.ok) { setFileState("ok"); onOk(); }
-      else setFileState("unavailable");
-    } catch {
-      setFileState("unavailable");
-    }
-  }
+  // Fallback: if assets is empty but legacy minio exists, show the old single-doc row
+  const effectiveDocs = docs.length > 0
+    ? docs
+    : (minio?.url ? [{ url: minio.url, file_name: null, asset_type: "document" }] : []);
 
   return (
     <>
-      <p className="u-modal-section-label">Tài liệu đính kèm</p>
-      {fileState === "unavailable" ? (
-        <div className="u-file-unavailable">
-          <WarnIcon size={14} /> Tài liệu hiện chưa sẵn sàng
-        </div>
-      ) : (
-        <div className="u-file-actions">
-          <button
-            className="u-file-btn u-file-btn--preview"
-            onClick={() => verify(() => setShowPreview(true))}
-            disabled={fileState === "checking"}
-          >
-            {fileState === "checking" ? "Đang kiểm tra..." : <><EyeIcon size={13} /> Xem trước</>}
-          </button>
-          <button
-            className="u-file-btn u-file-btn--download"
-            onClick={() => verify(() => window.open(minio.url, "_blank"))}
-            disabled={fileState === "checking"}
-          >
-            <DownloadIcon size={13} /> Tải xuống
-          </button>
-        </div>
+      {effectiveDocs.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Tài liệu</p>
+          <div className="u-asset-list">
+            {effectiveDocs.map((d, i) => <DocRow key={d.object_key || i} doc={d} />)}
+          </div>
+        </>
       )}
-      {showPreview && (
-        <FilePreviewOverlay url={minio.url} onClose={() => setShowPreview(false)} />
+      {images.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Hình ảnh</p>
+          <div className="u-asset-list">
+            {images.map((img, i) => <ImageRow key={img.object_key || i} img={img} />)}
+          </div>
+        </>
+      )}
+      {videos.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Video</p>
+          <div className="u-asset-list">
+            {videos.map((vid, i) => <VideoRow key={vid.object_key || i} vid={vid} />)}
+          </div>
+        </>
       )}
     </>
   );
@@ -349,7 +502,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
             </p>
           </div>
 
-          <FileSection minio={doc.minio} />
+          <AssetsSection assets={doc.assets} minio={doc.minio} />
         </div>
 
         <div className="u-modal-footer">
@@ -510,6 +663,7 @@ export default function UserHome() {
         className: doc.className || null,
         tags: [],
         minio: doc.minio || null,
+        assets: doc.assets || { documents: [], images: [], videos: [] },
       });
     }
     localStorage.setItem("u_saved_docs", JSON.stringify(filtered));
