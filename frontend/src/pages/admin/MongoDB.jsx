@@ -129,22 +129,16 @@ function defaultPairsForCollection(col) {
         { k: "chunk_num", v: "1" },
         { k: "chunk_name", v: "" },
         { k: "chunk_des", v: "" },
-        { k: "images", v: "null" },
-        { k: "videos", v: "null" },
       ];
 
     case "image":
       return [
-        { k: "chunk_id", v: "" },
         { k: "image_name", v: "" },
-        { k: "image_url", v: "null" },
       ];
 
     case "video":
       return [
-        { k: "chunk_id", v: "" },
         { k: "video_name", v: "" },
-        { k: "video_url", v: "null" },
       ];
 
     case "user":
@@ -157,7 +151,6 @@ function defaultPairsForCollection(col) {
 
     case "keyword":
       return [
-        { k: "chunk_id", v: "" },
         { k: "keyword_name", v: "" },
         { k: "keyword_des", v: "" },
       ];
@@ -243,7 +236,8 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
     if (!k) return "Nhập giá trị...";
 
     if (k.endsWith("_id")) return "Nhập ID (vd: class_id/subject_id...)";
-    if (k === "images" || k === "videos" || k.endsWith("_url")) return "[]";
+    if (k === "images" || k === "videos") return "[]";
+    if (k.endsWith("_url")) return "http://...";
     if (k === "is_deleted" || k === "is_active") return "true / false";
     if (k.endsWith("_num") || k.endsWith("_label")) return "Số (vd: 1)";
     if (k.endsWith("_name")) return `Nhập ${k}`;
@@ -512,11 +506,11 @@ export default function MongoDB() {
     const list = docs.map((d) => {
       const title = docTitle(d);
 
-      // Date: created_at → dd/mm/yyyy
+      // Date: created_at → dd/mm/yyyy (VN timezone via parseDateAssumeUTC)
       let createdDate = "-";
       if (d.created_at) {
-        const parsed = new Date(d.created_at);
-        if (!isNaN(parsed.getTime())) {
+        const parsed = parseDateAssumeUTC(d.created_at);
+        if (parsed && !isNaN(parsed.getTime())) {
           const dd = String(parsed.getDate()).padStart(2, "0");
           const mm = String(parsed.getMonth() + 1).padStart(2, "0");
           createdDate = `${dd}/${mm}/${parsed.getFullYear()}`;

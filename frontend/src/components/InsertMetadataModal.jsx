@@ -1,32 +1,53 @@
 import { useEffect, useMemo, useState } from "react";
-import "../../src/styles/admin/modal.css";
+import "../styles/admin/modal.css";
 
 function splitPath(path) {
   return (path || "").split("/").filter(Boolean);
 }
 
+const EDU_KINDS = ["topic", "lesson", "chunk"];
+
 function detectKind(folderName) {
   const p = (folderName || "").trim();
   const parts = splitPath(p);
 
-  if (parts.length === 0) return "unknown";
+  // images/keyword/<slug__id>  (len=3, parts[1]="keyword")
+  // images/<class>/<subject>/<edu_kind>/<id>  (len=5, parts[3] in edu_kinds)
+  if (parts[0] === "images") {
+    if (parts.length === 3 && parts[1] === "keyword") return "image";
+    if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return "image";
+    return "unknown";
+  }
 
-  // images root or images/<class>/<subject>/<kind>/<id> or images/keyword/<slug>
-  if (parts[0] === "images") return "image";
+  // videos/keyword/<slug__id>  (len=3, parts[1]="keyword")
+  // videos/<class>/<subject>/<edu_kind>/<id>  (len=5, parts[3] in edu_kinds)
+  if (parts[0] === "videos") {
+    if (parts.length === 3 && parts[1] === "keyword") return "video";
+    if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return "video";
+    return "unknown";
+  }
 
-  // videos root or videos/<class>/<subject>/<kind>/<id> or videos/keyword/<slug>
-  if (parts[0] === "videos") return "video";
-
-  // documents/<class>/<subject>/subject  (depth 4)
-  // documents/<class>/<subject>/topic/<id>  (depth 5)
-  // documents/<class>/<subject>/lesson/<id>  (depth 5)
-  // documents/<class>/<subject>/chunk/<id>  (depth 5)
-  if (parts[0] === "documents" && parts.length >= 4) {
-    const cat = parts[3];
-    if (["subject", "topic", "lesson", "chunk"].includes(cat)) return cat;
+  // documents/<class>/<subject>/subject  (len=4, parts[3]="subject")
+  // documents/<class>/<subject>/topic/<id>  (len=5, parts[3]="topic")
+  // documents/<class>/<subject>/lesson/<id>  (len=5, parts[3]="lesson")
+  // documents/<class>/<subject>/chunk/<id>  (len=5, parts[3]="chunk")
+  if (parts[0] === "documents") {
+    if (parts.length === 4 && parts[3] === "subject") return "subject";
+    if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return parts[3];
+    return "unknown";
   }
 
   return "unknown";
+}
+
+// Returns the owner type implied by a media folder path:
+// "keyword" | "topic" | "lesson" | "chunk" | null
+function detectMediaOwnerType(folderName) {
+  const parts = splitPath((folderName || "").trim());
+  if (parts[0] !== "images" && parts[0] !== "videos") return null;
+  if (parts.length === 3 && parts[1] === "keyword") return "keyword";
+  if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return parts[3];
+  return null;
 }
 
 function encodeObjectKey(key) {
@@ -48,8 +69,26 @@ const DEFAULT_PUBLIC_BASE = (
   import.meta?.env?.VITE_MINIO_PUBLIC_BASE_URL || "http://127.0.0.1:9000"
 ).replace(/\/+$/, "");
 
+// Returns the auto-fill owner id for images/videos edu leaf paths.
+// For images/<class>/<subject>/<edu_kind>/<id> or videos/<class>/<subject>/<edu_kind>/<id>
+// parts[4] is the real owner entity id stored in MinIO folder name.
+// Keyword paths (len=3) are intentionally excluded — parts[2] is a slug, not a MongoDB _id.
+function getAutoFillOwnerId(folderName) {
+  const parts = splitPath((folderName || "").trim());
+  if (
+    (parts[0] === "images" || parts[0] === "videos") &&
+    parts.length === 5 &&
+    EDU_KINDS.includes(parts[3])
+  ) {
+    return parts[4];
+  }
+  return null;
+}
+
 export default function InsertMetadataModal({ open, onClose, folderName, onInsert }) {
   const kind = useMemo(() => detectKind(folderName), [folderName]);
+  const mediaOwnerType = useMemo(() => detectMediaOwnerType(folderName), [folderName]);
+  const autoFillOwnerId = useMemo(() => getAutoFillOwnerId(folderName), [folderName]);
 
   const schema = useMemo(() => {
     if (kind === "subject") {
@@ -102,39 +141,45 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     }
 
     if (kind === "image") {
+      const ownerField = mediaOwnerType ? `${mediaOwnerType}_id` : "chunk_id";
       return {
         title: "Insert Image",
         requiredFile: true,
         fields: [
-          { name: "chunk_id", label: "chunk_id", required: true },
-          { name: "title", label: "title", required: true },
+          { name: ownerField, label: ownerField, required: true, readOnly: !!autoFillOwnerId },
+          { name: "image_name", label: "image_name", required: true },
         ],
       };
     }
 
     if (kind === "video") {
+      const ownerField = mediaOwnerType ? `${mediaOwnerType}_id` : "chunk_id";
       return {
         title: "Insert Video",
         requiredFile: true,
         fields: [
-          { name: "chunk_id", label: "chunk_id", required: true },
-          { name: "title", label: "title", required: true },
+          { name: ownerField, label: ownerField, required: true, readOnly: !!autoFillOwnerId },
+          { name: "video_name", label: "video_name", required: true },
         ],
       };
     }
 
     return { title: "Insert", requiredFile: true, fields: [] };
-  }, [kind]);
+  }, [kind, mediaOwnerType, autoFillOwnerId]);
 
   const [values, setValues] = useState({});
   const [file, setFile] = useState(null);
 
-  // reset khi mở modal / đổi folder
+  // reset khi mở modal / đổi folder; pre-fill auto-derived owner id if available
   useEffect(() => {
     if (!open) return;
-    setValues({}); // ✅ không cần set audit ở đây nữa
+    const init = {};
+    if (autoFillOwnerId && mediaOwnerType) {
+      init[`${mediaOwnerType}_id`] = autoFillOwnerId;
+    }
+    setValues(init);
     setFile(null);
-  }, [open, folderName]);
+  }, [open, folderName, autoFillOwnerId, mediaOwnerType]);
 
   if (!open) return null;
 
@@ -231,11 +276,13 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
                 <p>Chỉ cho Insert ở:</p>
                 <ul>
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/subject</li>
-                  <li>documents/&lt;class&gt;/&lt;subject&gt;/topic</li>
-                  <li>documents/&lt;class&gt;/&lt;subject&gt;/lesson</li>
-                  <li>documents/&lt;class&gt;/&lt;subject&gt;/chunk</li>
-                  <li>images/keyword/&lt;slug&gt; or images/&lt;class&gt;/&lt;subject&gt;/&lt;kind&gt;/&lt;id&gt;</li>
-                  <li>videos/keyword/&lt;slug&gt; or videos/&lt;class&gt;/&lt;subject&gt;/&lt;kind&gt;/&lt;id&gt;</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/topic/&lt;id&gt;</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/lesson/&lt;id&gt;</li>
+                  <li>documents/&lt;class&gt;/&lt;subject&gt;/chunk/&lt;id&gt;</li>
+                  <li>images/keyword/&lt;slug__id&gt;</li>
+                  <li>images/&lt;class&gt;/&lt;subject&gt;/&lt;topic|lesson|chunk&gt;/&lt;id&gt;</li>
+                  <li>videos/keyword/&lt;slug__id&gt;</li>
+                  <li>videos/&lt;class&gt;/&lt;subject&gt;/&lt;topic|lesson|chunk&gt;/&lt;id&gt;</li>
                 </ul>
               </div>
             </div>
