@@ -402,7 +402,7 @@ def _build_chunk_hit(
                                     class_id   = str(class_oid)
                                     class_name = class_doc.get("class_name")
 
-    debug_description = _build_path_description(
+    path_description = _build_path_description(
         class_name=class_name,
         subject_name=subject_name,
         subject_type=subject_type,
@@ -415,7 +415,7 @@ def _build_chunk_hit(
     )
 
     descriptions = generate_hierarchy_descriptions(
-        path_description=debug_description,
+        path_description=path_description,
         keyword=keyword,
     )
 
@@ -440,7 +440,7 @@ def _build_chunk_hit(
         "subject_type": subject_type,
         "class_id":     class_id,
         "class_name":   class_name,
-        "debug_description":  debug_description,
+        "path_description":   path_description,
         "topic_description":  descriptions["topic_description"],
         "lesson_description": descriptions["lesson_description"],
         "chunk_description":  descriptions["chunk_description"],

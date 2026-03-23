@@ -193,18 +193,6 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     meta.created_at = t;
     meta.updated_at = t;
 
-    // minio auto
-    meta.minio = {
-      bucket: DEFAULT_BUCKET,
-      object_key: objectKeyPreview || "",
-      url: urlPreview || "",
-    };
-
-    if (kind === "image" || kind === "video") {
-      meta.minio.content_type = file?.type || "";
-      meta.minio.size = file?.size || 0;
-    }
-
     await onInsert({ meta, file });
   }
 
@@ -284,13 +272,13 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
                 {file ? (
                   <div className="file-info">
                     <div>
-                      <strong>minio.bucket</strong>: {DEFAULT_BUCKET}
+                      <strong>bucket</strong>: {DEFAULT_BUCKET}
                     </div>
                     <div>
-                      <strong>minio.object_key</strong>: {objectKeyPreview}
+                      <strong>object_key</strong>: {objectKeyPreview}
                     </div>
                     <div>
-                      <strong>minio.url</strong>: {urlPreview}
+                      <strong>url</strong>: {urlPreview}
                     </div>
                   </div>
                 ) : null}

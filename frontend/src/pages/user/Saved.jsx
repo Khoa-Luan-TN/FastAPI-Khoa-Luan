@@ -22,54 +22,15 @@ const DownloadIcon = ({ size = 13 }) => (
     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
-const EyeIcon = ({ size = 13 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-  </svg>
-);
-const WarnIcon = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
 
-// ---- File preview overlay ----
-function FilePreviewOverlay({ url, onClose }) {
-  return (
-    <div className="u-preview-overlay" onClick={onClose}>
-      <div className="u-preview-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="u-preview-header">
-          <span className="u-preview-title">Xem trước tài liệu</span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="u-file-btn u-file-btn--download"
-              style={{ height: 30, fontSize: 12 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DownloadIcon size={12} /> Tải xuống
-            </a>
-            <button className="u-modal-close" onClick={onClose}>
-              <CloseIcon />
-            </button>
-          </div>
-        </div>
-        <div className="u-preview-body">
-          <iframe src={url} className="u-preview-frame" title="Xem trước tài liệu" />
-        </div>
-      </div>
-    </div>
-  );
-}
+// ---- Assets section ----
+function AssetsSection({ assets }) {
+  const docs   = assets?.documents || [];
+  const images = assets?.images    || [];
+  const videos = assets?.videos    || [];
+  const hasAny = docs.length + images.length + videos.length > 0;
 
-// ---- File section with availability check ----
-function FileSection({ minio }) {
-  const [fileState, setFileState] = useState("idle"); // idle | checking | ok | unavailable
-  const [showPreview, setShowPreview] = useState(false);
-
-  if (!minio?.url) {
+  if (!hasAny) {
     return (
       <>
         <p className="u-modal-section-label">Tài liệu đính kèm</p>
@@ -80,47 +41,52 @@ function FileSection({ minio }) {
     );
   }
 
-  async function verify(onOk) {
-    if (fileState === "ok") { onOk(); return; }
-    if (fileState === "unavailable") return;
-    if (fileState === "checking") return;
-    setFileState("checking");
-    try {
-      const res = await fetch(minio.url, { method: "HEAD" });
-      if (res.ok) { setFileState("ok"); onOk(); }
-      else setFileState("unavailable");
-    } catch {
-      setFileState("unavailable");
-    }
-  }
-
   return (
     <>
-      <p className="u-modal-section-label">Tài liệu đính kèm</p>
-      {fileState === "unavailable" ? (
-        <div className="u-file-unavailable">
-          <WarnIcon size={14} /> Tài liệu hiện chưa sẵn sàng
-        </div>
-      ) : (
-        <div className="u-file-actions">
-          <button
-            className="u-file-btn u-file-btn--preview"
-            onClick={() => verify(() => setShowPreview(true))}
-            disabled={fileState === "checking"}
-          >
-            {fileState === "checking" ? "Đang kiểm tra..." : <><EyeIcon size={13} /> Xem trước</>}
-          </button>
-          <button
-            className="u-file-btn u-file-btn--download"
-            onClick={() => verify(() => window.open(minio.url, "_blank"))}
-            disabled={fileState === "checking"}
-          >
-            <DownloadIcon size={13} /> Tải xuống
-          </button>
-        </div>
+      {docs.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Tài liệu</p>
+          <div className="u-asset-list">
+            {docs.map((d, i) => (
+              <div key={d.object_key || i} className="u-asset-row">
+                <span className="u-asset-name">{d.file_name || d.object_key || "Tài liệu"}</span>
+                <a href={d.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
+                  <DownloadIcon size={13} /> Tải xuống
+                </a>
+              </div>
+            ))}
+          </div>
+        </>
       )}
-      {showPreview && (
-        <FilePreviewOverlay url={minio.url} onClose={() => setShowPreview(false)} />
+      {images.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Hình ảnh</p>
+          <div className="u-asset-list">
+            {images.map((img, i) => (
+              <div key={img.object_key || i} className="u-asset-row">
+                <span className="u-asset-name">{img.file_name || img.object_key || "Hình ảnh"}</span>
+                <a href={img.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
+                  <DownloadIcon size={13} /> Tải xuống
+                </a>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {videos.length > 0 && (
+        <>
+          <p className="u-modal-section-label">Video</p>
+          <div className="u-asset-list">
+            {videos.map((vid, i) => (
+              <div key={vid.object_key || i} className="u-asset-row">
+                <span className="u-asset-name">{vid.file_name || vid.object_key || "Video"}</span>
+                <a href={vid.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
+                  <DownloadIcon size={13} /> Tải xuống
+                </a>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </>
   );
@@ -200,7 +166,7 @@ function DetailModal({ doc, onUnsave, onClose }) {
             </div>
           )}
 
-          <FileSection minio={doc.minio} />
+          <AssetsSection assets={doc.assets} />
         </div>
 
         <div className="u-modal-footer">

@@ -59,17 +59,6 @@ def _as_ref_str(v) -> Optional[str]:
     return str(v)
 
 
-def _minio_url(doc: dict) -> Optional[str]:
-    m = doc.get("minio")
-    if not isinstance(m, dict):
-        return None
-    u = m.get("url")
-    if u is None:
-        return None
-    u = str(u).strip()
-    return u or None
-
-
 def _get_ref(doc: dict, keys: list[str]) -> Optional[str]:
     for k in keys:
         if k in doc and doc[k] is not None:
@@ -194,7 +183,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     if col == "subject":
         subject_name = (doc.get("subject_name") or doc.get("name") or "").strip()
         subject_type = (doc.get("subject_type") or doc.get("type") or "").strip()
-        minio_url = _minio_url(doc)
 
         class_ref = _get_ref(doc, ["class_id", "class_mongo_id", "class_oid", "classRef", "class"])
         class_id = _ensure_parent_pg_id(db, pg, "class", class_ref)
@@ -207,8 +195,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             obj.subject_name = subject_name
             obj.subject_type = subject_type
             obj.class_id = class_id
-            if hasattr(obj, "minio_url"):
-                obj.minio_url = minio_url
             return {"op": "update", "pg_id": obj.subject_id, "neo_payload": {"id": obj.subject_id, "name": subject_name, "parent_id": class_id}}
 
         obj = pg_models.Subject(
@@ -216,7 +202,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             subject_type=subject_type,
             class_id=class_id,
             mongo_id=mongo_id,
-            minio_url=minio_url,
         )
         pg.add(obj)
         pg.flush()
@@ -226,7 +211,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     if col == "topic":
         topic_name = (doc.get("topic_name") or doc.get("name") or "").strip()
         topic_num = _to_int(doc.get("topic_num") or doc.get("num"), None)
-        minio_url = _minio_url(doc)
 
         subject_ref = _get_ref(doc, ["subject_id", "subject_mongo_id", "subject_oid", "subjectRef", "subject"])
         subject_id = _ensure_parent_pg_id(db, pg, "subject", subject_ref)
@@ -239,8 +223,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             obj.topic_name = topic_name
             obj.topic_num = topic_num
             obj.subject_id = subject_id
-            if hasattr(obj, "minio_url"):
-                obj.minio_url = minio_url
             return {"op": "update", "pg_id": obj.topic_id, "neo_payload": {"id": obj.topic_id, "name": topic_name, "parent_id": subject_id, "topic_num": topic_num}}
 
         obj = pg_models.Topic(
@@ -248,7 +230,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             topic_num=topic_num,
             subject_id=subject_id,
             mongo_id=mongo_id,
-            minio_url=minio_url,
         )
         pg.add(obj)
         pg.flush()
@@ -259,7 +240,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         lesson_name = (doc.get("lesson_name") or doc.get("name") or "").strip()
         lesson_type = doc.get("lesson_type") or doc.get("type") or None
         lesson_num = _to_int(doc.get("lesson_num") or doc.get("num"), None)
-        minio_url = _minio_url(doc)
 
         topic_ref = _get_ref(doc, ["topic_id", "topic_mongo_id", "topic_oid", "topicRef", "topic"])
         topic_id = _ensure_parent_pg_id(db, pg, "topic", topic_ref)
@@ -273,8 +253,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             obj.lesson_type = lesson_type
             obj.lesson_num = lesson_num
             obj.topic_id = topic_id
-            if hasattr(obj, "minio_url"):
-                obj.minio_url = minio_url
             return {"op": "update", "pg_id": obj.lesson_id, "neo_payload": {"id": obj.lesson_id, "name": lesson_name, "parent_id": topic_id, "lesson_num": lesson_num}}
 
         obj = pg_models.Lesson(
@@ -283,7 +261,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             lesson_num=lesson_num,
             topic_id=topic_id,
             mongo_id=mongo_id,
-            minio_url=minio_url,
         )
         pg.add(obj)
         pg.flush()
@@ -293,7 +270,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     if col == "chunk":
         chunk_name = (doc.get("chunk_name") or doc.get("name") or "").strip()
         chunk_num = _to_int(doc.get("chunk_num") or doc.get("num"), None)
-        minio_url = _minio_url(doc)
 
         lesson_ref = _get_ref(doc, ["lesson_id", "lesson_mongo_id", "lesson_oid", "lessonRef", "lesson"])
         lesson_id = _ensure_parent_pg_id(db, pg, "lesson", lesson_ref)
@@ -306,8 +282,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             obj.chunk_name = chunk_name
             obj.chunk_num = chunk_num
             obj.lesson_id = lesson_id
-            if hasattr(obj, "minio_url"):
-                obj.minio_url = minio_url
             return {"op": "update", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_num": chunk_num}}
 
         obj = pg_models.Chunk(
@@ -315,7 +289,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             chunk_num=chunk_num,
             lesson_id=lesson_id,
             mongo_id=mongo_id,
-            minio_url=minio_url,
         )
         pg.add(obj)
         pg.flush()

@@ -159,7 +159,7 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-@router.post("/files/", summary="Upload MANY files to a leaf folder + sync Mongo/PG")
+@router.post("/files/", summary="Upload MANY files to a leaf folder + sync to asset collection")
 async def upload_files_to_path(
     request: Request,
     path: str = Form(...),
@@ -238,7 +238,6 @@ async def upload_files_to_path(
                     actor=actor,
                     content_type=f.content_type or "application/octet-stream",
                     size=size_val,
-                    sync_pg=True,
                 )
             except Exception as e:
                 mongo_res = {"ok": False, "error": str(e)}
@@ -277,7 +276,7 @@ async def upload_files_to_path(
     }
 
 
-@router.put("/objects/", summary="Rename file + sync Mongo/PG")
+@router.put("/objects/", summary="Rename file + sync to asset collection")
 def rename_object(body: RenameObjectBody, request: Request):
     _require_bucket()
     client = get_minio_client()
@@ -318,7 +317,6 @@ def rename_object(body: RenameObjectBody, request: Request):
             old_url=public_url(old_key),
             new_url=public_url(new_key),
             actor=actor,
-            sync_pg=True,
         )
 
         return {
@@ -336,7 +334,7 @@ def rename_object(body: RenameObjectBody, request: Request):
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
 
 
-@router.delete("/files", summary="Delete 1 file + sync Mongo/PG")
+@router.delete("/files", summary="Delete 1 file + sync to asset collection")
 def delete_file(request: Request, object_key: str = Query(..., min_length=1)):
     _require_bucket()
     client = get_minio_client()
@@ -356,7 +354,6 @@ def delete_file(request: Request, object_key: str = Query(..., min_length=1)):
             object_key=key,
             url=public_url(key),
             actor=actor,
-            sync_pg=True,
         )
 
         return {"status": "deleted", "bucket": BUCKET, "object_key": key, "mongo": mongo_res}

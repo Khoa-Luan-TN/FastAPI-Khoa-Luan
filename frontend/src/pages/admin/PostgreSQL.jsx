@@ -157,14 +157,12 @@ export default function PostgreSQL() {
     const list = (rows || []).map((r) => {
       const title = rowTitle(r);
       const mongo = r?.mongo_id || "";
-      const minio = r?.minio_url || "";
 
       return {
         ...r,
         id: String(r._pk), // DataTable needs id
         _title: title,
         _mongo_display: mongo,
-        _minio_display: minio,
       };
     });
 
@@ -174,8 +172,7 @@ export default function PostgreSQL() {
         const a = String(r._pk || "").toLowerCase();
         const b = String(r._title || "").toLowerCase();
         const c = String(r._mongo_display || "").toLowerCase();
-        const d = String(r._minio_display || "").toLowerCase();
-        return a.includes(s) || b.includes(s) || c.includes(s) || d.includes(s);
+        return a.includes(s) || b.includes(s) || c.includes(s);
       });
 
     return filtered;

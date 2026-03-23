@@ -127,7 +127,6 @@ function buildSearchGroups(data) {
           className: doc.class_name || null,
           subjectName: doc.subject_name || null,
           subjectType: doc.subject_type || null,
-          minio: doc.minio || null,
           assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
@@ -157,7 +156,6 @@ function buildSearchGroups(data) {
           className: doc.class_name || null,
           subjectName: doc.subject_name || null,
           subjectType: null,
-          minio: doc.minio || null,
           assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
@@ -189,7 +187,6 @@ function buildSearchGroups(data) {
           className: doc.class_name || null,
           subjectName: doc.subject_name || null,
           subjectType: null,
-          minio: doc.minio || null,
           assets: doc.assets || { documents: [], images: [], videos: [] },
         });
       }
@@ -377,7 +374,7 @@ function VideoRow({ vid }) {
 }
 
 // ---- Assets section (documents + images + videos) ----
-function AssetsSection({ assets, minio }) {
+function AssetsSection({ assets }) {
   const docs   = assets?.documents || [];
   const images = assets?.images    || [];
   const videos = assets?.videos    || [];
@@ -394,18 +391,13 @@ function AssetsSection({ assets, minio }) {
     );
   }
 
-  // Fallback: if assets is empty but legacy minio exists, show the old single-doc row
-  const effectiveDocs = docs.length > 0
-    ? docs
-    : (minio?.url ? [{ url: minio.url, file_name: null, asset_type: "document" }] : []);
-
   return (
     <>
-      {effectiveDocs.length > 0 && (
+      {docs.length > 0 && (
         <>
           <p className="u-modal-section-label">Tài liệu</p>
           <div className="u-asset-list">
-            {effectiveDocs.map((d, i) => <DocRow key={d.object_key || i} doc={d} />)}
+            {docs.map((d, i) => <DocRow key={d.object_key || i} doc={d} />)}
           </div>
         </>
       )}
@@ -502,7 +494,7 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
             </p>
           </div>
 
-          <AssetsSection assets={doc.assets} minio={doc.minio} />
+          <AssetsSection assets={doc.assets} />
         </div>
 
         <div className="u-modal-footer">
@@ -662,7 +654,6 @@ export default function UserHome() {
         subject: doc.subjectName || "Tài liệu",
         className: doc.className || null,
         tags: [],
-        minio: doc.minio || null,
         assets: doc.assets || { documents: [], images: [], videos: [] },
       });
     }

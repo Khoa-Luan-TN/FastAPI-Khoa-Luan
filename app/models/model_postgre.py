@@ -24,7 +24,6 @@ class Subject(Base):
     subject_name = Column(String, nullable=False)
     subject_type = Column(String, nullable=False)
     mongo_id = Column(String, unique=True, nullable=True)
-    minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}
 
 
@@ -36,7 +35,6 @@ class Topic(Base):
     topic_num = Column(Integer, nullable=False)  # DB là int
     topic_name = Column(String, nullable=False)
     mongo_id = Column(String, unique=True, nullable=True)
-    minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}
 
 
@@ -49,7 +47,6 @@ class Lesson(Base):
     lesson_name = Column(String, nullable=False)
     lesson_type = Column(String, nullable=True)
     mongo_id = Column(String, unique=True, nullable=True)
-    minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}
 
 
@@ -61,7 +58,6 @@ class Chunk(Base):
     chunk_num = Column(Integer, nullable=False)  # DB là int
     chunk_name = Column(String, nullable=False)
     mongo_id = Column(String, unique=True, nullable=True)
-    minio_url = Column(String, nullable=True)
     __mapper_args__ = {"eager_defaults": True}
 
 

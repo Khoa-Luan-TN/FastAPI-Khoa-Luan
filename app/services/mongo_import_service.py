@@ -908,9 +908,6 @@ def import_excel_to_mongo(
                     else:
                         doc[key] = _cell_to_value(v)
 
-                if "minio" in doc and (doc["minio"] in ("", None)):
-                    doc["minio"] = None
-
                 if col in REF_MAP:
                     ref_col, target_field, parent_col = REF_MAP[col]
                     ref_key = str(rec.get(ref_col) or "").strip()

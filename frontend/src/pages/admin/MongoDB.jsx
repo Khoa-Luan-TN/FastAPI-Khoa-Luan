@@ -97,9 +97,6 @@ function parseValue(v) {
 }
 
 function defaultPairsForCollection(col) {
-  // mặc định minio dùng bucket data-edu
-  const minioNull = { k: "minio", v: "null" }; // ✅ mặc định null
-
   switch (col) {
     case "class":
       return [{ k: "class_name", v: "" }];
@@ -109,7 +106,6 @@ function defaultPairsForCollection(col) {
         { k: "class_id", v: "" },
         { k: "subject_name", v: "" },
         { k: "subject_type", v: "" },
-        minioNull, // ✅
       ];
 
     case "topic":
@@ -117,7 +113,6 @@ function defaultPairsForCollection(col) {
         { k: "subject_id", v: "" },
         { k: "topic_num", v: "" },
         { k: "topic_name", v: "" },
-        minioNull, // ✅
       ];
 
     case "lesson":
@@ -126,7 +121,6 @@ function defaultPairsForCollection(col) {
         { k: "lesson_num", v: "" },
         { k: "lesson_name", v: "" },
         { k: "lesson_type", v: "ly thuyet" },
-        minioNull, // ✅
       ];
 
     case "chunk":
@@ -135,28 +129,22 @@ function defaultPairsForCollection(col) {
         { k: "chunk_num", v: "1" },
         { k: "chunk_name", v: "" },
         { k: "chunk_des", v: "" },
-
-        // ✅ bạn muốn mặc định null
         { k: "images", v: "null" },
-        { k: "videos", v: "null" }, // ✅ THÊM DÒNG NÀY
-
-        { k: "minio", v: "null" },
+        { k: "videos", v: "null" },
       ];
 
     case "image":
       return [
         { k: "chunk_id", v: "" },
         { k: "image_name", v: "" },
-        { k: "image_url", v: "null" }, // ✅
-        minioNull, // ✅
+        { k: "image_url", v: "null" },
       ];
 
     case "video":
       return [
         { k: "chunk_id", v: "" },
         { k: "video_name", v: "" },
-        { k: "video_url", v: "null" }, // ✅
-        minioNull, // ✅
+        { k: "video_url", v: "null" },
       ];
 
     case "user":
@@ -488,18 +476,10 @@ export default function MongoDB() {
 
     const LOCK_FIELDS = new Set(["_id", "created_at", "created_by", "updated_at", "updated_by", "deleted_at"]);
     const contentPairs = [];
-    const minioPairs = [];
     const metaPairs = [];
 
     for (const k of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
       const val = doc[k];
-      if (k === "minio" && val && typeof val === "object" && !Array.isArray(val) &&
-        ("bucket" in val || "object_key" in val || "url" in val)) {
-        minioPairs.push({ id: "minio.bucket", k: "minio.bucket", v: String(val.bucket ?? ""), locked: false, _isMinioSub: true, _minioField: "bucket" });
-        minioPairs.push({ id: "minio.object_key", k: "minio.object_key", v: String(val.object_key ?? ""), locked: false, _isMinioSub: true, _minioField: "object_key" });
-        minioPairs.push({ id: "minio.url", k: "minio.url", v: String(val.url ?? ""), locked: false, _isMinioSub: true, _minioField: "url" });
-        continue;
-      }
       if (LOCK_FIELDS.has(k)) {
         metaPairs.push({ id: k, k, v: formatVal(k, val), locked: true });
       } else {
@@ -513,7 +493,7 @@ export default function MongoDB() {
       return a.k.localeCompare(b.k);
     });
 
-    return [...contentPairs, ...minioPairs, ...metaPairs];
+    return [...contentPairs, ...metaPairs];
   }
 
   useEffect(() => {
@@ -556,21 +536,7 @@ export default function MongoDB() {
     const s = q.trim().toLowerCase();
 
     const list = docs.map((d) => {
-      const minio = d?.minio || {};
       const title = docTitle(d);
-
-      // Parse minio: extract file name after collection segment in object_key
-      const key = minio.object_key || minio.prefix || "";
-      let displayMinio = "";
-      if (key) {
-        const parts = key.split("/");
-        const idx = parts.lastIndexOf(currentCollection);
-        if (idx >= 0 && idx < parts.length - 1) {
-          displayMinio = parts.slice(idx + 1).join("/");
-        } else {
-          displayMinio = parts[parts.length - 1] || key;
-        }
-      }
 
       // Date: created_at → dd/mm/yyyy
       let createdDate = "-";
@@ -587,8 +553,6 @@ export default function MongoDB() {
         ...d,
         id: String(d._id),
         _title: title,
-        _minio_display: displayMinio,
-        _minio_raw: key,
         _created_date: createdDate,
         _created_by: d.created_by || "-",
       };
@@ -599,8 +563,7 @@ export default function MongoDB() {
       : list.filter(
         (d) =>
           String(d._id || "").includes(s) ||
-          String(d._title || "").toLowerCase().includes(s) ||
-          String(d._minio_display || "").toLowerCase().includes(s)
+          String(d._title || "").toLowerCase().includes(s)
       );
 
     return filtered.slice();
@@ -625,9 +588,6 @@ export default function MongoDB() {
     },
   ];
 
-  const HIDE_MINIO_COLS = new Set(["user", "keyword", "class"]);
-  const showMinioCol = !HIDE_MINIO_COLS.has(currentCollection);
-
   const docColumns = [
     {
       key: "_title",
@@ -643,16 +603,6 @@ export default function MongoDB() {
         </div>
       ),
     },
-    ...(showMinioCol ? [{
-      key: "_minio_display",
-      label: "MINIO",
-      width: "200px",
-      render: (r) => r._minio_display ? (
-        <span className="mongo-path-cell" title={r._minio_raw || ""}>{r._minio_display}</span>
-      ) : (
-        <span className="mongo-empty-dash">—</span>
-      ),
-    }] : []),
     {
       key: "_created_date",
       label: "NGÀY TẠO",
@@ -849,20 +799,12 @@ export default function MongoDB() {
     if (!selectedDoc) return;
 
     const patch = {};
-    const minioSubs = {};
-    let hasMinioSubs = false;
 
     for (const p of detailPairs) {
       const k = (p.k || "").trim();
       if (!k || k === "_id") continue;
-      if (p._isMinioSub && p._minioField) {
-        minioSubs[p._minioField] = p.v;
-        hasMinioSubs = true;
-      } else {
-        patch[k] = parseValue(p.v);
-      }
+      patch[k] = parseValue(p.v);
     }
-    if (hasMinioSubs) patch.minio = minioSubs;
 
     try {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
