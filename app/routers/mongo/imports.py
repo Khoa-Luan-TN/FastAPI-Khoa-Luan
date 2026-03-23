@@ -1,4 +1,4 @@
-# app/routers/mongo_import.py
+# app/routers/mongo/imports.py
 import os
 import re
 import tempfile
@@ -64,7 +64,6 @@ async def import_excel_workbook(request: Request, file: UploadFile = File(...)):
                 pass
 
 
-# file này dùng để test thôi không làm, sync xuống 
 @router.post("/import/excel-one", summary="Import Excel -> 1 collection -> Mongo only (sync disabled)")
 async def import_excel_one_collection(
     request: Request,

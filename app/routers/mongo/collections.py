@@ -1,4 +1,4 @@
-# app/routers/mongo_collections.py
+# app/routers/mongo/collections.py
 import re
 from fastapi import APIRouter, Query, Path, HTTPException, status
 from pymongo.errors import CollectionInvalid, OperationFailure
