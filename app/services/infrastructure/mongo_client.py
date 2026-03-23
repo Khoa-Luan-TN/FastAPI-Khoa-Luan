@@ -11,7 +11,7 @@ _db_name: str | None = None
 
 
 def _load_env() -> None:
-    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
+    env_path = Path(__file__).resolve().parents[2] / "core" / "config.env"
     load_dotenv(env_path)
 
 

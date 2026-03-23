@@ -1,7 +1,7 @@
 # app/models/model_postgre.py
 from sqlalchemy import Column, ForeignKey, String, Integer, Boolean
 from sqlalchemy.schema import FetchedValue
-from app.services.postgre_client import Base
+from app.services.infrastructure.postgre_client import Base
 
 # NOTE:
 # - Các id (class_id/subject_id/...) bạn sinh bằng trigger -> dùng server_default=FetchedValue()

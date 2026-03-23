@@ -17,10 +17,10 @@ logging.basicConfig(
 )
 for _logger_name in (
     "app",
-    "app.services.keyword_alias_service",
-    "app.services.gemini_alias_service",
-    "app.services.gemini_client",
-    "app.services.mongo_minio_service",
+    "app.services.keyword.keyword_alias_service",
+    "app.services.ai.gemini_alias_service",
+    "app.services.infrastructure.gemini_client",
+    "app.services.mongo.mongo_minio_service",
 ):
     logging.getLogger(_logger_name).setLevel(logging.INFO)
 
@@ -37,8 +37,8 @@ from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
 from app.routers.search import router as search_router
 
-from app.services.postgre_client import engine, Base
-from app.services.postgres_bootstrap_service import ensure_postgres_bootstrap
+from app.services.infrastructure.postgre_client import engine, Base
+from app.services.maintenance.postgres_bootstrap_service import ensure_postgres_bootstrap
 import app.models.model_postgre
 
 

@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 from neo4j import Session
 
-from app.services.embedder import embed_query
+from app.services.ai.embedder import embed_query
 
 
 def _to_float_vec(v: Any) -> List[float]:

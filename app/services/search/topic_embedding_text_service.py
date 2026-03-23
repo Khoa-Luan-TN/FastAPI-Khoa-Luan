@@ -8,7 +8,7 @@ import re
 from typing import Any, Dict, List
 
 from bson import ObjectId
-from app.services.gemini_alias_service import normalize_for_compare
+from app.services.ai.gemini_alias_service import normalize_for_compare
 
 
 _COLLAPSE_RE = re.compile(r"\s+")

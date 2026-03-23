@@ -8,9 +8,9 @@ from minio.commonconfig import CopySource
 from minio.error import S3Error
 
 from app.schemas.minio_schemas import RenameObjectBody
-from app.services.minio_client import get_minio_client
-from app.services.minio_marker_service import ensure_root_folders
-from app.services.mongo_minio_service import (
+from app.services.infrastructure.minio_client import get_minio_client
+from app.services.minio.minio_marker_service import ensure_root_folders
+from app.services.mongo.mongo_minio_service import (
     on_minio_insert_to_mongo,
     on_minio_rename_object,
     on_minio_unlink_object,

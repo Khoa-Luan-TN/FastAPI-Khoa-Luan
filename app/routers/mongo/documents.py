@@ -8,9 +8,9 @@ from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
 from bson.errors import InvalidId
 
-from app.services.mongo_client import get_mongo_db
-from app.services.sync_service import sync_doc_to_postgres
-from app.services.document_service import create_document_core
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.sync.sync_service import sync_doc_to_postgres
+from app.services.mongo.document_service import create_document_core
 
 router = APIRouter()
 db = get_mongo_db()
@@ -128,7 +128,7 @@ def _handle_keyword_update(col: str, body: Dict[str, Any], id_filter: dict, acto
     if col != "keyword" or "keyword_name" not in body:
         return
 
-    from app.services.keyword_alias_service import handle_keyword_rename_cleanup
+    from app.services.keyword.keyword_alias_service import handle_keyword_rename_cleanup
 
     new_name = str(body.get("keyword_name") or "").strip()
     if not new_name:
@@ -256,7 +256,7 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
 
     # After keyword rename: rebuild keyword.aliases from active keyword_alias docs.
     if col == "keyword" and "keyword_name" in body:
-        from app.services.keyword_alias_service import sync_keyword_alias_array
+        from app.services.keyword.keyword_alias_service import sync_keyword_alias_array
         kw_doc = db[col].find_one(id_filter, {"_id": 1})
         if kw_doc:
             sync_keyword_alias_array(db, str(kw_doc["_id"]), actor=actor)

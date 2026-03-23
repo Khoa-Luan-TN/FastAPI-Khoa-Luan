@@ -7,8 +7,8 @@ from __future__ import annotations
 import logging
 from typing import Dict, Optional
 
-from app.services.gemini_alias_service import extract_json
-from app.services.gemini_client import generate_text
+from app.services.ai.gemini_alias_service import extract_json
+from app.services.infrastructure.gemini_client import generate_text
 
 _log = logging.getLogger(__name__)
 

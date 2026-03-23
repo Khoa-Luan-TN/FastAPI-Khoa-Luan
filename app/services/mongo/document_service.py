@@ -12,9 +12,9 @@ from typing import Any, Dict
 
 from fastapi import HTTPException
 
-from app.services.mongo_client import get_mongo_db
-from app.services.sync_service import sync_doc_to_postgres
-from app.services._utils import utc_now
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.sync.sync_service import sync_doc_to_postgres
+from app.services.shared._utils import utc_now
 
 db = get_mongo_db()
 
@@ -93,7 +93,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         body.pop("keyword_id", None)
         body.pop("keyword_slug", None)
         if not body.get("is_deleted"):
-            from app.services.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
+            from app.services.keyword.keyword_alias_service import _resolve_keyword_slug, enforce_canonical_name_precedence
             from bson import ObjectId as _OID
             kw_name = str(body.get("keyword_name") or "").strip()
             if not kw_name:

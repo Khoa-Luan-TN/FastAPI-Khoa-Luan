@@ -5,7 +5,7 @@ from minio import Minio
 from pathlib import Path
 
 def _load_env():
-    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
+    env_path = Path(__file__).resolve().parents[2] / "core" / "config.env"
     load_dotenv(env_path)
 
 def get_minio_client() -> Minio:

@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from typing import Any, Dict, Optional, Callable
 
 from neo4j import Session as NeoSession
-from app.services.neo_client import neo4j_driver, _neo4j_database
+from app.services.infrastructure.neo_client import neo4j_driver, _neo4j_database
 
 ROOT_THING_ID = "thing"
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user; chunk_keyword routes via "keyword"

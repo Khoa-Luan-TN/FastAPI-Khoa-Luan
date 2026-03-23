@@ -20,7 +20,10 @@
       "Bash(python -c \"from app.services.mongo_import_service import import_excel_to_mongo; print\\(''import_service ok''\\)\")",
       "Bash(python -c \"from app.services.document_service import create_document_core; print\\(''document_service ok''\\)\")",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend -type f \\\\\\(-name *.jsx -o -name *.js -o -name *.tsx \\\\\\))",
-      "Bash(ls -la /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)"
+      "Bash(ls -la /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)",
+      "Bash(grep -n \"parents\\\\[1\\\\]\" /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/infrastructure/*.py)",
+      "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -name *.sql -o -name schema* -o -name init_db* -o -name create_tables*)"
     ]
   }
 }

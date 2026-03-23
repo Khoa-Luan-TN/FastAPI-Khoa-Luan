@@ -2,7 +2,7 @@
 
 import logging
 from sqlalchemy import text as sql_text
-from app.services.postgre_client import engine
+from app.services.infrastructure.postgre_client import engine
 
 _log = logging.getLogger(__name__)
 

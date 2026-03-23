@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
-from app.services.postgre_client import SessionLocal, engine
+from app.services.infrastructure.postgre_client import SessionLocal, engine
 import app.models.model_postgre as models
 
 

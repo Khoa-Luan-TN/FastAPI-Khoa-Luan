@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from neo4j import Session as NeoSession
 
-from app.services.neo_client import get_neo4j_session
+from app.services.infrastructure.neo_client import get_neo4j_session
 
 router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
 ALLOWED_LABELS: Tuple[str, ...] = ("Thing", "Class", "Subject", "Topic", "Lesson", "Chunk", "Keyword")

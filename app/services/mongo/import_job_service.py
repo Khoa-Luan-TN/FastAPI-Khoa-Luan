@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from bson import ObjectId
 
-from app.services._utils import utc_now
+from app.services.shared._utils import utc_now
 
 
 def create_import_job(db, *, file_name: str = "", actor: str = "") -> str:

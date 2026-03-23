@@ -6,7 +6,7 @@ import logging
 import re
 import unicodedata
 
-from app.services.gemini_client import generate_text
+from app.services.infrastructure.gemini_client import generate_text
 
 _log = logging.getLogger(__name__)
 

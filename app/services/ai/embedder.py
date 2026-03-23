@@ -4,13 +4,11 @@ import unicodedata
 from functools import lru_cache
 from typing import Literal
 
-import torch.nn as nn
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "intfloat/multilingual-e5-base"
 MODEL_SHORT = "multilingual-e5-base"  # lưu vào DB
 
-RERANKER_NAME = "BAAI/bge-reranker-v2-m3"
 
 # dùng để chuẩn hoá chữ
 def normalize_embedding_text(text: str) -> str:
@@ -21,11 +19,6 @@ def normalize_embedding_text(text: str) -> str:
 @lru_cache(maxsize=1)
 def get_model() -> SentenceTransformer:
     return SentenceTransformer(MODEL_NAME)
-
-
-@lru_cache(maxsize=1)
-def get_reranker() -> CrossEncoder:
-    return CrossEncoder(RERANKER_NAME)
 
 
 def _embed(texts: list[str], *, kind: Literal["query", "passage"]) -> list[list[float]]:
@@ -54,21 +47,3 @@ def embed_passage_prepared(text: str) -> list[float]:
     if not text:
         return []
     return _embed([text], kind="passage")[0]
-
-
-def rerank_pairs(query: str, candidates: list[str]) -> list[float]:
-    """
-    Cross-encoder score cho từng cặp (query, candidate_text).
-    Trả raw score/logit, chưa sigmoid.
-    """
-    q = str(query or "").strip()
-    texts = [str(x or "").strip() for x in candidates]
-    if not q or not texts:
-        return []
-
-    pairs = [(q, text) for text in texts]
-    scores = get_reranker().predict(
-        pairs,
-        activation_fn=nn.Identity(),
-    )
-    return [float(x) for x in scores]

@@ -8,13 +8,13 @@ import os
 import re
 from bson import ObjectId
 from openpyxl import load_workbook
-from app.services.keyword_alias_service import ensure_keyword_alias_indexes
-from app.services.minio_marker_service import ensure_asset_prefix_markers, ensure_root_folders
-from app.services.keyword_alias_service import (
+from app.services.keyword.keyword_alias_service import ensure_keyword_alias_indexes
+from app.services.minio.minio_marker_service import ensure_asset_prefix_markers, ensure_root_folders
+from app.services.keyword.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
 )
-from app.services._utils import utc_now, slugify_vi
+from app.services.shared._utils import utc_now, slugify_vi
 
 _log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def _get_import_minio():
     if not bucket:
         return None, None
     try:
-        from app.services.minio_client import get_minio_client
+        from app.services.infrastructure.minio_client import get_minio_client
         return get_minio_client(), bucket
     except Exception:
         return None, None
@@ -744,7 +744,7 @@ def _import_keyword_rows(
     }
 
     if new_keywords:
-        from app.services.keyword_alias_service import refresh_keyword_aliases_batch
+        from app.services.keyword.keyword_alias_service import refresh_keyword_aliases_batch
 
         try:
             batch_result = refresh_keyword_aliases_batch(

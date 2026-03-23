@@ -7,8 +7,8 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from app.services.mongo_client import get_mongo_db
-from app.services._utils import utc_now
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.shared._utils import utc_now
 
 db = get_mongo_db()
 

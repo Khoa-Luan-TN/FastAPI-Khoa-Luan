@@ -12,11 +12,11 @@ from bson import ObjectId
 from neo4j import Session
 from sqlalchemy import text as sql_text
 
-from app.services.gemini_keyword_service import extract_query_keywords
-from app.services.mongo_client import get_mongo_db
-from app.services.neo_search_service import search_top_topics_by_embedding
-from app.services.postgre_client import SessionLocal
-from app.services.search_description_service import generate_hierarchy_descriptions
+from app.services.ai.gemini_keyword_service import extract_query_keywords
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.search.neo_search_service import search_top_topics_by_embedding
+from app.services.infrastructure.postgre_client import SessionLocal
+from app.services.ai.search_description_service import generate_hierarchy_descriptions
 
 _log = logging.getLogger(__name__)
 

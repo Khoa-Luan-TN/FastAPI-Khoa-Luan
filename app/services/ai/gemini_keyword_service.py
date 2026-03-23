@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import json
 
-from app.services.gemini_client import generate_text
-from app.services.gemini_alias_service import extract_json, normalize_for_compare
+from app.services.infrastructure.gemini_client import generate_text
+from app.services.ai.gemini_alias_service import extract_json, normalize_for_compare
 
 # ===================== QUERY KEYWORD EXTRACTION =====================
 

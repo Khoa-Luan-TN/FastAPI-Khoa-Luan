@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, Query, Path, HTTPException, status
 from pymongo.errors import CollectionInvalid, OperationFailure
 
-from app.services.mongo_client import get_mongo_db
+from app.services.infrastructure.mongo_client import get_mongo_db
 
 router = APIRouter()
 db = get_mongo_db()

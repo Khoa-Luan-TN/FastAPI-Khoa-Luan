@@ -59,7 +59,7 @@ def _load_keys() -> None:
     if _loaded:
         return
 
-    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
+    env_path = Path(__file__).resolve().parents[2] / "core" / "config.env"
     load_dotenv(env_path)
 
     _MIN_INTERVAL = float(os.getenv("GEMINI_MIN_INTERVAL", "4.5"))

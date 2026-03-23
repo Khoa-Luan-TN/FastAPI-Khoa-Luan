@@ -11,8 +11,8 @@ from typing import Any, Callable
 _log = logging.getLogger(__name__)
 
 from bson import ObjectId
-from app.services.gemini_alias_service import normalize_for_compare
-from app.services._utils import utc_now, slugify_vi
+from app.services.ai.gemini_alias_service import normalize_for_compare
+from app.services.shared._utils import utc_now, slugify_vi
 
 
 # ===================== INDEXES =====================
@@ -209,7 +209,7 @@ def refresh_keyword_aliases_batch(
     import time
     from datetime import datetime as _dt
     from pathlib import Path
-    from app.services.gemini_alias_service import (
+    from app.services.ai.gemini_alias_service import (
         generate_aliases_batch,
         screen_keywords_for_alias_potential,
     )
@@ -591,7 +591,7 @@ def refresh_keyword_aliases(
     model: str = "gemini-2.5-flash",
     context_text: str | None = None,
 ) -> dict:
-    from app.services.gemini_alias_service import generate_aliases
+    from app.services.ai.gemini_alias_service import generate_aliases
 
     _log.info(
         "[keyword_alias] refresh_keyword_aliases | model=%s keyword_id=%s keyword_name=%r",

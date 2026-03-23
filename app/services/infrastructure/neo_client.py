@@ -16,7 +16,7 @@ def _load_env_once() -> None:
     global _ENV_LOADED
     if _ENV_LOADED:
         return
-    env_path = Path(__file__).resolve().parents[1] / "core" / "config.env"
+    env_path = Path(__file__).resolve().parents[2] / "core" / "config.env"
     load_dotenv(env_path)
     _ENV_LOADED = True
 

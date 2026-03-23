@@ -7,16 +7,16 @@ from typing import Optional
 from fastapi import APIRouter, Request, UploadFile, File, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 
-from app.services.mongo_client import get_mongo_db
-from app.services.sync_service import sync_doc_to_postgres
-from app.services.import_job_service import (
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.sync.sync_service import sync_doc_to_postgres
+from app.services.mongo.import_job_service import (
     create_import_job,
     update_import_job_progress,
     complete_import_job,
     fail_import_job,
     get_import_job,
 )
-from app.services.mongo_import_service import import_excel_to_mongo
+from app.services.mongo.mongo_import_service import import_excel_to_mongo
 
 router = APIRouter()
 db = get_mongo_db()

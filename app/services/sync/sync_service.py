@@ -8,10 +8,10 @@ import re
 from typing import Any, Optional
 
 from bson import ObjectId
-from app.services.postgre_client import SessionLocal
+from app.services.infrastructure.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
-from app.services.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
-from app.services.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
+from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
+from app.services.sync.entity_embedding_service import ensure_entity_embedding as ensure_name_embedding
 
 _log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def _resolve_topic_keyword_text(db, doc: dict) -> str:
     Reads all keyword names from topic_bag.keyword_refs (no Gemini filtering).
     Returns "" when no active topic_bag or no valid keyword names.
     """
-    from app.services.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
+    from app.services.search.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
     result = build_topic_embedding_text_from_topic_bag(db, doc)
     return result["keyword_embedding_text"]
 
@@ -305,7 +305,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not keyword_name:
             raise ValueError("keyword missing keyword_name")
         if not keyword_slug:
-            from app.services.keyword_alias_service import _resolve_keyword_slug
+            from app.services.keyword.keyword_alias_service import _resolve_keyword_slug
             keyword_slug, _ = _resolve_keyword_slug(db, keyword_name)
 
         # Upsert standalone Keyword row by mongo_id.
