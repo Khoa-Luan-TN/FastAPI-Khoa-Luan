@@ -1,18 +1,15 @@
 # app/services/import_job_service.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
 
-
-def _now():
-    return datetime.now(timezone.utc)
+from app.services._utils import utc_now
 
 
 def create_import_job(db, *, file_name: str = "", actor: str = "") -> str:
-    now = _now()
+    now = utc_now()
     doc = {
         "status": "pending",
         "progress": 0,
@@ -32,7 +29,7 @@ def create_import_job(db, *, file_name: str = "", actor: str = "") -> str:
 
 
 def update_import_job_progress(db, job_id: str, **fields) -> None:
-    fields["updated_at"] = _now()
+    fields["updated_at"] = utc_now()
     db["import_job"].update_one(
         {"_id": ObjectId(job_id)},
         {"$set": fields},
@@ -56,7 +53,7 @@ def complete_import_job(
             "total_rows": total_rows,
             "message": "Hoàn tất import",
             "report": report,
-            "updated_at": _now(),
+            "updated_at": utc_now(),
         }},
     )
 
@@ -68,7 +65,7 @@ def fail_import_job(db, job_id: str, error: str) -> None:
             "status": "failed",
             "message": f"Import thất bại: {error}",
             "error": error,
-            "updated_at": _now(),
+            "updated_at": utc_now(),
         }},
     )
 

@@ -1,22 +1,24 @@
 # app/services/document_service.py
+# Orchestration layer — validates, stamps timestamps, enforces business rules for each
+# collection type, then calls sync_service.sync_doc_to_postgres.
+# Owns: create_document_core (used by routers/mongo/documents.py).
+# Note: _normalize_collection_name, _check_collection_exist, and _user_normalize_and_validate
+#       are also defined locally in routers/mongo/documents.py for the router layer; the
+#       copies are intentionally separate to avoid circular imports between router and service.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import HTTPException
 
 from app.services.mongo_client import get_mongo_db
 from app.services.sync_service import sync_doc_to_postgres
+from app.services._utils import utc_now
 
 db = get_mongo_db()
 
 _COLLECTION_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
-
-
-def _now():
-    return datetime.now(timezone.utc)
 
 
 def _normalize_collection_name(name: str) -> str:
@@ -68,7 +70,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     col = _normalize_collection_name(collection_name)
     _check_collection_exist(col)
 
-    now = _now()
+    now = utc_now()
     body = dict(body or {})
     body.pop("_id", None)
     for k in ("created_at", "created_by", "updated_at", "updated_by", "deleted_at"):

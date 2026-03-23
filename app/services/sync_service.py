@@ -1,4 +1,8 @@
 # app/services/sync_service.py
+# Central sync orchestrator: Mongo → PostgreSQL → Neo4j.
+# Called by document_service (on create) and routers/mongo/documents.py (on update/delete).
+# Delegates PG writes to _upsert_one_to_pg, Neo writes to neo_sync_service, embeddings to
+# entity_embedding_service. Does NOT own any DB connection — receives db + uses SessionLocal.
 import logging
 import re
 from typing import Any, Optional

@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Callable, Optional, List, Set, Tuple
-from datetime import datetime, timezone
 import json
 import logging
 import os
 import re
-import unicodedata
 from bson import ObjectId
 from openpyxl import load_workbook
 from app.services.keyword_alias_service import ensure_keyword_alias_indexes
@@ -16,6 +14,7 @@ from app.services.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
 )
+from app.services._utils import utc_now, slugify_vi
 
 _log = logging.getLogger(__name__)
 
@@ -30,10 +29,6 @@ REF_MAP = {
 }
 
 JSON_FIELDS = {"images", "videos", "image_url", "video_url"}
-
-
-def _now():
-    return datetime.now(timezone.utc)
 
 
 def _get_import_minio():
@@ -76,17 +71,6 @@ def _try_parse_json(v: Any):
             return s
     return s
 
-
-def _slugify_vi(s: Any) -> str:
-    s = ("" if s is None else str(s)).strip().lower()
-    if not s:
-        return ""
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    s = s.replace("đ", "d")
-    s = re.sub(r"[^a-z0-9]+", "-", s)
-    s = re.sub(r"-{2,}", "-", s).strip("-")
-    return s
 
 
 def _two_digit(v: Any) -> str:
@@ -149,7 +133,7 @@ def _upsert_by_import_key(
     *,
     actor: str,
 ) -> Tuple[str, str]:
-    now = _now()
+    now = utc_now()
 
     proj = {"_id": 1, "deleted_at": 1}
     for k in doc.keys():
@@ -217,7 +201,7 @@ def _get_class_slug(db, class_ref: str, ctx: Dict[str, Any]) -> str:
     d = db["class"].find_one({"import_key": class_ref}, {"class_name": 1})
     if not d or not d.get("class_name"):
         return ""
-    slug = _slugify_vi(d.get("class_name"))
+    slug = slugify_vi(d.get("class_name"))
     ctx.setdefault("class", {})[class_ref] = {"class_slug": slug}
     return slug
 
@@ -237,7 +221,7 @@ def _get_subject_path_info(db, subject_ref: str, ctx: Dict[str, Any]) -> dict:
         return {}
     class_ref = (d.get("class_ref") or "").strip()
     class_slug = _get_class_slug(db, class_ref, ctx)
-    subject_slug = _slugify_vi(d.get("subject_name"))
+    subject_slug = slugify_vi(d.get("subject_name"))
     if not (class_slug and subject_slug):
         return {}
     info = {"class_slug": class_slug, "subject_slug": subject_slug}
@@ -299,13 +283,13 @@ def _compute_asset_prefixes(
     if col == "class":
         cn = doc.get("class_name")
         if cn:
-            ctx.setdefault("class", {})[import_key] = {"class_slug": _slugify_vi(cn)}
+            ctx.setdefault("class", {})[import_key] = {"class_slug": slugify_vi(cn)}
         return None
 
     if col == "subject":
         class_ref = str(rec.get("class_ref") or doc.get("class_ref") or "").strip()
         class_slug = _get_class_slug(db, class_ref, ctx)
-        subj_slug = _slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
+        subj_slug = slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
         if not (class_slug and subj_slug):
             return None
         ctx.setdefault("_subject_path", {})[import_key] = {
@@ -457,7 +441,7 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
         return existing_mongo_id, "noop"
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
-    now = _now()
+    now = utc_now()
     new_id = ObjectId()
     mongo_id_str = str(new_id)
     doc = {
@@ -488,7 +472,7 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
     if existing:
         return "noop"
 
-    now = _now()
+    now = utc_now()
     db["chunk_keyword"].insert_one({
         "chunk_id": chunk_oid,
         "keyword_id": kw_oid,
@@ -508,7 +492,7 @@ def _upsert_topic_bag(
     topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
-    now = _now()
+    now = utc_now()
     existing = db["topic_bag"].find_one(
         {"topic_id": topic_oid, "is_deleted": {"$ne": True}},
         {"_id": 1, "keyword_refs": 1},

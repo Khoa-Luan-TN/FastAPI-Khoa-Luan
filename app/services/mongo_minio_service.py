@@ -1,11 +1,14 @@
 # app/services/mongo_minio_service.py
+# Mirrors MinIO file events into the Mongo `asset` collection.
+# Called by routers/minio.py on upload, rename, and delete.
+# Does NOT talk to MinIO directly — receives event data from the router.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import Optional
 
 from app.services.mongo_client import get_mongo_db
+from app.services._utils import utc_now
 
 db = get_mongo_db()
 
@@ -14,10 +17,6 @@ _log = logging.getLogger(__name__)
 ASSET_OWNER_COLS = ("topic", "lesson", "chunk", "subject", "keyword")
 ASSET_TYPE_MAP = {"documents": "document", "images": "image", "videos": "video"}
 ROOT_FOLDERS = {"documents", "images", "videos"}
-
-
-def _now():
-    return datetime.now(timezone.utc)
 
 
 def _ensure_asset_indexes():
@@ -99,7 +98,7 @@ def on_minio_insert_to_mongo(
     owner_type = owner_info[0] if owner_info else None
     owner_id = owner_info[1] if owner_info else None
 
-    now = _now()
+    now = utc_now()
     existing = _find_asset_by_object_key(object_key)
 
     if existing:
@@ -171,7 +170,7 @@ def on_minio_rename_object(
         return {"ok": True, "skipped": True, "reason": "asset not found"}
 
     _, new_path_prefix, new_file_name = _parse_object_key(new_object_key)
-    now = _now()
+    now = utc_now()
 
     db["asset"].update_one(
         {"_id": existing["_id"]},
@@ -200,7 +199,7 @@ def on_minio_unlink_object(
     if not existing:
         return {"ok": True, "skipped": True, "reason": "asset not found"}
 
-    now = _now()
+    now = utc_now()
     db["asset"].update_one(
         {"_id": existing["_id"]},
         {"$set": {

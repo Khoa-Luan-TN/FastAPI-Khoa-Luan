@@ -1,4 +1,8 @@
 # app/services/neo_sync_service.py
+# Neo4j write layer: upsert and cascade-delete nodes for all syncable entity types.
+# Called exclusively by sync_service. Not called directly from routers.
+# Note: ensure_neo_vector_indexes() is defined here but not called from any production path;
+#       it is a maintenance utility (safe to call manually or from a startup script).
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -360,6 +364,7 @@ def _upsert_keyword(
     )
 
 
+# NOTE: Not called from production startup. Intended for manual admin use.
 def ensure_neo_vector_indexes() -> dict:
     """Create all vector indexes (idempotent — uses IF NOT EXISTS)."""
     results = {}

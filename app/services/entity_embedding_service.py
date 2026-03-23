@@ -1,4 +1,9 @@
 # app/services/entity_embedding_service.py
+# PG vector embedding upsert layer. Called by sync_service only (not by routers directly).
+# Owns upsert helpers for topic_embedding, lesson_embedding, chunk_embedding, keyword_embedding tables.
+# ensure_entity_embedding() is the public dispatch entry point; it currently ONLY routes to topic.
+# ensure_lesson_embedding / ensure_chunk_embedding / ensure_keyword_embedding are defined here
+# but are NOT wired into ensure_entity_embedding() — they must be called directly by other callers.
 
 from __future__ import annotations
 

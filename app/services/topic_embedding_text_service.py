@@ -1,4 +1,7 @@
 # app/services/topic_embedding_text_service.py
+# Builds the keyword embedding text for a topic from its topic_bag.keyword_refs.
+# Called by sync_service._resolve_topic_keyword_text only.
+# Does NOT call Gemini. Does NOT filter keywords — returns all active keyword names joined by " | ".
 from __future__ import annotations
 
 import re

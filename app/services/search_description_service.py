@@ -1,4 +1,7 @@
 # app/services/search_description_service.py
+# Gemini-powered description generator for the search result hierarchy.
+# Called by search_service._build_chunk_hit only.
+# Generates topic/lesson/chunk level descriptions from a breadcrumb path string.
 from __future__ import annotations
 
 import logging

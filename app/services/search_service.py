@@ -1,4 +1,8 @@
 # app/services/search_service.py
+# Top-level search pipeline orchestrator.
+# Flow: Gemini keyword extraction → Neo4j topic embedding search → Mongo topic_bag lookup
+#       → alias/name match → chunk traversal → path description → Gemini hierarchy description.
+# Entry point: run_topic_probe() — called by routers/search.py only.
 from __future__ import annotations
 
 import logging

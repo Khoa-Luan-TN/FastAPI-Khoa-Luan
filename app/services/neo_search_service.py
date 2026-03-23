@@ -1,4 +1,6 @@
 # app/services/neo_search_service.py
+# Neo4j read-only search helpers. Called by search_service only.
+# Owns: embedding → topic vector index query, cosine similarity fallback for scoped searches.
 from __future__ import annotations
 
 import math

@@ -1,4 +1,6 @@
 # app/services/mongo_reference_backfill_service.py
+# Maintenance utility — not called from any router or production code path.
+# Run manually (e.g. from a one-off script) to normalise legacy string ref fields to BSON ObjectId.
 """
 Idempotent backfill: convert string ref fields to BSON ObjectId for existing Mongo docs.
 Only touches docs where the current value is a plain string that passes ObjectId.is_valid().

@@ -1,39 +1,25 @@
 # app/services/keyword_alias_service.py
+# Keyword alias management: slug resolution, alias DB writes, canonical name enforcement,
+# batch alias refresh (two-stage: screen then generate via gemini_alias_service).
+# Called by document_service, routers/mongo/documents.py, and mongo_import_service.
 from __future__ import annotations
 
 import logging
 import re
-import unicodedata
-from datetime import datetime, timezone
 from typing import Any, Callable
 
 _log = logging.getLogger(__name__)
 
 from bson import ObjectId
 from app.services.gemini_alias_service import normalize_for_compare
-
-
-def _now():
-    return datetime.now(timezone.utc)
-
-
-def _slugify_vi(s: str) -> str:
-    s = (s or "").strip().lower()
-    if not s:
-        return ""
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    s = s.replace("đ", "d")
-    s = re.sub(r"[^a-z0-9]+", "-", s)
-    s = re.sub(r"-{2,}", "-", s).strip("-")
-    return s
+from app.services._utils import utc_now, slugify_vi
 
 
 # ===================== INDEXES =====================
 
 def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[str, str | None]:
     name = keyword_name.strip()
-    base = _slugify_vi(name)
+    base = slugify_vi(name)
     if not base:
         raise ValueError(f"keyword_name '{name}' produces empty slug")
 
@@ -112,7 +98,7 @@ def sync_keyword_alias_array(db, keyword_id, actor: str | None = None) -> list[s
         if doc.get("alias_name")
     ]
 
-    patch: dict[str, Any] = {"aliases": active_aliases, "updated_at": _now()}
+    patch: dict[str, Any] = {"aliases": active_aliases, "updated_at": utc_now()}
     if actor:
         patch["updated_by"] = actor
 
@@ -129,7 +115,7 @@ def enforce_canonical_name_precedence(
 ) -> dict:
 
     new_norm = normalize_for_compare(new_keyword_name)
-    now = _now()
+    now = utc_now()
 
     stale = list(db["keyword_alias"].find(
         {"is_deleted": {"$ne": True}, "alias_norm": new_norm},
@@ -179,7 +165,7 @@ def handle_keyword_rename_cleanup(
 
     new_slug, _ = _resolve_keyword_slug(db, new_name, exclude_id=kw_oid)
 
-    now = _now()
+    now = utc_now()
 
     result = enforce_canonical_name_precedence(db, new_name, actor)
 
@@ -444,7 +430,7 @@ def refresh_keyword_aliases_batch(
                 break
             raise
 
-        now = _now()
+        now = utc_now()
         batch_inserted = 0
         batch_failed = 0
         batch_kws_with_aliases = 0
@@ -645,7 +631,7 @@ def refresh_keyword_aliases(
     hard_deleted = del_result.deleted_count
     _log.info("[keyword_alias] hard_deleted=%d | keyword_id=%s", hard_deleted, keyword_id)
 
-    now = _now()
+    now = utc_now()
     inserted = 0
 
     for alias_name in final_aliases:
