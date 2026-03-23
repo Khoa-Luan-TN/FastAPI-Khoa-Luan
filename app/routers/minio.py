@@ -21,12 +21,9 @@ router = APIRouter(prefix="/admin/minio", tags=["Minio"])
 BUCKET = (os.getenv("MINIO_BUCKET") or "").strip()
 MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
 
-# ====== FIXED STRUCTURE ======
 ROOT_FOLDERS = ("documents", "videos", "images")
 EDU_KINDS = ("topic", "lesson", "chunk")
 
-
-# ===================== HELPERS =====================
 
 def _require_bucket():
     if not BUCKET:
@@ -67,22 +64,18 @@ def public_url(object_key: str) -> str:
 
 
 def _is_subject_leaf(parts: List[str]) -> bool:
-    # documents/<class>/<subject>/subject — depth 4, documents only
     return len(parts) == 4 and parts[0] == "documents" and parts[3] == "subject"
 
 
 def _is_edu_leaf(parts: List[str]) -> bool:
-    # root/<class>/<subject>/<kind>/<id> — depth 5, kind in EDU_KINDS
     return len(parts) == 5 and parts[0] in ROOT_FOLDERS and parts[3] in EDU_KINDS
 
 
 def _is_keyword_leaf(parts: List[str]) -> bool:
-    # images/keyword/<slug__id> or videos/keyword/<slug__id> — depth 3
     return len(parts) == 3 and parts[0] in ("images", "videos") and parts[1] == "keyword"
 
 
 def _target_folder_exists(client, path: str) -> bool:
-    """Return True if the folder marker for path exists in MinIO."""
     marker = folder_marker(path)
     if not marker:
         return False
@@ -93,20 +86,16 @@ def _target_folder_exists(client, path: str) -> bool:
         return False
 
 
-
 def _assert_can_upload_to_path(path: str) -> None:
     ps = _parts(path)
     if not ps:
         raise HTTPException(status_code=400, detail="path is required")
     if ps[0] not in ROOT_FOLDERS:
         raise HTTPException(status_code=400, detail="Upload only allowed under documents, images, or videos")
-    # keyword: images/keyword/<slug__id> or videos/keyword/<slug__id>
     if _is_keyword_leaf(ps):
         return
-    # subject document leaf: documents/<class>/<subject>/subject
     if _is_subject_leaf(ps):
         return
-    # edu leaf: root/<class>/<subject>/<kind>/<id>
     if _is_edu_leaf(ps):
         return
     raise HTTPException(
@@ -114,8 +103,6 @@ def _assert_can_upload_to_path(path: str) -> None:
         detail="Upload allowed in: images/keyword/<id>/, videos/keyword/<id>/, documents/<class>/<subject>/subject/, root/<class>/<subject>/{topic,lesson,chunk}/<id>/",
     )
 
-
-# ===================== GET =====================
 
 @router.get("/list", summary="List folder/files in MinIO by path")
 def list_structure(path: str = Query("", description="VD: documents, documents/type, ...")):
@@ -160,7 +147,6 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                     }
                 )
 
-        # At leaf levels: files only
         if _is_subject_leaf(ps) or _is_edu_leaf(ps) or _is_keyword_leaf(ps):
             folders = []
 
@@ -171,9 +157,6 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
 
     except S3Error as e:
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
-
-
-# ===================== POST =====================
 
 
 @router.post("/files/", summary="Upload MANY files to a leaf folder + sync Mongo/PG")
@@ -217,7 +200,6 @@ async def upload_files_to_path(
                 continue
             seen.add(object_key)
 
-            # prevent overwrite
             try:
                 client.stat_object(BUCKET, object_key)
                 failed.append({"filename": filename, "object_key": object_key, "error": "Already exists"})
@@ -225,7 +207,6 @@ async def upload_files_to_path(
             except S3Error:
                 pass
 
-            # upload
             result = client.put_object(
                 bucket_name=BUCKET,
                 object_name=object_key,
@@ -244,12 +225,10 @@ async def upload_files_to_path(
             except Exception:
                 size_val = None
 
-            # auto sync mongo/pg (no meta_json anymore)
-            # meta minimal: you can expand later
             try:
                 mongo_res = on_minio_insert_to_mongo(
                     bucket=BUCKET,
-                    folder_path=p,           # important for mapping
+                    folder_path=p,
                     object_key=object_key,
                     url=url,
                     meta={
@@ -297,8 +276,6 @@ async def upload_files_to_path(
         "failed": failed,
     }
 
-
-# ===================== PUT =====================
 
 @router.put("/objects/", summary="Rename file + sync Mongo/PG")
 def rename_object(body: RenameObjectBody, request: Request):
@@ -357,10 +334,6 @@ def rename_object(body: RenameObjectBody, request: Request):
         raise
     except S3Error as e:
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
-
-
-
-# ===================== DELETE =====================
 
 
 @router.delete("/files", summary="Delete 1 file + sync Mongo/PG")

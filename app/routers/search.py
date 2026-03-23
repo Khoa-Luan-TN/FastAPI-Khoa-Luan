@@ -8,8 +8,8 @@ from app.services.neo_client import neo4j_driver
 router = APIRouter(prefix="/search", tags=["Search"])
 
 
-@router.get("/debug/experimental-topic-probe", summary="Debug: experimental Gemini keyword → Topic embedding probe")
-def debug_experimental_topic_probe(
+@router.get("/topic-probe", summary="Keyword extraction → Topic embedding probe")
+def topic_probe(
     q: str = Query(..., min_length=1, description="Raw Vietnamese query"),
     class_hint: int = Query(None, description="Optional class number to narrow topic scope"),
 ):

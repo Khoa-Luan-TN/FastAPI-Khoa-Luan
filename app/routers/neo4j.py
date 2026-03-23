@@ -1,4 +1,4 @@
-# routers/neo4j.py
+# app/routers/neo4j.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple, Annotated
@@ -12,14 +12,13 @@ router = APIRouter(prefix="/admin/neo", tags=["Neo4j (view-only)"])
 ALLOWED_LABELS: Tuple[str, ...] = ("Thing", "Class", "Subject", "Topic", "Lesson", "Chunk", "Keyword")
 LABEL_PRIORITY: Tuple[str, ...] = ("Keyword", "Chunk", "Lesson", "Topic", "Subject", "Class", "Thing")
 
-# ---- mappings ----
 ENTITY_ID_KEY: Dict[str, str] = {
     "Class": "class_id",
     "Subject": "subject_id",
     "Topic": "topic_id",
     "Lesson": "lesson_id",
     "Chunk": "chunk_id",
-    "Keyword": "keyword_key",  # chunk_id::keyword_name
+    "Keyword": "keyword_key",
     "Thing": "thing_id",
 }
 ENTITY_NAME_KEY: Dict[str, str] = {
@@ -41,7 +40,6 @@ POSTGRE_ID_KEYS: Dict[str, Tuple[str, ...]] = {
     "Thing": ("postgre_id",),
 }
 
-# detail relation config (giảm lặp query)
 REL_CFG: Dict[str, Dict[str, Any]] = {
     "Subject": {
         "pattern": "(c:Class)-[:HAS_SUBJECT]->(s:Subject)",
@@ -154,7 +152,7 @@ def _entity_name_value(label: str, props: Dict[str, Any]) -> str:
 def list_labels(session: Annotated[NeoSession, Depends(get_neo4j_session)]):
     labels_out = []
     for lb in ALLOWED_LABELS:
-        cypher = f"MATCH (n:{lb}) RETURN count(n) AS c"  # lb đã whitelist
+        cypher = f"MATCH (n:{lb}) RETURN count(n) AS c"
         c = session.run(cypher).single()["c"]
         labels_out.append({"id": lb, "name": lb, "count": int(c)})
     return {"labels": labels_out}
@@ -195,7 +193,6 @@ def list_nodes(
 
 
 def _relation_for_node(session: NeoSession, label: str, node_id: str) -> str:
-    # giữ behavior cũ: Class check Thing link; các label khác dùng REL_CFG
     if label == "Class":
         cypher = """
         MATCH (t:Thing {id:"thing"})-[:HAS_CLASS]->(c:Class)
@@ -222,7 +219,6 @@ def _relation_for_node(session: NeoSession, label: str, node_id: str) -> str:
         optional = f"\nOPTIONAL MATCH ({a})-[:{rel}]->({ca}:{clb})"
         count_expr = f", count({ca}) AS child_count"
 
-    # build RETURN fields for all path parts
     return_fields = []
     for _, alias, prop in cfg["path"]:
         return_fields.append(f"{alias}.{prop} AS {prop}")
@@ -238,7 +234,6 @@ def _relation_for_node(session: NeoSession, label: str, node_id: str) -> str:
     if not r:
         return cfg["missing"]
 
-    # build PATH string
     parts = ["PATH: Thing"]
     for lb, _, prop in cfg["path"]:
         val = r.get(prop) or ""
@@ -280,5 +275,4 @@ def get_node_detail(
         "entity_name": _entity_name_value(label, props),
         "relation": _relation_for_node(session, label, node_id),
     }
-    return {"node": node}  # ✅ giữ đúng FE: data.node
-
+    return {"node": node}
