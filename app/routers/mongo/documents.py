@@ -284,7 +284,7 @@ def delete_document(request: Request, collection_name: str = Path(...), oid: str
     if not exist or not id_filter:
         raise HTTPException(status_code=404, detail=f"_id: '{oid}' not exist")
 
-    assert exist is not None  # guaranteed by the guard above; satisfies static analysis
+    assert exist is not None 
     if exist.get("is_deleted") is True:
         updated_doc = db[col].find_one(id_filter)
         sync = sync_doc_to_postgres(db, col, updated_doc) if updated_doc else {"ok": True, "skipped": True}

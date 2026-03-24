@@ -28,11 +28,7 @@ def _upsert_topic_embedding(pg: Session, topic_id: str, vec: list[float]) -> Non
 
 
 def ensure_topic_embedding(pg: Session, topic_id: str, keyword_text: str) -> dict:
-    """Embed and upsert a topic vector built from its joined keyword text.
 
-    keyword_text is the concatenated keyword string from topic_bag, not the topic name.
-    Caller is responsible for routing to clear_topic_embedding() when keyword_text is empty.
-    """
     text = normalize_embedding_text(keyword_text)
     if not text:
         # Should not normally be reached — sync_service branches before calling this.
@@ -42,11 +38,8 @@ def ensure_topic_embedding(pg: Session, topic_id: str, keyword_text: str) -> dic
     return {"ok": True, "model_name": MODEL_SHORT, "embedding": vec}
 
 
+# 3
 def clear_topic_embedding(pg: Session, topic_id: str) -> dict:
-    """Remove the PG topic_embedding row for topic_id, if it exists.
-
-    Called when keyword_text becomes empty so stale vectors don't remain searchable.
-    """
     result = pg.execute(
         sql_text("DELETE FROM topic_embedding WHERE topic_id = :topic_id"),
         {"topic_id": topic_id},

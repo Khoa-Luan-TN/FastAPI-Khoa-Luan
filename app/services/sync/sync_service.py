@@ -29,6 +29,116 @@ def _resolve_topic_keyword_text(db, doc: dict) -> str:
     result = build_topic_embedding_text_from_topic_bag(db, doc)
     return result["keyword_embedding_text"]
 
+def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
+    """Rebuild Neo subtree for an active topic from ACTIVE Mongo descendants only.
+
+    Walks active lessons -> active chunks -> active chunk_keywords in Mongo,
+    calls _upsert_one_to_pg + neo_sync_upsert for each.  Deleted descendants
+    are skipped (their Neo nodes were already removed by prior soft-delete syncs).
+    PG rows are reused by mongo_id; missing rows are recreated once.
+
+    Returns a summary dict with ok, lessons_synced, chunks_synced,
+    chunk_keywords_synced, errors.
+    """
+    topic_oid = topic_doc.get("_id")
+    if topic_oid is None:
+        return {"ok": False, "error": "topic_doc missing _id"}
+
+    lessons_synced = 0
+    chunks_synced = 0
+    chunk_keywords_synced = 0
+    errors: list[dict] = []
+
+    # Active lessons for this topic
+    lesson_docs = list(db["lesson"].find({
+        "topic_id": topic_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    for lesson_doc in lesson_docs:
+        lesson_mongo_id = str(lesson_doc.get("_id"))
+        try:
+            with pg.begin():
+                lesson_info = _upsert_one_to_pg(db, pg, "lesson", lesson_doc)
+            lesson_pg_id = lesson_info.get("pg_id") if isinstance(lesson_info, dict) else None
+            if lesson_pg_id:
+                lesson_neo_payload = lesson_info.get("neo_payload") or {
+                    "id": lesson_pg_id,
+                    "name": lesson_doc.get("lesson_name") or "",
+                    "parent_id": topic_pg_id,
+                    "lesson_num": lesson_doc.get("lesson_num"),
+                }
+                neo_sync_upsert("lesson", lesson_neo_payload)
+                lessons_synced += 1
+            else:
+                errors.append({"col": "lesson", "mongo_id": lesson_mongo_id, "error": "no pg_id returned"})
+                continue
+        except Exception as exc:
+            errors.append({"col": "lesson", "mongo_id": lesson_mongo_id, "error": str(exc)})
+            continue
+
+        # Active chunks for this lesson
+        chunk_docs = list(db["chunk"].find({
+            "lesson_id": lesson_doc["_id"],
+            "is_deleted": {"$ne": True},
+        }))
+
+        for chunk_doc in chunk_docs:
+            chunk_mongo_id = str(chunk_doc.get("_id"))
+            try:
+                with pg.begin():
+                    chunk_info = _upsert_one_to_pg(db, pg, "chunk", chunk_doc)
+                chunk_pg_id = chunk_info.get("pg_id") if isinstance(chunk_info, dict) else None
+                if chunk_pg_id:
+                    chunk_neo_payload = chunk_info.get("neo_payload") or {
+                        "id": chunk_pg_id,
+                        "name": chunk_doc.get("chunk_name") or "",
+                        "parent_id": lesson_pg_id,
+                        "chunk_num": chunk_doc.get("chunk_num"),
+                    }
+                    neo_sync_upsert("chunk", chunk_neo_payload)
+                    chunks_synced += 1
+                else:
+                    errors.append({"col": "chunk", "mongo_id": chunk_mongo_id, "error": "no pg_id returned"})
+                    continue
+            except Exception as exc:
+                errors.append({"col": "chunk", "mongo_id": chunk_mongo_id, "error": str(exc)})
+                continue
+
+            # Active chunk_keywords for this chunk
+            ck_docs = list(db["chunk_keyword"].find({
+                "chunk_id": chunk_doc["_id"],
+                "is_deleted": {"$ne": True},
+            }))
+
+            for ck_doc in ck_docs:
+                ck_mongo_id = str(ck_doc.get("_id"))
+                try:
+                    with pg.begin():
+                        ck_info = _upsert_one_to_pg(db, pg, "chunk_keyword", ck_doc)
+                    ck_pg_id = ck_info.get("pg_id") if isinstance(ck_info, dict) else None
+                    if ck_pg_id:
+                        ck_neo_payload = ck_info.get("neo_payload") or {
+                            "id": ck_pg_id,
+                            "name": ck_info.get("keyword_name") or "",
+                            "parent_id": chunk_pg_id,
+                        }
+                        neo_sync_upsert("keyword", ck_neo_payload)
+                        chunk_keywords_synced += 1
+                    else:
+                        errors.append({"col": "chunk_keyword", "mongo_id": ck_mongo_id, "error": "no pg_id returned"})
+                except Exception as exc:
+                    errors.append({"col": "chunk_keyword", "mongo_id": ck_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "lessons_synced": lessons_synced,
+        "chunks_synced": chunks_synced,
+        "chunk_keywords_synced": chunk_keywords_synced,
+        "errors": errors if errors else None,
+    }
+
+
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
 
@@ -160,7 +270,7 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
 
     return None
 
-
+# 2
 def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     """
     Upsert 1 mongo doc -> postgres row (by mongo_id).
@@ -470,21 +580,17 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
     raise ValueError(f"Unsupported col: {col}")
 
-
+# Hàm chạy đầu khi soft delete
 def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
-    """
-    Mongo -> PG -> (PG ok) -> Neo
-    Soft-delete: if doc is marked deleted, PG row is still updated but Neo node is removed.
-    """
+
     if col not in SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
 
     is_deleted = doc.get("is_deleted") is True
 
-    # Resolve topic keyword text: read all keyword names from topic_bag (no Gemini filtering).
-    # Done before the PG transaction to avoid blocking inside pg.begin().
     _topic_kw_text: Optional[str] = None
     if col == "topic" and not is_deleted:
+        # Nối chuỗi để embed cho topic
         _topic_kw_text = _resolve_topic_keyword_text(db, doc)
         doc_id = doc.get("_id")
         if doc_id is not None:
@@ -498,12 +604,10 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     pg = SessionLocal()
     try:
-        # ── chunk_keyword soft-delete: delete PG row first, then Neo ──────────
         if col == "chunk_keyword" and is_deleted:
             with pg.begin():
                 existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, str(doc.get("_id")))
                 if existing_ck:
-                    # Resolve keyword_name for Neo node id
                     pg_kw = pg.query(pg_models.Keyword).filter(
                         pg_models.Keyword.keyword_id == existing_ck.keyword_id
                     ).first()
@@ -529,15 +633,28 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
-        # ── Topic embedding: separate transaction so a SQL failure here cannot
-        #    roll back the topic row that was just committed above. ──────────────
+        if is_deleted and col == "topic" and isinstance(info, dict):
+            pg_id = info.get("pg_id")
+            if pg_id:
+                try:
+                    with pg.begin():
+                        pg_clear = clear_topic_embedding(pg, pg_id)
+                    info["embedding"] = {
+                        "ok": pg_clear.get("ok", True),
+                        "cleared": True,
+                        "reason": "topic is soft-deleted",
+                        "pg": pg_clear,
+                    }
+                except Exception as _emb_err:
+                    _log.warning("topic_embedding clear (soft-delete) failed for pg_id=%s: %s", pg_id, _emb_err)
+                    info["embedding"] = {"ok": False, "error": str(_emb_err)}
+
         if not is_deleted and col == "topic" and isinstance(info, dict):
             pg_id = info.get("pg_id")
             if pg_id:
                 kw_text = (_topic_kw_text or "").strip()
                 try:
                     if kw_text:
-                        # Non-empty keyword_text: upsert fresh embedding in PG, attach to Neo.
                         with pg.begin():
                             emb = ensure_topic_embedding(pg, pg_id, kw_text)
                         _attach_vec_to_neo_payload(
@@ -546,11 +663,9 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         )
                         info["embedding"] = {
                             "ok": emb.get("ok", False),
-                            "skipped": emb.get("skipped", False),
                             "model_name": emb.get("model_name"),
                         }
                     else:
-                        # Empty keyword_text: remove stale embedding from PG and Neo.
                         with pg.begin():
                             pg_clear = clear_topic_embedding(pg, pg_id)
                         neo_clear = clear_topic_embedding_neo(pg_id)
@@ -565,9 +680,16 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     _log.warning("topic_embedding upsert/clear failed for pg_id=%s: %s", pg_id, _emb_err)
                     info["embedding"] = {"ok": False, "error": str(_emb_err)}
 
-        # ── keyword rename: propagate name change to ALL linked Neo keyword nodes ──
-        # keyword is NOT in NEO_SYNCABLE_COLS (standalone sync skips Neo),
-        # but a rename must rebuild every "{chunk_id}::{keyword_name}" node.
+        if not is_deleted and col == "topic" and isinstance(info, dict):
+            restore_pg_id = info.get("pg_id")
+            if restore_pg_id:
+                try:
+                    _restore_result = _restore_topic_subtree(db, pg, doc, restore_pg_id)
+                    info["restore_subtree"] = _restore_result
+                except Exception as _rst_err:
+                    _log.warning("topic subtree restore failed for pg_id=%s: %s", restore_pg_id, _rst_err)
+                    info["restore_subtree"] = {"ok": False, "error": str(_rst_err)}
+
         if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
             old_name = info["old_keyword_name"]
             new_name = info["keyword_name"]
@@ -601,7 +723,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 else:
                     neo_upsert = {"ok": True, "skipped": True}
             else:
-                # For chunk_keyword rename (recreate op): delete old Neo node first
                 if col == "chunk_keyword" and isinstance(info, dict) and info.get("op") == "recreate":
                     old_neo_id = info.get("old_neo_id")
                     if old_neo_id:
@@ -615,14 +736,17 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     if not isinstance(neo_payload, dict):
                         neo_upsert = {"ok": False, "error": "missing neo_payload"}
                     else:
-                        # chunk_keyword syncs as "keyword" node in Neo4j
                         neo_col = "keyword" if col == "chunk_keyword" else col
                         neo_upsert = neo_sync_upsert(neo_col, neo_payload)
 
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
         rename_prop_ok = not bool(isinstance(info, dict) and info.get("keyword_rename_errors"))
-        top_ok = cleanup_ok and upsert_ok and rename_prop_ok
+        _emb_result = info.get("embedding") if isinstance(info, dict) else None
+        emb_ok = _emb_result.get("ok", True) if isinstance(_emb_result, dict) else True
+        _restore_result = info.get("restore_subtree") if isinstance(info, dict) else None
+        restore_ok = _restore_result.get("ok", True) if isinstance(_restore_result, dict) else True
+        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok
 
         result: dict = {"ok": top_ok, **(info or {})}
         if neo_cleanup is not None:
@@ -630,18 +754,25 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         if neo_upsert is not None:
             result["neo_upsert"] = neo_upsert
 
-        # For keyword rename: neo_upsert/neo_cleanup are both None (keyword not in
-        # NEO_SYNCABLE_COLS), so the fallback {"ok": True, "skipped": True} would be
-        # misleading when propagation failed.  Override with a truthful summary.
         if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
             errors = info.get("keyword_rename_errors")
             propagated = info.get("keyword_rename_propagated", 0)
-            if errors:
-                result["neo"] = {"ok": False, "propagated": propagated, "errors": errors}
-            else:
-                result["neo"] = {"ok": True, "propagated": propagated}
+            _neo_entity = (
+                {"ok": False, "propagated": propagated, "errors": errors}
+                if errors
+                else {"ok": True, "propagated": propagated}
+            )
         else:
-            result["neo"] = neo_upsert or neo_cleanup or {"ok": True, "skipped": True}
+            _neo_entity = neo_upsert or neo_cleanup or {"ok": True, "skipped": True}
+
+        result["neo_entity_sync"] = _neo_entity
+        result["neo"] = _neo_entity
+
+        if isinstance(_emb_result, dict):
+            result["embedding_sync"] = _emb_result
+
+        if isinstance(_restore_result, dict):
+            result["restore_subtree"] = _restore_result
 
         return result
     except Exception as e:
