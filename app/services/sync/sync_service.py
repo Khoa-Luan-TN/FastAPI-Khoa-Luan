@@ -799,6 +799,221 @@ def _cascade_soft_delete_lesson_chunks(db, lesson_doc: dict) -> dict:
     }
 
 
+def _cascade_soft_delete_topic_lessons(db, topic_doc: dict) -> dict:
+    """Soft-delete all active Mongo lesson docs under this topic and sync each via existing lesson flow.
+
+    Marks each active child lesson as is_deleted=True in Mongo (inheriting deleted_at/updated_by
+    from the topic), then calls sync_doc_to_postgres(db, "lesson", ...) for each so that the
+    existing lesson soft-delete path cascades to chunks, chunk_keywords, PG, and Neo.
+    Returns ok, lessons_cascaded, errors.
+    """
+    from datetime import datetime, timezone
+
+    topic_oid = topic_doc.get("_id")
+    if topic_oid is None:
+        return {"ok": False, "error": "topic_doc missing _id"}
+
+    deleted_at = topic_doc.get("deleted_at") or datetime.now(timezone.utc)
+    updated_at = topic_doc.get("updated_at") or deleted_at
+    updated_by = topic_doc.get("updated_by")
+
+    active_lessons = list(db["lesson"].find({
+        "topic_id": topic_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    cascaded = 0
+    errors: list[dict] = []
+
+    for lesson_doc in active_lessons:
+        lesson_mongo_id = str(lesson_doc.get("_id"))
+        lesson_oid = lesson_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": True, "deleted_at": deleted_at, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["lesson"].update_one({"_id": lesson_oid}, {"$set": patch})
+            updated_lesson = db["lesson"].find_one({"_id": lesson_oid})
+            if updated_lesson is None:
+                errors.append({"mongo_id": lesson_mongo_id, "error": "lesson not found after Mongo update"})
+                continue
+            lesson_sync = sync_doc_to_postgres(db, "lesson", updated_lesson)
+            if lesson_sync.get("ok"):
+                cascaded += 1
+            else:
+                errors.append({"mongo_id": lesson_mongo_id, "error": lesson_sync.get("error", "lesson sync failed"), "sync": lesson_sync})
+        except Exception as exc:
+            errors.append({"mongo_id": lesson_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "lessons_cascaded": cascaded,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_soft_delete_topic_bag(db, topic_doc: dict) -> dict:
+    """Soft-delete all active Mongo topic_bag docs under this topic.
+
+    Marks each active topic_bag as is_deleted=True, inheriting deleted_at/updated_by
+    from the topic doc.
+    Returns ok, topic_bags_cascaded, errors.
+    """
+    from datetime import datetime, timezone
+
+    topic_oid = topic_doc.get("_id")
+    if topic_oid is None:
+        return {"ok": False, "error": "topic_doc missing _id"}
+
+    deleted_at = topic_doc.get("deleted_at") or datetime.now(timezone.utc)
+    updated_at = topic_doc.get("updated_at") or deleted_at
+    updated_by = topic_doc.get("updated_by")
+
+    active_bags = list(db["topic_bag"].find({
+        "topic_id": topic_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    cascaded = 0
+    errors: list[dict] = []
+
+    for bag_doc in active_bags:
+        bag_mongo_id = str(bag_doc.get("_id"))
+        bag_oid = bag_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": True, "deleted_at": deleted_at, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["topic_bag"].update_one({"_id": bag_oid}, {"$set": patch})
+            cascaded += 1
+        except Exception as exc:
+            errors.append({"mongo_id": bag_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "topic_bags_cascaded": cascaded,
+        "errors": errors if errors else None,
+    }
+
+
+def _soft_delete_topic(pg, topic_doc: dict) -> dict:
+    """Delete PG topic row (FK cascade removes child subject rows if any) and remove Neo topic subtree.
+
+    Returns a summary dict with ok, pg_deleted, topic_pg_id, neo_deleted, neo.
+    If no PG row exists, returns skipped=True (idempotent).
+    """
+    mongo_id = str(topic_doc.get("_id"))
+    topic_id = None
+
+    with pg.begin():
+        obj = _pg_get_by_mongo_id(pg, pg_models.Topic, mongo_id)
+        if obj:
+            topic_id = obj.topic_id
+            pg.delete(obj)
+
+    if topic_id is None:
+        return {"ok": True, "skipped": True, "reason": "topic PG row not found, nothing to delete"}
+
+    neo_result = detach_delete_entity("topic", topic_id)
+    return {
+        "ok": neo_result.get("ok", True),
+        "pg_deleted": True,
+        "topic_pg_id": topic_id,
+        "neo_deleted": neo_result.get("ok", True),
+        "neo": neo_result,
+    }
+
+
+def _cascade_restore_topic_lessons(db, topic_doc: dict) -> dict:
+    """Restore all soft-deleted Mongo lesson docs under this topic and sync each via existing lesson flow.
+
+    Marks each soft-deleted child lesson as is_deleted=False in Mongo, then calls
+    sync_doc_to_postgres(db, "lesson", ...) for each so the existing lesson restore path
+    recreates PG rows and restores Neo + chunks + chunk_keywords.
+    Returns ok, lessons_restored, errors.
+    """
+    topic_oid = topic_doc.get("_id")
+    if topic_oid is None:
+        return {"ok": False, "error": "topic_doc missing _id"}
+
+    updated_at = topic_doc.get("updated_at")
+    updated_by = topic_doc.get("updated_by")
+
+    deleted_lessons = list(db["lesson"].find({
+        "topic_id": topic_oid,
+        "is_deleted": True,
+    }))
+
+    restored = 0
+    errors: list[dict] = []
+
+    for lesson_doc in deleted_lessons:
+        lesson_mongo_id = str(lesson_doc.get("_id"))
+        lesson_oid = lesson_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": False, "deleted_at": None, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["lesson"].update_one({"_id": lesson_oid}, {"$set": patch})
+            updated_lesson = db["lesson"].find_one({"_id": lesson_oid})
+            if updated_lesson is None:
+                errors.append({"mongo_id": lesson_mongo_id, "error": "lesson not found after Mongo update"})
+                continue
+            lesson_sync = sync_doc_to_postgres(db, "lesson", updated_lesson)
+            if lesson_sync.get("ok"):
+                restored += 1
+            else:
+                errors.append({"mongo_id": lesson_mongo_id, "error": lesson_sync.get("error", "lesson sync failed"), "sync": lesson_sync})
+        except Exception as exc:
+            errors.append({"mongo_id": lesson_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "lessons_restored": restored,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_restore_topic_bag(db, topic_doc: dict) -> dict:
+    """Restore all soft-deleted Mongo topic_bag docs under this topic.
+
+    Marks each soft-deleted topic_bag as is_deleted=False in Mongo.
+    Returns ok, topic_bags_restored, errors.
+    """
+    topic_oid = topic_doc.get("_id")
+    if topic_oid is None:
+        return {"ok": False, "error": "topic_doc missing _id"}
+
+    updated_at = topic_doc.get("updated_at")
+    updated_by = topic_doc.get("updated_by")
+
+    deleted_bags = list(db["topic_bag"].find({
+        "topic_id": topic_oid,
+        "is_deleted": True,
+    }))
+
+    restored = 0
+    errors: list[dict] = []
+
+    for bag_doc in deleted_bags:
+        bag_mongo_id = str(bag_doc.get("_id"))
+        bag_oid = bag_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": False, "deleted_at": None, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["topic_bag"].update_one({"_id": bag_oid}, {"$set": patch})
+            restored += 1
+        except Exception as exc:
+            errors.append({"mongo_id": bag_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "topic_bags_restored": restored,
+        "errors": errors if errors else None,
+    }
+
+
 def _cascade_soft_delete_chunk_keywords(db, chunk_doc: dict) -> dict:
     """Soft-delete all active Mongo chunk_keyword docs under this chunk.
 
@@ -893,18 +1108,42 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
     is_deleted = doc.get("is_deleted") is True
 
     _topic_kw_text: Optional[str] = None
+    _topic_restore_in_progress: bool = False
+    _topic_kw_empty_with_active_bag: bool = False
     if col == "topic" and not is_deleted:
         # Nối chuỗi để embed cho topic
         _topic_kw_text = _resolve_topic_keyword_text(db, doc)
         doc_id = doc.get("_id")
         if doc_id is not None:
-            try:
-                db["topic"].update_one(
-                    {"_id": doc_id},
-                    {"$set": {"keyword_embedding_text": _topic_kw_text or ""}},
-                )
-            except Exception as _persist_err:
-                _log.warning("Failed to persist keyword_embedding_text for topic _id=%s: %s", doc_id, _persist_err)
+            if not _topic_kw_text:
+                # Resolved empty — determine why before deciding what to write.
+                _deleted_bag_exists = db["topic_bag"].count_documents(
+                    {"topic_id": doc_id, "is_deleted": True}, limit=1
+                ) > 0
+                if _deleted_bag_exists:
+                    # Guard 1 (restore): soft-deleted bags still exist — topic_bag not yet
+                    # un-deleted. Defer write to after _cascade_restore_topic_bag below.
+                    _topic_restore_in_progress = True
+                else:
+                    _active_bag_exists = db["topic_bag"].count_documents(
+                        {"topic_id": doc_id, "is_deleted": {"$ne": True}}, limit=1
+                    ) > 0
+                    if _active_bag_exists:
+                        # Guard 2 (normal update): active bags exist but resolve returned "".
+                        # Re-try once — transient empty on a topic with live bag data.
+                        _topic_kw_text = _resolve_topic_keyword_text(db, doc)
+                        if not _topic_kw_text:
+                            # Still empty despite active bags — skip write and skip clear.
+                            _topic_kw_empty_with_active_bag = True
+            # Only write when we have a definitive result (non-empty, or truly no bags).
+            if not _topic_restore_in_progress and not _topic_kw_empty_with_active_bag:
+                try:
+                    db["topic"].update_one(
+                        {"_id": doc_id},
+                        {"$set": {"keyword_embedding_text": _topic_kw_text or ""}},
+                    )
+                except Exception as _persist_err:
+                    _log.warning("Failed to persist keyword_embedding_text for topic _id=%s: %s", doc_id, _persist_err)
 
     pg = SessionLocal()
     try:
@@ -960,7 +1199,24 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 "neo_entity_sync": _neo,
             }
 
+        if col == "topic" and is_deleted:
+            topic_lesson_cascade = _cascade_soft_delete_topic_lessons(db, doc)
+            topic_bag_cascade = _cascade_soft_delete_topic_bag(db, doc)
+            topic_sd = _soft_delete_topic(pg, doc)
+            _neo = topic_sd.get("neo") or {"ok": True, "skipped": True}
+            return {
+                "ok": topic_lesson_cascade.get("ok", True) and topic_bag_cascade.get("ok", True) and topic_sd.get("ok", True),
+                "op": "soft_delete",
+                "topic_soft_delete": topic_sd,
+                "topic_lesson_cascade": topic_lesson_cascade,
+                "topic_bag_cascade": topic_bag_cascade,
+                "neo": _neo,
+                "neo_entity_sync": _neo,
+            }
+
         _lesson_cascade_result: Optional[dict] = None
+        _topic_lesson_restore: Optional[dict] = None
+        _topic_bag_restore: Optional[dict] = None
 
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
@@ -997,7 +1253,14 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                             "ok": emb.get("ok", False),
                             "model_name": emb.get("model_name"),
                         }
+                    elif _topic_restore_in_progress:
+                        # Mid-restore: topic_bag not yet un-deleted; defer embedding to after restore.
+                        info["embedding"] = {"ok": True, "skipped": True, "reason": "restore_in_progress"}
+                    elif _topic_kw_empty_with_active_bag:
+                        # Active bags exist but keyword text resolved empty — skip clear.
+                        info["embedding"] = {"ok": True, "skipped": True, "reason": "topic_keyword_text_resolve_empty_with_active_topic_bag"}
                     else:
+                        # Truly empty — no active bags — clear embedding.
                         with pg.begin():
                             pg_clear = clear_topic_embedding(pg, pg_id)
                         neo_clear = clear_topic_embedding_neo(pg_id)
@@ -1011,16 +1274,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 except Exception as _emb_err:
                     _log.warning("topic_embedding upsert/clear failed for pg_id=%s: %s", pg_id, _emb_err)
                     info["embedding"] = {"ok": False, "error": str(_emb_err)}
-
-        if not is_deleted and col == "topic" and isinstance(info, dict):
-            restore_pg_id = info.get("pg_id")
-            if restore_pg_id:
-                try:
-                    _restore_result = _restore_topic_subtree(db, pg, doc, restore_pg_id)
-                    info["restore_subtree"] = _restore_result
-                except Exception as _rst_err:
-                    _log.warning("topic subtree restore failed for pg_id=%s: %s", restore_pg_id, _rst_err)
-                    info["restore_subtree"] = {"ok": False, "error": str(_rst_err)}
 
         if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
             old_name = info["old_keyword_name"]
@@ -1100,6 +1353,75 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     _log.warning("lesson chunk restore cascade failed: %s", _lcr_err)
                     _lesson_cascade_result = {"ok": False, "error": str(_lcr_err)}
 
+        # Restore child lessons and topic_bag only after topic Neo node is confirmed up
+        if not is_deleted and col == "topic" and isinstance(info, dict):
+            restore_pg_id = info.get("pg_id")
+            _neo_topic_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
+            if not _neo_topic_ok:
+                _topic_lesson_restore = {"ok": False, "skipped": True, "reason": "topic neo upsert failed"}
+                _topic_bag_restore = {"ok": False, "skipped": True, "reason": "topic neo upsert failed"}
+            else:
+                try:
+                    _topic_lesson_restore = _cascade_restore_topic_lessons(db, doc)
+                except Exception as _tlr_err:
+                    _log.warning("topic lesson restore cascade failed: %s", _tlr_err)
+                    _topic_lesson_restore = {"ok": False, "error": str(_tlr_err)}
+                try:
+                    _topic_bag_restore = _cascade_restore_topic_bag(db, doc)
+                except Exception as _tbr_err:
+                    _log.warning("topic bag restore failed: %s", _tbr_err)
+                    _topic_bag_restore = {"ok": False, "error": str(_tbr_err)}
+
+                # Deferred keyword_embedding_text write: re-resolve now that topic_bag docs
+                # are active. Also updates PG + Neo embedding to replace the skipped clear.
+                if _topic_restore_in_progress and isinstance(_topic_bag_restore, dict) and _topic_bag_restore.get("ok"):
+                    _doc_id = doc.get("_id")
+                    if _doc_id is not None:
+                        try:
+                            _topic_kw_text = _resolve_topic_keyword_text(db, doc)
+                            db["topic"].update_one(
+                                {"_id": _doc_id},
+                                {"$set": {"keyword_embedding_text": _topic_kw_text or ""}},
+                            )
+                        except Exception as _defer_err:
+                            _log.warning("Failed to persist deferred keyword_embedding_text for topic _id=%s: %s", _doc_id, _defer_err)
+                    if restore_pg_id:
+                        _kw_text_after = (_topic_kw_text or "").strip()
+                        try:
+                            if _kw_text_after:
+                                with pg.begin():
+                                    _emb = ensure_topic_embedding(pg, restore_pg_id, _kw_text_after)
+                                _attach_vec_to_neo_payload(
+                                    info,
+                                    _emb.get("embedding") if isinstance(_emb, dict) else None,
+                                )
+                                info["embedding"] = {
+                                    "ok": _emb.get("ok", False),
+                                    "model_name": _emb.get("model_name"),
+                                }
+                            else:
+                                with pg.begin():
+                                    _pg_clear = clear_topic_embedding(pg, restore_pg_id)
+                                _neo_clear = clear_topic_embedding_neo(restore_pg_id)
+                                info["embedding"] = {
+                                    "ok": _pg_clear.get("ok", True) and _neo_clear.get("ok", True),
+                                    "cleared": True,
+                                    "reason": "keyword_text is empty after restore",
+                                    "pg": _pg_clear,
+                                    "neo": _neo_clear,
+                                }
+                        except Exception as _emb_err:
+                            _log.warning("topic_embedding deferred upsert/clear failed for pg_id=%s: %s", restore_pg_id, _emb_err)
+                            info["embedding"] = {"ok": False, "error": str(_emb_err)}
+
+                if restore_pg_id:
+                    try:
+                        _restore_subtree_result = _restore_topic_subtree(db, pg, doc, restore_pg_id)
+                        info["restore_subtree"] = _restore_subtree_result
+                    except Exception as _rst_err:
+                        _log.warning("topic subtree restore failed for pg_id=%s: %s", restore_pg_id, _rst_err)
+                        info["restore_subtree"] = {"ok": False, "error": str(_rst_err)}
+
         # Restore chunk keywords only after chunk Neo node is confirmed up
         _restore_ck_result: Optional[dict] = None
         _ck_mongo_restore: Optional[dict] = None
@@ -1112,7 +1434,10 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 else:
                     try:
                         _ck_mongo_restore = _cascade_restore_chunk_keywords_mongo(db, doc)
-                        _restore_ck_result = _restore_chunk_keywords(db, pg, doc, chunk_pg_id)
+                        if not _ck_mongo_restore.get("ok"):
+                            _restore_ck_result = {"ok": False, "skipped": True, "reason": "chunk_keyword mongo restore failed"}
+                        else:
+                            _restore_ck_result = _restore_chunk_keywords(db, pg, doc, chunk_pg_id)
                     except Exception as _rck_err:
                         _log.warning("chunk_keywords restore failed for pg_id=%s: %s", chunk_pg_id, _rck_err)
                         _restore_ck_result = {"ok": False, "error": str(_rck_err)}
@@ -1128,7 +1453,9 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         ck_mongo_restore_ok = _ck_mongo_restore.get("ok", True) if isinstance(_ck_mongo_restore, dict) else True
         pg_persist_ok = _pg_persist_check.get("ok", True) if isinstance(_pg_persist_check, dict) else True
         lesson_cascade_ok = _lesson_cascade_result.get("ok", True) if isinstance(_lesson_cascade_result, dict) else True
-        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok and restore_ck_ok and ck_mongo_restore_ok and pg_persist_ok and lesson_cascade_ok
+        topic_lesson_restore_ok = _topic_lesson_restore.get("ok", True) if isinstance(_topic_lesson_restore, dict) else True
+        topic_bag_restore_ok = _topic_bag_restore.get("ok", True) if isinstance(_topic_bag_restore, dict) else True
+        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok and restore_ck_ok and ck_mongo_restore_ok and pg_persist_ok and lesson_cascade_ok and topic_lesson_restore_ok and topic_bag_restore_ok
 
         result: dict = {"ok": top_ok, **(info or {})}
         if neo_cleanup is not None:
@@ -1167,6 +1494,12 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
         if isinstance(_lesson_cascade_result, dict):
             result["lesson_cascade"] = _lesson_cascade_result
+
+        if isinstance(_topic_lesson_restore, dict):
+            result["topic_lesson_restore"] = _topic_lesson_restore
+
+        if isinstance(_topic_bag_restore, dict):
+            result["topic_bag_restore"] = _topic_bag_restore
 
         return result
     except Exception as e:

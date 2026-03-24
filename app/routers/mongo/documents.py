@@ -278,6 +278,15 @@ def delete_document(request: Request, collection_name: str = Path(...), oid: str
     _check_collection_exist(col)
 
     actor = _get_actor(request)
+
+    # keyword_alias uses hard delete — bypass generic soft-delete flow entirely.
+    if col == "keyword_alias":
+        from app.services.keyword.keyword_alias_service import delete_keyword_alias
+        try:
+            return delete_keyword_alias(db, oid, actor=actor)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
     now = _now()
 
     exist, id_filter = _find_one_by_any_key(col, oid, {"_id": 1, "is_deleted": 1})

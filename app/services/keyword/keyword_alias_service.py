@@ -57,8 +57,6 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
 
 
 def ensure_keyword_alias_indexes(db) -> None:
-    _ACTIVE = {"is_deleted": {"$ne": True}}
-
     try:
         db["keyword_alias"].create_index("keyword_id")
     except Exception:
@@ -69,14 +67,9 @@ def ensure_keyword_alias_indexes(db) -> None:
         pass
 
     try:
-        db["keyword_alias"].drop_index("keyword_id_1_alias_norm_1")
-    except Exception:
-        pass
-    try:
         db["keyword_alias"].create_index(
             [("keyword_id", 1), ("alias_norm", 1)],
             unique=True,
-            partialFilterExpression=_ACTIVE,
         )
     except Exception:
         pass
@@ -91,7 +84,7 @@ def sync_keyword_alias_array(db, keyword_id, actor: str | None = None) -> list[s
     active_aliases: list[str] = [
         doc["alias_name"]
         for doc in db["keyword_alias"].find(
-            {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
+            {"keyword_id": kw_oid},
             {"alias_name": 1},
         )
         if doc.get("alias_name")
@@ -114,25 +107,19 @@ def enforce_canonical_name_precedence(
 ) -> dict:
 
     new_norm = normalize_for_compare(new_keyword_name)
-    now = utc_now()
 
     stale = list(db["keyword_alias"].find(
-        {"is_deleted": {"$ne": True}, "alias_norm": new_norm},
+        {"alias_norm": new_norm},
         {"_id": 1, "keyword_id": 1},
     ))
 
     affected_keyword_ids: set = set()
     for alias_doc in stale:
-        db["keyword_alias"].update_one(
-            {"_id": alias_doc["_id"]},
-            {"$set": {
-                "is_deleted": True,
-                "deleted_at": now,
-                "updated_at": now,
-                "updated_by": actor,
-            }},
-        )
         affected_keyword_ids.add(alias_doc["keyword_id"])
+
+    if stale:
+        stale_ids = [alias_doc["_id"] for alias_doc in stale]
+        db["keyword_alias"].delete_many({"_id": {"$in": stale_ids}})
 
     for affected_id in affected_keyword_ids:
         sync_keyword_alias_array(db, affected_id, actor=actor)
@@ -164,16 +151,42 @@ def handle_keyword_rename_cleanup(
 
     new_slug, _ = _resolve_keyword_slug(db, new_name, exclude_id=kw_oid)
 
-    now = utc_now()
-
     result = enforce_canonical_name_precedence(db, new_name, actor)
 
     db["keyword_alias"].update_many(
-        {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
-        {"$set": {"keyword_name": new_name, "updated_at": now, "updated_by": actor}},
+        {"keyword_id": kw_oid},
+        {"$set": {"keyword_name": new_name}},
     )
 
     return {"new_slug": new_slug, "stale_aliases_deleted": result["stale_aliases_deleted"]}
+
+
+# ===================== SINGLE ALIAS HARD DELETE =====================
+
+def delete_keyword_alias(db, alias_id: str, actor: str) -> dict:
+    """Hard-delete a single keyword_alias doc and refresh the parent keyword.aliases array.
+
+    Returns a result dict with deleted, alias_id, keyword_id, aliases_after_delete.
+    Raises ValueError if the alias doc is not found.
+    """
+    oid = ObjectId(alias_id) if ObjectId.is_valid(alias_id) else alias_id
+
+    alias_doc = db["keyword_alias"].find_one({"_id": oid})
+    if not alias_doc:
+        raise ValueError(f"keyword_alias '{alias_id}' not found")
+
+    keyword_id = alias_doc.get("keyword_id")
+
+    db["keyword_alias"].delete_one({"_id": oid})
+
+    aliases_after = sync_keyword_alias_array(db, keyword_id, actor=actor) if keyword_id is not None else []
+
+    return {
+        "deleted": True,
+        "alias_id": alias_id,
+        "keyword_id": str(keyword_id) if keyword_id is not None else None,
+        "aliases_after_delete": aliases_after,
+    }
 
 
 # ===================== BATCH ALIAS REFRESH =====================
@@ -429,7 +442,6 @@ def refresh_keyword_aliases_batch(
                 break
             raise
 
-        now = utc_now()
         batch_inserted = 0
         batch_failed = 0
         batch_kws_with_aliases = 0
@@ -474,13 +486,6 @@ def refresh_keyword_aliases_batch(
                         "keyword_name": kw_name,
                         "alias_name": alias_name,
                         "alias_norm": norm,
-                        "source": "gemini",
-                        "context_text": None,
-                        "is_deleted": False,
-                        "created_at": now,
-                        "updated_at": now,
-                        "created_by": actor,
-                        "updated_by": actor,
                     })
                     kw_inserted += 1
                 except Exception as exc:
@@ -630,7 +635,6 @@ def refresh_keyword_aliases(
     hard_deleted = del_result.deleted_count
     _log.info("[keyword_alias] hard_deleted=%d | keyword_id=%s", hard_deleted, keyword_id)
 
-    now = utc_now()
     inserted = 0
 
     for alias_name in final_aliases:
@@ -641,13 +645,6 @@ def refresh_keyword_aliases(
                 "keyword_name": keyword_name,
                 "alias_name": alias_name,
                 "alias_norm": norm,
-                "source": "gemini",
-                "context_text": context_text,
-                "is_deleted": False,
-                "created_at": now,
-                "updated_at": now,
-                "created_by": actor,
-                "updated_by": actor,
             })
             inserted += 1
             _log.info("[keyword_alias] inserted alias=%r | keyword_id=%s", alias_name, keyword_id)
