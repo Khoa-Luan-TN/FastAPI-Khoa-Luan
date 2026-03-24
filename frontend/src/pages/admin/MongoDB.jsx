@@ -161,58 +161,6 @@ function defaultPairsForCollection(col) {
 }
 
 /** ===== Mini modal: Create/Rename Collection ===== */
-function CollectionModal({ open, onClose, initialName = "", title, onSubmit }) {
-  const [name, setName] = useState(initialName);
-
-  useEffect(() => {
-    setName(initialName || "");
-  }, [initialName, open]);
-
-  if (!open) return null;
-
-  function submit(e) {
-    e.preventDefault();
-    const n = name.trim();
-    if (!n) return;
-    onSubmit(n);
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">{title}</h3>
-          <button className="modal-close" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body">
-          <form onSubmit={submit}>
-            <div className="field">
-              <label>Tên collection</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-            </div>
-
-            <div className="modal-note">
-              <strong>Lưu ý:</strong> Nên dùng chữ/số/_/- (vd: demo, class, lesson_10).
-            </div>
-          </form>
-        </div>
-
-        <div className="modal-footer">
-          <button className="minio-btn minio-btn-secondary" onClick={onClose}>
-            Huỷ
-          </button>
-          <button className="minio-btn minio-btn-primary" onClick={submit}>
-            Lưu
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** ===== Modal: Create/Edit Document (fields động) ===== */
 function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
   const [pairs, setPairs] = useState([]);
@@ -375,9 +323,6 @@ export default function MongoDB() {
   const importPollRef = useRef(null);
 
   // modals
-  const [openCreateCol, setOpenCreateCol] = useState(false);
-  const [openRenameCol, setOpenRenameCol] = useState(false);
-  const [renameTarget, setRenameTarget] = useState(null); // {name}
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -591,36 +536,6 @@ export default function MongoDB() {
     setCurrentDocId("");
     setIsEditingDoc(false);
     setQ("");
-  }
-
-  async function createCollection(name) {
-    const n = name.trim();
-    if (!n) return;
-
-    try {
-      await mongoApi.createCollection(n);
-      setOpenCreateCol(false);
-      await reloadCollections();
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
-  }
-
-  async function renameCollectionSubmit(newName) {
-    const n = newName.trim();
-    if (!renameTarget) return;
-    if (!n) return;
-
-    try {
-      await mongoApi.renameCollection(renameTarget.name, n);
-      setOpenRenameCol(false);
-      setRenameTarget(null);
-
-      setCurrent((cur) => (cur === renameTarget.name ? n : cur));
-      await reloadCollections();
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
   }
 
   async function deleteCollection(row) {
@@ -841,9 +756,6 @@ export default function MongoDB() {
                 <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
                   {importing ? "Importing..." : "Import Excel"}
                 </button>
-                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateCol(true)}>
-                  + Collection
-                </button>
               </>
             ) : !isDocDetail ? (
               <>
@@ -942,16 +854,6 @@ export default function MongoDB() {
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
                 <button
-                  className="mfi-action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRenameTarget({ name: row.name });
-                    setOpenRenameCol(true);
-                  }}
-                >
-                  <EditIcon /> Sửa
-                </button>
-                <button
                   className="mfi-action-btn danger"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1033,23 +935,6 @@ export default function MongoDB() {
         )}
       </div>
 
-      <CollectionModal
-        open={openCreateCol}
-        onClose={() => setOpenCreateCol(false)}
-        title="Tạo collection mới"
-        onSubmit={createCollection}
-      />
-
-      <CollectionModal
-        open={openRenameCol}
-        onClose={() => {
-          setOpenRenameCol(false);
-          setRenameTarget(null);
-        }}
-        title="Đổi tên collection"
-        initialName={renameTarget?.name || ""}
-        onSubmit={renameCollectionSubmit}
-      />
 
       <DocumentModal
         open={openCreateDoc}

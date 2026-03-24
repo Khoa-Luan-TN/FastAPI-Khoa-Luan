@@ -87,6 +87,15 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if body.get("is_deleted") is True:
         body["deleted_at"] = now
 
+    # class: require class_name
+    if col == "class":
+        cls_name = str(body.get("class_name") or "").strip()
+        if not cls_name:
+            raise HTTPException(status_code=422, detail="class_name is required")
+        body["class_name"] = cls_name
+        if db[col].find_one({"class_name": cls_name, "is_deleted": {"$ne": True}}, {"_id": 1}):
+            raise HTTPException(status_code=409, detail=f"class_name '{cls_name}' already exists")
+
     # keyword: strip client-supplied keyword_id/keyword_slug; always derive from keyword_name.
     # PG trigger generates the business keyword_id (kw_<slug>) — Mongo does not store it.
     if col == "keyword":

@@ -1,7 +1,7 @@
 # app/routers/mongo/collections.py
 import re
 from fastapi import APIRouter, Query, Path, HTTPException, status
-from pymongo.errors import CollectionInvalid, OperationFailure
+from pymongo.errors import CollectionInvalid
 
 from app.services.infrastructure.mongo_client import get_mongo_db
 
@@ -31,6 +31,8 @@ def get_all_collections():
 @router.post("/collections/{collection_name}", summary="Tạo một Collection")
 def create_collection(collection_name: str = Path(...)):
     name = _normalize_collection_name(collection_name)
+    if name not in CORE_COLLECTIONS:
+        raise HTTPException(status_code=403, detail=f"Collection '{name}' is not a supported collection.")
     if name in db.list_collection_names():
         raise HTTPException(status_code=409, detail=f"Collection '{name}' already exists")
     try:
@@ -50,18 +52,4 @@ def delete_collection(collection_name: str = Path(...)):
 
 @router.put("/collections/{collection_name}/rename", summary="Đổi tên collection")
 def rename_collection(collection_name: str = Path(...), new_name: str = Query(...)):
-    old = _normalize_collection_name(collection_name)
-    new = _normalize_collection_name(new_name)
-
-    if old in CORE_COLLECTIONS:
-        raise HTTPException(status_code=403, detail=f"Collection '{old}' là core collection, không thể đổi tên.")
-
-    _check_collection_exist(old)
-    if new in db.list_collection_names():
-        raise HTTPException(status_code=409, detail=f"Target collection '{new}' already exists")
-
-    try:
-        db[old].rename(new, dropTarget=False)
-        return {"renamed": True, "from": old, "to": new}
-    except OperationFailure as e:
-        raise HTTPException(status_code=500, detail=f"Mongo rename error: {e}") from e
+    raise HTTPException(status_code=403, detail="Collection rename is disabled.")
