@@ -96,6 +96,28 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         if db[col].find_one({"class_name": cls_name, "is_deleted": {"$ne": True}}, {"_id": 1}):
             raise HTTPException(status_code=409, detail=f"class_name '{cls_name}' already exists")
 
+    # subject: require subject_name + valid class_id ref, prevent duplicate name within same class
+    if col == "subject":
+        from bson import ObjectId as _OID
+        subj_name = str(body.get("subject_name") or "").strip()
+        if not subj_name:
+            raise HTTPException(status_code=422, detail="subject.subject_name is required")
+        body["subject_name"] = subj_name
+        cls_ref = str(body.get("class_id") or "").strip()
+        if not cls_ref:
+            raise HTTPException(status_code=422, detail="subject.class_id is required")
+        if not _OID.is_valid(cls_ref):
+            raise HTTPException(status_code=422, detail=f"subject.class_id '{cls_ref}' is not a valid ObjectId")
+        if not db["class"].find_one({"_id": _OID(cls_ref), "is_deleted": {"$ne": True}}):
+            raise HTTPException(status_code=422, detail=f"class '{cls_ref}' not found or is deleted")
+        body["class_id"] = _OID(cls_ref)
+        if db["subject"].find_one({
+            "class_id": _OID(cls_ref),
+            "subject_name": {"$regex": f"^{re.escape(subj_name)}$", "$options": "i"},
+            "is_deleted": {"$ne": True},
+        }, {"_id": 1}):
+            raise HTTPException(status_code=409, detail=f"subject_name '{subj_name}' already exists in this class")
+
     # keyword: strip client-supplied keyword_id/keyword_slug; always derive from keyword_name.
     # PG trigger generates the business keyword_id (kw_<slug>) — Mongo does not store it.
     if col == "keyword":

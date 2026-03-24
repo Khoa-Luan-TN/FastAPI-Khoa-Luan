@@ -245,6 +245,30 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
                 raise HTTPException(status_code=422, detail=f"keyword '{_kw_ref}' not found or is deleted")
             body["keyword_id"] = ObjectId(_kw_ref)
 
+    # subject: validate class_id ref + duplicate check for name-within-class
+    if col == "subject" and ("class_id" in body or "subject_name" in body):
+        if "class_id" in body:
+            _cls_ref = str(body["class_id"] or "").strip()
+            if not _cls_ref:
+                raise HTTPException(status_code=422, detail="subject.class_id cannot be empty")
+            if not ObjectId.is_valid(_cls_ref):
+                raise HTTPException(status_code=422, detail=f"subject.class_id '{_cls_ref}' is not a valid ObjectId")
+            if not db["class"].find_one({"_id": ObjectId(_cls_ref), "is_deleted": {"$ne": True}}):
+                raise HTTPException(status_code=422, detail=f"class '{_cls_ref}' not found or is deleted")
+            body["class_id"] = ObjectId(_cls_ref)
+        _curr_subj = db["subject"].find_one(id_filter, {"subject_name": 1, "class_id": 1})
+        _chk_name = str(body.get("subject_name") or (_curr_subj or {}).get("subject_name") or "").strip()
+        _chk_cls = body.get("class_id") or (_curr_subj or {}).get("class_id")
+        if _chk_name and _chk_cls is not None:
+            _dup = db["subject"].find_one({
+                "class_id": _chk_cls,
+                "subject_name": {"$regex": f"^{re.escape(_chk_name)}$", "$options": "i"},
+                "is_deleted": {"$ne": True},
+                "_id": {"$ne": id_filter["_id"]},
+            }, {"_id": 1})
+            if _dup:
+                raise HTTPException(status_code=409, detail=f"subject_name '{_chk_name}' already exists in this class")
+
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None
