@@ -386,6 +386,13 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         chunk_num = _to_int(doc.get("chunk_num") or doc.get("num"), None)
 
         lesson_ref = _get_ref(doc, ["lesson_id", "lesson_mongo_id", "lesson_oid", "lessonRef", "lesson"])
+
+        # Guard: do not restore a chunk whose parent lesson is soft-deleted
+        if lesson_ref:
+            _parent_lesson = _mongo_find_by_oid_or_str(db, "lesson", lesson_ref)
+            if _parent_lesson is None or _parent_lesson.get("is_deleted") is True:
+                raise ValueError("chunk parent lesson is deleted")
+
         lesson_id = _ensure_parent_pg_id(db, pg, "lesson", lesson_ref)
 
         if not chunk_name or chunk_num is None or not lesson_id:
@@ -473,6 +480,13 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     if col == "chunk_keyword":
         # Resolve chunk
         chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid"])
+
+        # Guard: do not revive a soft-deleted parent chunk
+        if chunk_ref:
+            _parent_chunk = _mongo_find_by_oid_or_str(db, "chunk", chunk_ref)
+            if _parent_chunk is None or _parent_chunk.get("is_deleted") is True:
+                raise ValueError("chunk_keyword parent chunk is deleted")
+
         pg_chunk_id = _ensure_parent_pg_id(db, pg, "chunk", chunk_ref)
         if not pg_chunk_id:
             raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
@@ -580,6 +594,296 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
     raise ValueError(f"Unsupported col: {col}")
 
+def _soft_delete_chunk(pg, chunk_doc: dict) -> dict:
+    """Delete PG chunk row (+ cascade chunk_keyword) and remove Neo chunk subtree.
+
+    Returns a summary dict with ok, pg_deleted, chunk_pg_id, neo_deleted, neo.
+    If no PG row exists, returns skipped=True (idempotent).
+    """
+    mongo_id = str(chunk_doc.get("_id"))
+    chunk_id = None
+
+    with pg.begin():
+        obj = _pg_get_by_mongo_id(pg, pg_models.Chunk, mongo_id)
+        if obj:
+            chunk_id = obj.chunk_id
+            pg.delete(obj)
+
+    if chunk_id is None:
+        return {"ok": True, "skipped": True, "reason": "chunk PG row not found, nothing to delete"}
+
+    neo_result = detach_delete_entity("chunk", chunk_id)
+    return {
+        "ok": neo_result.get("ok", True),
+        "pg_deleted": True,
+        "chunk_pg_id": chunk_id,
+        "neo_deleted": neo_result.get("ok", True),
+        "neo": neo_result,
+    }
+
+def _soft_delete_lesson(pg, lesson_doc: dict) -> dict:
+    """Delete PG lesson row (FK cascade removes child chunk/chunk_keyword rows) and remove Neo lesson subtree.
+
+    Returns a summary dict with ok, pg_deleted, lesson_pg_id, neo_deleted, neo.
+    If no PG row exists, returns skipped=True (idempotent).
+    """
+    mongo_id = str(lesson_doc.get("_id"))
+    lesson_id = None
+
+    with pg.begin():
+        obj = _pg_get_by_mongo_id(pg, pg_models.Lesson, mongo_id)
+        if obj:
+            lesson_id = obj.lesson_id
+            pg.delete(obj)
+
+    if lesson_id is None:
+        return {"ok": True, "skipped": True, "reason": "lesson PG row not found, nothing to delete"}
+
+    neo_result = detach_delete_entity("lesson", lesson_id)
+    return {
+        "ok": neo_result.get("ok", True),
+        "pg_deleted": True,
+        "lesson_pg_id": lesson_id,
+        "neo_deleted": neo_result.get("ok", True),
+        "neo": neo_result,
+    }
+
+
+def _restore_chunk_keywords(db, pg, chunk_doc: dict, chunk_pg_id: str) -> dict:
+    """Sync all active Mongo chunk_keyword rows for this chunk back into PG + Neo.
+
+    Called after a chunk is un-deleted (is_deleted -> false) to restore its keywords.
+    Returns ok, chunk_keywords_synced, errors.
+    """
+    chunk_oid = chunk_doc.get("_id")
+    if chunk_oid is None:
+        return {"ok": False, "error": "chunk_doc missing _id"}
+
+    ck_docs = list(db["chunk_keyword"].find({
+        "chunk_id": chunk_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    synced = 0
+    errors: list[dict] = []
+
+    for ck_doc in ck_docs:
+        ck_mongo_id = str(ck_doc.get("_id"))
+        try:
+            with pg.begin():
+                ck_info = _upsert_one_to_pg(db, pg, "chunk_keyword", ck_doc)
+            ck_pg_id = ck_info.get("pg_id") if isinstance(ck_info, dict) else None
+            if ck_pg_id:
+                neo_payload = ck_info.get("neo_payload") or {
+                    "id": ck_pg_id,
+                    "name": ck_info.get("keyword_name") or "",
+                    "parent_id": chunk_pg_id,
+                }
+                neo_r = neo_sync_upsert("keyword", neo_payload)
+                if neo_r.get("ok"):
+                    synced += 1
+                else:
+                    errors.append({"mongo_id": ck_mongo_id, "error": f"neo sync failed: {neo_r.get('error', 'unknown')}"})
+            else:
+                errors.append({"mongo_id": ck_mongo_id, "error": "no pg_id returned"})
+        except Exception as exc:
+            errors.append({"mongo_id": ck_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "chunk_keywords_synced": synced,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_restore_lesson_chunks(db, lesson_doc: dict) -> dict:
+    """Restore all soft-deleted Mongo chunk docs under this lesson and sync each via existing chunk flow.
+
+    Marks each soft-deleted child chunk as is_deleted=False in Mongo, then calls
+    sync_doc_to_postgres(db, "chunk", ...) for each so the existing chunk restore path
+    recreates PG rows and restores Neo + chunk keywords.
+    Returns ok, chunks_restored, errors.
+    """
+    lesson_oid = lesson_doc.get("_id")
+    if lesson_oid is None:
+        return {"ok": False, "error": "lesson_doc missing _id"}
+
+    updated_at = lesson_doc.get("updated_at")
+    updated_by = lesson_doc.get("updated_by")
+
+    deleted_chunks = list(db["chunk"].find({
+        "lesson_id": lesson_oid,
+        "is_deleted": True,
+    }))
+
+    restored = 0
+    errors: list[dict] = []
+
+    for chunk_doc in deleted_chunks:
+        chunk_mongo_id = str(chunk_doc.get("_id"))
+        chunk_oid = chunk_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": False, "deleted_at": None, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["chunk"].update_one({"_id": chunk_oid}, {"$set": patch})
+            updated_chunk = db["chunk"].find_one({"_id": chunk_oid})
+            if updated_chunk is None:
+                errors.append({"mongo_id": chunk_mongo_id, "error": "chunk not found after Mongo update"})
+                continue
+            chunk_sync = sync_doc_to_postgres(db, "chunk", updated_chunk)
+            if chunk_sync.get("ok"):
+                restored += 1
+            else:
+                errors.append({"mongo_id": chunk_mongo_id, "error": chunk_sync.get("error", "chunk sync failed"), "sync": chunk_sync})
+        except Exception as exc:
+            errors.append({"mongo_id": chunk_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "chunks_restored": restored,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_soft_delete_lesson_chunks(db, lesson_doc: dict) -> dict:
+    """Soft-delete all active Mongo chunk docs under this lesson and sync each via existing chunk flow.
+
+    Marks each active child chunk as is_deleted=True in Mongo (inheriting deleted_at/updated_by
+    from the lesson), then calls sync_doc_to_postgres(db, "chunk", ...) for each so that the
+    existing chunk soft-delete path handles PG row deletion and Neo subtree removal.
+    Returns ok, chunks_cascaded, errors.
+    """
+    from datetime import datetime, timezone
+
+    lesson_oid = lesson_doc.get("_id")
+    if lesson_oid is None:
+        return {"ok": False, "error": "lesson_doc missing _id"}
+
+    deleted_at = lesson_doc.get("deleted_at") or datetime.now(timezone.utc)
+    updated_at = lesson_doc.get("updated_at") or deleted_at
+    updated_by = lesson_doc.get("updated_by")
+
+    active_chunks = list(db["chunk"].find({
+        "lesson_id": lesson_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    cascaded = 0
+    errors: list[dict] = []
+
+    for chunk_doc in active_chunks:
+        chunk_mongo_id = str(chunk_doc.get("_id"))
+        chunk_oid = chunk_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": True, "deleted_at": deleted_at, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["chunk"].update_one({"_id": chunk_oid}, {"$set": patch})
+            updated_chunk = db["chunk"].find_one({"_id": chunk_oid})
+            if updated_chunk is None:
+                errors.append({"mongo_id": chunk_mongo_id, "error": "chunk not found after Mongo update"})
+                continue
+            chunk_sync = sync_doc_to_postgres(db, "chunk", updated_chunk)
+            if chunk_sync.get("ok"):
+                cascaded += 1
+            else:
+                errors.append({"mongo_id": chunk_mongo_id, "error": chunk_sync.get("error", "chunk sync failed"), "sync": chunk_sync})
+        except Exception as exc:
+            errors.append({"mongo_id": chunk_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "chunks_cascaded": cascaded,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_soft_delete_chunk_keywords(db, chunk_doc: dict) -> dict:
+    """Soft-delete all active Mongo chunk_keyword docs under this chunk.
+
+    Marks each active chunk_keyword as is_deleted=True, inheriting deleted_at/updated_by
+    from the chunk doc. PG rows are removed by FK cascade when the chunk row is deleted.
+    Returns ok, chunk_keywords_cascaded, errors.
+    """
+    from datetime import datetime, timezone
+
+    chunk_oid = chunk_doc.get("_id")
+    if chunk_oid is None:
+        return {"ok": False, "error": "chunk_doc missing _id"}
+
+    deleted_at = chunk_doc.get("deleted_at") or datetime.now(timezone.utc)
+    updated_at = chunk_doc.get("updated_at") or deleted_at
+    updated_by = chunk_doc.get("updated_by")
+
+    active_cks = list(db["chunk_keyword"].find({
+        "chunk_id": chunk_oid,
+        "is_deleted": {"$ne": True},
+    }))
+
+    cascaded = 0
+    errors: list[dict] = []
+
+    for ck_doc in active_cks:
+        ck_mongo_id = str(ck_doc.get("_id"))
+        ck_oid = ck_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": True, "deleted_at": deleted_at, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["chunk_keyword"].update_one({"_id": ck_oid}, {"$set": patch})
+            cascaded += 1
+        except Exception as exc:
+            errors.append({"mongo_id": ck_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "chunk_keywords_cascaded": cascaded,
+        "errors": errors if errors else None,
+    }
+
+
+def _cascade_restore_chunk_keywords_mongo(db, chunk_doc: dict) -> dict:
+    """Restore all soft-deleted Mongo chunk_keyword docs under this chunk.
+
+    Marks each soft-deleted chunk_keyword as is_deleted=False in Mongo so that
+    _restore_chunk_keywords can sync them back to PG + Neo.
+    Returns ok, chunk_keywords_restored, errors.
+    """
+    chunk_oid = chunk_doc.get("_id")
+    if chunk_oid is None:
+        return {"ok": False, "error": "chunk_doc missing _id"}
+
+    updated_at = chunk_doc.get("updated_at")
+    updated_by = chunk_doc.get("updated_by")
+
+    deleted_cks = list(db["chunk_keyword"].find({
+        "chunk_id": chunk_oid,
+        "is_deleted": True,
+    }))
+
+    restored = 0
+    errors: list[dict] = []
+
+    for ck_doc in deleted_cks:
+        ck_mongo_id = str(ck_doc.get("_id"))
+        ck_oid = ck_doc["_id"]
+        try:
+            patch: dict = {"is_deleted": False, "deleted_at": None, "updated_at": updated_at}
+            if updated_by is not None:
+                patch["updated_by"] = updated_by
+            db["chunk_keyword"].update_one({"_id": ck_oid}, {"$set": patch})
+            restored += 1
+        except Exception as exc:
+            errors.append({"mongo_id": ck_mongo_id, "error": str(exc)})
+
+    return {
+        "ok": len(errors) == 0,
+        "chunk_keywords_restored": restored,
+        "errors": errors if errors else None,
+    }
+
+
 # Hàm chạy đầu khi soft delete
 def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
@@ -604,6 +908,19 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     pg = SessionLocal()
     try:
+        if col == "chunk" and is_deleted:
+            ck_mongo_cascade = _cascade_soft_delete_chunk_keywords(db, doc)
+            chunk_sd = _soft_delete_chunk(pg, doc)
+            _neo = chunk_sd.get("neo") or {"ok": True, "skipped": True}
+            return {
+                "ok": ck_mongo_cascade.get("ok", True) and chunk_sd.get("ok", True),
+                "op": "soft_delete",
+                "chunk_soft_delete": chunk_sd,
+                "chunk_keyword_mongo_cascade": ck_mongo_cascade,
+                "neo": _neo,
+                "neo_entity_sync": _neo,
+            }
+
         if col == "chunk_keyword" and is_deleted:
             with pg.begin():
                 existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, str(doc.get("_id")))
@@ -629,6 +946,21 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 result["neo_upsert"] = neo_upsert
             result["neo"] = neo_upsert or {"ok": True, "skipped": True}
             return result
+
+        if col == "lesson" and is_deleted:
+            lesson_cascade = _cascade_soft_delete_lesson_chunks(db, doc)
+            lesson_sd = _soft_delete_lesson(pg, doc)
+            _neo = lesson_sd.get("neo") or {"ok": True, "skipped": True}
+            return {
+                "ok": lesson_cascade.get("ok", True) and lesson_sd.get("ok", True),
+                "op": "soft_delete",
+                "lesson_soft_delete": lesson_sd,
+                "lesson_cascade": lesson_cascade,
+                "neo": _neo,
+                "neo_entity_sync": _neo,
+            }
+
+        _lesson_cascade_result: Optional[dict] = None
 
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
@@ -711,11 +1043,28 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             if rename_errors:
                 info["keyword_rename_errors"] = rename_errors
 
+        # PG persistence guard: for active chunk, verify the row really landed in PG.
+        # Use a separate session to avoid implicitly starting a transaction on the main pg session.
+        _pg_persist_check: Optional[dict] = None
+        if not is_deleted and col == "chunk":
+            verify_pg = SessionLocal()
+            try:
+                _chunk_verify = _pg_get_by_mongo_id(verify_pg, pg_models.Chunk, str(doc.get("_id")))
+                if _chunk_verify is None:
+                    _pg_persist_check = {"ok": False, "reason": "chunk row missing in PG after upsert"}
+                else:
+                    _pg_persist_check = {"ok": True, "chunk_pg_id": _chunk_verify.chunk_id}
+            finally:
+                verify_pg.close()
+
         neo_cleanup: Optional[dict] = None
         neo_upsert: Optional[dict] = None
 
         if col in NEO_SYNCABLE_COLS:
-            if is_deleted:
+            # Do not sync chunk to Neo if PG row is missing
+            if col == "chunk" and isinstance(_pg_persist_check, dict) and not _pg_persist_check.get("ok"):
+                neo_upsert = {"ok": False, "error": "skipped: chunk row missing in PG"}
+            elif is_deleted:
                 pg_id = info.get("pg_id") if isinstance(info, dict) else None
                 if pg_id:
                     neo_col = "keyword" if col == "chunk_keyword" else col
@@ -739,6 +1088,35 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         neo_col = "keyword" if col == "chunk_keyword" else col
                         neo_upsert = neo_sync_upsert(neo_col, neo_payload)
 
+        # Restore child chunks only after lesson Neo node is confirmed up
+        if not is_deleted and col == "lesson":
+            _neo_lesson_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
+            if not _neo_lesson_ok:
+                _lesson_cascade_result = {"ok": False, "skipped": True, "reason": "lesson neo upsert failed"}
+            else:
+                try:
+                    _lesson_cascade_result = _cascade_restore_lesson_chunks(db, doc)
+                except Exception as _lcr_err:
+                    _log.warning("lesson chunk restore cascade failed: %s", _lcr_err)
+                    _lesson_cascade_result = {"ok": False, "error": str(_lcr_err)}
+
+        # Restore chunk keywords only after chunk Neo node is confirmed up
+        _restore_ck_result: Optional[dict] = None
+        _ck_mongo_restore: Optional[dict] = None
+        if not is_deleted and col == "chunk" and isinstance(info, dict):
+            chunk_pg_id = info.get("pg_id")
+            if chunk_pg_id:
+                _neo_chunk_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
+                if not _neo_chunk_ok:
+                    _restore_ck_result = {"ok": False, "skipped": True, "reason": "chunk neo upsert failed"}
+                else:
+                    try:
+                        _ck_mongo_restore = _cascade_restore_chunk_keywords_mongo(db, doc)
+                        _restore_ck_result = _restore_chunk_keywords(db, pg, doc, chunk_pg_id)
+                    except Exception as _rck_err:
+                        _log.warning("chunk_keywords restore failed for pg_id=%s: %s", chunk_pg_id, _rck_err)
+                        _restore_ck_result = {"ok": False, "error": str(_rck_err)}
+
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
         rename_prop_ok = not bool(isinstance(info, dict) and info.get("keyword_rename_errors"))
@@ -746,7 +1124,11 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         emb_ok = _emb_result.get("ok", True) if isinstance(_emb_result, dict) else True
         _restore_result = info.get("restore_subtree") if isinstance(info, dict) else None
         restore_ok = _restore_result.get("ok", True) if isinstance(_restore_result, dict) else True
-        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok
+        restore_ck_ok = _restore_ck_result.get("ok", True) if isinstance(_restore_ck_result, dict) else True
+        ck_mongo_restore_ok = _ck_mongo_restore.get("ok", True) if isinstance(_ck_mongo_restore, dict) else True
+        pg_persist_ok = _pg_persist_check.get("ok", True) if isinstance(_pg_persist_check, dict) else True
+        lesson_cascade_ok = _lesson_cascade_result.get("ok", True) if isinstance(_lesson_cascade_result, dict) else True
+        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok and restore_ck_ok and ck_mongo_restore_ok and pg_persist_ok and lesson_cascade_ok
 
         result: dict = {"ok": top_ok, **(info or {})}
         if neo_cleanup is not None:
@@ -773,6 +1155,18 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
         if isinstance(_restore_result, dict):
             result["restore_subtree"] = _restore_result
+
+        if isinstance(_ck_mongo_restore, dict):
+            result["chunk_keyword_mongo_restore"] = _ck_mongo_restore
+
+        if isinstance(_restore_ck_result, dict):
+            result["restore_chunk_keywords"] = _restore_ck_result
+
+        if isinstance(_pg_persist_check, dict):
+            result["pg_persist_check"] = _pg_persist_check
+
+        if isinstance(_lesson_cascade_result, dict):
+            result["lesson_cascade"] = _lesson_cascade_result
 
         return result
     except Exception as e:
