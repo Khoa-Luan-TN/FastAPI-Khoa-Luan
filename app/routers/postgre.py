@@ -133,7 +133,7 @@ def table_columns(db: db_dependency, table_name: str = Path(...)):
 def list_rows(
     db: db_dependency,
     table_name: str = Path(...),
-    limit: int = Query(50, ge=1, le=500),
+    limit: int = Query(500, ge=1, le=5000),
     offset: int = Query(0, ge=0),
 ):
     model = _get_model(table_name)

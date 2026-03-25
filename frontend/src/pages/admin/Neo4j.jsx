@@ -1,5 +1,5 @@
 // pages/admin/Neo4j.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../../styles/admin/page.css";
 import "../../styles/admin/minio.css";
 import "../../styles/admin/table.css";
@@ -153,11 +153,7 @@ function TreeNode({ seg, isLast, isActive, depth }) {
   );
 }
 
-// ---- Mapping: label -> child label ----
-const CHILD_LABEL_MAP = {
-  Class: "Subject", Subject: "Topic", Topic: "Lesson",
-  Lesson: "Chunk", Chunk: "Keyword",
-};
+const NEO_LABEL_ORDER = ["Class", "Subject", "Topic", "Lesson", "Chunk", "Keyword"];
 
 // ---- Full vertical tree (path + real children) ----
 function RelationTree({ raw, childNodes }) {
@@ -275,8 +271,10 @@ export default function Neo4j() {
   const [q, setQ] = useState("");
   const [labels, setLabels] = useState([]);
   const [nodes, setNodes] = useState([]);
+  const [nodesLoading, setNodesLoading] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [childNodes, setChildNodes] = useState([]); // real children for graph section
+  const _loadGenRef = useRef(0);
 
   const isRoot = currentLabel === "";
   const isNodeDetail = !!currentNodeId;
@@ -285,9 +283,20 @@ export default function Neo4j() {
     const data = await neoApi.listLabels();
     setLabels(data.labels || []);
   }
-  async function reloadNodes(label) {
-    const data = await neoApi.listNodes(label);
-    setNodes(data.nodes || []);
+  async function loadAllNodes(label) {
+    const gen = ++_loadGenRef.current;
+    setNodesLoading(true);
+    setNodes([]);
+    try {
+      const data = await neoApi.listAllNodes(label);
+      if (gen !== _loadGenRef.current) return;
+      setNodes(data.nodes || []);
+    } catch (e) {
+      if (gen !== _loadGenRef.current) return;
+      setNodes([]);
+    } finally {
+      if (gen === _loadGenRef.current) setNodesLoading(false);
+    }
   }
   async function reloadNodeDetail(nodeId) {
     const data = await neoApi.getNode(nodeId);
@@ -297,50 +306,21 @@ export default function Neo4j() {
   useEffect(() => { reloadLabels().catch(console.error); }, []);
   useEffect(() => {
     if (!currentLabel) return;
-    reloadNodes(currentLabel).then(() => setSelectedNode(null)).catch(console.error);
+    setSelectedNode(null);
+    loadAllNodes(currentLabel).catch(console.error);
   }, [currentLabel]);
   useEffect(() => {
     if (!currentNodeId) { setSelectedNode(null); return; }
     reloadNodeDetail(currentNodeId).catch(console.error);
   }, [currentNodeId]);
 
-  // Fetch real child nodes when detail is loaded
+  // Fetch real child nodes when detail is loaded — uses exact children endpoint
   useEffect(() => {
-    if (!selectedNode?.relation) { setChildNodes([]); return; }
+    if (!selectedNode?.id) { setChildNodes([]); return; }
     const parsed = parseRelationString(selectedNode.relation);
     if (!parsed?.children) { setChildNodes([]); return; }
-    const cl = CHILD_LABEL_MAP[selectedNode.label];
-    if (!cl) { setChildNodes([]); return; }
-    const entityId = String(selectedNode.entity_id || "");
-    // Use max limit for Keywords so we can filter client-side across large DBs
-    const fetchLimit = cl === "Keyword" ? 2000 : 200;
-    neoApi.listNodes(cl, { limit: fetchLimit })
-      .then((data) => {
-        const all = data.nodes || [];
-        let filtered = all;
-
-        if (cl === "Keyword" && entityId) {
-          // keyword postgreId = chunk_id::keyword_name — exact prefix match
-          filtered = all.filter((n) => {
-            const pid = String(n.postgreId || "");
-            return pid.startsWith(entityId + "::");
-          });
-
-          // Enrich name: if the node's name is blank, derive from postgreId suffix
-          filtered = filtered.map((n) => {
-            if (n.name) return n;
-            const pid = String(n.postgreId || "");
-            const suffix = pid.slice(entityId.length + 2); // strip "chunk_id::"
-            return { ...n, name: suffix };
-          });
-        } else {
-          // For other child types, slice to expected count (no reliable parent filter)
-          const expectedCount = parsed.children?.count || 0;
-          if (expectedCount > 0) filtered = all.slice(0, expectedCount);
-        }
-
-        setChildNodes(filtered);
-      })
+    neoApi.getNodeChildren(selectedNode.id)
+      .then((data) => setChildNodes(data.children || []))
       .catch(() => setChildNodes([]));
   }, [selectedNode]);
 
@@ -350,7 +330,14 @@ export default function Neo4j() {
   const labelRows = useMemo(() => {
     const s = q.trim().toLowerCase();
     const list = !s ? labels : labels.filter((l) => (l.name || "").toLowerCase().includes(s));
-    return list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    return list.slice().sort((a, b) => {
+      const ai = NEO_LABEL_ORDER.indexOf(a.name);
+      const bi = NEO_LABEL_ORDER.indexOf(b.name);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return (a.name || "").localeCompare(b.name || "");
+    });
   }, [labels, q]);
 
   const nodeRows = useMemo(() => {
@@ -574,6 +561,10 @@ export default function Neo4j() {
                 <RelationTree raw={selectedNode?.relation || ""} childNodes={childNodes} />
               </div>
             </div>
+          </div>
+        ) : nodesLoading ? (
+          <div className="minio-empty" style={{ marginTop: 24 }}>
+            <p style={{ color: "#9333EA", fontWeight: 600 }}>Đang tải dữ liệu…</p>
           </div>
         ) : (
           <DataTable

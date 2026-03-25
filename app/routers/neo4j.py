@@ -162,7 +162,7 @@ def list_labels(session: Annotated[NeoSession, Depends(get_neo4j_session)]):
 def list_nodes(
     session: Annotated[NeoSession, Depends(get_neo4j_session)],
     label: str = Query(...),
-    limit: int = Query(200, ge=1, le=2000),
+    limit: int = Query(2000, ge=1, le=10000),
     skip: int = Query(0, ge=0),
 ):
     label = _require_allowed_label(label)
@@ -246,6 +246,34 @@ def _relation_for_node(session: NeoSession, label: str, node_id: str) -> str:
         out += f" | children {child_title}: {int(r.get('child_count') or 0)}"
 
     return out
+
+
+@router.get("/nodes/{node_id}/children", summary="Get direct child nodes of a node (view-only)")
+def get_node_children(
+    session: Annotated[NeoSession, Depends(get_neo4j_session)],
+    node_id: str = Path(...),
+):
+    cypher = """
+    MATCH (n)-[]->(child)
+    WHERE elementId(n) = $id
+    RETURN elementId(child) AS id, labels(child) AS lbs, properties(child) AS p
+    ORDER BY elementId(child)
+    """
+    rs = session.run(cypher, id=node_id)
+    children = []
+    for r in rs:
+        lbs = r["lbs"] or []
+        p = r["p"] or {}
+        label = _pick_label(lbs)
+        if label not in ALLOWED_LABELS:
+            continue
+        children.append({
+            "id": str(r["id"]),
+            "label": label,
+            "postgreId": _postgre_id(label, p),
+            "name": _display_name(label, p),
+        })
+    return {"node_id": node_id, "children": children}
 
 
 @router.get("/nodes/{node_id}", summary="Get node detail (view-only, includes relation)")

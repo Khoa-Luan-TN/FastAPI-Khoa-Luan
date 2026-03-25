@@ -32,6 +32,21 @@ export function listRows(tableName, limit = 200, offset = 0) {
   return httpJson(url.toString(), { method: "GET" });
 }
 
+export async function listAllRows(tableName, batchSize = 500) {
+  let offset = 0;
+  let total = null;
+  const all = [];
+  while (true) {
+    const data = await listRows(tableName, batchSize, offset);
+    const batch = data.rows || [];
+    all.push(...batch);
+    if (total === null) total = data.total ?? 0;
+    offset += batch.length;
+    if (batch.length === 0 || all.length >= total) break;
+  }
+  return { rows: all, total: all.length };
+}
+
 export function getRow(tableName, pk) {
   const t = encodeURIComponent(tableName);
   const p = encodeURIComponent(pk); // pk có thể là "chunk_id::keyword_name"

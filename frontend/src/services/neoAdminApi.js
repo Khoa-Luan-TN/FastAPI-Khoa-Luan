@@ -32,6 +32,25 @@ export function listNodes(label, { limit, skip } = {}) {
   });
 }
 
+export async function listAllNodes(label, batchSize = 2000) {
+  let skip = 0;
+  let total = null;
+  const all = [];
+  while (true) {
+    const data = await listNodes(label, { limit: batchSize, skip });
+    const batch = data.nodes || [];
+    all.push(...batch);
+    if (total === null) total = data.total ?? 0;
+    skip += batch.length;
+    if (batch.length === 0 || all.length >= total) break;
+  }
+  return { nodes: all, total: all.length };
+}
+
 export function getNode(nodeId) {
   return httpJson(`/admin/neo/nodes/${encodeURIComponent(nodeId)}`, { method: "GET" });
+}
+
+export function getNodeChildren(nodeId) {
+  return httpJson(`/admin/neo/nodes/${encodeURIComponent(nodeId)}/children`, { method: "GET" });
 }

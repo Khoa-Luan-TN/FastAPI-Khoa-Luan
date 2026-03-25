@@ -1,5 +1,5 @@
 // pages/admin/PostgreSQL.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../../styles/admin/page.css";
 import "../../styles/admin/minio.css";
 import "../../styles/admin/table.css";
@@ -62,6 +62,8 @@ const ChevronIcon = () => (
   </svg>
 );
 
+const PG_TABLE_ORDER = ["class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"];
+
 export default function PostgreSQL() {
   // root -> table -> row detail
   const [currentTable, setCurrentTable] = useState("");
@@ -70,9 +72,10 @@ export default function PostgreSQL() {
 
   const [tables, setTables] = useState([]); // [{id,name}]
   const [rows, setRows] = useState([]); // raw rows from API
-  const [totalRows, setTotalRows] = useState(0);
+  const [rowsLoading, setRowsLoading] = useState(false);
 
   const [err, setErr] = useState("");
+  const _loadGenRef = useRef(0);
 
   const isRoot = currentTable === "";
   const isRowDetail = !!currentPk;
@@ -89,17 +92,22 @@ export default function PostgreSQL() {
     }
   }
 
-  async function reloadRows(tableName) {
+  async function loadAllRows(tableName) {
     if (!tableName) return;
+    const gen = ++_loadGenRef.current;
     setErr("");
+    setRowsLoading(true);
+    setRows([]);
     try {
-      const data = await pgApi.listRows(tableName, 500, 0);
+      const data = await pgApi.listAllRows(tableName);
+      if (gen !== _loadGenRef.current) return;
       setRows(data?.rows || []);
-      setTotalRows(data?.total ?? (data?.rows || []).length);
     } catch (e) {
+      if (gen !== _loadGenRef.current) return;
       setErr(String(e?.message || e));
       setRows([]);
-      setTotalRows(0);
+    } finally {
+      if (gen === _loadGenRef.current) setRowsLoading(false);
     }
   }
 
@@ -109,7 +117,7 @@ export default function PostgreSQL() {
 
   useEffect(() => {
     if (!currentTable) return;
-    reloadRows(currentTable);
+    loadAllRows(currentTable);
   }, [currentTable]);
 
   const headerTitle = useMemo(() => {
@@ -147,7 +155,14 @@ export default function PostgreSQL() {
   const tableRows = useMemo(() => {
     const s = q.trim().toLowerCase();
     const list = !s ? tables : tables.filter((t) => t.name.toLowerCase().includes(s));
-    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
+    return list.slice().sort((a, b) => {
+      const ai = PG_TABLE_ORDER.indexOf(a.name);
+      const bi = PG_TABLE_ORDER.indexOf(b.name);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [tables, q]);
 
   // ===== Table: rows =====
@@ -370,6 +385,10 @@ export default function PostgreSQL() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : rowsLoading ? (
+          <div className="minio-empty" style={{ marginTop: 24 }}>
+            <p style={{ color: "#6366F1", fontWeight: 600 }}>Đang tải dữ liệu…</p>
           </div>
         ) : (
           <DataTable
