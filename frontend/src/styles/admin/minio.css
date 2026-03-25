@@ -13,9 +13,9 @@
   gap: 18px;
   margin-bottom: 24px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, #A1C4FD 0%, #C2E9FB 100%);
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
   border-radius: 24px;
-  color: #1E3A8A;
+  color: #1e3a8a;
   /* Soft dark blue for good contrast */
   box-shadow: 0 10px 30px rgba(161, 196, 253, 0.4);
   position: relative;
@@ -41,20 +41,20 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #3B82F6;
+  color: #3b82f6;
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   z-index: 1;
 }
 
-.minio-root-header>div {
+.minio-root-header > div {
   z-index: 1;
 }
 
 .mrh-title {
   font-size: 24px;
   font-weight: 800;
-  color: #1E3A8A;
+  color: #1e3a8a;
   margin: 0 0 6px;
   letter-spacing: -0.5px;
   font-family: var(--minio-font);
@@ -76,7 +76,7 @@
   flex-wrap: wrap;
   padding: 12px 20px;
   margin-bottom: 12px;
-  background: #FFFFFF;
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 100px;
   /* Pill shape */
@@ -92,23 +92,23 @@
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 600;
-  color: #64748B;
+  color: #64748b;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   font-family: var(--minio-font);
 }
 
 .minio-crumb-item:hover {
-  background: #F8FAFC;
+  background: #f8fafc;
   color: #334155;
   transform: translateY(-1px);
 }
 
 .minio-crumb-item.active {
-  color: #1D4ED8;
+  color: #1d4ed8;
   font-weight: 700;
   cursor: default;
-  background: #EFF6FF;
+  background: #eff6ff;
 }
 
 .mci-icon {
@@ -128,7 +128,7 @@
 .mci-chevron {
   display: flex;
   align-items: center;
-  color: #CBD5E1;
+  color: #cbd5e1;
 }
 
 /* ---- Bar 2: Action bar (search + count + buttons) ---- */
@@ -138,7 +138,7 @@
   gap: 12px;
   padding: 8px 12px 8px 8px;
   margin-bottom: 6px;
-  background: #FFFFFF;
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 100px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
@@ -156,7 +156,7 @@
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94A3B8;
+  color: #94a3b8;
   display: flex;
   pointer-events: none;
 }
@@ -167,7 +167,7 @@
   border: 1px solid transparent;
   border-radius: 100px;
   font-size: 14px;
-  background: #F8FAFC;
+  background: #f8fafc;
   color: #334155;
   outline: none;
   font-family: var(--minio-font);
@@ -175,13 +175,13 @@
 }
 
 .minio-search input:focus {
-  background: #FFFFFF;
-  border-color: #BAE6FD;
+  background: #ffffff;
+  border-color: #bae6fd;
   box-shadow: 0 0 0 3px rgba(186, 230, 253, 0.3);
 }
 
 .minio-search input::placeholder {
-  color: #94A3B8;
+  color: #94a3b8;
   font-weight: 500;
 }
 
@@ -209,26 +209,26 @@
 }
 
 .minio-btn-primary {
-  background: #DBEAFE;
+  background: #dbeafe;
   /* Pastel blue */
-  color: #1E40AF;
+  color: #1e40af;
   /* Dark blue text */
   box-shadow: 0 2px 10px rgba(219, 234, 254, 0.5);
 }
 
 .minio-btn-primary:hover {
-  background: #BFDBFE;
+  background: #bfdbfe;
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(219, 234, 254, 0.8);
 }
 
 .minio-btn-secondary {
-  background: #F1F5F9;
+  background: #f1f5f9;
   color: #475569;
 }
 
 .minio-btn-secondary:hover {
-  background: #E2E8F0;
+  background: #e2e8f0;
   transform: translateY(-1px);
 }
 
@@ -246,7 +246,7 @@
 }
 
 .minio-root-card {
-  background: #FFFFFF;
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.5);
   border-radius: 24px;
   cursor: pointer;
@@ -260,7 +260,7 @@
 .minio-root-card:hover {
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
   transform: translateY(-4px);
-  border-color: #E2E8F0;
+  border-color: #e2e8f0;
 }
 
 .mrc-banner {
@@ -291,7 +291,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 .mrc-info {
@@ -302,27 +302,29 @@
 .mrc-name {
   font-size: 17px;
   font-weight: 700;
-  color: #1E293B;
+  color: #1e293b;
   margin-bottom: 4px;
 }
 
 .mrc-desc {
   font-size: 13px;
-  color: #64748B;
+  color: #64748b;
   line-height: 1.5;
   font-weight: 500;
 }
 
 .mrc-arrow {
   font-size: 24px;
-  color: #CBD5E1;
+  color: #cbd5e1;
   line-height: 1;
-  transition: transform 0.2s, color 0.2s;
+  transition:
+    transform 0.2s,
+    color 0.2s;
 }
 
 .minio-root-card:hover .mrc-arrow {
   transform: translateX(4px);
-  color: #94A3B8;
+  color: #94a3b8;
 }
 
 /* ---- Leaf upload path info banner ---- */
@@ -332,12 +334,12 @@
   gap: 6px;
   padding: 6px 16px;
   margin-bottom: 10px;
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   border-radius: 100px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #15803D;
+  color: #15803d;
   font-family: var(--minio-font);
 }
 
@@ -345,48 +347,49 @@
 .minio-folder-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 12px;
   margin-bottom: 24px;
-  max-height: calc(100vh - 280px);
-  overflow-y: auto;
-  overflow-x: auto;
-  padding: 2px;
-  min-width: 600px;
+  width: 100%;
+  min-width: 0;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
 }
 
 .minio-folder-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
-  background: #FFFFFF;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 18px;
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-  overflow: hidden;
 }
 
 .minio-folder-row::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #3B82F6;
+  background: #3b82f6;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
 .minio-folder-row:hover {
-  background: #F8FAFC;
+  background: #f8fafc;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.08);
-  border-color: #BAE6FD;
+  border-color: #bae6fd;
 }
 
 .minio-folder-row:hover::before {
@@ -396,21 +399,21 @@
 .mfr-icon {
   width: 44px;
   height: 44px;
-  background: #EFF6FF;
+  background: #eff6ff;
   /* Pastel blue */
   border-radius: 14px;
   display: grid;
   place-items: center;
-  color: #3B82F6;
+  color: #3b82f6;
   flex-shrink: 0;
 }
 
 .mfr-name {
   flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   color: #1E293B;
-  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -433,16 +436,18 @@
 
 .mfr-arrow {
   font-size: 20px;
-  color: #CBD5E1;
+  color: #cbd5e1;
   line-height: 1;
   flex-shrink: 0;
   margin-left: 8px;
-  transition: transform 0.2s, color 0.2s;
+  transition:
+    transform 0.2s,
+    color 0.2s;
 }
 
 .minio-folder-row:hover .mfr-arrow {
   transform: translateX(4px);
-  color: #94A3B8;
+  color: #94a3b8;
 }
 
 /* ---- FILE list (floating rows) ---- */
@@ -465,9 +470,13 @@
   padding-top: 0;
 }
 
-.minio-folder-list::-webkit-scrollbar,
 .minio-file-list::-webkit-scrollbar {
   width: 8px;
+}
+
+.minio-folder-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .minio-folder-list::-webkit-scrollbar-thumb,
@@ -499,7 +508,7 @@
 .mfl-th {
   font-size: 12px;
   font-weight: 700;
-  color: #94A3B8;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 1.2px;
   font-family: var(--minio-font);
@@ -522,7 +531,7 @@
   display: grid;
   grid-template-columns: minmax(150px, 1fr) 96px 120px 128px 152px;
   padding: 14px 24px;
-  background: #FFFFFF;
+  background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 16px;
   gap: 16px;
@@ -537,7 +546,7 @@
 
 /* File type accents */
 .minio-file-item::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -1px;
   /* Adjust to sit explicitly on the border */
@@ -551,26 +560,26 @@
 }
 
 .minio-file-item.type-pdf::before {
-  background: #E11D48;
+  background: #e11d48;
 }
 
 .minio-file-item.type-video::before {
-  background: #4F46E5;
+  background: #4f46e5;
 }
 
 .minio-file-item.type-image::before {
-  background: #16A34A;
+  background: #16a34a;
 }
 
 .minio-file-item.type-other::before {
-  background: #64748B;
+  background: #64748b;
 }
 
 .minio-file-item:hover {
-  background: #FDFDFD;
+  background: #fdfdfd;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  border-color: #E2E8F0;
+  border-color: #e2e8f0;
 }
 
 .minio-file-item:hover::before {
@@ -595,29 +604,29 @@
 
 /* Custom pastel colors for file icons */
 .mfi-icon.pdf {
-  background: #FFE4E6;
-  color: #E11D48;
+  background: #ffe4e6;
+  color: #e11d48;
 }
 
 .mfi-icon.video {
-  background: #E0E7FF;
-  color: #4F46E5;
+  background: #e0e7ff;
+  color: #4f46e5;
 }
 
 .mfi-icon.image {
-  background: #DCFCE7;
-  color: #16A34A;
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .mfi-icon.other {
-  background: #F1F5F9;
-  color: #64748B;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .mfi-name {
   font-size: 14.5px;
   font-weight: 600;
-  color: #1E293B;
+  color: #1e293b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -638,28 +647,28 @@
 }
 
 .mfi-type-badge.pdf {
-  background: #FFE4E6;
-  color: #E11D48;
+  background: #ffe4e6;
+  color: #e11d48;
 }
 
 .mfi-type-badge.video {
-  background: #E0E7FF;
-  color: #4F46E5;
+  background: #e0e7ff;
+  color: #4f46e5;
 }
 
 .mfi-type-badge.image {
-  background: #DCFCE7;
-  color: #16A34A;
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .mfi-type-badge.other {
-  background: #F1F5F9;
-  color: #64748B;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .mfi-size {
   font-size: 13.5px;
-  color: #64748B;
+  color: #64748b;
   font-weight: 500;
   justify-self: center;
   text-align: center;
@@ -668,7 +677,7 @@
 
 .mfi-date {
   font-size: 13px;
-  color: #94A3B8;
+  color: #94a3b8;
   white-space: nowrap;
   font-weight: 500;
   justify-self: center;
@@ -696,7 +705,7 @@
   height: 32px;
   padding: 0 12px;
   border: 1px solid transparent;
-  background: #F1F5F9;
+  background: #f1f5f9;
   border-radius: 100px;
   font-size: 12.5px;
   font-weight: 600;
@@ -710,44 +719,44 @@
 }
 
 .mfi-action-btn:hover {
-  background: #E2E8F0;
+  background: #e2e8f0;
   color: #334155;
   transform: translateY(-1px);
 }
 
 .mfi-action-btn.danger {
-  color: #E11D48;
-  background: #FFE4E6;
+  color: #e11d48;
+  background: #ffe4e6;
 }
 
 .mfi-action-btn.danger:hover {
-  background: #FECDD3;
-  color: #BE123C;
+  background: #fecdd3;
+  color: #be123c;
 }
 
 .mfi-action-btn.restore {
-  color: #16A34A;
-  background: #D1FAE5;
+  color: #16a34a;
+  background: #d1fae5;
 }
 
 .mfi-action-btn.restore:hover {
-  background: #A7F3D0;
-  color: #15803D;
+  background: #a7f3d0;
+  color: #15803d;
 }
 
 /* ---- Empty state ---- */
 .minio-empty {
   padding: 80px 20px;
   text-align: center;
-  color: #94A3B8;
-  background: #FFFFFF;
-  border: 1px dashed #CBD5E1;
+  color: #94a3b8;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
   border-radius: 24px;
 }
 
 .minio-empty-icon {
   margin-bottom: 16px;
-  color: #CBD5E1;
+  color: #cbd5e1;
   display: flex;
   justify-content: center;
   transform: scale(1.2);
@@ -764,7 +773,7 @@
 .minio-loading {
   padding: 60px;
   text-align: center;
-  color: #94A3B8;
+  color: #94a3b8;
   font-size: 15px;
   font-weight: 500;
   font-family: var(--minio-font);
@@ -772,7 +781,6 @@
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 0.6;
@@ -789,7 +797,6 @@
     grid-template-columns: 1fr;
   }
 
-  .minio-folder-list,
   .minio-file-list {
     max-height: calc(100vh - 240px);
   }
