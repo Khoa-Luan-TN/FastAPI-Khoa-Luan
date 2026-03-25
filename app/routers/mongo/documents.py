@@ -162,6 +162,10 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     body.pop("_id", None)
     body.pop("created_at", None)
     body.pop("created_by", None)
+    # import_key is import-only — strip null/empty so normal updates never conflict
+    # with the sparse unique index on import_key.
+    if "import_key" in body and not body.get("import_key"):
+        body.pop("import_key")
 
     if not body:
         raise HTTPException(status_code=422, detail="Not field change to updated")

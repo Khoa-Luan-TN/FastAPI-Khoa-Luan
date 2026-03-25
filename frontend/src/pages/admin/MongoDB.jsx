@@ -162,7 +162,7 @@ function defaultPairsForCollection(col) {
 
 /** ===== Mini modal: Create/Rename Collection ===== */
 /** ===== Modal: Create/Edit Document (fields động) ===== */
-function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName, classOptions = [] }) {
+function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
   const [pairs, setPairs] = useState([]);
 
   useEffect(() => {
@@ -210,7 +210,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
     if (collectionName === "subject") {
       const classIdPair = pairs.find(p => p.k === "class_id");
       if (!classIdPair || !String(classIdPair.v || "").trim()) {
-        alert("Vui lòng chọn lớp tham chiếu trước khi lưu");
+        alert("Vui lòng nhập class_id");
         return;
       }
     }
@@ -251,31 +251,14 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                       alignItems: "center",
                     }}
                   >
-                    {(collectionName === "subject" && keyName === "class_id") ? (
-                      <span className="kv-input kv-key" style={{ display: "flex", alignItems: "center", fontWeight: 500, color: "#374151", background: "#f8fafc", cursor: "default" }}>
-                        Lớp tham chiếu
-                      </span>
-                    ) : (
-                      <input
-                        className="kv-input"
-                        placeholder="Tên trường (vd: class_name)"
-                        value={p.k}
-                        onChange={(e) => change(i, "k", e.target.value)}
-                      />
-                    )}
+                    <input
+                      className="kv-input"
+                      placeholder="Tên trường (vd: class_name)"
+                      value={p.k}
+                      onChange={(e) => change(i, "k", e.target.value)}
+                    />
 
-                    {(collectionName === "subject" && keyName === "class_id") ? (
-                      <select
-                        className="kv-input"
-                        value={p.v}
-                        onChange={(e) => change(i, "v", e.target.value)}
-                      >
-                        <option value="">-- Chọn lớp tham chiếu --</option>
-                        {classOptions.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                    ) : isBoolField ? (
+                    {isBoolField ? (
                       <select
                         className="kv-input"
                         value={String(p.v ?? "false")}
@@ -349,7 +332,6 @@ export default function MongoDB() {
   // modals
 
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
-  const [classOptions, setClassOptions] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(null); // {progress, message, collection, processed_rows?, total_rows?}
   const [importResult, setImportResult] = useState(null); // null | {status: 'completed'|'partial'|'failed', message}
@@ -385,17 +367,6 @@ export default function MongoDB() {
   useEffect(() => {
     if (!currentCollection) return;
     reloadDocs(currentCollection);
-  }, [currentCollection]);
-
-  useEffect(() => {
-    if (currentCollection !== "subject") { setClassOptions([]); return; }
-    mongoApi.listDocuments("class", 500, 0)
-      .then(data => setClassOptions(
-        (data.documents || [])
-          .filter(d => !d.is_deleted)
-          .map(d => ({ id: String(d._id), name: d.class_name || String(d._id) }))
-      ))
-      .catch(() => setClassOptions([]));
   }, [currentCollection]);
 
   const selectedDoc = useMemo(() => {
@@ -444,16 +415,17 @@ export default function MongoDB() {
   function buildPairsFromDoc(doc) {
     if (!doc) return [];
 
-    const LOCK_FIELDS = new Set(["_id", "created_at", "created_by", "updated_at", "updated_by", "deleted_at"]);
+    const LOCK_FIELDS = new Set(["_id", "is_deleted", "deleted_at", "created_at", "created_by", "updated_at", "updated_by"]);
     const contentPairs = [];
     const metaPairs = [];
 
     for (const k of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
       const val = doc[k];
+      const displayVal = formatVal(k, val);
       if (LOCK_FIELDS.has(k)) {
-        metaPairs.push({ id: k, k, v: formatVal(k, val), locked: true });
+        metaPairs.push({ id: k, k, v: displayVal, locked: true });
       } else {
-        contentPairs.push({ id: k, k, v: formatVal(k, val), locked: false });
+        contentPairs.push({ id: k, k, v: displayVal, locked: false });
       }
     }
 
@@ -506,11 +478,6 @@ export default function MongoDB() {
         _created_by: d.created_by || "-",
       };
 
-      if (currentCollection === "subject") {
-        const match = classOptions.find(c => c.id === String(d.class_id || ""));
-        row._class_ref = match ? match.name : (String(d.class_id || "") || "—");
-      }
-
       return row;
     });
 
@@ -523,7 +490,7 @@ export default function MongoDB() {
       );
 
     return filtered.slice();
-  }, [docs, q, currentCollection, classOptions]);
+  }, [docs, q, currentCollection]);
 
   const collectionColumns = [
     {
@@ -576,10 +543,10 @@ export default function MongoDB() {
 
     if (currentCollection === "subject") {
       base.splice(1, 0, {
-        key: "_class_ref",
-        label: "LỚP",
+        key: "class_id",
+        label: "CLASS_ID",
         width: "130px",
-        render: (r) => <span className="mongo-meta-cell">{r._class_ref || "—"}</span>,
+        render: (r) => <span className="mongo-meta-cell">{String(r.class_id || "—")}</span>,
       });
     }
 
@@ -711,19 +678,11 @@ export default function MongoDB() {
   async function updateDocFromDetail() {
     if (!selectedDoc) return;
 
-    if (currentCollection === "subject") {
-      const classIdPair = detailPairs.find(p => p.k === "class_id");
-      if (!classIdPair || !String(classIdPair.v || "").trim()) {
-        alert("Vui lòng chọn lớp tham chiếu trước khi cập nhật");
-        return;
-      }
-    }
-
     const patch = {};
 
     for (const p of detailPairs) {
       const k = (p.k || "").trim();
-      if (!k || k === "_id") continue;
+      if (!k || k === "_id" || p.locked) continue;
       patch[k] = parseValue(p.v);
     }
 
@@ -937,18 +896,29 @@ export default function MongoDB() {
                 {detailPairs.filter(p => !p.locked).length > 0 && (
                   <div className="doc-props">
                     {detailPairs.filter(p => !p.locked).map((p) => {
-                      const displayVal = (currentCollection === "subject" && p.k === "class_id")
-                        ? (classOptions.find(c => c.id === String(p.v))?.name || p.v || "—")
-                        : (p.v || "—");
+                      const displayVal = p.v || "—";
                       return (
                         <div key={p.id} className="doc-prop-row">
-                          <span className="doc-prop-key">
-                            {(currentCollection === "subject" && p.k === "class_id") ? "Lớp tham chiếu" : p.k}
-                          </span>
+                          <span className="doc-prop-key">{p.k}</span>
                           <span className="doc-prop-val">{displayVal !== "—" ? displayVal : <span className="doc-prop-empty">—</span>}</span>
                         </div>
                       );
                     })}
+                  </div>
+                )}
+                {detailPairs.filter(p => p.locked).length > 0 && (
+                  <div className="doc-props" style={{ marginTop: 10, opacity: 0.75 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                      Metadata (read-only)
+                    </div>
+                    {detailPairs.filter(p => p.locked).map((p) => (
+                      <div key={p.id} className="doc-prop-row">
+                        <span className="doc-prop-key" style={{ color: "#6B7280" }}>{p.k}</span>
+                        <span className="doc-prop-val" style={{ color: "#6B7280", fontStyle: "italic" }}>
+                          {p.v !== "" && p.v != null ? p.v : <span className="doc-prop-empty">—</span>}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </>
@@ -959,25 +929,11 @@ export default function MongoDB() {
                   <div className="doc-form-fields">
                     {detailPairs.filter(p => !p.locked).map((p) => {
                       const isBool = p.k === "is_deleted" || p.k === "is_active";
-                      const isClassRef = currentCollection === "subject" && p.k === "class_id";
                       return (
                         <div key={p.id} className="doc-form-row">
-                          {isClassRef ? (
-                            <span className="kv-input kv-key" style={{ display: "flex", alignItems: "center", fontWeight: 500, color: "#374151", background: "#f8fafc", cursor: "default" }}>
-                              Lớp tham chiếu
-                            </span>
-                          ) : (
-                            <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
-                          )}
+                          <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
                           <div className="doc-form-val-col">
-                            {isClassRef ? (
-                              <select className="kv-input" value={String(p.v ?? "")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
-                                <option value="">-- Chọn lớp tham chiếu --</option>
-                                {classOptions.map(c => (
-                                  <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                              </select>
-                            ) : isBool ? (
+                            {isBool ? (
                               <select className="kv-input" value={String(p.v ?? "false")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
                                 <option value="false">false</option>
                                 <option value="true">true</option>
@@ -1028,7 +984,6 @@ export default function MongoDB() {
         initialDoc={null}
         onSave={createDoc}
         collectionName={currentCollection}
-        classOptions={classOptions}
       />
     </div>
   );

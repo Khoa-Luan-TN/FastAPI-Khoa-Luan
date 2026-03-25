@@ -119,10 +119,35 @@ def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
 
 
 def _ensure_import_index(db, col: str):
+    # Sparse unique index: only indexes documents where import_key is present and non-null.
+    # Documents created via normal UI (no import_key field) are excluded entirely,
+    # preventing DuplicateKeyError when multiple non-import documents lack import_key.
+    # Always drops the legacy non-sparse index first — create_index alone does NOT
+    # replace an existing index with different options in MongoDB.
     try:
-        db[col].create_index("import_key", unique=True)
+        db[col].drop_index("import_key_1")
     except Exception:
         pass
+    try:
+        db[col].create_index("import_key", unique=True, sparse=True)
+    except Exception:
+        pass
+
+
+# Entity collections that use import_key for Excel import deduplication.
+_IMPORT_KEY_COLLECTIONS = ["class", "subject", "topic", "lesson", "chunk"]
+
+
+def ensure_all_import_key_indexes(db) -> None:
+    """Migrate import_key indexes for all entity collections to sparse unique.
+
+    Must be called at app startup so legacy non-sparse import_key_1 indexes are
+    converted BEFORE any normal create/update reaches those collections.
+    Without this, a normal UI create on 'class' or 'subject' immediately crashes
+    with DuplicateKeyError on import_key: null even when import has never run.
+    """
+    for col in _IMPORT_KEY_COLLECTIONS:
+        _ensure_import_index(db, col)
 
 
 def _upsert_by_import_key(
@@ -190,84 +215,74 @@ def _upsert_by_import_key(
     return str(r.inserted_id), "insert"
 
 
-def _get_class_slug(db, class_ref: str, ctx: Dict[str, Any]) -> str:
-    class_ref = (class_ref or "").strip()
-    if not class_ref:
+def _class_slug_by_id(db, class_id, ctx: Dict[str, Any]) -> str:
+    """Return class_slug for a class looked up by its Mongo _id."""
+    if not class_id:
         return ""
-    cached = ctx.get("class", {}).get(class_ref) or {}
-    if cached.get("class_slug"):
-        return cached["class_slug"]
-
-    d = db["class"].find_one({"import_key": class_ref}, {"class_name": 1})
-    if not d or not d.get("class_name"):
-        return ""
-    slug = slugify_vi(d.get("class_name"))
-    ctx.setdefault("class", {})[class_ref] = {"class_slug": slug}
+    key = str(class_id)
+    cached = ctx.get("_class_slug_by_id", {}).get(key)
+    if cached is not None:
+        return cached
+    d = db["class"].find_one({"_id": class_id}, {"class_name": 1})
+    slug = slugify_vi(d["class_name"]) if (d and d.get("class_name")) else ""
+    ctx.setdefault("_class_slug_by_id", {})[key] = slug
     return slug
 
 
-def _get_subject_path_info(db, subject_ref: str, ctx: Dict[str, Any]) -> dict:
-    subject_ref = (subject_ref or "").strip()
-    if not subject_ref:
+def _subject_path_by_id(db, subject_id, ctx: Dict[str, Any]) -> dict:
+    """Return {class_slug, subject_slug} for a subject looked up by its Mongo _id."""
+    if not subject_id:
         return {}
-    cached = ctx.get("_subject_path", {}).get(subject_ref)
-    if cached:
+    key = str(subject_id)
+    cached = ctx.get("_subject_path_by_id", {}).get(key)
+    if cached is not None:
         return cached
-    d = db["subject"].find_one(
-        {"import_key": subject_ref},
-        {"subject_name": 1, "class_ref": 1},
-    )
+    d = db["subject"].find_one({"_id": subject_id}, {"subject_name": 1, "class_id": 1})
     if not d:
+        ctx.setdefault("_subject_path_by_id", {})[key] = {}
         return {}
-    class_ref = (d.get("class_ref") or "").strip()
-    class_slug = _get_class_slug(db, class_ref, ctx)
-    subject_slug = slugify_vi(d.get("subject_name"))
-    if not (class_slug and subject_slug):
-        return {}
-    info = {"class_slug": class_slug, "subject_slug": subject_slug}
-    ctx.setdefault("_subject_path", {})[subject_ref] = info
+    class_slug = _class_slug_by_id(db, d.get("class_id"), ctx)
+    subj_slug = slugify_vi(d.get("subject_name"))
+    info = {"class_slug": class_slug, "subject_slug": subj_slug} if (class_slug and subj_slug) else {}
+    ctx.setdefault("_subject_path_by_id", {})[key] = info
     return info
 
 
-def _get_topic_path_info(db, topic_ref: str, ctx: Dict[str, Any]) -> dict:
-    topic_ref = (topic_ref or "").strip()
-    if not topic_ref:
+def _topic_path_by_id(db, topic_id, ctx: Dict[str, Any]) -> dict:
+    """Return {class_slug, subject_slug, topic_num} for a topic looked up by its Mongo _id."""
+    if not topic_id:
         return {}
-    cached = ctx.get("_topic_path", {}).get(topic_ref)
-    if cached:
+    key = str(topic_id)
+    cached = ctx.get("_topic_path_by_id", {}).get(key)
+    if cached is not None:
         return cached
-    d = db["topic"].find_one({"import_key": topic_ref}, {"subject_ref": 1, "topic_num": 1})
+    d = db["topic"].find_one({"_id": topic_id}, {"subject_id": 1, "topic_num": 1})
     if not d:
+        ctx.setdefault("_topic_path_by_id", {})[key] = {}
         return {}
-    subj_info = _get_subject_path_info(db, (d.get("subject_ref") or "").strip(), ctx)
-    if not subj_info:
-        return {}
-    topic_num = _two_digit(d.get("topic_num"))
-    if not topic_num:
-        return {}
-    info = {**subj_info, "topic_num": topic_num}
-    ctx.setdefault("_topic_path", {})[topic_ref] = info
+    subj_info = _subject_path_by_id(db, d.get("subject_id"), ctx)
+    n = _two_digit(d.get("topic_num"))
+    info = {**subj_info, "topic_num": n} if (subj_info and n) else {}
+    ctx.setdefault("_topic_path_by_id", {})[key] = info
     return info
 
 
-def _get_lesson_path_info(db, lesson_ref: str, ctx: Dict[str, Any]) -> dict:
-    lesson_ref = (lesson_ref or "").strip()
-    if not lesson_ref:
+def _lesson_path_by_id(db, lesson_id, ctx: Dict[str, Any]) -> dict:
+    """Return {class_slug, subject_slug, topic_num, lesson_num} for a lesson looked up by its Mongo _id."""
+    if not lesson_id:
         return {}
-    cached = ctx.get("_lesson_path", {}).get(lesson_ref)
-    if cached:
+    key = str(lesson_id)
+    cached = ctx.get("_lesson_path_by_id", {}).get(key)
+    if cached is not None:
         return cached
-    d = db["lesson"].find_one({"import_key": lesson_ref}, {"topic_ref": 1, "lesson_num": 1})
+    d = db["lesson"].find_one({"_id": lesson_id}, {"topic_id": 1, "lesson_num": 1})
     if not d:
+        ctx.setdefault("_lesson_path_by_id", {})[key] = {}
         return {}
-    topic_info = _get_topic_path_info(db, (d.get("topic_ref") or "").strip(), ctx)
-    if not topic_info:
-        return {}
-    lesson_num = _two_digit(d.get("lesson_num"))
-    if not lesson_num:
-        return {}
-    info = {**topic_info, "lesson_num": lesson_num}
-    ctx.setdefault("_lesson_path", {})[lesson_ref] = info
+    topic_info = _topic_path_by_id(db, d.get("topic_id"), ctx)
+    n = _two_digit(d.get("lesson_num"))
+    info = {**topic_info, "lesson_num": n} if (topic_info and n) else {}
+    ctx.setdefault("_lesson_path_by_id", {})[key] = info
     return info
 
 
@@ -279,7 +294,10 @@ def _compute_asset_prefixes(
     ctx: Dict[str, Any],
     import_key: str,
 ) -> Optional[Dict[str, Any]]:
-    """Compute deterministic asset_prefixes for educational entities."""
+    """Compute deterministic asset_prefixes for educational entities.
+    Uses *_id fields already resolved into doc (not *_ref) so that *_ref does not
+    need to be persisted in the stored document.
+    """
     if col == "class":
         cn = doc.get("class_name")
         if cn:
@@ -287,21 +305,18 @@ def _compute_asset_prefixes(
         return None
 
     if col == "subject":
-        class_ref = str(rec.get("class_ref") or doc.get("class_ref") or "").strip()
-        class_slug = _get_class_slug(db, class_ref, ctx)
+        # class_id is already resolved as ObjectId in doc at this point
+        class_slug = _class_slug_by_id(db, doc.get("class_id"), ctx)
         subj_slug = slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
         if not (class_slug and subj_slug):
             return None
-        ctx.setdefault("_subject_path", {})[import_key] = {
-            "class_slug": class_slug, "subject_slug": subj_slug,
-        }
         return {
             "documents": f"documents/{class_slug}/{subj_slug}/subject",
         }
 
     if col == "topic":
-        subject_ref = str(rec.get("subject_ref") or doc.get("subject_ref") or "").strip()
-        subj_info = _get_subject_path_info(db, subject_ref, ctx)
+        # subject_id is already resolved as ObjectId in doc at this point
+        subj_info = _subject_path_by_id(db, doc.get("subject_id"), ctx)
         if not subj_info:
             return None
         n = _two_digit(rec.get("topic_num") or doc.get("topic_num"))
@@ -309,7 +324,6 @@ def _compute_asset_prefixes(
             return None
         base = f"{subj_info['class_slug']}/{subj_info['subject_slug']}"
         identifier = f"topic_{n}"
-        ctx.setdefault("_topic_path", {})[import_key] = {**subj_info, "topic_num": n}
         return {
             "documents": f"documents/{base}/topic/{identifier}",
             "images": f"images/{base}/topic/{identifier}",
@@ -317,8 +331,8 @@ def _compute_asset_prefixes(
         }
 
     if col == "lesson":
-        topic_ref = str(rec.get("topic_ref") or doc.get("topic_ref") or "").strip()
-        topic_info = _get_topic_path_info(db, topic_ref, ctx)
+        # topic_id is already resolved as ObjectId in doc at this point
+        topic_info = _topic_path_by_id(db, doc.get("topic_id"), ctx)
         if not topic_info:
             return None
         n = _two_digit(rec.get("lesson_num") or doc.get("lesson_num"))
@@ -326,7 +340,6 @@ def _compute_asset_prefixes(
             return None
         base = f"{topic_info['class_slug']}/{topic_info['subject_slug']}"
         identifier = f"topic_{topic_info['topic_num']}-lesson_{n}"
-        ctx.setdefault("_lesson_path", {})[import_key] = {**topic_info, "lesson_num": n}
         return {
             "documents": f"documents/{base}/lesson/{identifier}",
             "images": f"images/{base}/lesson/{identifier}",
@@ -334,8 +347,8 @@ def _compute_asset_prefixes(
         }
 
     if col == "chunk":
-        lesson_ref = str(rec.get("lesson_ref") or doc.get("lesson_ref") or "").strip()
-        lesson_info = _get_lesson_path_info(db, lesson_ref, ctx)
+        # lesson_id is already resolved as ObjectId in doc at this point
+        lesson_info = _lesson_path_by_id(db, doc.get("lesson_id"), ctx)
         if not lesson_info:
             return None
         n = _two_digit(rec.get("chunk_num") or doc.get("chunk_num"))
@@ -911,6 +924,11 @@ def import_excel_to_mongo(
                 asset_prefixes = _compute_asset_prefixes(col, doc, rec, db, ctx, import_key)
                 if asset_prefixes is not None:
                     doc["asset_prefixes"] = asset_prefixes
+
+                # Strip transient *_ref after asset path computation — the stored document
+                # uses *_id as the real parent reference; *_ref is only needed for lookup during import.
+                if col in REF_MAP:
+                    doc.pop(REF_MAP[col][0], None)
 
                 doc["import_key"] = import_key
 

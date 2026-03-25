@@ -76,16 +76,20 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     for k in ("created_at", "created_by", "updated_at", "updated_by", "deleted_at"):
         body.pop(k, None)
 
+    # import_key is import-only metadata. Strip it when absent/null so the sparse
+    # unique index on import_key never treats a normal-create document as a duplicate.
+    if not body.get("import_key"):
+        body.pop("import_key", None)
+
     _user_normalize_and_validate(col, body, is_create=True)
 
-    body.setdefault("is_deleted", False)
-    body.setdefault("deleted_at", None)
+    # Audit fields are always set by the backend on create — client values are ignored.
+    body["is_deleted"] = False
+    body["deleted_at"] = None
     body["created_at"] = now
     body["updated_at"] = now
     body["created_by"] = actor
     body["updated_by"] = actor
-    if body.get("is_deleted") is True:
-        body["deleted_at"] = now
 
     # class: require class_name
     if col == "class":

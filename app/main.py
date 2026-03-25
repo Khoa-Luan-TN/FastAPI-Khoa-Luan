@@ -39,11 +39,20 @@ from app.routers.search import router as search_router
 
 from app.services.infrastructure.postgre_client import engine, Base
 import app.models.model_postgre
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.mongo.mongo_import_service import ensure_all_import_key_indexes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # Migrate import_key indexes to sparse-unique on every startup.
+    # This converts any legacy non-sparse import_key_1 indexes so normal UI
+    # creates (which have no import_key) never collide on null values.
+    try:
+        ensure_all_import_key_indexes(get_mongo_db())
+    except Exception as _e:
+        logging.getLogger("app").warning("import_key index migration warning: %s", _e)
     yield
 
 
