@@ -66,9 +66,38 @@ def _user_normalize_and_validate(col: str, body: Dict[str, Any], *, is_create: b
         body["password"] = pw
 
 
+def _auto_create_topic_bag(db, topic_oid, *, actor: str, now) -> None:
+    """Auto-create an empty topic_bag for a newly inserted topic.
+    Idempotent — no-op if an active bag already exists.
+    topic_bag starts empty; embedding sync happens later when keyword_refs is updated.
+    Failures are suppressed — topic creation must not be blocked by this step.
+    """
+    import logging as _logging
+    try:
+        if db["topic_bag"].find_one({"topic_id": topic_oid, "is_deleted": {"$ne": True}}, {"_id": 1}):
+            return
+        db["topic_bag"].insert_one({
+            "topic_id": topic_oid,
+            "keyword_refs": [],
+            "total_keywords": 0,
+            "is_deleted": False,
+            "deleted_at": None,
+            "created_at": now,
+            "updated_at": now,
+            "created_by": actor,
+            "updated_by": actor,
+        })
+    except Exception as _e:
+        _logging.getLogger("app").warning("auto_create_topic_bag failed for topic %s: %s", topic_oid, _e)
+
+
 def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: str, sync_pg: bool = True):
     col = _normalize_collection_name(collection_name)
     _check_collection_exist(col)
+
+    # topic_bag is system-managed — reject manual creates entirely.
+    if col == "topic_bag":
+        raise HTTPException(status_code=403, detail="topic_bag is system-managed and must not be created manually")
 
     now = utc_now()
     body = dict(body or {})
@@ -342,5 +371,9 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 ensure_asset_prefix_markers(get_minio_client(), _bucket, body["asset_prefixes"])
         except Exception:
             pass  # MinIO failure does not block create
+
+    # topic: auto-create an empty topic_bag so keyword_refs can be edited from the UI later.
+    if col == "topic" and result.inserted_id:
+        _auto_create_topic_bag(db, result.inserted_id, actor=actor, now=now)
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}

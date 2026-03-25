@@ -150,6 +150,46 @@ def _handle_keyword_update(col: str, body: Dict[str, Any], id_filter: dict, acto
     body["keyword_slug"] = result["new_slug"]
 
 
+def _handle_topic_bag_update(col: str, body: Dict[str, Any]) -> bool:
+    """topic_bag pre-update: validate + resolve keyword_refs entries, set total_keywords.
+    Modifies body in-place. Returns True when keyword_refs was in the payload so the caller
+    knows to trigger a topic embedding re-sync afterwards.
+    Raises HTTPException on invalid keyword_id or unknown keyword.
+    """
+    if col != "topic_bag" or "keyword_refs" not in body:
+        return False
+
+    from bson import ObjectId as _OID
+    raw_refs = body.get("keyword_refs")
+    if not isinstance(raw_refs, list):
+        raise HTTPException(status_code=422, detail="topic_bag.keyword_refs must be a list")
+
+    seen_ids: set = set()
+    cleaned: list = []
+    for ref in raw_refs:
+        if not isinstance(ref, dict):
+            continue
+        kw_id_raw = str(ref.get("keyword_id") or "").strip()
+        if not kw_id_raw or not _OID.is_valid(kw_id_raw):
+            raise HTTPException(status_code=422, detail="topic_bag.keyword_refs: each entry must have a valid keyword_id")
+        if kw_id_raw in seen_ids:
+            continue  # deduplicate
+        seen_ids.add(kw_id_raw)
+        kw_doc = db["keyword"].find_one(
+            {"_id": _OID(kw_id_raw), "is_deleted": {"$ne": True}}, {"keyword_name": 1}
+        )
+        if not kw_doc:
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' not found or is deleted")
+        kw_name = str(kw_doc.get("keyword_name") or "").strip()
+        if not kw_name:
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' has no keyword_name")
+        cleaned.append({"keyword_id": _OID(kw_id_raw), "keyword_name": kw_name})
+
+    body["keyword_refs"] = cleaned
+    body["total_keywords"] = len(cleaned)
+    return True
+
+
 @router.put("/documents/{collection_name}/{oid}", summary="Update document (generic)")
 def update_document(collection_name: str, oid: str, request: Request, body: Dict[str, Any] = Body(...)):
     col = _normalize_collection_name(collection_name)
@@ -287,6 +327,9 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             if _dup:
                 raise HTTPException(status_code=409, detail=f"subject_name '{_chk_name}' already exists in this class")
 
+    # topic_bag: validate/resolve keyword_refs before the update goes to Mongo
+    _topic_bag_kw_refs_changed = _handle_topic_bag_update(col, body)
+
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None
@@ -315,7 +358,25 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             pg_user_id = str(sync["pg_id"])
             db[col].update_one(id_filter, {"$set": {"user_id": pg_user_id}})
 
-    return {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
+    # topic_bag: keyword_refs changed → rebuild topic.keyword_embedding_text and re-sync topic
+    # to PG+Neo4j. sync_doc_to_postgres("topic", ...) reads topic_bag.keyword_refs, writes
+    # keyword_embedding_text back to the topic doc, generates the embedding, and syncs PG+Neo4j.
+    _topic_bag_sync: Optional[dict] = None
+    if _topic_bag_kw_refs_changed:
+        try:
+            _bag_doc = db[col].find_one(id_filter, {"topic_id": 1})
+            _topic_oid = (_bag_doc or {}).get("topic_id")
+            if _topic_oid:
+                _topic_doc = db["topic"].find_one({"_id": _topic_oid, "is_deleted": {"$ne": True}})
+                if _topic_doc:
+                    _topic_bag_sync = sync_doc_to_postgres(db, "topic", _topic_doc)
+        except Exception as _tbs_err:
+            _topic_bag_sync = {"ok": False, "error": str(_tbs_err)}
+
+    result_payload: dict = {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
+    if _topic_bag_sync is not None:
+        result_payload["topic_bag_sync"] = _topic_bag_sync
+    return result_payload
 
 @router.delete("/documents/{collection_name}/{oid}", summary="Soft delete document (generic)")
 def delete_document(request: Request, collection_name: str = Path(...), oid: str = Path(...)):

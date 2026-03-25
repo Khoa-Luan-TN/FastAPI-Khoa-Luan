@@ -116,68 +116,108 @@ function parseValue(v) {
   return s;
 }
 
+// ---- Collections hidden from the list entirely ----
+const COLLECTIONS_HIDDEN = new Set(["import_job"]);
+
+// ---- Collections where create is disabled (browse/edit only) ----
+const COLLECTIONS_NO_CREATE = new Set(["topic_bag"]);
+
+// ---- Per-collection create config ----
+// locked: Set of key names whose key is fixed (not renameable, not removable)
+// allowExtra: whether "+ Thêm field" is shown
+// rows: default field rows; each may include inputType/options for special inputs
+const CREATE_CONFIGS = {
+  class: {
+    rows: [{ k: "class_name", v: "" }],
+    locked: new Set(["class_name"]),
+    allowExtra: true,
+  },
+  subject: {
+    rows: [
+      { k: "class_id", v: "" },
+      { k: "subject_name", v: "" },
+      { k: "subject_type", v: "" },
+    ],
+    locked: new Set(["class_id", "subject_name", "subject_type"]),
+    allowExtra: true,
+  },
+  topic: {
+    rows: [
+      { k: "subject_id", v: "" },
+      { k: "topic_num", v: "" },
+      { k: "topic_name", v: "" },
+    ],
+    locked: new Set(["subject_id", "topic_num", "topic_name"]),
+    allowExtra: true,
+  },
+  lesson: {
+    rows: [
+      { k: "topic_id", v: "" },
+      { k: "lesson_num", v: "" },
+      { k: "lesson_name", v: "" },
+      { k: "lesson_type", v: "ly thuyet", inputType: "select", options: ["ly thuyet", "thuc hanh"] },
+    ],
+    locked: new Set(["topic_id", "lesson_num", "lesson_name", "lesson_type"]),
+    allowExtra: false,
+  },
+  chunk: {
+    rows: [
+      { k: "lesson_id", v: "" },
+      { k: "chunk_num", v: "1" },
+      { k: "chunk_name", v: "" },
+    ],
+    locked: new Set(["lesson_id", "chunk_num", "chunk_name"]),
+    allowExtra: true,
+  },
+  chunk_keyword: {
+    rows: [
+      { k: "chunk_id", v: "" },
+      { k: "keyword_id", v: "" },
+    ],
+    locked: new Set(["chunk_id", "keyword_id"]),
+    allowExtra: false,
+  },
+  keyword_alias: {
+    rows: [
+      { k: "keyword_id", v: "" },
+      { k: "alias_name", v: "" },
+    ],
+    locked: new Set(["keyword_id", "alias_name"]),
+    allowExtra: false,
+  },
+  keyword: {
+    rows: [
+      { k: "keyword_name", v: "" },
+    ],
+    locked: new Set(["keyword_name"]),
+    allowExtra: true,
+  },
+  image: {
+    rows: [{ k: "image_name", v: "" }],
+    locked: new Set(["image_name"]),
+    allowExtra: true,
+  },
+  video: {
+    rows: [{ k: "video_name", v: "" }],
+    locked: new Set(["video_name"]),
+    allowExtra: true,
+  },
+  user: {
+    rows: [
+      { k: "username", v: "" },
+      { k: "password", v: "" },
+      { k: "user_role", v: "user" },
+      { k: "is_active", v: "true" },
+    ],
+    locked: new Set(["username", "password"]),
+    allowExtra: true,
+  },
+};
+
 function defaultPairsForCollection(col) {
-  switch (col) {
-    case "class":
-      return [{ k: "class_name", v: "" }];
-
-    case "subject":
-      return [
-        { k: "class_id", v: "" },
-        { k: "subject_name", v: "" },
-        { k: "subject_type", v: "" },
-      ];
-
-    case "topic":
-      return [
-        { k: "subject_id", v: "" },
-        { k: "topic_num", v: "" },
-        { k: "topic_name", v: "" },
-      ];
-
-    case "lesson":
-      return [
-        { k: "topic_id", v: "" },
-        { k: "lesson_num", v: "" },
-        { k: "lesson_name", v: "" },
-        { k: "lesson_type", v: "ly thuyet" },
-      ];
-
-    case "chunk":
-      return [
-        { k: "lesson_id", v: "" },
-        { k: "chunk_num", v: "1" },
-        { k: "chunk_name", v: "" },
-        { k: "chunk_des", v: "" },
-      ];
-
-    case "image":
-      return [
-        { k: "image_name", v: "" },
-      ];
-
-    case "video":
-      return [
-        { k: "video_name", v: "" },
-      ];
-
-    case "user":
-      return [
-        { k: "username", v: "" },
-        { k: "password", v: "" },
-        { k: "user_role", v: "user" },
-        { k: "is_active", v: "true" },
-      ];
-
-    case "keyword":
-      return [
-        { k: "keyword_name", v: "" },
-        { k: "keyword_des", v: "" },
-      ];
-
-    default:
-      return [{ k: "name", v: "" }, { k: "is_deleted", v: "false" }];
-  }
+  const cfg = CREATE_CONFIGS[col];
+  if (cfg) return cfg.rows.map(r => ({ ...r }));
+  return [{ k: "name", v: "" }];
 }
 
 // ---- Collection priority order for root view ----
@@ -318,16 +358,19 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
 function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
   const [pairs, setPairs] = useState([]);
 
+  const cfg = CREATE_CONFIGS[collectionName] || null;
+  const lockedKeys = cfg ? cfg.locked : new Set();
+  const allowExtra = cfg ? cfg.allowExtra : true;
+
   useEffect(() => {
     if (!open) return;
-
+    const defaults = defaultPairsForCollection(collectionName);
     if (!initialDoc) {
-      setPairs(defaultPairsForCollection(collectionName));
+      setPairs(defaults);
       return;
     }
-
     const fields = initialDoc.fields || [];
-    setPairs(fields.length ? fields : defaultPairsForCollection(collectionName));
+    setPairs(fields.length ? fields : defaults);
   }, [open, initialDoc, collectionName]);
 
   if (!open) return null;
@@ -335,14 +378,11 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
   function valuePlaceholder(keyName) {
     const k = (keyName || "").trim();
     if (!k) return "Nhập giá trị...";
-
-    if (k.endsWith("_id")) return "Nhập ID (vd: class_id/subject_id...)";
-    if (k === "images" || k === "videos") return "[]";
+    if (k.endsWith("_id")) return "Nhập ID...";
     if (k.endsWith("_url")) return "http://...";
     if (k === "is_deleted" || k === "is_active") return "true / false";
     if (k.endsWith("_num") || k.endsWith("_label")) return "Số (vd: 1)";
     if (k.endsWith("_name")) return `Nhập ${k}`;
-
     return `Nhập ${k}`;
   }
 
@@ -389,7 +429,46 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
             <div>
               {pairs.map((p, i) => {
                 const keyName = (p.k || "").trim();
+                const isLocked = lockedKeys.has(keyName);
                 const isBoolField = keyName === "is_deleted" || keyName === "is_active";
+                const isSelectField = p.inputType === "select";
+
+                if (isLocked) {
+                  return (
+                    <div key={i} className="doc-form-row doc-form-row--lockedkey">
+                      <span className="doc-prop-key doc-prop-key--locked">{keyName}</span>
+                      <div className="doc-form-val-col">
+                        {isSelectField ? (
+                          <select
+                            className="kv-input"
+                            value={String(p.v ?? p.options?.[0] ?? "")}
+                            onChange={(e) => change(i, "v", e.target.value)}
+                          >
+                            {(p.options || []).map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : isBoolField ? (
+                          <select
+                            className="kv-input"
+                            value={String(p.v ?? "false")}
+                            onChange={(e) => change(i, "v", e.target.value)}
+                          >
+                            <option value="false">false</option>
+                            <option value="true">true</option>
+                          </select>
+                        ) : (
+                          <input
+                            className="kv-input"
+                            placeholder={valuePlaceholder(keyName)}
+                            value={p.v}
+                            onChange={(e) => change(i, "v", e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div key={i} className="modal-kv-row">
@@ -399,7 +478,6 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                       value={p.k}
                       onChange={(e) => change(i, "k", e.target.value)}
                     />
-
                     {isBoolField ? (
                       <select
                         className="kv-input"
@@ -417,18 +495,19 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                         onChange={(e) => change(i, "v", e.target.value)}
                       />
                     )}
-
                     <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá field">✕</button>
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-              <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
-                + Thêm field
-              </button>
-            </div>
+            {allowExtra && (
+              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
+                  + Thêm field
+                </button>
+              </div>
+            )}
           </form>
         </div>
 
@@ -711,7 +790,9 @@ export default function MongoDB() {
 
   const collectionRows = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const list = !s ? collections : collections.filter((c) => c.name.toLowerCase().includes(s));
+    const list = collections
+      .filter((c) => !COLLECTIONS_HIDDEN.has(c.name))
+      .filter((c) => !s || c.name.toLowerCase().includes(s));
     return list.slice().sort((a, b) => {
       const ai = COLLECTION_ORDER.indexOf(a.name);
       const bi = COLLECTION_ORDER.indexOf(b.name);
@@ -830,18 +911,6 @@ export default function MongoDB() {
     setCurrentDocId("");
     setIsEditingDoc(false);
     setQ("");
-  }
-
-  async function deleteCollection(row) {
-    if (!confirm(`Xoá collection "${row.name}" và toàn bộ documents?`)) return;
-    try {
-      await mongoApi.deleteCollection(row.name);
-      if (current === row.name) setCurrent("");
-      setQ("");
-      await reloadCollections();
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
   }
 
   async function onPickImportFile(e) {
@@ -1113,9 +1182,11 @@ export default function MongoDB() {
                 <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
                   {importing ? "Importing..." : "Import Excel"}
                 </button>
-                <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
-                  + Document
-                </button>
+                {!COLLECTIONS_NO_CREATE.has(currentCollection) && (
+                  <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
+                    + Document
+                  </button>
+                )}
               </>
             ) : !isEditingDoc ? (
               <>
@@ -1208,19 +1279,6 @@ export default function MongoDB() {
             pageSize={9999}
             getRowClassName={() => "row-click"}
             onRowDoubleClick={(row) => openCollection(row)}
-            renderActions={(row) => (
-              <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
-                <button
-                  className="mfi-action-btn danger"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteCollection(row);
-                  }}
-                >
-                  <TrashIcon /> Xoá
-                </button>
-              </div>
-            )}
           />
         ) : isDocDetail ? (
           <div className="doc-card">
