@@ -9,7 +9,11 @@ import re
 from bson import ObjectId
 from openpyxl import load_workbook
 from app.services.keyword.keyword_alias_service import ensure_keyword_alias_indexes
-from app.services.minio.minio_marker_service import ensure_asset_prefix_markers, ensure_root_folders
+from app.services.minio.minio_marker_service import (
+    ensure_asset_prefix_markers,
+    ensure_class_root_markers,
+    ensure_root_folders,
+)
 from app.services.keyword.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
@@ -942,6 +946,15 @@ def import_excel_to_mongo(
                         seen=minio_seen, errors=minio_errors,
                     )
 
+                # Class docs have no asset_prefixes, but MinIO root markers still
+                # need to exist so the class folder appears in the MinIO browser.
+                if col == "class" and minio_client:
+                    cls_slug = slugify_vi(doc.get("class_name") or "")
+                    if cls_slug:
+                        ensure_class_root_markers(
+                            minio_client, minio_bucket, cls_slug, errors=minio_errors
+                        )
+
                 if op == "insert":
                     inserted += 1
                 elif op == "update":
@@ -984,3 +997,26 @@ def import_excel_to_mongo(
         report["minio_errors"] = minio_errors[:50]
 
     return report
+
+
+def backfill_class_minio_roots(db) -> Dict[str, Any]:
+    """Ensure MinIO root markers exist for every non-deleted class already in Mongo.
+
+    Safe to call multiple times — marker creation is idempotent.
+    Intended for startup backfill so classes imported before the class-marker fix
+    get their documents/<slug>/, images/<slug>/, videos/<slug>/ folders created.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    processed = 0
+
+    for cls_doc in db["class"].find({"is_deleted": {"$ne": True}}, {"class_name": 1}):
+        slug = slugify_vi(cls_doc.get("class_name") or "")
+        if slug:
+            ensure_class_root_markers(client, bucket, slug, errors=errors)
+            processed += 1
+
+    return {"ok": True, "processed": processed, "errors": errors}

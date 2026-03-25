@@ -480,18 +480,27 @@
   background: transparent;
 }
 
-/* ---- Content property rows ---- */
+/* =====================================================
+   SHARED ROW GRID — used by view mode + edit mode
+   One grid, three column zones:
+     col 1 : 160px  — key / label
+     col 2 : 1fr    — value / input
+     col 3 : 30px   — delete button slot (invisible for locked rows)
+   ===================================================== */
+
+/* ---- Content property rows (view mode + read-only in edit mode) ---- */
 .doc-props {
-  padding: 6px 0 8px;
+  padding: 4px 0 8px;
 }
 
+/* Base row — shared by view-mode rows AND read-only rows inside edit mode */
 .doc-prop-row {
   display: grid;
-  grid-template-columns: 168px minmax(0, 1fr);
-  gap: 20px;
-  padding: 14px 28px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.35);
-  align-items: baseline;
+  grid-template-columns: 160px minmax(0, 1fr) 30px;
+  gap: 0 14px;
+  padding: 11px 24px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+  align-items: center;
   transition: background 0.12s;
 }
 
@@ -503,28 +512,46 @@
   background: #F8FAFC;
 }
 
-.doc-prop-key {
-  font-family: var(--doc-font);
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #64748B;
-  padding-top: 1px;
-  flex-shrink: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: 0.01em;
-}
-
+/* The value cell spans col 2 + col 3 in view mode (no delete slot needed) */
 .doc-prop-val {
+  grid-column: 2 / 4;
   font-family: var(--doc-font);
-  font-size: 14px;
+  font-size: 13.5px;
   color: #1E293B;
   font-weight: 400;
   word-break: break-word;
   overflow-wrap: anywhere;
   min-width: 0;
-  line-height: 1.65;
+  line-height: 1.6;
+}
+
+/* Read-only rows inside edit mode — subtle tint */
+.doc-prop-row--readonly {
+  background: #FAFBFC;
+}
+
+.doc-prop-row--readonly:hover {
+  background: #F6F8FA;
+}
+
+.doc-prop-key {
+  font-family: var(--doc-font);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* vertically center with single-line inputs */
+  line-height: 1;
+}
+
+/* Locked-key field label in edit mode — slightly more prominent */
+.doc-prop-key--locked {
+  color: #64748B;
 }
 
 .doc-prop-empty {
@@ -588,17 +615,19 @@
 
 /* =====================================================
    DOC FORM — edit view (uses .doc-card as wrapper)
+   All rows share the same 3-column grid as .doc-prop-row
    ===================================================== */
 .doc-form-fields {
-  padding: 8px 0 6px;
+  padding: 4px 0 6px;
   font-family: var(--doc-font);
 }
 
+/* Base edit row — same grid as .doc-prop-row */
 .doc-form-row {
   display: grid;
-  grid-template-columns: 152px 1fr 32px;
-  gap: 12px;
-  padding: 11px 22px;
+  grid-template-columns: 160px minmax(0, 1fr) 30px;
+  gap: 0 14px;
+  padding: 8px 24px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.3);
   align-items: center;
 }
@@ -607,10 +636,26 @@
   border-bottom: none;
 }
 
-/* Locked-key row: static label + editable value, no delete slot */
+/* Editable custom field: all three columns active */
+.doc-form-row--editable {
+  background: #fff;
+}
+
+.doc-form-row--editable:hover {
+  background: #FAFCFF;
+}
+
+/* Locked-key row: key + value span cols 1+2, delete slot is empty (col 3 present but unused) */
 .doc-form-row--lockedkey {
-  grid-template-columns: 168px minmax(0, 1fr);
-  align-items: baseline;
+  /* value col grows into col 3 space — use subgrid trick with col span */
+  grid-template-columns: 160px minmax(0, 1fr) 30px;
+  align-items: center;
+  padding: 8px 24px;
+}
+
+/* Value col for locked-key spans col 2 through col 3 (no delete btn) */
+.doc-form-row--lockedkey .doc-form-val-col {
+  grid-column: 2 / 4;
 }
 
 .doc-form-val-col {
@@ -620,25 +665,26 @@
 .doc-form-val-col .kv-input {
   width: 100%;
   font-size: 13.5px;
-  padding: 9px 13px;
+  padding: 8px 12px;
   font-family: var(--doc-font);
 }
 
 .doc-form-del {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: #CBD5E1;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   display: grid;
   place-items: center;
   padding: 0;
   transition: all 0.13s;
   font-family: inherit;
   flex-shrink: 0;
+  justify-self: center;
 }
 
 .doc-form-del:hover {
@@ -737,17 +783,18 @@
 
 /* ---- Plain object ---- */
 .doc-val-object {
-  border: 1px solid #E2E8F0;
+  border: 1px solid #EEF2F7;
   border-radius: 8px;
   overflow: hidden;
   font-family: var(--doc-font);
+  background: #FAFBFC;
 }
 
 .doc-val-obj-row {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 12px;
-  padding: 7px 12px;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 12px;
   border-bottom: 1px solid #F1F5F9;
   align-items: baseline;
 }
@@ -758,14 +805,15 @@
 
 .doc-val-obj-key {
   font-family: var(--doc-font);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: #64748B;
+  color: #94A3B8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  padding-top: 1px;
 }
 
 .doc-val-obj-val {
@@ -781,18 +829,24 @@
 .doc-val-array {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .doc-val-array-item {
-  padding: 8px 12px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #EEF2F7;
   border-radius: 7px;
+  overflow: hidden;
   font-family: var(--doc-font);
   font-size: 13px;
   color: #374151;
   line-height: 1.5;
+  /* Let the .doc-val-object inside provide the bg */
+  background: transparent;
+}
+
+.doc-val-array-item > .doc-val-object {
+  border: none;
+  border-radius: 0;
 }
 
 /* ---- Array of primitives — chips ---- */
@@ -923,10 +977,11 @@
   border: 1px solid #E2E8F0;
   border-radius: 8px;
   overflow: hidden;
+  background: #FFF;
 }
 
 .kw-refs-editor-header {
-  padding: 6px 12px;
+  padding: 5px 12px;
   background: #F8FAFC;
   border-bottom: 1px solid #E9EEF5;
 }
@@ -934,7 +989,7 @@
 .kw-refs-editor-list {
   display: flex;
   flex-direction: column;
-  max-height: 280px;
+  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -944,12 +999,15 @@
 
 .kw-refs-row {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  grid-template-columns: 20px minmax(0, 1fr) 26px;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border-bottom: 1px solid #F1F5F9;
   align-items: center;
-  background: #FAFCFF;
+}
+
+.kw-refs-row:hover {
+  background: #F8FAFC;
 }
 
 .kw-refs-seq {
@@ -958,6 +1016,7 @@
   font-weight: 700;
   color: #CBD5E1;
   text-align: right;
+  line-height: 1;
 }
 
 .kw-refs-row-body {
@@ -967,30 +1026,58 @@
   min-width: 0;
 }
 
-.kw-refs-add-row {
+.kw-refs-del-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #CBD5E1;
+  cursor: pointer;
+  font-size: 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
-  gap: 8px;
+  place-items: center;
+  padding: 0;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+
+.kw-refs-del-btn:hover {
+  background: #FFE4E6;
+  color: #E11D48;
+}
+
+.kw-refs-add-row {
+  display: flex;
+  gap: 6px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: #F8FAFC;
   border-top: 1px dashed #E2E8F0;
 }
 
+.kw-refs-add-input {
+  flex: 1;
+  font-size: 13px !important;
+  padding: 7px 11px !important;
+}
+
 .kw-refs-add-btn {
-  width: 28px;
-  height: 28px;
+  height: 32px;
+  padding: 0 13px;
   border-radius: 6px;
   border: 1px solid #CBD5E1;
   background: #EFF6FF;
   color: #1D4ED8;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12.5px;
   font-weight: 600;
-  display: grid;
-  place-items: center;
-  line-height: 1;
+  font-family: var(--doc-font);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  transition: all 0.12s;
 }
 
 .kw-refs-add-btn:hover {
@@ -1013,23 +1100,24 @@
 }
 
 /* =====================================================
-   ASSET PREFIXES — compact structured card
+   ASSET PREFIXES — compact read-only structured card
    ===================================================== */
 .asset-prefixes-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #E8EEF5;
   border-radius: 8px;
   overflow: hidden;
   font-family: var(--doc-font);
+  background: #F9FBFE;
 }
 
 .asset-prefix-row {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 12px;
-  padding: 7px 12px;
-  border-bottom: 1px solid #F1F5F9;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 14px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #EEF2F8;
   align-items: baseline;
 }
 
@@ -1037,32 +1125,29 @@
   border-bottom: none;
 }
 
-.asset-prefix-key {
+.asset-prefix-type {
+  font-family: var(--doc-font);
   font-size: 11px;
   font-weight: 700;
   color: #3B82F6;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  padding-top: 1px;
 }
 
 .asset-prefix-val {
-  font-size: 12.5px;
+  font-family: var(--doc-font);
+  font-size: 13px;
   color: #374151;
   word-break: break-all;
   overflow-wrap: anywhere;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
-/* ---- Edit mode: locked/read-only rows get a subtle background tint ---- */
-.doc-form-fields .doc-prop-row {
-  background: #FAFCFF;
-  opacity: 0.88;
-}
-
-.doc-form-fields .doc-prop-row:hover {
-  background: #F4F8FF;
-  opacity: 1;
+/* ---- Edit mode: remove old tint override (now handled by --readonly class) ---- */
+.doc-form-fields .doc-prop-row--readonly {
+  background: #FAFBFC;
 }
 
 /* =====================================================

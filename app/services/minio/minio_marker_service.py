@@ -59,6 +59,30 @@ def ensure_prefix_chain(client, bucket: str, prefix: str) -> None:
         _put_marker(client, bucket, "/".join(parts[:i]) + "/")
 
 
+def ensure_class_root_markers(
+    client,
+    bucket: str,
+    class_slug: str,
+    *,
+    errors: Optional[List[Dict]] = None,
+) -> None:
+    """Idempotently create documents/<slug>/, images/<slug>/, videos/<slug>/ markers.
+
+    Class docs do NOT store asset_prefixes, so class root markers must be created
+    explicitly here. Called on both import and UI create so the class folder always
+    appears in the MinIO browser.
+    """
+    if not class_slug:
+        return
+    for root in ROOT_FOLDERS:
+        try:
+            _put_marker(client, bucket, f"{root}/{class_slug}/")
+        except Exception as exc:
+            _log.warning("[minio_marker] class root '%s/%s/' failed: %s", root, class_slug, exc)
+            if errors is not None:
+                errors.append({"prefix": f"{root}/{class_slug}/", "error": str(exc)})
+
+
 def ensure_asset_prefix_markers(
     client,
     bucket: str,

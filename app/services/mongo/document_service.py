@@ -232,4 +232,21 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             pg_user_id = str(sync["pg_id"])
             db[col].update_one({"_id": result.inserted_id}, {"$set": {"user_id": pg_user_id}})
 
+    # Class docs do NOT store asset_prefixes, but MinIO root markers must exist so
+    # the class folder appears in the MinIO browser. class_name is locked in the UI
+    # to prevent path migration issues (changing class_name would orphan these paths).
+    if col == "class":
+        try:
+            import os as _os
+            _bucket = (_os.getenv("MINIO_BUCKET") or "").strip()
+            if _bucket:
+                from app.services.infrastructure.minio_client import get_minio_client
+                from app.services.minio.minio_marker_service import ensure_class_root_markers
+                from app.services.shared._utils import slugify_vi
+                ensure_class_root_markers(
+                    get_minio_client(), _bucket, slugify_vi(body.get("class_name") or "")
+                )
+        except Exception:
+            pass  # MinIO failure does not block class creation
+
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}

@@ -74,6 +74,26 @@ function docTitle(doc = {}) {
   );
 }
 
+// Render a plain object as a structured mini-table
+function renderObjectEntries(entries) {
+  if (!entries || entries.length === 0) return null;
+  return (
+    <div className="doc-val-object">
+      {entries.map(([k, v]) => (
+        <div key={k} className="doc-val-obj-row">
+          <span className="doc-val-obj-key">{k}</span>
+          <span className="doc-val-obj-val">
+            {v == null ? <span className="doc-prop-empty">—</span>
+              : Array.isArray(v) ? String(v)
+              : typeof v === "object" ? JSON.stringify(v)
+              : String(v)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // parse value để bạn nhập [] / {} là thành array/object thật
 function parseValue(v) {
   const s = String(v ?? "").trim();
@@ -199,7 +219,9 @@ const FOREIGN_ID_MAP = {
 const SCHEMA_PROTECTED = new Set([
   "_id",
   "class_id", "subject_id", "topic_id", "lesson_id", "chunk_id", "keyword_id", "user_id",
-  "class_name", "subject_name", "topic_name", "lesson_name", "chunk_name", "keyword_name", "username",
+  // class_name and subject_name determine MinIO folder paths (documents/<class>/<subject>/...).
+  // Renaming them would orphan existing MinIO assets — lock until a rename+migrate flow exists.
+  "class_name", "subject_name", "lesson_name", "chunk_name", "keyword_name", "username",
   "topic_num", "lesson_num", "chunk_num",
   "keyword_embedding_text",
   "asset_prefixes",
@@ -212,8 +234,11 @@ const SCHEMA_PROTECTED = new Set([
   "is_deleted", "deleted_at", "created_at", "updated_at", "created_by", "updated_by",
 ]);
 
+// ---- Fields that are read-only blocks in both view AND edit mode ----
+const READONLY_BLOCK_FIELDS = new Set(["asset_prefixes", "keyword_slug", "aliases"]);
+
 // ---- Locked-key fields: key is locked (cannot rename, no delete row), but VALUE is editable ----
-const LOCKED_KEY_FIELDS = new Set(["keyword_refs"]);
+const LOCKED_KEY_FIELDS = new Set(["keyword_refs", "topic_name"]);
 
 // ---- Hidden in edit mode (not editable, not visible in edit) ----
 const EDIT_HIDDEN = new Set(["import_key"]);
@@ -269,22 +294,22 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
                 <span className="kw-ref-name">{resolvedName}</span>
                 <span className="kw-ref-id">{String(item.keyword_id || "")}</span>
               </div>
-              <button type="button" className="doc-form-del" onClick={() => deleteItem(i)} title="Xoá">✕</button>
+              <button type="button" className="kw-refs-del-btn" onClick={() => deleteItem(i)} title="Remove">✕</button>
             </div>
           );
         })}
       </div>
       <div className="kw-refs-add-row">
         <input
-          className={`kv-input${dupError ? " kv-input--error" : ""}`}
+          className={`kv-input kw-refs-add-input${dupError ? " kv-input--error" : ""}`}
           value={newId}
           onChange={(e) => { setNewId(e.target.value); setDupError(false); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
-          placeholder="Nhập keyword_id để thêm…"
+          placeholder="keyword_id…"
         />
-        <button type="button" className="kw-refs-add-btn" onClick={addItem}>+</button>
+        <button type="button" className="kw-refs-add-btn" onClick={addItem}>Add</button>
       </div>
-      {dupError && <p className="kw-refs-dup-err">keyword_id này đã có trong danh sách</p>}
+      {dupError && <p className="kw-refs-dup-err">keyword_id already in list</p>}
     </div>
   );
 }
@@ -574,6 +599,7 @@ export default function MongoDB() {
     }
     if (Array.isArray(val)) {
       if (val.length === 0) return <span className="doc-prop-empty">[]</span>;
+      // keyword_refs array
       if (isKwRefArray(val)) {
         return (
           <div className="kw-refs-view">
@@ -594,6 +620,7 @@ export default function MongoDB() {
           </div>
         );
       }
+      // Array of objects — render each as a mini card
       const hasObjects = val.some((item) => item !== null && typeof item === "object");
       if (hasObjects) {
         return (
@@ -601,13 +628,14 @@ export default function MongoDB() {
             {val.map((item, i) => (
               <div key={i} className="doc-val-array-item">
                 {item !== null && typeof item === "object"
-                  ? renderComplexValue(item, null)
+                  ? renderObjectEntries(Object.entries(item))
                   : <span>{String(item)}</span>}
               </div>
             ))}
           </div>
         );
       }
+      // Array of primitives — chips
       return (
         <div className="doc-val-chips">
           {val.map((item, i) => <span key={i} className="doc-val-chip">{String(item)}</span>)}
@@ -617,29 +645,21 @@ export default function MongoDB() {
     if (typeof val === "object") {
       const entries = Object.entries(val);
       if (entries.length === 0) return <span className="doc-prop-empty">{"{}"}</span>;
-      // asset_prefixes: compact prefix card
+      // asset_prefixes: clean structured card with type icons
       if (fieldKey === "asset_prefixes") {
         return (
           <div className="asset-prefixes-card">
             {entries.map(([k, v]) => (
               <div key={k} className="asset-prefix-row">
-                <span className="asset-prefix-key">{k}</span>
+                <span className="asset-prefix-type">{k}</span>
                 <span className="asset-prefix-val">{String(v ?? "—")}</span>
               </div>
             ))}
           </div>
         );
       }
-      return (
-        <div className="doc-val-object">
-          {entries.map(([k, v]) => (
-            <div key={k} className="doc-val-obj-row">
-              <span className="doc-val-obj-key">{k}</span>
-              <span className="doc-val-obj-val">{renderComplexValue(v, null)}</span>
-            </div>
-          ))}
-        </div>
-      );
+      // aliases — array inside an object or plain object
+      return renderObjectEntries(entries);
     }
     const s = String(val);
     if (s.length > 120) return <span className="doc-val-long">{s}</span>;
@@ -799,6 +819,7 @@ export default function MongoDB() {
         render: (r) => <span className="mongo-meta-cell" title={r._class_name || ""}>{r._class_name || "—"}</span>,
       });
     }
+    // chunk_keyword: no extra columns — keep list view simple
 
     return base;
   }, [currentCollection]);
@@ -1209,7 +1230,7 @@ export default function MongoDB() {
                 {detailPairs.map((p) => (
                   <div key={p.id} className="doc-prop-row">
                     <span className="doc-prop-key">{p.label || p.k}</span>
-                    <span className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</span>
+                    <div className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</div>
                   </div>
                 ))}
               </div>
@@ -1220,12 +1241,12 @@ export default function MongoDB() {
                   /* Hidden in edit mode (e.g. import_key) — skip entirely */
                   if (p.editHidden) return null;
 
-                  /* Fully locked / schema-protected: plain read-only display row */
+                  /* Fully locked / schema-protected: styled read-only row */
                   if (p.locked || p.schemaProtected) {
                     return (
-                      <div key={p.id} className="doc-prop-row">
+                      <div key={p.id} className="doc-prop-row doc-prop-row--readonly">
                         <span className="doc-prop-key">{p.label || p.k}</span>
-                        <span className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</span>
+                        <div className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</div>
                       </div>
                     );
                   }
@@ -1233,12 +1254,15 @@ export default function MongoDB() {
                   /* Locked-key field: key is static, value IS editable, no delete button */
                   if (p.lockedKey) {
                     const useKwEditor = p.k === "keyword_refs" || isKwRefArray(p.rawVal);
+                    const useSingleLine = !useKwEditor && !isComplexVal(p.rawVal);
                     return (
                       <div key={p.id} className="doc-form-row doc-form-row--lockedkey">
-                        <span className="doc-prop-key">{p.label || p.k}</span>
+                        <span className="doc-prop-key doc-prop-key--locked">{p.label || p.k}</span>
                         <div className="doc-form-val-col">
                           {useKwEditor ? (
                             <KwRefsEditor value={p.v} onChange={(v) => changePair(p.id, "v", v)} keywordMap={keywordMap} />
+                          ) : useSingleLine ? (
+                            <input className="kv-input" value={p.v} onChange={(e) => changePair(p.id, "v", e.target.value)} />
                           ) : (
                             <textarea className="kv-input kv-textarea" value={p.v} onChange={(e) => changePair(p.id, "v", e.target.value)} />
                           )}
@@ -1252,7 +1276,7 @@ export default function MongoDB() {
                   const isKwRefs = isKwRefArray(p.rawVal);
                   const isComplex = !isKwRefs && isComplexVal(p.rawVal);
                   return (
-                    <div key={p.id} className="doc-form-row">
+                    <div key={p.id} className="doc-form-row doc-form-row--editable">
                       <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
                       <div className="doc-form-val-col">
                         {isBool ? (

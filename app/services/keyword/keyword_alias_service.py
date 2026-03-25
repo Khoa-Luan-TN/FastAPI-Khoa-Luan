@@ -11,7 +11,7 @@ from typing import Any, Callable
 _log = logging.getLogger(__name__)
 
 from bson import ObjectId
-from app.services.shared._utils import utc_now, slugify_vi, normalize_for_compare
+from app.services.shared._utils import utc_now, slugify_vi, normalize_for_compare, alias_generation_enabled
 
 
 # ===================== INDEXES =====================
@@ -217,6 +217,22 @@ def refresh_keyword_aliases_batch(
     - belong to a successfully parsed Stage 2 batch (alias_map value is not None).
     Keywords rejected at screening keep their existing aliases untouched.
     """
+    # TEMPORARY DEBUG FLAG: skip all alias generation when disabled.
+    # To re-enable: remove DISABLE_ALIAS_GENERATION from config or set it to false.
+    if not alias_generation_enabled():
+        _log.info("[keyword_alias] alias generation disabled — skipping batch refresh")
+        return {
+            "total_keywords": len(keyword_id_name_pairs),
+            "screened_true": 0,
+            "screened_false": 0,
+            "alias_processed": 0,
+            "alias_inserted": 0,
+            "processed_keywords": 0,
+            "inserted_aliases": 0,
+            "stopped_due_to_quota": False,
+            "remaining_keywords": [],
+        }
+
     import json as _json
     import time
     from datetime import datetime as _dt
@@ -595,6 +611,22 @@ def refresh_keyword_aliases(
     model: str = "gemini-2.5-flash",
     context_text: str | None = None,
 ) -> dict:
+    # TEMPORARY DEBUG FLAG: skip all alias generation when disabled.
+    # To re-enable: remove DISABLE_ALIAS_GENERATION from config or set it to false.
+    if not alias_generation_enabled():
+        _log.info("[keyword_alias] alias generation disabled — skipping single refresh for keyword_id=%s", keyword_id)
+        return {
+            "keyword_id": keyword_id,
+            "keyword_name": keyword_name,
+            "model": model,
+            "existing_keyword_names": [],
+            "raw_aliases": [],
+            "filtered_aliases": [],
+            "final_aliases": [],
+            "inserted": 0,
+            "hard_deleted": 0,
+        }
+
     from app.services.ai.gemini_alias_service import generate_aliases
 
     _log.info(

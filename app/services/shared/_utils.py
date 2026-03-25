@@ -4,10 +4,23 @@
 Not a public API — import only from within app/services.
 """
 import json
+import os
 import re
 import unicodedata
 from datetime import datetime, timezone
 from typing import Any
+
+
+# ── Temporary debug flag ──────────────────────────────────────────────────────
+# Set DISABLE_ALIAS_GENERATION=true in config.env (or any env source) to skip
+# ALL alias-generation logic: Gemini calls, screening, batch refresh, DB writes.
+# Existing alias data is left untouched.  Keyword create/import/update continue
+# to work normally.  Remove this flag (or set it to "false") to re-enable.
+
+def alias_generation_enabled() -> bool:
+    """Return False when DISABLE_ALIAS_GENERATION=true, True otherwise."""
+    raw = os.getenv("DISABLE_ALIAS_GENERATION", "").strip().lower()
+    return raw not in ("1", "true", "yes", "on")
 
 
 def utc_now() -> datetime:

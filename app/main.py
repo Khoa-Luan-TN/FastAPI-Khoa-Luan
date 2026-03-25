@@ -40,7 +40,10 @@ from app.routers.search import router as search_router
 from app.services.infrastructure.postgre_client import engine, Base
 import app.models.model_postgre
 from app.services.infrastructure.mongo_client import get_mongo_db
-from app.services.mongo.mongo_import_service import ensure_all_import_key_indexes
+from app.services.mongo.mongo_import_service import (
+    ensure_all_import_key_indexes,
+    backfill_class_minio_roots,
+)
 
 
 @asynccontextmanager
@@ -53,6 +56,17 @@ async def lifespan(app: FastAPI):
         ensure_all_import_key_indexes(get_mongo_db())
     except Exception as _e:
         logging.getLogger("app").warning("import_key index migration warning: %s", _e)
+    # Ensure MinIO root markers exist for all class docs imported before the
+    # class-marker fix. Idempotent — safe to run on every startup.
+    try:
+        result = backfill_class_minio_roots(get_mongo_db())
+        if result.get("ok"):
+            logging.getLogger("app").info(
+                "class MinIO backfill: processed=%d errors=%d",
+                result.get("processed", 0), len(result.get("errors") or []),
+            )
+    except Exception as _e:
+        logging.getLogger("app").warning("class MinIO backfill warning: %s", _e)
     yield
 
 
