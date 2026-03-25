@@ -296,6 +296,31 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 "videos": f"videos/{_base2}/chunk/{_ident2}",
             }
 
+    # keyword_alias: validate keyword_id + alias_name, auto-fill keyword_name, compute alias_norm.
+    # keyword_alias uses hard delete — strip soft-delete and audit fields added by the generic block.
+    if col == "keyword_alias":
+        from bson import ObjectId as _OID
+        from app.services.shared._utils import normalize_for_compare
+        for _k in ("is_deleted", "deleted_at", "created_at", "updated_at", "created_by", "updated_by"):
+            body.pop(_k, None)
+        kw_ref = str(body.get("keyword_id") or "").strip()
+        if not kw_ref:
+            raise HTTPException(status_code=422, detail="keyword_alias.keyword_id is required")
+        if not _OID.is_valid(kw_ref):
+            raise HTTPException(status_code=422, detail=f"keyword_alias.keyword_id '{kw_ref}' is not a valid ObjectId")
+        _kw_doc = db["keyword"].find_one({"_id": _OID(kw_ref)}, {"keyword_name": 1, "is_deleted": 1})
+        if not _kw_doc:
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_ref}' not found")
+        if _kw_doc.get("is_deleted") is True:
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_ref}' is deleted")
+        alias_name = str(body.get("alias_name") or "").strip()
+        if not alias_name:
+            raise HTTPException(status_code=422, detail="keyword_alias.alias_name is required")
+        body["keyword_id"] = _OID(kw_ref)
+        body["keyword_name"] = str(_kw_doc.get("keyword_name") or "").strip()
+        body["alias_name"] = alias_name
+        body["alias_norm"] = normalize_for_compare(alias_name)
+
     # chunk_keyword: both refs must be valid ObjectId strings
     if col == "chunk_keyword":
         from bson import ObjectId as _OID
@@ -377,5 +402,15 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
     if col == "topic" and result.inserted_id:
         _topic_name = str(body.get("topic_name") or "").strip()
         _auto_create_topic_bag(db, result.inserted_id, _topic_name, actor=actor, now=now)
+
+    # keyword_alias: sync parent keyword.aliases array immediately after insert.
+    if col == "keyword_alias" and result.inserted_id:
+        try:
+            from app.services.keyword.keyword_alias_service import sync_keyword_alias_array
+            _kw_oid = body.get("keyword_id")
+            if _kw_oid is not None:
+                sync_keyword_alias_array(db, _kw_oid, actor=actor)
+        except Exception:
+            pass  # alias sync failure does not block the create response
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}

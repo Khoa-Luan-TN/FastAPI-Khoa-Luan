@@ -65,6 +65,7 @@ function docTitle(doc = {}) {
     doc.topic_name ||
     doc.lesson_name ||
     doc.chunk_name ||
+    doc.alias_name ||
     doc.keyword_name ||
     doc.image_name ||
     doc.video_name ||
@@ -233,14 +234,14 @@ const COLLECTION_ORDER = [
 const ID_LABEL_MAP = {
   class: "class_id", subject: "subject_id", topic: "topic_id",
   lesson: "lesson_id", chunk: "chunk_id", keyword: "keyword_id", user: "user_id",
-  topic_bag: "topic_bag_id",
+  topic_bag: "topic_bag_id", keyword_alias: "alias_id",
 };
 
 // ---- Per-collection primary name field (pinned as second row) ----
 const NAME_FIELD_MAP = {
   class: "class_name", subject: "subject_name", topic: "topic_name",
   lesson: "lesson_name", chunk: "chunk_name", keyword: "keyword_name",
-  user: "username",
+  user: "username", keyword_alias: "alias_name",
 };
 
 // ---- Audit / soft-delete fields — always last, fully locked ----
@@ -864,7 +865,8 @@ export default function MongoDB() {
           String(d._id || "").includes(s) ||
           String(d._title || "").toLowerCase().includes(s) ||
           String(d._chunk_name || "").toLowerCase().includes(s) ||
-          String(d._keyword_name || "").toLowerCase().includes(s)
+          String(d._keyword_name || "").toLowerCase().includes(s) ||
+          String(d.keyword_name || "").toLowerCase().includes(s)
       );
 
     return filtered.slice();
@@ -926,6 +928,30 @@ export default function MongoDB() {
         width: "140px",
         render: (r) => <span className="mongo-meta-cell" title={r._class_name || ""}>{r._class_name || "—"}</span>,
       });
+    }
+
+    if (currentCollection === "keyword_alias") {
+      // Replace all base columns — only show alias name + keyword name, no date/created_by
+      return [
+        {
+          key: "alias_name",
+          label: "TÊN ALIAS",
+          render: (r) => (
+            <div className="file-cell">
+              <div className="file-left">
+                <div className="file-icon file-other"><DocIcon /></div>
+                <div className="file-name" title={r.alias_name || ""}>{r.alias_name || "(no alias_name)"}</div>
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: "keyword_name",
+          label: "TÊN TỪ KHOÁ",
+          width: "180px",
+          render: (r) => <span className="mongo-meta-cell" title={r.keyword_name || ""}>{r.keyword_name || "—"}</span>,
+        },
+      ];
     }
 
     if (currentCollection === "chunk_keyword") {
