@@ -330,9 +330,9 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         except Exception:
             pass  # MinIO failure does not block class creation
 
-    # subject/topic/lesson/chunk store asset_prefixes; create folder markers immediately after insert+sync.
+    # subject/topic/lesson/chunk/keyword store asset_prefixes; create folder markers immediately after insert+sync.
     # name/num fields are locked in the UI to prevent MinIO path migration issues.
-    if col in ("subject", "topic", "lesson", "chunk") and body.get("asset_prefixes"):
+    if col in ("subject", "topic", "lesson", "chunk", "keyword") and body.get("asset_prefixes"):
         try:
             import os as _os
             _bucket = (_os.getenv("MINIO_BUCKET") or "").strip()

@@ -47,6 +47,7 @@ from app.services.mongo.mongo_import_service import (
     backfill_topic_minio_markers,
     backfill_lesson_minio_markers,
     backfill_chunk_minio_markers,
+    backfill_keyword_minio_markers,
 )
 
 
@@ -111,6 +112,15 @@ async def lifespan(app: FastAPI):
             )
     except Exception as _e:
         logging.getLogger("app").warning("chunk MinIO backfill warning: %s", _e)
+    try:
+        result = backfill_keyword_minio_markers(get_mongo_db())
+        if result.get("ok"):
+            logging.getLogger("app").info(
+                "keyword MinIO backfill: processed=%d backfilled=%d errors=%d",
+                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+            )
+    except Exception as _e:
+        logging.getLogger("app").warning("keyword MinIO backfill warning: %s", _e)
     yield
 
 

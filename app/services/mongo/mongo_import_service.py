@@ -1174,6 +1174,42 @@ def backfill_subject_minio_markers(db) -> Dict[str, Any]:
     return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
 
 
+def backfill_keyword_minio_markers(db) -> Dict[str, Any]:
+    """Ensure MinIO keyword folder markers exist for every non-deleted keyword in Mongo.
+
+    Also backfills asset_prefixes on keyword docs that are missing it. Idempotent.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    processed = 0
+    backfilled = 0
+
+    for kw_doc in db["keyword"].find(
+        {"is_deleted": {"$ne": True}},
+        {"keyword_slug": 1, "asset_prefixes": 1},
+    ):
+        processed += 1
+        asset_prefixes = kw_doc.get("asset_prefixes")
+
+        if not asset_prefixes:
+            kw_slug = kw_doc.get("keyword_slug") or ""
+            if kw_slug:
+                asset_prefixes = _keyword_asset_prefixes(kw_slug, str(kw_doc["_id"]))
+                db["keyword"].update_one(
+                    {"_id": kw_doc["_id"]},
+                    {"$set": {"asset_prefixes": asset_prefixes}},
+                )
+                backfilled += 1
+
+        if asset_prefixes:
+            ensure_asset_prefix_markers(client, bucket, asset_prefixes, errors=errors)
+
+    return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
+
+
 def backfill_class_minio_roots(db) -> Dict[str, Any]:
     """Ensure MinIO root markers exist for every non-deleted class already in Mongo.
 
