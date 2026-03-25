@@ -999,6 +999,51 @@ def import_excel_to_mongo(
     return report
 
 
+def backfill_topic_minio_markers(db) -> Dict[str, Any]:
+    """Ensure MinIO topic folder markers exist for every non-deleted topic in Mongo.
+
+    Also backfills asset_prefixes on topic docs that are missing it (created before
+    the topic-marker fix). Safe to call multiple times — operations are idempotent.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    ctx: Dict[str, Any] = {}
+    processed = 0
+    backfilled = 0
+
+    for topic_doc in db["topic"].find(
+        {"is_deleted": {"$ne": True}},
+        {"topic_num": 1, "subject_id": 1, "asset_prefixes": 1},
+    ):
+        processed += 1
+        asset_prefixes = topic_doc.get("asset_prefixes")
+
+        if not asset_prefixes:
+            subj_info = _subject_path_by_id(db, topic_doc.get("subject_id"), ctx)
+            n = _two_digit(topic_doc.get("topic_num"))
+            if subj_info and n:
+                base = f"{subj_info['class_slug']}/{subj_info['subject_slug']}"
+                identifier = f"topic_{n}"
+                asset_prefixes = {
+                    "documents": f"documents/{base}/topic/{identifier}",
+                    "images": f"images/{base}/topic/{identifier}",
+                    "videos": f"videos/{base}/topic/{identifier}",
+                }
+                db["topic"].update_one(
+                    {"_id": topic_doc["_id"]},
+                    {"$set": {"asset_prefixes": asset_prefixes}},
+                )
+                backfilled += 1
+
+        if asset_prefixes:
+            ensure_asset_prefix_markers(client, bucket, asset_prefixes, errors=errors)
+
+    return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
+
+
 def backfill_subject_minio_markers(db) -> Dict[str, Any]:
     """Ensure MinIO subject folder markers exist for every non-deleted subject in Mongo.
 

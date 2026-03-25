@@ -155,7 +155,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 "videos": f"videos/keyword/{kw_slug}__{short_id}",
             }
 
-    # topic: validate + coerce subject_id to ObjectId
+    # topic: validate + coerce subject_id to ObjectId; compute asset_prefixes
     if col == "topic":
         from bson import ObjectId as _OID
         subj_ref = str(body.get("subject_id") or "").strip()
@@ -163,9 +163,28 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             raise HTTPException(status_code=422, detail="topic.subject_id is required")
         if not _OID.is_valid(subj_ref):
             raise HTTPException(status_code=422, detail=f"topic.subject_id '{subj_ref}' is not a valid ObjectId")
-        if not db["subject"].find_one({"_id": _OID(subj_ref), "is_deleted": {"$ne": True}}):
+        _subj_doc = db["subject"].find_one({"_id": _OID(subj_ref), "is_deleted": {"$ne": True}})
+        if not _subj_doc:
             raise HTTPException(status_code=422, detail=f"subject '{subj_ref}' not found or is deleted")
         body["subject_id"] = _OID(subj_ref)
+        # Compute asset_prefixes consistent with import flow.
+        # topic_num/subject_name/class_name are locked in the UI to prevent MinIO path migration.
+        _cls_doc = (
+            db["class"].find_one({"_id": _subj_doc["class_id"]}, {"class_name": 1})
+            if _subj_doc.get("class_id") else None
+        )
+        _cls_slug = slugify_vi(_cls_doc.get("class_name") or "") if _cls_doc else ""
+        _subj_slug = slugify_vi(_subj_doc.get("subject_name") or "")
+        _m = re.search(r"\d+", str(body.get("topic_num") or "").strip())
+        _topic_n = f"{int(_m.group()):02d}" if _m else ""
+        if _cls_slug and _subj_slug and _topic_n:
+            _base = f"{_cls_slug}/{_subj_slug}"
+            _ident = f"topic_{_topic_n}"
+            body["asset_prefixes"] = {
+                "documents": f"documents/{_base}/topic/{_ident}",
+                "images": f"images/{_base}/topic/{_ident}",
+                "videos": f"videos/{_base}/topic/{_ident}",
+            }
 
     # lesson: validate + coerce topic_id to ObjectId
     if col == "lesson":
@@ -255,9 +274,9 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         except Exception:
             pass  # MinIO failure does not block class creation
 
-    # Subject stores asset_prefixes.documents; create the folder marker immediately.
-    # subject_name/class_name are locked in the UI to prevent MinIO path migration issues.
-    if col == "subject" and body.get("asset_prefixes"):
+    # Subject/topic store asset_prefixes; create folder markers immediately after insert+sync.
+    # subject_name/class_name/topic_num are locked in the UI to prevent MinIO path migration.
+    if col in ("subject", "topic") and body.get("asset_prefixes"):
         try:
             import os as _os
             _bucket = (_os.getenv("MINIO_BUCKET") or "").strip()
@@ -266,6 +285,6 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 from app.services.minio.minio_marker_service import ensure_asset_prefix_markers
                 ensure_asset_prefix_markers(get_minio_client(), _bucket, body["asset_prefixes"])
         except Exception:
-            pass  # MinIO failure does not block subject creation
+            pass  # MinIO failure does not block create
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
