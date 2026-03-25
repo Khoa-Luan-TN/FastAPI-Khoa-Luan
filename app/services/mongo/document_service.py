@@ -186,7 +186,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
                 "videos": f"videos/{_base}/topic/{_ident}",
             }
 
-    # lesson: validate + coerce topic_id to ObjectId
+    # lesson: validate + coerce topic_id to ObjectId; compute asset_prefixes
     if col == "lesson":
         from bson import ObjectId as _OID
         topic_ref = str(body.get("topic_id") or "").strip()
@@ -194,11 +194,36 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             raise HTTPException(status_code=422, detail="lesson.topic_id is required")
         if not _OID.is_valid(topic_ref):
             raise HTTPException(status_code=422, detail=f"lesson.topic_id '{topic_ref}' is not a valid ObjectId")
-        if not db["topic"].find_one({"_id": _OID(topic_ref), "is_deleted": {"$ne": True}}):
+        _topic_doc = db["topic"].find_one({"_id": _OID(topic_ref), "is_deleted": {"$ne": True}})
+        if not _topic_doc:
             raise HTTPException(status_code=422, detail=f"topic '{topic_ref}' not found or is deleted")
         body["topic_id"] = _OID(topic_ref)
+        # Compute asset_prefixes consistent with import flow.
+        # lesson_num/topic_num/subject_name/class_name are locked in the UI to prevent MinIO path migration.
+        _subj_doc = (
+            db["subject"].find_one({"_id": _topic_doc["subject_id"]}, {"subject_name": 1, "class_id": 1})
+            if _topic_doc.get("subject_id") else None
+        )
+        _cls_doc = (
+            db["class"].find_one({"_id": _subj_doc["class_id"]}, {"class_name": 1})
+            if _subj_doc and _subj_doc.get("class_id") else None
+        )
+        _cls_slug = slugify_vi(_cls_doc.get("class_name") or "") if _cls_doc else ""
+        _subj_slug = slugify_vi(_subj_doc.get("subject_name") or "") if _subj_doc else ""
+        _mt = re.search(r"\d+", str(_topic_doc.get("topic_num") or "").strip())
+        _topic_n = f"{int(_mt.group()):02d}" if _mt else ""
+        _ml = re.search(r"\d+", str(body.get("lesson_num") or "").strip())
+        _lesson_n = f"{int(_ml.group()):02d}" if _ml else ""
+        if _cls_slug and _subj_slug and _topic_n and _lesson_n:
+            _base = f"{_cls_slug}/{_subj_slug}"
+            _ident = f"topic_{_topic_n}-lesson_{_lesson_n}"
+            body["asset_prefixes"] = {
+                "documents": f"documents/{_base}/lesson/{_ident}",
+                "images": f"images/{_base}/lesson/{_ident}",
+                "videos": f"videos/{_base}/lesson/{_ident}",
+            }
 
-    # chunk: validate + coerce lesson_id to ObjectId
+    # chunk: validate + coerce lesson_id to ObjectId; compute asset_prefixes
     if col == "chunk":
         from bson import ObjectId as _OID
         lesson_ref = str(body.get("lesson_id") or "").strip()
@@ -206,9 +231,40 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             raise HTTPException(status_code=422, detail="chunk.lesson_id is required")
         if not _OID.is_valid(lesson_ref):
             raise HTTPException(status_code=422, detail=f"chunk.lesson_id '{lesson_ref}' is not a valid ObjectId")
-        if not db["lesson"].find_one({"_id": _OID(lesson_ref), "is_deleted": {"$ne": True}}):
+        _lesson_doc = db["lesson"].find_one({"_id": _OID(lesson_ref), "is_deleted": {"$ne": True}})
+        if not _lesson_doc:
             raise HTTPException(status_code=422, detail=f"lesson '{lesson_ref}' not found or is deleted")
         body["lesson_id"] = _OID(lesson_ref)
+        # Compute asset_prefixes consistent with import flow.
+        # chunk_num/lesson_num/topic_num/subject_name/class_name are locked in the UI to prevent MinIO path migration.
+        _topic_doc2 = (
+            db["topic"].find_one({"_id": _lesson_doc["topic_id"]}, {"subject_id": 1, "topic_num": 1})
+            if _lesson_doc.get("topic_id") else None
+        )
+        _subj_doc2 = (
+            db["subject"].find_one({"_id": _topic_doc2["subject_id"]}, {"subject_name": 1, "class_id": 1})
+            if _topic_doc2 and _topic_doc2.get("subject_id") else None
+        )
+        _cls_doc2 = (
+            db["class"].find_one({"_id": _subj_doc2["class_id"]}, {"class_name": 1})
+            if _subj_doc2 and _subj_doc2.get("class_id") else None
+        )
+        _cls_slug2 = slugify_vi(_cls_doc2.get("class_name") or "") if _cls_doc2 else ""
+        _subj_slug2 = slugify_vi(_subj_doc2.get("subject_name") or "") if _subj_doc2 else ""
+        _mt2 = re.search(r"\d+", str((_topic_doc2 or {}).get("topic_num") or "").strip())
+        _topic_n2 = f"{int(_mt2.group()):02d}" if _mt2 else ""
+        _ml2 = re.search(r"\d+", str(_lesson_doc.get("lesson_num") or "").strip())
+        _lesson_n2 = f"{int(_ml2.group()):02d}" if _ml2 else ""
+        _mc = re.search(r"\d+", str(body.get("chunk_num") or "").strip())
+        _chunk_n = f"{int(_mc.group()):02d}" if _mc else ""
+        if _cls_slug2 and _subj_slug2 and _topic_n2 and _lesson_n2 and _chunk_n:
+            _base2 = f"{_cls_slug2}/{_subj_slug2}"
+            _ident2 = f"topic_{_topic_n2}-lesson_{_lesson_n2}-chunk_{_chunk_n}"
+            body["asset_prefixes"] = {
+                "documents": f"documents/{_base2}/chunk/{_ident2}",
+                "images": f"images/{_base2}/chunk/{_ident2}",
+                "videos": f"videos/{_base2}/chunk/{_ident2}",
+            }
 
     # chunk_keyword: both refs must be valid ObjectId strings
     if col == "chunk_keyword":
@@ -274,9 +330,9 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
         except Exception:
             pass  # MinIO failure does not block class creation
 
-    # Subject/topic store asset_prefixes; create folder markers immediately after insert+sync.
-    # subject_name/class_name/topic_num are locked in the UI to prevent MinIO path migration.
-    if col in ("subject", "topic") and body.get("asset_prefixes"):
+    # subject/topic/lesson/chunk store asset_prefixes; create folder markers immediately after insert+sync.
+    # name/num fields are locked in the UI to prevent MinIO path migration issues.
+    if col in ("subject", "topic", "lesson", "chunk") and body.get("asset_prefixes"):
         try:
             import os as _os
             _bucket = (_os.getenv("MINIO_BUCKET") or "").strip()

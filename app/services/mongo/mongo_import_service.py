@@ -999,6 +999,94 @@ def import_excel_to_mongo(
     return report
 
 
+def backfill_lesson_minio_markers(db) -> Dict[str, Any]:
+    """Ensure MinIO lesson folder markers exist for every non-deleted lesson in Mongo.
+
+    Also backfills asset_prefixes on lesson docs that are missing it. Idempotent.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    ctx: Dict[str, Any] = {}
+    processed = 0
+    backfilled = 0
+
+    for lesson_doc in db["lesson"].find(
+        {"is_deleted": {"$ne": True}},
+        {"lesson_num": 1, "topic_id": 1, "asset_prefixes": 1},
+    ):
+        processed += 1
+        asset_prefixes = lesson_doc.get("asset_prefixes")
+
+        if not asset_prefixes:
+            topic_info = _topic_path_by_id(db, lesson_doc.get("topic_id"), ctx)
+            n = _two_digit(lesson_doc.get("lesson_num"))
+            if topic_info and n:
+                base = f"{topic_info['class_slug']}/{topic_info['subject_slug']}"
+                identifier = f"topic_{topic_info['topic_num']}-lesson_{n}"
+                asset_prefixes = {
+                    "documents": f"documents/{base}/lesson/{identifier}",
+                    "images": f"images/{base}/lesson/{identifier}",
+                    "videos": f"videos/{base}/lesson/{identifier}",
+                }
+                db["lesson"].update_one(
+                    {"_id": lesson_doc["_id"]},
+                    {"$set": {"asset_prefixes": asset_prefixes}},
+                )
+                backfilled += 1
+
+        if asset_prefixes:
+            ensure_asset_prefix_markers(client, bucket, asset_prefixes, errors=errors)
+
+    return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
+
+
+def backfill_chunk_minio_markers(db) -> Dict[str, Any]:
+    """Ensure MinIO chunk folder markers exist for every non-deleted chunk in Mongo.
+
+    Also backfills asset_prefixes on chunk docs that are missing it. Idempotent.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    ctx: Dict[str, Any] = {}
+    processed = 0
+    backfilled = 0
+
+    for chunk_doc in db["chunk"].find(
+        {"is_deleted": {"$ne": True}},
+        {"chunk_num": 1, "lesson_id": 1, "asset_prefixes": 1},
+    ):
+        processed += 1
+        asset_prefixes = chunk_doc.get("asset_prefixes")
+
+        if not asset_prefixes:
+            lesson_info = _lesson_path_by_id(db, chunk_doc.get("lesson_id"), ctx)
+            n = _two_digit(chunk_doc.get("chunk_num"))
+            if lesson_info and n:
+                base = f"{lesson_info['class_slug']}/{lesson_info['subject_slug']}"
+                identifier = f"topic_{lesson_info['topic_num']}-lesson_{lesson_info['lesson_num']}-chunk_{n}"
+                asset_prefixes = {
+                    "documents": f"documents/{base}/chunk/{identifier}",
+                    "images": f"images/{base}/chunk/{identifier}",
+                    "videos": f"videos/{base}/chunk/{identifier}",
+                }
+                db["chunk"].update_one(
+                    {"_id": chunk_doc["_id"]},
+                    {"$set": {"asset_prefixes": asset_prefixes}},
+                )
+                backfilled += 1
+
+        if asset_prefixes:
+            ensure_asset_prefix_markers(client, bucket, asset_prefixes, errors=errors)
+
+    return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
+
+
 def backfill_topic_minio_markers(db) -> Dict[str, Any]:
     """Ensure MinIO topic folder markers exist for every non-deleted topic in Mongo.
 
