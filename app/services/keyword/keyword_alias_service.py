@@ -35,6 +35,19 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
     if existing:
         return existing["keyword_slug"], str(existing["_id"])
 
+    # Case-insensitive (diacritics-sensitive) duplicate check.
+    # "Thông tin" == "thông tin" (same word, different case) → duplicate, reuse.
+    # "Mảng" != "Mạng" (ả ≠ ạ, different Vietnamese words) → NOT duplicate, allocate suffix.
+    ci_match = db["keyword"].find_one(
+        {"keyword_name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
+         "is_deleted": {"$ne": True}, **_excl},
+        {"_id": 1, "keyword_slug": 1},
+    )
+    if ci_match:
+        return ci_match["keyword_slug"], str(ci_match["_id"])
+
+    # Slug collision means a different Vietnamese word happens to transliterate identically —
+    # that is NOT a duplicate; just allocate the next free suffixed slot.
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
     taken = {
         doc["keyword_slug"]
@@ -141,10 +154,14 @@ def handle_keyword_rename_cleanup(
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
+    # Case-insensitive (diacritics-sensitive) conflict check.
+    # Only blocks rename when the target name is the same word in a different case.
+    # A different word that happens to share the same base slug is NOT a conflict —
+    # _resolve_keyword_slug will allocate a suffixed slug for it.
     conflict = db["keyword"].find_one({
         "is_deleted": {"$ne": True},
         "_id": {"$ne": kw_oid},
-        "keyword_name": new_name,
+        "keyword_name": {"$regex": f"^{re.escape(new_name)}$", "$options": "i"},
     })
     if conflict:
         raise ValueError(f"keyword_name '{new_name}' already exists")

@@ -94,11 +94,24 @@ def _user_normalize_and_validate(col: str, body: Dict[str, Any], *, is_create: b
         body.setdefault("user_role", "user")
         body.setdefault("is_active", True)
 
-    if (not is_create) and ("password" in body):
-        pw = str(body.get("password") or "").strip()
-        if not pw:
-            raise HTTPException(status_code=422, detail="password cannot be empty")
-        body["password"] = pw
+    if not is_create:
+        if "username" in body:
+            u = str(body.get("username") or "").strip()
+            if not u:
+                raise HTTPException(status_code=422, detail="username cannot be empty")
+            body["username"] = u
+            # _mongo_id is injected by the update handler before calling this function
+            current_id = body.pop("_current_mongo_id", None)
+            excl = {"_id": {"$ne": current_id}} if current_id else {}
+            conflict = db[col].find_one({"username": u, **excl, "is_deleted": {"$ne": True}}, {"_id": 1})
+            if conflict:
+                raise HTTPException(status_code=409, detail="Username already exists")
+
+        if "password" in body:
+            pw = str(body.get("password") or "").strip()
+            if not pw:
+                raise HTTPException(status_code=422, detail="password cannot be empty")
+            body["password"] = pw
 
 @router.get("/documents", summary="Lấy Documents trong Collection (có phân trang)")
 def get_documents(collection_name: str = Query(...), limit: int = Query(50, ge=1, le=500), offset: int = Query(0, ge=0)):
@@ -316,6 +329,8 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
                     detail="Không thể thay đổi vai trò hoặc trạng thái của chính mình.",
                 )
 
+    if col == "user":
+        body["_current_mongo_id"] = exist["_id"]
     _user_normalize_and_validate(col, body, is_create=False)
 
     # keyword: strip any client-supplied keyword_id/keyword_slug.

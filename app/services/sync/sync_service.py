@@ -561,11 +561,16 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         password = _s(doc.get("password"))
         user_role = _s(doc.get("user_role") or doc.get("role") or "user").lower()
 
+        is_deleted = bool(doc.get("is_deleted", False))
+
         is_active = doc.get("is_active")
         if is_active is None:
             is_active = doc.get("active")
         if is_active is None:
             is_active = True
+        # Soft-delete always wins: is_deleted=True forces is_active=False
+        if is_deleted:
+            is_active = False
 
         if not username or not password:
             raise ValueError("user missing username/password")
@@ -575,6 +580,14 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
         obj = _pg_get_by_mongo_id(pg, pg_models.User, mongo_id)
         if obj:
+            # Check PG username uniqueness if username is changing
+            if obj.username != username:
+                conflict = pg.query(pg_models.User).filter(
+                    pg_models.User.username == username,
+                    pg_models.User.mongo_id != mongo_id,
+                ).first()
+                if conflict:
+                    raise ValueError(f"Username '{username}' already exists in another account")
             obj.username = username
             obj.password = password
             obj.user_role = user_role

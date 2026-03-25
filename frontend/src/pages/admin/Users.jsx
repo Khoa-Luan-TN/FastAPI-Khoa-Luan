@@ -299,11 +299,9 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
         const pw = password.trim();
         if (u && u !== (initial?.username || "")) patch.username = u;
         if (pw) patch.password = pw;
-        // Never send role/active changes when editing own account
-        if (!isSelf) {
-          if ((role || "user") !== (initial?.role || "user")) patch.user_role = role;
-          if ((active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
-        }
+        // user_role is never sent in edit mode
+        // is_active may be changed only by non-self editors
+        if (!isSelf && (active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
         if (Object.keys(patch).length === 0) {
           setSubmitError("Không có thay đổi nào để cập nhật.");
           setSubmitting(false);
@@ -412,7 +410,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
           <div style={{ borderTop: "1px solid #F1F5F9" }} />
 
           <FormField label="Vai trò (Role)">
-            {isSelf ? (
+            {isEdit ? (
               <LockedField
                 value={role === "admin" ? "Admin" : "User"}
                 color={role === "admin" ? "#7C3AED" : "#2563EB"}
@@ -478,36 +476,18 @@ export default function Users() {
   const currentUserId = localStorage.getItem("user_id") || "";
 
   async function reloadUsers() {
-    // Fetch Mongo docs and PG user rows in parallel
-    const [mongoData, pgData] = await Promise.all([
-      userApi.listUsers({ limit: 500, offset: 0 }),
-      userApi.listPgUsers({ limit: 500 }).catch(() => ({ rows: [] })),
-    ]);
-
+    // Mongo docs already store user_id (back-filled by backend after create/sync).
+    // No PG cross-reference needed.
+    const mongoData = await userApi.listUsers({ limit: 500, offset: 0 });
     const docs = mongoData.documents || [];
-
-    // Build mongo_id → user_id map from PG rows
-    const pgRows = pgData.rows || [];
-    const pgMap = {}; // mongoId → pgUserId
-    for (const row of pgRows) {
-      const mid = String(row.mongo_id || "").trim();
-      const uid = String(row.user_id || "").trim();
-      if (mid && uid) pgMap[mid] = uid;
-    }
-
-    setUsers(docs.map((d) => {
-      const mongoId = String(d._id);
-      // Prefer user_id already stored in the Mongo doc, then fall back to PG cross-reference
-      const resolvedUserId = String(d.user_id || pgMap[mongoId] || "");
-      return {
-        id: mongoId,
-        userId: resolvedUserId,
-        username: d.username || "",
-        role: d.user_role || "user",
-        active: d.is_active ?? true,
-        updatedAt: fmtDate(d.updated_at || d.created_at || ""),
-      };
-    }));
+    setUsers(docs.map((d) => ({
+      id: String(d._id),
+      userId: String(d.user_id || ""),
+      username: d.username || "",
+      role: d.user_role || "user",
+      active: d.is_active ?? true,
+      updatedAt: fmtDate(d.updated_at || d.created_at || ""),
+    })));
   }
 
   useEffect(() => {

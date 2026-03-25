@@ -49,6 +49,21 @@ export function listDocuments(collectionName, limit = 50, offset = 0) {
   return httpJson(url.toString(), { method: "GET" });
 }
 
+export async function listAllDocuments(collectionName, batchSize = 500) {
+  let offset = 0;
+  let total = null;
+  const all = [];
+  while (true) {
+    const data = await listDocuments(collectionName, batchSize, offset);
+    const batch = data.documents || [];
+    all.push(...batch);
+    if (total === null) total = data.total || 0;
+    offset += batch.length;
+    if (batch.length === 0 || all.length >= total) break;
+  }
+  return { documents: all, total: all.length };
+}
+
 export function createDocument(collectionName, doc) {
   const c = encodeURIComponent(collectionName);
   return httpJson(`${API_BASE}/admin/mongo/documents/${c}`, {

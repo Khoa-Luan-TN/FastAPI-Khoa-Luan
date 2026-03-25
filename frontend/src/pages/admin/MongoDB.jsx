@@ -210,10 +210,10 @@ const CREATE_CONFIGS = {
     rows: [
       { k: "username", v: "" },
       { k: "password", v: "" },
-      { k: "user_role", v: "user" },
+      { k: "user_role", v: "user", inputType: "select", options: ["user", "admin"] },
       { k: "is_active", v: "true" },
     ],
-    locked: new Set(["username", "password"]),
+    locked: new Set(["username", "password", "user_role", "is_active"]),
     allowExtra: true,
   },
 };
@@ -265,7 +265,7 @@ const SCHEMA_PROTECTED = new Set([
   "class_id", "subject_id", "topic_id", "lesson_id", "chunk_id", "keyword_id", "user_id",
   // class_name and subject_name determine MinIO folder paths (documents/<class>/<subject>/...).
   // Renaming them would orphan existing MinIO assets — lock until a rename+migrate flow exists.
-  "class_name", "subject_name", "lesson_name", "chunk_name", "keyword_name", "username",
+  "class_name", "subject_name", "lesson_name", "chunk_name", "keyword_name", "username", "password", "user_role",
   "topic_num", "lesson_num", "chunk_num",
   "keyword_embedding_text",
   "asset_prefixes",
@@ -282,7 +282,7 @@ const SCHEMA_PROTECTED = new Set([
 const READONLY_BLOCK_FIELDS = new Set(["asset_prefixes", "keyword_slug", "aliases"]);
 
 // ---- Locked-key fields: key is locked (cannot rename, no delete row), but VALUE is editable ----
-const LOCKED_KEY_FIELDS = new Set(["keyword_refs", "topic_name"]);
+const LOCKED_KEY_FIELDS = new Set(["keyword_refs", "topic_name", "is_active"]);
 
 // ---- Hidden in edit mode (not editable, not visible in edit) ----
 const EDIT_HIDDEN = new Set(["import_key"]);
@@ -539,6 +539,8 @@ export default function MongoDB() {
 
   const [collections, setCollections] = useState([]);
   const [docs, setDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const _loadGenRef = useRef(0);
 
   const [err, setErr] = useState("");
 
@@ -613,15 +615,22 @@ export default function MongoDB() {
     }
   }
 
-  async function reloadDocs(collectionName) {
+  async function loadAllDocs(collectionName) {
     if (!collectionName) return;
+    const gen = ++_loadGenRef.current;
     setErr("");
+    setDocsLoading(true);
+    setDocs([]);
     try {
-      const data = await mongoApi.listDocuments(collectionName, 200, 0);
+      const data = await mongoApi.listAllDocuments(collectionName);
+      if (gen !== _loadGenRef.current) return; // switched collection mid-flight
       setDocs(data.documents || []);
     } catch (e) {
+      if (gen !== _loadGenRef.current) return;
       setErr(String(e?.message || e));
       setDocs([]);
+    } finally {
+      if (gen === _loadGenRef.current) setDocsLoading(false);
     }
   }
 
@@ -631,7 +640,7 @@ export default function MongoDB() {
 
   useEffect(() => {
     if (!currentCollection) return;
-    reloadDocs(currentCollection);
+    loadAllDocs(currentCollection);
   }, [currentCollection]);
 
   const selectedDoc = useMemo(() => {
@@ -827,8 +836,12 @@ export default function MongoDB() {
     });
   }, [collections, q]);
 
+  function _normSearch(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
   const docRows = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const s = _normSearch(q.trim());
 
     const list = docs.map((d) => {
       const title = docTitle(d);
@@ -844,30 +857,39 @@ export default function MongoDB() {
         }
       }
 
-      const row = {
+      const _class_name = d.class_id != null ? (classMap[String(d.class_id)] || String(d.class_id)) : "";
+      const _chunk_name = d.chunk_id != null ? (chunkMap[String(d.chunk_id)] || String(d.chunk_id)) : "";
+      const _keyword_name = d.keyword_id != null ? (keywordMap[String(d.keyword_id)] || String(d.keyword_id)) : "";
+
+      // Build one searchable text blob per row (accent-insensitive)
+      const kwRefParts = Array.isArray(d.keyword_refs)
+        ? d.keyword_refs.flatMap((r) => [r.keyword_name, String(r.keyword_id || "")])
+        : [];
+      const _searchText = _normSearch([
+        String(d._id || ""),
+        title,
+        _class_name,
+        _chunk_name,
+        _keyword_name,
+        d.alias_name,
+        d.keyword_name,
+        ...kwRefParts,
+      ].join(" "));
+
+      return {
         ...d,
         id: String(d._id),
         _title: title,
         _created_date: createdDate,
         _created_by: d.created_by || "-",
-        _class_name: d.class_id != null ? (classMap[String(d.class_id)] || String(d.class_id)) : "",
-        _chunk_name: d.chunk_id != null ? (chunkMap[String(d.chunk_id)] || String(d.chunk_id)) : "",
-        _keyword_name: d.keyword_id != null ? (keywordMap[String(d.keyword_id)] || String(d.keyword_id)) : "",
+        _class_name,
+        _chunk_name,
+        _keyword_name,
+        _searchText,
       };
-
-      return row;
     });
 
-    const filtered = !s
-      ? list
-      : list.filter(
-        (d) =>
-          String(d._id || "").includes(s) ||
-          String(d._title || "").toLowerCase().includes(s) ||
-          String(d._chunk_name || "").toLowerCase().includes(s) ||
-          String(d._keyword_name || "").toLowerCase().includes(s) ||
-          String(d.keyword_name || "").toLowerCase().includes(s)
-      );
+    const filtered = !s ? list : list.filter((d) => d._searchText.includes(s));
 
     return filtered.slice();
   }, [docs, q, currentCollection, classMap, chunkMap, keywordMap]);
@@ -1034,7 +1056,7 @@ export default function MongoDB() {
       setImportProgress({ progress: 100, message: "Hoàn tất", collection: "" });
 
       if (isRoot) await reloadCollections();
-      else await reloadDocs(currentCollection);
+      else { await loadAllDocs(currentCollection); }
     } catch (err) {
       setImportResult({ status: "failed", message: String(err?.message || err) });
       alert(String(err?.message || err));
@@ -1055,7 +1077,7 @@ export default function MongoDB() {
     try {
       await mongoApi.createDocument(currentCollection, dataObj);
       setOpenCreateDoc(false);
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -1065,7 +1087,7 @@ export default function MongoDB() {
     if (!confirm(`Xoá document "${docTitle(row) || row._id}"?`)) return;
     try {
       await mongoApi.deleteDocument(currentCollection, String(row._id));
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
       setCurrentDocId((id) => (String(id) === String(row._id) ? "" : id));
     } catch (e) {
       alert(String(e?.message || e));
@@ -1142,7 +1164,7 @@ export default function MongoDB() {
     try {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
       setIsEditingDoc(false);
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -1151,7 +1173,7 @@ export default function MongoDB() {
   async function restoreDoc(row) {
     try {
       await mongoApi.updateDocument(currentCollection, String(row._id), { is_deleted: false });
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -1162,7 +1184,7 @@ export default function MongoDB() {
     try {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), { is_deleted: false });
       setIsEditingDoc(false);
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -1174,7 +1196,7 @@ export default function MongoDB() {
     try {
       await mongoApi.deleteDocument(currentCollection, String(selectedDoc._id));
       setCurrentDocId("");
-      await reloadDocs(currentCollection);
+      await loadAllDocs(currentCollection);
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -1390,13 +1412,19 @@ export default function MongoDB() {
                   /* Locked-key field: key is static, value IS editable, no delete button */
                   if (p.lockedKey) {
                     const useKwEditor = p.k === "keyword_refs" || isKwRefArray(p.rawVal);
-                    const useSingleLine = !useKwEditor && !isComplexVal(p.rawVal);
+                    const isBoolLocked = p.k === "is_active";
+                    const useSingleLine = !useKwEditor && !isBoolLocked && !isComplexVal(p.rawVal);
                     return (
                       <div key={p.id} className="doc-form-row doc-form-row--lockedkey">
                         <span className="doc-prop-key doc-prop-key--locked">{p.label || p.k}</span>
                         <div className="doc-form-val-col">
                           {useKwEditor ? (
                             <KwRefsEditor value={p.v} onChange={(v) => changePair(p.id, "v", v)} keywordMap={keywordMap} />
+                          ) : isBoolLocked ? (
+                            <select className="kv-input" value={String(p.v ?? "false")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
+                              <option value="false">false</option>
+                              <option value="true">true</option>
+                            </select>
                           ) : useSingleLine ? (
                             <input className="kv-input" value={p.v} onChange={(e) => changePair(p.id, "v", e.target.value)} />
                           ) : (
@@ -1408,7 +1436,7 @@ export default function MongoDB() {
                   }
 
                   /* Fully editable custom field: rename key + edit value + delete */
-                  const isBool = p.k === "is_active" || p.k === "is_deleted";
+                  const isBool = p.k === "is_deleted";
                   const isKwRefs = isKwRefArray(p.rawVal);
                   const isComplex = !isKwRefs && isComplexVal(p.rawVal);
                   return (
@@ -1434,6 +1462,10 @@ export default function MongoDB() {
                 })}
               </div>
             )}
+          </div>
+        ) : docsLoading ? (
+          <div className="minio-empty" style={{ marginTop: 24 }}>
+            <p style={{ color: "#6B7280" }}>Đang tải dữ liệu...</p>
           </div>
         ) : (
           <DataTable
