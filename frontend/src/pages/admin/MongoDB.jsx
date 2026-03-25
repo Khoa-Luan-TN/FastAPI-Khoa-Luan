@@ -1277,9 +1277,6 @@ export default function MongoDB() {
               </>
             ) : !isDocDetail ? (
               <>
-                <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
-                  {importing ? "Importing..." : "Import Excel"}
-                </button>
                 {!COLLECTIONS_NO_CREATE.has(currentCollection) && (
                   <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
                     + Document
