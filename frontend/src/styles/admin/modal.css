@@ -273,3 +273,17 @@ select.kv-input option {
   background: white;
   color: #0f172a;
 }
+
+/* ---- Dynamic field rows in document create modal ---- */
+.modal-kv-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 32px;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.45);
+  align-items: center;
+}
+
+.modal-kv-row:last-child {
+  border-bottom: none;
+}

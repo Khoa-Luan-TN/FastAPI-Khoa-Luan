@@ -5,7 +5,6 @@
    ===================================================== */
 :root {
   --doc-font: "Segoe UI", Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --mono-font: ui-monospace, "SF Mono", "Fira Mono", monospace;
 }
 
 /* =====================================================
@@ -488,7 +487,7 @@
 
 .doc-prop-row {
   display: grid;
-  grid-template-columns: 168px 1fr;
+  grid-template-columns: 168px minmax(0, 1fr);
   gap: 20px;
   padding: 14px 28px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.35);
@@ -523,6 +522,8 @@
   color: #1E293B;
   font-weight: 400;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
   line-height: 1.65;
 }
 
@@ -604,6 +605,12 @@
 
 .doc-form-row:last-child {
   border-bottom: none;
+}
+
+/* Locked-key row: static label + editable value, no delete slot */
+.doc-form-row--lockedkey {
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: baseline;
 }
 
 .doc-form-val-col {
@@ -708,6 +715,354 @@
 /* ---- shared kv-input base ---- */
 .kv-input {
   font-family: var(--doc-font);
+}
+
+/* ---- Textarea for complex (object/array) custom field values ---- */
+.kv-textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  font-family: var(--doc-font);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+/* =====================================================
+   COMPLEX VALUE RENDERING — objects, arrays, long text
+   ===================================================== */
+
+/* ---- Plain object ---- */
+.doc-val-object {
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--doc-font);
+}
+
+.doc-val-obj-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #F1F5F9;
+  align-items: baseline;
+}
+
+.doc-val-obj-row:last-child {
+  border-bottom: none;
+}
+
+.doc-val-obj-key {
+  font-family: var(--doc-font);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.doc-val-obj-val {
+  font-family: var(--doc-font);
+  font-size: 13px;
+  color: #1E293B;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+/* ---- Array of objects ---- */
+.doc-val-array {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.doc-val-array-item {
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  font-family: var(--doc-font);
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* ---- Array of primitives — chips ---- */
+.doc-val-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.doc-val-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #F0F9FF;
+  color: #0369A1;
+  border-radius: 100px;
+  font-family: var(--doc-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid #BAE6FD;
+}
+
+/* ---- Long text ---- */
+.doc-val-long {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: var(--doc-font);
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.65;
+}
+
+/* =====================================================
+   KEYWORD REFS — view mode (inline, scrollable)
+   ===================================================== */
+.kw-refs-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.kw-refs-view::-webkit-scrollbar { width: 5px; }
+.kw-refs-view::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+.kw-refs-view::-webkit-scrollbar-track { background: transparent; }
+
+.kw-refs-view-header {
+  padding: 6px 12px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E9EEF5;
+  flex-shrink: 0;
+}
+
+.kw-refs-count-badge {
+  font-family: var(--doc-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kw-refs-view-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.kw-ref-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #F1F5F9;
+  align-items: start;
+}
+
+.kw-ref-item:last-child {
+  border-bottom: none;
+}
+
+.kw-ref-seq {
+  font-family: var(--doc-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: #CBD5E1;
+  text-align: right;
+  padding-top: 2px;
+}
+
+.kw-ref-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.kw-ref-name {
+  font-family: var(--doc-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: #1E293B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kw-ref-id {
+  font-family: var(--doc-font);
+  font-size: 11px;
+  color: #94A3B8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =====================================================
+   KEYWORD REFS — edit mode editor
+   ===================================================== */
+.kw-refs-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kw-refs-editor-header {
+  padding: 6px 12px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E9EEF5;
+}
+
+.kw-refs-editor-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.kw-refs-editor-list::-webkit-scrollbar { width: 5px; }
+.kw-refs-editor-list::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+.kw-refs-editor-list::-webkit-scrollbar-track { background: transparent; }
+
+.kw-refs-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #F1F5F9;
+  align-items: center;
+  background: #FAFCFF;
+}
+
+.kw-refs-seq {
+  font-family: var(--doc-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: #CBD5E1;
+  text-align: right;
+}
+
+.kw-refs-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.kw-refs-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  background: #F8FAFC;
+  border-top: 1px dashed #E2E8F0;
+}
+
+.kw-refs-add-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #CBD5E1;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.kw-refs-add-btn:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
+.kw-refs-dup-err {
+  font-family: var(--doc-font);
+  font-size: 12px;
+  color: #E11D48;
+  padding: 4px 10px 6px;
+  margin: 0;
+  background: #FFF1F2;
+}
+
+.kv-input--error {
+  border-color: #E11D48 !important;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.12) !important;
+}
+
+/* =====================================================
+   ASSET PREFIXES — compact structured card
+   ===================================================== */
+.asset-prefixes-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--doc-font);
+}
+
+.asset-prefix-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #F1F5F9;
+  align-items: baseline;
+}
+
+.asset-prefix-row:last-child {
+  border-bottom: none;
+}
+
+.asset-prefix-key {
+  font-size: 11px;
+  font-weight: 700;
+  color: #3B82F6;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.asset-prefix-val {
+  font-size: 12.5px;
+  color: #374151;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+/* ---- Edit mode: locked/read-only rows get a subtle background tint ---- */
+.doc-form-fields .doc-prop-row {
+  background: #FAFCFF;
+  opacity: 0.88;
+}
+
+.doc-form-fields .doc-prop-row:hover {
+  background: #F4F8FF;
+  opacity: 1;
 }
 
 /* =====================================================

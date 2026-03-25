@@ -725,6 +725,16 @@
   color: #BE123C;
 }
 
+.mfi-action-btn.restore {
+  color: #16A34A;
+  background: #D1FAE5;
+}
+
+.mfi-action-btn.restore:hover {
+  background: #A7F3D0;
+  color: #15803D;
+}
+
 /* ---- Empty state ---- */
 .minio-empty {
   padding: 80px 20px;

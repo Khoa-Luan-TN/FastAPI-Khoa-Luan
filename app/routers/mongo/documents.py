@@ -159,6 +159,20 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     now = _now()
 
     body = dict(body or {})
+
+    # __unset__: list of field names the client wants removed via $unset
+    _raw_unset = body.pop("__unset__", None) or []
+    if isinstance(_raw_unset, str):
+        _raw_unset = [_raw_unset]
+    _UNSET_BLACKLIST = {
+        "_id", "is_deleted", "deleted_at", "created_at", "created_by",
+        "updated_at", "updated_by", "import_key",
+    }
+    fields_to_unset = [
+        f for f in _raw_unset
+        if isinstance(f, str) and f.strip() and f not in _UNSET_BLACKLIST
+    ]
+
     body.pop("_id", None)
     body.pop("created_at", None)
     body.pop("created_by", None)
@@ -167,7 +181,7 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     if "import_key" in body and not body.get("import_key"):
         body.pop("import_key")
 
-    if not body:
+    if not body and not fields_to_unset:
         raise HTTPException(status_code=422, detail="Not field change to updated")
 
     exist, id_filter = _find_one_by_any_key(col, oid, {"_id": 1, "is_deleted": 1, "username": 1, "user_id": 1})
@@ -280,7 +294,10 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     body["updated_at"] = now
     body["updated_by"] = actor
 
-    r = db[col].update_one(id_filter, {"$set": body})
+    update_op: dict = {"$set": body}
+    if fields_to_unset:
+        update_op["$unset"] = {f: "" for f in fields_to_unset}
+    r = db[col].update_one(id_filter, update_op)
 
     # After keyword rename: rebuild keyword.aliases from active keyword_alias docs.
     if col == "keyword" and "keyword_name" in body:

@@ -160,7 +160,135 @@ function defaultPairsForCollection(col) {
   }
 }
 
-/** ===== Mini modal: Create/Rename Collection ===== */
+// ---- Collection priority order for root view ----
+const COLLECTION_ORDER = [
+  "class", "subject", "topic", "lesson", "chunk",
+  "keyword", "chunk_keyword", "topic_bag", "keyword_alias", "user", "import_job",
+];
+
+// ---- Per-collection _id display label ----
+const ID_LABEL_MAP = {
+  class: "class_id", subject: "subject_id", topic: "topic_id",
+  lesson: "lesson_id", chunk: "chunk_id", keyword: "keyword_id", user: "user_id",
+  topic_bag: "topic_bag_id",
+};
+
+// ---- Per-collection primary name field (pinned as second row) ----
+const NAME_FIELD_MAP = {
+  class: "class_name", subject: "subject_name", topic: "topic_name",
+  lesson: "lesson_name", chunk: "chunk_name", keyword: "keyword_name",
+  user: "username",
+};
+
+// ---- Audit / soft-delete fields — always last, fully locked ----
+const AUDIT_FIELDS = new Set([
+  "is_deleted", "deleted_at", "created_at", "updated_at", "created_by", "updated_by",
+]);
+
+// ---- Per-collection foreign key fields (shown after entity id, before name) ----
+const FOREIGN_ID_MAP = {
+  subject: ["class_id"],
+  topic: ["subject_id"],
+  lesson: ["topic_id"],
+  chunk: ["lesson_id"],
+  chunk_keyword: ["chunk_id", "keyword_id"],
+  keyword_alias: ["keyword_id"],
+};
+
+// ---- Schema-protected: read-only in edit mode (cannot rename key, cannot edit value, no delete) ----
+const SCHEMA_PROTECTED = new Set([
+  "_id",
+  "class_id", "subject_id", "topic_id", "lesson_id", "chunk_id", "keyword_id", "user_id",
+  "class_name", "subject_name", "topic_name", "lesson_name", "chunk_name", "keyword_name", "username",
+  "topic_num", "lesson_num", "chunk_num",
+  "keyword_embedding_text",
+  "asset_prefixes",
+  "bucket_name",
+  "subject_type",
+  "lesson_type",
+  "keyword_slug",
+  "aliases",
+  "total_keywords",
+  "is_deleted", "deleted_at", "created_at", "updated_at", "created_by", "updated_by",
+]);
+
+// ---- Locked-key fields: key is locked (cannot rename, no delete row), but VALUE is editable ----
+const LOCKED_KEY_FIELDS = new Set(["keyword_refs"]);
+
+// ---- Hidden in edit mode (not editable, not visible in edit) ----
+const EDIT_HIDDEN = new Set(["import_key"]);
+
+// ---- Detect arrays of keyword-ref objects {keyword_id, keyword_name} ----
+function isKwRefArray(val) {
+  return Array.isArray(val) && val.length > 0 &&
+    val.some(item => item && typeof item === "object" &&
+      ("keyword_id" in item || "keyword_name" in item));
+}
+
+/** ===== Keyword refs row-based editor (keyword_id only — name auto-resolved) ===== */
+function KwRefsEditor({ value, onChange, keywordMap = {} }) {
+  const items = useMemo(() => {
+    if (!value || value === "") return [];
+    try { return JSON.parse(value) || []; } catch { return []; }
+  }, [value]);
+
+  const [newId, setNewId] = useState("");
+  const [dupError, setDupError] = useState(false);
+
+  function deleteItem(i) {
+    onChange(JSON.stringify(items.filter((_, idx) => idx !== i), null, 2));
+  }
+
+  function addItem() {
+    const kid = newId.trim();
+    if (!kid) return;
+    if (items.some((it) => String(it.keyword_id) === kid)) {
+      setDupError(true);
+      return;
+    }
+    setDupError(false);
+    const kname = keywordMap[kid] || "";
+    onChange(JSON.stringify([...items, { keyword_id: kid, keyword_name: kname }], null, 2));
+    setNewId("");
+  }
+
+  return (
+    <div className="kw-refs-editor">
+      {items.length > 0 && (
+        <div className="kw-refs-editor-header">
+          <span className="kw-refs-count-badge">{items.length} keyword{items.length !== 1 ? "s" : ""}</span>
+        </div>
+      )}
+      <div className="kw-refs-editor-list">
+        {items.map((item, i) => {
+          const resolvedName = item.keyword_name || keywordMap[String(item.keyword_id)] || "—";
+          return (
+            <div key={i} className="kw-refs-row">
+              <span className="kw-refs-seq">{i + 1}</span>
+              <div className="kw-refs-row-body">
+                <span className="kw-ref-name">{resolvedName}</span>
+                <span className="kw-ref-id">{String(item.keyword_id || "")}</span>
+              </div>
+              <button type="button" className="doc-form-del" onClick={() => deleteItem(i)} title="Xoá">✕</button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="kw-refs-add-row">
+        <input
+          className={`kv-input${dupError ? " kv-input--error" : ""}`}
+          value={newId}
+          onChange={(e) => { setNewId(e.target.value); setDupError(false); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
+          placeholder="Nhập keyword_id để thêm…"
+        />
+        <button type="button" className="kw-refs-add-btn" onClick={addItem}>+</button>
+      </div>
+      {dupError && <p className="kw-refs-dup-err">keyword_id này đã có trong danh sách</p>}
+    </div>
+  );
+}
+
 /** ===== Modal: Create/Edit Document (fields động) ===== */
 function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
   const [pairs, setPairs] = useState([]);
@@ -228,32 +356,21 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          {/* ✅ xoá hẳn modal-subtitle tip */}
-          <button className="modal-close" onClick={onClose}>
-            ×
-          </button>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
           <form onSubmit={submit}>
-            <div style={{ display: "grid", gap: 10 }}>
+            <div>
               {pairs.map((p, i) => {
                 const keyName = (p.k || "").trim();
                 const isBoolField = keyName === "is_deleted" || keyName === "is_active";
 
                 return (
-                  <div
-                    key={i}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1.4fr auto",
-                      gap: 10,
-                      alignItems: "center",
-                    }}
-                  >
+                  <div key={i} className="modal-kv-row">
                     <input
-                      className="kv-input"
-                      placeholder="Tên trường (vd: class_name)"
+                      className="kv-input kv-key"
+                      placeholder="Tên trường"
                       value={p.k}
                       onChange={(e) => change(i, "k", e.target.value)}
                     />
@@ -276,20 +393,13 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                       />
                     )}
 
-                    <button
-                      type="button"
-                      className="mfi-action-btn danger"
-                      onClick={() => removeRow(i)}
-                      title="Xoá field"
-                    >
-                      ✕
-                    </button>
+                    <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá field">✕</button>
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
               <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
                 + Thêm field
               </button>
@@ -330,11 +440,38 @@ export default function MongoDB() {
   const importPollRef = useRef(null);
 
   // modals
-
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(null); // {progress, message, collection, processed_rows?, total_rows?}
   const [importResult, setImportResult] = useState(null); // null | {status: 'completed'|'partial'|'failed', message}
+
+  // ---- Class docs for subject list (maps class _id → class_name) ----
+  const [classDocs, setClassDocs] = useState([]);
+  useEffect(() => {
+    if (currentCollection !== "subject") { setClassDocs([]); return; }
+    mongoApi.listDocuments("class", 500, 0)
+      .then(d => setClassDocs(d.documents || []))
+      .catch(() => setClassDocs([]));
+  }, [currentCollection]);
+  const classMap = useMemo(() => {
+    const m = {};
+    classDocs.forEach(c => { m[String(c._id)] = c.class_name || ""; });
+    return m;
+  }, [classDocs]);
+
+  // ---- Keyword docs for topic_bag editor (maps keyword _id → keyword_name) ----
+  const [keywordDocs, setKeywordDocs] = useState([]);
+  useEffect(() => {
+    if (currentCollection !== "topic_bag") { setKeywordDocs([]); return; }
+    mongoApi.listDocuments("keyword", 500, 0)
+      .then(d => setKeywordDocs(d.documents || []))
+      .catch(() => setKeywordDocs([]));
+  }, [currentCollection]);
+  const keywordMap = useMemo(() => {
+    const m = {};
+    keywordDocs.forEach(k => { m[String(k._id)] = k.keyword_name || ""; });
+    return m;
+  }, [keywordDocs]);
 
   async function reloadCollections() {
     setErr("");
@@ -404,7 +541,7 @@ export default function MongoDB() {
       if (d && !isNaN(d.getTime())) {
         return d.toLocaleString("vi-VN", {
           hour12: false,
-          timeZone: "Asia/Ho_Chi_Minh", // ✅ ép timezone VN cho chắc
+          timeZone: "Asia/Ho_Chi_Minh",
         });
       }
     }
@@ -412,30 +549,135 @@ export default function MongoDB() {
     return typeof val === "string" ? val : JSON.stringify(val);
   }
 
-  function buildPairsFromDoc(doc) {
-    if (!doc) return [];
+  // Format value for edit textarea/input — pretty-prints objects/arrays
+  function formatForEdit(k, val) {
+    if (val == null) return "";
+    if (Array.isArray(val) || (val !== null && typeof val === "object")) {
+      return JSON.stringify(val, null, 2);
+    }
+    return formatVal(k, val);
+  }
 
-    const LOCK_FIELDS = new Set(["_id", "is_deleted", "deleted_at", "created_at", "created_by", "updated_at", "updated_by"]);
-    const contentPairs = [];
-    const metaPairs = [];
+  function isComplexVal(val) {
+    return val !== null && val !== undefined && typeof val === "object";
+  }
 
-    for (const k of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
-      const val = doc[k];
-      const displayVal = formatVal(k, val);
-      if (LOCK_FIELDS.has(k)) {
-        metaPairs.push({ id: k, k, v: displayVal, locked: true });
-      } else {
-        contentPairs.push({ id: k, k, v: displayVal, locked: false });
+  function renderComplexValue(val, fieldKey) {
+    if (val === null || val === undefined || val === "") {
+      return <span className="doc-prop-empty">—</span>;
+    }
+    if (fieldKey && fieldKey.endsWith("_at")) {
+      const d = parseDateAssumeUTC(val);
+      if (d && !isNaN(d.getTime())) {
+        return <span>{d.toLocaleString("vi-VN", { hour12: false, timeZone: "Asia/Ho_Chi_Minh" })}</span>;
       }
     }
+    if (Array.isArray(val)) {
+      if (val.length === 0) return <span className="doc-prop-empty">[]</span>;
+      if (isKwRefArray(val)) {
+        return (
+          <div className="kw-refs-view">
+            <div className="kw-refs-view-header">
+              <span className="kw-refs-count-badge">{val.length} keyword{val.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="kw-refs-view-list">
+              {val.map((item, i) => (
+                <div key={i} className="kw-ref-item">
+                  <span className="kw-ref-seq">{i + 1}</span>
+                  <div className="kw-ref-body">
+                    <span className="kw-ref-name">{item.keyword_name || "—"}</span>
+                    {item.keyword_id != null && <span className="kw-ref-id">{String(item.keyword_id)}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      const hasObjects = val.some((item) => item !== null && typeof item === "object");
+      if (hasObjects) {
+        return (
+          <div className="doc-val-array">
+            {val.map((item, i) => (
+              <div key={i} className="doc-val-array-item">
+                {item !== null && typeof item === "object"
+                  ? renderComplexValue(item, null)
+                  : <span>{String(item)}</span>}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div className="doc-val-chips">
+          {val.map((item, i) => <span key={i} className="doc-val-chip">{String(item)}</span>)}
+        </div>
+      );
+    }
+    if (typeof val === "object") {
+      const entries = Object.entries(val);
+      if (entries.length === 0) return <span className="doc-prop-empty">{"{}"}</span>;
+      // asset_prefixes: compact prefix card
+      if (fieldKey === "asset_prefixes") {
+        return (
+          <div className="asset-prefixes-card">
+            {entries.map(([k, v]) => (
+              <div key={k} className="asset-prefix-row">
+                <span className="asset-prefix-key">{k}</span>
+                <span className="asset-prefix-val">{String(v ?? "—")}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div className="doc-val-object">
+          {entries.map(([k, v]) => (
+            <div key={k} className="doc-val-obj-row">
+              <span className="doc-val-obj-key">{k}</span>
+              <span className="doc-val-obj-val">{renderComplexValue(v, null)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    const s = String(val);
+    if (s.length > 120) return <span className="doc-val-long">{s}</span>;
+    return <span>{s}</span>;
+  }
 
-    metaPairs.sort((a, b) => {
-      if (a.k === "_id") return -1;
-      if (b.k === "_id") return 1;
-      return a.k.localeCompare(b.k);
+  function buildPairsFromDoc(doc, col) {
+    if (!doc) return [];
+
+    const idLabel = ID_LABEL_MAP[col] || "_id";
+    const nameField = NAME_FIELD_MAP[col] || null;
+    const foreignIds = FOREIGN_ID_MAP[col] || [];
+
+    const getOrder = (k) => {
+      if (k === "_id") return 0;
+      if (foreignIds.includes(k)) return 1;
+      if (nameField && k === nameField) return 2;
+      if (AUDIT_FIELDS.has(k)) return 10;
+      return 5;
+    };
+
+    const sorted = Object.keys(doc).slice().sort((a, b) => {
+      const oa = getOrder(a);
+      const ob = getOrder(b);
+      if (oa !== ob) return oa - ob;
+      if (oa === 1) return foreignIds.indexOf(a) - foreignIds.indexOf(b);
+      return a.localeCompare(b);
     });
 
-    return [...contentPairs, ...metaPairs];
+    return sorted.map((k) => {
+      const val = doc[k];
+      const label = k === "_id" ? idLabel : k;
+      const locked = AUDIT_FIELDS.has(k) || k === "_id";
+      const schemaProtected = SCHEMA_PROTECTED.has(k);
+      const lockedKey = LOCKED_KEY_FIELDS.has(k);
+      const editHidden = EDIT_HIDDEN.has(k);
+      return { id: k, k, v: formatForEdit(k, val), rawVal: val, label, locked, schemaProtected, lockedKey, editHidden };
+    });
   }
 
   useEffect(() => {
@@ -444,13 +686,20 @@ export default function MongoDB() {
       return;
     }
     if (isEditingDoc) return;
-    setDetailPairs(buildPairsFromDoc(selectedDoc));
-  }, [selectedDoc, isEditingDoc]);
+    setDetailPairs(buildPairsFromDoc(selectedDoc, currentCollection));
+  }, [selectedDoc, isEditingDoc, currentCollection]);
 
   const collectionRows = useMemo(() => {
     const s = q.trim().toLowerCase();
     const list = !s ? collections : collections.filter((c) => c.name.toLowerCase().includes(s));
-    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
+    return list.slice().sort((a, b) => {
+      const ai = COLLECTION_ORDER.indexOf(a.name);
+      const bi = COLLECTION_ORDER.indexOf(b.name);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [collections, q]);
 
   const docRows = useMemo(() => {
@@ -476,6 +725,7 @@ export default function MongoDB() {
         _title: title,
         _created_date: createdDate,
         _created_by: d.created_by || "-",
+        _class_name: d.class_id != null ? (classMap[String(d.class_id)] || String(d.class_id)) : "",
       };
 
       return row;
@@ -490,7 +740,7 @@ export default function MongoDB() {
       );
 
     return filtered.slice();
-  }, [docs, q, currentCollection]);
+  }, [docs, q, currentCollection, classMap]);
 
   const collectionColumns = [
     {
@@ -543,10 +793,10 @@ export default function MongoDB() {
 
     if (currentCollection === "subject") {
       base.splice(1, 0, {
-        key: "class_id",
-        label: "CLASS_ID",
-        width: "130px",
-        render: (r) => <span className="mongo-meta-cell">{String(r.class_id || "—")}</span>,
+        key: "_class_name",
+        label: "TÊN LỚP",
+        width: "140px",
+        render: (r) => <span className="mongo-meta-cell" title={r._class_name || ""}>{r._class_name || "—"}</span>,
       });
     }
 
@@ -667,12 +917,12 @@ export default function MongoDB() {
   }
 
   function addFieldRow() {
-    setDetailPairs((prev) => [...prev, { id: `new-${Date.now()}`, k: "", v: "", locked: false }]);
+    setDetailPairs((prev) => [...prev, { id: `new-${Date.now()}`, k: "", v: "", rawVal: "", locked: false, schemaProtected: false }]);
   }
 
   function cancelEditDoc() {
     setIsEditingDoc(false);
-    setDetailPairs(buildPairsFromDoc(selectedDoc));
+    setDetailPairs(buildPairsFromDoc(selectedDoc, currentCollection));
   }
 
   async function updateDocFromDetail() {
@@ -680,14 +930,71 @@ export default function MongoDB() {
 
     const patch = {};
 
+    // Build set of keys still present in edit pairs (editable fields only)
+    const presentEditKeys = new Set(
+      detailPairs
+        .filter((p) => !p.locked && !p.schemaProtected && !p.editHidden)
+        .map((p) => (p.k || "").trim())
+        .filter(Boolean)
+    );
+
+    // Fields that existed in the original doc but were removed (only custom / non-protected)
+    const fieldsToUnset = Object.keys(selectedDoc).filter((k) => {
+      if (!k || k === "_id") return false;
+      if (SCHEMA_PROTECTED.has(k) || LOCKED_KEY_FIELDS.has(k) || EDIT_HIDDEN.has(k) || AUDIT_FIELDS.has(k)) return false;
+      return !presentEditKeys.has(k);
+    });
+
     for (const p of detailPairs) {
       const k = (p.k || "").trim();
-      if (!k || k === "_id" || p.locked) continue;
+      if (!k || p.locked || p.schemaProtected || p.editHidden) continue;
+      const sv = (p.v ?? "").trim();
+      if (sv.startsWith("{") || sv.startsWith("[")) {
+        try { JSON.parse(sv); } catch {
+          alert(`Trường "${k}" chứa JSON không hợp lệ. Vui lòng kiểm tra lại.`);
+          return;
+        }
+      }
       patch[k] = parseValue(p.v);
+    }
+
+    // Sync total_keywords whenever keyword_refs is in the patch
+    if ("keyword_refs" in patch) {
+      const refs = Array.isArray(patch.keyword_refs) ? patch.keyword_refs : [];
+      patch.total_keywords = refs.length;
+    }
+
+    if (Object.keys(patch).length === 0 && fieldsToUnset.length === 0) {
+      setIsEditingDoc(false);
+      return;
+    }
+
+    if (fieldsToUnset.length > 0) {
+      patch.__unset__ = fieldsToUnset;
     }
 
     try {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
+      setIsEditingDoc(false);
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  async function restoreDoc(row) {
+    try {
+      await mongoApi.updateDocument(currentCollection, String(row._id), { is_deleted: false });
+      await reloadDocs(currentCollection);
+    } catch (e) {
+      alert(String(e?.message || e));
+    }
+  }
+
+  async function restoreDocFromDetail() {
+    if (!selectedDoc) return;
+    try {
+      await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), { is_deleted: false });
       setIsEditingDoc(false);
       await reloadDocs(currentCollection);
     } catch (e) {
@@ -791,9 +1098,15 @@ export default function MongoDB() {
               </>
             ) : !isEditingDoc ? (
               <>
-                <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
-                  <TrashIcon /> Xoá
-                </button>
+                {selectedDoc?.is_deleted ? (
+                  <button className="minio-btn mab-btn" style={{ color: "#16A34A", background: "#D1FAE5" }} onClick={restoreDocFromDetail}>
+                    Khôi phục
+                  </button>
+                ) : (
+                  <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
+                    <TrashIcon /> Xoá
+                  </button>
+                )}
                 <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setIsEditingDoc(true)}>
                   <EditIcon /> Sửa
                 </button>
@@ -818,8 +1131,8 @@ export default function MongoDB() {
               fontSize: 13, fontWeight: 600,
               color: importResult?.status === "completed" ? "#16A34A"
                 : importResult?.status === "partial" ? "#D97706"
-                : importResult?.status === "failed" ? "#DC2626"
-                : "#1D4ED8",
+                  : importResult?.status === "failed" ? "#DC2626"
+                    : "#1D4ED8",
             }}>
               {importResult ? importResult.message : "Import đang chạy..."}
             </span>
@@ -847,8 +1160,8 @@ export default function MongoDB() {
                 width: `${importProgress.progress}%`,
                 background: importResult?.status === "completed" ? "#16A34A"
                   : importResult?.status === "partial" ? "#D97706"
-                  : importResult?.status === "failed" ? "#DC2626"
-                  : "#3B82F6",
+                    : importResult?.status === "failed" ? "#DC2626"
+                      : "#3B82F6",
                 borderRadius: 4,
                 transition: "width 0.4s ease",
               }} />
@@ -892,63 +1205,74 @@ export default function MongoDB() {
           <div className="doc-card">
             {!isEditingDoc ? (
               /* ===== VIEW MODE ===== */
-              <>
-                {detailPairs.filter(p => !p.locked).length > 0 && (
-                  <div className="doc-props">
-                    {detailPairs.filter(p => !p.locked).map((p) => {
-                      const displayVal = p.v || "—";
-                      return (
-                        <div key={p.id} className="doc-prop-row">
-                          <span className="doc-prop-key">{p.k}</span>
-                          <span className="doc-prop-val">{displayVal !== "—" ? displayVal : <span className="doc-prop-empty">—</span>}</span>
-                        </div>
-                      );
-                    })}
+              <div className="doc-props">
+                {detailPairs.map((p) => (
+                  <div key={p.id} className="doc-prop-row">
+                    <span className="doc-prop-key">{p.label || p.k}</span>
+                    <span className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</span>
                   </div>
-                )}
-                {detailPairs.filter(p => p.locked).length > 0 && (
-                  <div className="doc-props" style={{ marginTop: 10, opacity: 0.75 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-                      Metadata (read-only)
-                    </div>
-                    {detailPairs.filter(p => p.locked).map((p) => (
-                      <div key={p.id} className="doc-prop-row">
-                        <span className="doc-prop-key" style={{ color: "#6B7280" }}>{p.k}</span>
-                        <span className="doc-prop-val" style={{ color: "#6B7280", fontStyle: "italic" }}>
-                          {p.v !== "" && p.v != null ? p.v : <span className="doc-prop-empty">—</span>}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
+                ))}
+              </div>
             ) : (
               /* ===== EDIT MODE ===== */
-              <>
-                {detailPairs.filter(p => !p.locked).length > 0 && (
-                  <div className="doc-form-fields">
-                    {detailPairs.filter(p => !p.locked).map((p) => {
-                      const isBool = p.k === "is_deleted" || p.k === "is_active";
-                      return (
-                        <div key={p.id} className="doc-form-row">
-                          <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
-                          <div className="doc-form-val-col">
-                            {isBool ? (
-                              <select className="kv-input" value={String(p.v ?? "false")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
-                                <option value="false">false</option>
-                                <option value="true">true</option>
-                              </select>
-                            ) : (
-                              <input className="kv-input" value={p.v} placeholder="value" onChange={(e) => changePair(p.id, "v", e.target.value)} />
-                            )}
-                          </div>
-                          <button className="doc-form-del" onClick={() => removePair(p.id)}>✕</button>
+              <div className="doc-form-fields">
+                {detailPairs.map((p) => {
+                  /* Hidden in edit mode (e.g. import_key) — skip entirely */
+                  if (p.editHidden) return null;
+
+                  /* Fully locked / schema-protected: plain read-only display row */
+                  if (p.locked || p.schemaProtected) {
+                    return (
+                      <div key={p.id} className="doc-prop-row">
+                        <span className="doc-prop-key">{p.label || p.k}</span>
+                        <span className="doc-prop-val">{renderComplexValue(p.rawVal, p.k)}</span>
+                      </div>
+                    );
+                  }
+
+                  /* Locked-key field: key is static, value IS editable, no delete button */
+                  if (p.lockedKey) {
+                    const useKwEditor = p.k === "keyword_refs" || isKwRefArray(p.rawVal);
+                    return (
+                      <div key={p.id} className="doc-form-row doc-form-row--lockedkey">
+                        <span className="doc-prop-key">{p.label || p.k}</span>
+                        <div className="doc-form-val-col">
+                          {useKwEditor ? (
+                            <KwRefsEditor value={p.v} onChange={(v) => changePair(p.id, "v", v)} keywordMap={keywordMap} />
+                          ) : (
+                            <textarea className="kv-input kv-textarea" value={p.v} onChange={(e) => changePair(p.id, "v", e.target.value)} />
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
+                      </div>
+                    );
+                  }
+
+                  /* Fully editable custom field: rename key + edit value + delete */
+                  const isBool = p.k === "is_active" || p.k === "is_deleted";
+                  const isKwRefs = isKwRefArray(p.rawVal);
+                  const isComplex = !isKwRefs && isComplexVal(p.rawVal);
+                  return (
+                    <div key={p.id} className="doc-form-row">
+                      <input className="kv-input kv-key" value={p.k} placeholder="field" onChange={(e) => changePair(p.id, "k", e.target.value)} />
+                      <div className="doc-form-val-col">
+                        {isBool ? (
+                          <select className="kv-input" value={String(p.v ?? "false")} onChange={(e) => changePair(p.id, "v", e.target.value)}>
+                            <option value="false">false</option>
+                            <option value="true">true</option>
+                          </select>
+                        ) : isKwRefs ? (
+                          <KwRefsEditor value={p.v} onChange={(v) => changePair(p.id, "v", v)} />
+                        ) : isComplex ? (
+                          <textarea className="kv-input kv-textarea" value={p.v} onChange={(e) => changePair(p.id, "v", e.target.value)} />
+                        ) : (
+                          <input className="kv-input" value={p.v} placeholder="value" onChange={(e) => changePair(p.id, "v", e.target.value)} />
+                        )}
+                      </div>
+                      <button className="doc-form-del" onClick={() => removePair(p.id)}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         ) : (
@@ -964,12 +1288,18 @@ export default function MongoDB() {
             }}
             renderActions={(row) => (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}>
-                <button className="mfi-action-btn" onClick={(e) => { e.stopPropagation(); const doc = docs.find(d => String(d._id) === String(row._id)); setCurrentDocId(String(row._id)); setIsEditingDoc(true); if (doc) setDetailPairs(buildPairsFromDoc(doc)); }}>
+                <button className="mfi-action-btn" onClick={(e) => { e.stopPropagation(); const doc = docs.find(d => String(d._id) === String(row._id)); setCurrentDocId(String(row._id)); setIsEditingDoc(true); if (doc) setDetailPairs(buildPairsFromDoc(doc, currentCollection)); }}>
                   <EditIcon /> Sửa
                 </button>
-                <button className="mfi-action-btn danger" onClick={(e) => { e.stopPropagation(); deleteDoc(row); }}>
-                  <TrashIcon /> Xoá
-                </button>
+                {row.is_deleted ? (
+                  <button className="mfi-action-btn restore" onClick={(e) => { e.stopPropagation(); restoreDoc(row); }}>
+                    Khôi phục
+                  </button>
+                ) : (
+                  <button className="mfi-action-btn danger" onClick={(e) => { e.stopPropagation(); deleteDoc(row); }}>
+                    <TrashIcon /> Xoá
+                  </button>
+                )}
               </div>
             )}
           />
@@ -985,6 +1315,7 @@ export default function MongoDB() {
         onSave={createDoc}
         collectionName={currentCollection}
       />
+
     </div>
   );
 }
