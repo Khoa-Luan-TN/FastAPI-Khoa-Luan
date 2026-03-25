@@ -431,6 +431,13 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
         body["deleted_at"] = now if body["is_deleted"] else None
 
+    # keyword: detect restore transition (True → False) for cascade
+    _kw_restoring = (
+        col == "keyword"
+        and body.get("is_deleted") is False
+        and exist.get("is_deleted") is True
+    )
+
     body["updated_at"] = now
     body["updated_by"] = actor
 
@@ -479,12 +486,172 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
         except Exception as _tbs_err:
             _topic_bag_sync = {"ok": False, "error": str(_tbs_err)}
 
+    # keyword: restore cascade — restore chunk_keyword rows, re-add to topic_bag, re-sync topics
+    _restore_cascade: Optional[dict] = None
+    if _kw_restoring and updated_doc:
+        try:
+            _restore_cascade = _cascade_keyword_restore(db, updated_doc["_id"], updated_doc, now, actor)
+        except Exception as _rce:
+            _restore_cascade = {"ok": False, "error": str(_rce)}
+
     result_payload: dict = {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
     if _topic_bag_sync is not None:
         result_payload["topic_bag_sync"] = _topic_bag_sync
     if _ck_reconcile is not None:
         result_payload["chunk_keyword_reconcile"] = _ck_reconcile
+    if _restore_cascade is not None:
+        result_payload["restore_cascade"] = _restore_cascade
     return result_payload
+
+def _cascade_keyword_soft_delete(db, keyword_oid, now, actor: str) -> dict:
+    """Cascade effects when a keyword is soft-deleted.
+
+    1. Soft-delete all active chunk_keyword rows for this keyword and sync each to PG+Neo4j.
+    2. Remove this keyword from all active topic_bag.keyword_refs arrays and recompute total_keywords.
+    3. Re-sync each affected topic to PG+Neo4j (rebuilds keyword_embedding_text + embedding).
+
+    Returns a debug dict with counts and any errors.
+    """
+    from bson import ObjectId as _OID
+
+    ck_soft_deleted = 0
+    affected_topic_bag = 0
+    affected_topic_sync = 0
+    cascade_errors: list = []
+
+    # 1. Soft-delete active chunk_keyword rows for this keyword
+    for ck_doc in db["chunk_keyword"].find({"keyword_id": keyword_oid, "is_deleted": {"$ne": True}}):
+        ck_filter = {"_id": ck_doc["_id"]}
+        db["chunk_keyword"].update_one(ck_filter, {"$set": {
+            "is_deleted": True, "deleted_at": now, "updated_at": now, "updated_by": actor,
+        }})
+        updated_ck = db["chunk_keyword"].find_one(ck_filter)
+        try:
+            sync_doc_to_postgres(db, "chunk_keyword", updated_ck)
+        except Exception as _e:
+            cascade_errors.append({"step": "chunk_keyword_sync", "id": str(ck_doc["_id"]), "error": str(_e)})
+        ck_soft_deleted += 1
+
+    # 2. Remove keyword from topic_bag.keyword_refs where present
+    affected_bag_docs = list(db["topic_bag"].find({
+        "keyword_refs": {"$elemMatch": {"keyword_id": keyword_oid}},
+        "is_deleted": {"$ne": True},
+    }))
+    for bag_doc in affected_bag_docs:
+        new_refs = [
+            ref for ref in (bag_doc.get("keyword_refs") or [])
+            if ref.get("keyword_id") != keyword_oid
+        ]
+        db["topic_bag"].update_one({"_id": bag_doc["_id"]}, {"$set": {
+            "keyword_refs": new_refs,
+            "total_keywords": len(new_refs),
+            "updated_at": now,
+            "updated_by": actor,
+        }})
+        affected_topic_bag += 1
+
+        # 3. Re-sync the parent topic (reads updated topic_bag.keyword_refs)
+        topic_oid = bag_doc.get("topic_id")
+        if topic_oid:
+            topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
+            if topic_doc:
+                try:
+                    sync_doc_to_postgres(db, "topic", topic_doc)
+                    affected_topic_sync += 1
+                except Exception as _e:
+                    cascade_errors.append({"step": "topic_sync", "id": str(topic_oid), "error": str(_e)})
+
+    return {
+        "chunk_keyword_soft_deleted_count": ck_soft_deleted,
+        "affected_topic_bag_count": affected_topic_bag,
+        "affected_topic_sync_count": affected_topic_sync,
+        "cascade_errors": cascade_errors,
+    }
+
+
+def _cascade_keyword_restore(db, keyword_oid, kw_doc, now, actor: str) -> dict:
+    """Cascade effects when a keyword is restored (is_deleted: True → False).
+
+    1. Restore soft-deleted chunk_keyword rows for this keyword and sync each to PG+Neo4j.
+    2. Trace each restored row's chunk → lesson → topic to collect affected topic_ids.
+    3. For each affected topic: add keyword back into topic_bag.keyword_refs if absent
+       (creating a minimal system-managed bag if none exists), then re-sync the topic
+       to PG+Neo4j to rebuild keyword_embedding_text + embedding.
+
+    Returns a debug dict with counts and errors.
+    """
+    ck_restored = 0
+    affected_topic_bag = 0
+    affected_topic_sync = 0
+    cascade_errors: list = []
+
+    kw_name = str(kw_doc.get("keyword_name") or "").strip()
+    kw_ref_entry = {"keyword_id": keyword_oid, "keyword_name": kw_name}
+
+    # 1. Restore soft-deleted chunk_keyword rows; collect parent topic_ids
+    affected_topic_ids: set = set()
+    for ck_doc in db["chunk_keyword"].find({"keyword_id": keyword_oid, "is_deleted": True}):
+        ck_filter = {"_id": ck_doc["_id"]}
+        db["chunk_keyword"].update_one(ck_filter, {"$set": {
+            "is_deleted": False, "deleted_at": None, "updated_at": now, "updated_by": actor,
+        }})
+        updated_ck = db["chunk_keyword"].find_one(ck_filter)
+        try:
+            sync_doc_to_postgres(db, "chunk_keyword", updated_ck)
+        except Exception as _e:
+            cascade_errors.append({"step": "chunk_keyword_sync", "id": str(ck_doc["_id"]), "error": str(_e)})
+        ck_restored += 1
+
+        # Trace chunk_id → lesson_id → topic_id
+        chunk_doc = db["chunk"].find_one({"_id": ck_doc.get("chunk_id")}, {"lesson_id": 1})
+        if chunk_doc and chunk_doc.get("lesson_id"):
+            lesson_doc = db["lesson"].find_one({"_id": chunk_doc["lesson_id"]}, {"topic_id": 1})
+            if lesson_doc and lesson_doc.get("topic_id"):
+                affected_topic_ids.add(lesson_doc["topic_id"])
+
+    # 2. For each affected topic, update topic_bag and re-sync topic
+    for topic_oid in affected_topic_ids:
+        topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
+        if not topic_doc:
+            continue
+
+        bag_doc = db["topic_bag"].find_one({"topic_id": topic_oid, "is_deleted": {"$ne": True}})
+        if not bag_doc:
+            db["topic_bag"].insert_one({
+                "topic_id": topic_oid,
+                "topic_name": str(topic_doc.get("topic_name") or "").strip(),
+                "keyword_refs": [kw_ref_entry],
+                "total_keywords": 1,
+                "is_deleted": False, "deleted_at": None,
+                "created_at": now, "updated_at": now,
+                "created_by": actor, "updated_by": actor,
+            })
+            affected_topic_bag += 1
+        else:
+            existing_refs = bag_doc.get("keyword_refs") or []
+            existing_ids = {ref.get("keyword_id") for ref in existing_refs}
+            if keyword_oid not in existing_ids:
+                new_refs = existing_refs + [kw_ref_entry]
+                db["topic_bag"].update_one({"_id": bag_doc["_id"]}, {"$set": {
+                    "keyword_refs": new_refs,
+                    "total_keywords": len(new_refs),
+                    "updated_at": now, "updated_by": actor,
+                }})
+                affected_topic_bag += 1
+
+        try:
+            sync_doc_to_postgres(db, "topic", topic_doc)
+            affected_topic_sync += 1
+        except Exception as _e:
+            cascade_errors.append({"step": "topic_sync", "id": str(topic_oid), "error": str(_e)})
+
+    return {
+        "chunk_keyword_restored_count": ck_restored,
+        "affected_topic_bag_count": affected_topic_bag,
+        "affected_topic_sync_count": affected_topic_sync,
+        "cascade_errors": cascade_errors,
+    }
+
 
 @router.delete("/documents/{collection_name}/{oid}", summary="Soft delete document (generic)")
 def delete_document(request: Request, collection_name: str = Path(...), oid: str = Path(...)):
@@ -522,4 +689,12 @@ def delete_document(request: Request, collection_name: str = Path(...), oid: str
     updated_doc = db[col].find_one(id_filter)
     sync = sync_doc_to_postgres(db, col, updated_doc) if updated_doc else {"ok": False, "error": "updated_doc missing"}
 
-    return {"deleted": True, "_id": oid, "sync": sync}
+    response: dict = {"deleted": True, "_id": oid, "sync": sync}
+
+    # keyword: cascade soft-delete to chunk_keyword rows and remove from topic_bag.keyword_refs
+    if col == "keyword" and updated_doc:
+        keyword_oid = updated_doc["_id"]
+        cascade = _cascade_keyword_soft_delete(db, keyword_oid, now, actor)
+        response["cascade"] = cascade
+
+    return response

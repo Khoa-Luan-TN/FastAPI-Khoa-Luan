@@ -25,7 +25,10 @@
       "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app/services/*.py)",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -name *.sql -o -name schema* -o -name init_db* -o -name create_tables*)",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 4 \\\\\\(-name *.sql -o -name init_db* -o -name schema* -o -name create_db* -o -name database* \\\\\\))",
-      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 3 -name docker-compose* -o -name Dockerfile*)"
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 3 -name docker-compose* -o -name Dockerfile*)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"topic_embedding\\\\|embedding_model\\\\|vector.*index\" {})",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"EMBEDDING_MODEL_NAME\\\\|get_setting\\\\|get_env\" {})",
+      "Bash(xargs ls:*)"
     ]
   }
 }
