@@ -175,11 +175,11 @@ def _handle_topic_bag_update(col: str, body: Dict[str, Any]) -> bool:
         if kw_id_raw in seen_ids:
             continue  # deduplicate
         seen_ids.add(kw_id_raw)
-        kw_doc = db["keyword"].find_one(
-            {"_id": _OID(kw_id_raw), "is_deleted": {"$ne": True}}, {"keyword_name": 1}
-        )
+        kw_doc = db["keyword"].find_one({"_id": _OID(kw_id_raw)}, {"keyword_name": 1, "is_deleted": 1})
         if not kw_doc:
-            raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' not found or is deleted")
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' not found")
+        if kw_doc.get("is_deleted") is True:
+            raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' is deleted")
         kw_name = str(kw_doc.get("keyword_name") or "").strip()
         if not kw_name:
             raise HTTPException(status_code=422, detail=f"keyword '{kw_id_raw}' has no keyword_name")
@@ -188,6 +188,84 @@ def _handle_topic_bag_update(col: str, body: Dict[str, Any]) -> bool:
     body["keyword_refs"] = cleaned
     body["total_keywords"] = len(cleaned)
     return True
+
+
+def _reconcile_topic_bag_chunk_keywords(
+    db, topic_oid, removed_kw_ids: set, added_kw_ids: set, now, actor: str
+) -> dict:
+    """Reconcile chunk_keyword docs when topic_bag.keyword_refs changes.
+
+    Soft-deletes active chunk_keyword rows for removed keywords (chunks under topic).
+    Restores soft-deleted chunk_keyword rows for added keywords (chunks under topic).
+    Never creates new chunk_keyword rows — only modifies existing ones.
+    Calls sync_doc_to_postgres("chunk_keyword", ...) for every changed row.
+    Returns debug dict with counts and any sync errors.
+    """
+    soft_deleted_count = 0
+    restored_count = 0
+    sync_errors: list = []
+
+    if not removed_kw_ids and not added_kw_ids:
+        return {"soft_deleted_count": 0, "restored_count": 0, "sync_errors": []}
+
+    # chunk_keyword.keyword_id is stored as ObjectId in Mongo; string ids won't match.
+    from bson import ObjectId as _OID
+    removed_oids = [_OID(s) for s in removed_kw_ids if _OID.is_valid(s)]
+    added_oids = [_OID(s) for s in added_kw_ids if _OID.is_valid(s)]
+
+    lesson_ids = [
+        d["_id"]
+        for d in db["lesson"].find(
+            {"topic_id": topic_oid, "is_deleted": {"$ne": True}}, {"_id": 1}
+        )
+    ]
+    if not lesson_ids:
+        return {"soft_deleted_count": 0, "restored_count": 0, "sync_errors": []}
+
+    chunk_ids = [
+        d["_id"]
+        for d in db["chunk"].find(
+            {"lesson_id": {"$in": lesson_ids}, "is_deleted": {"$ne": True}}, {"_id": 1}
+        )
+    ]
+    if not chunk_ids:
+        return {"soft_deleted_count": 0, "restored_count": 0, "sync_errors": []}
+
+    if removed_oids:
+        for ck_doc in db["chunk_keyword"].find({
+            "chunk_id": {"$in": chunk_ids},
+            "keyword_id": {"$in": removed_oids},
+            "is_deleted": {"$ne": True},
+        }):
+            ck_filter = {"_id": ck_doc["_id"]}
+            db["chunk_keyword"].update_one(ck_filter, {"$set": {
+                "is_deleted": True, "deleted_at": now, "updated_at": now, "updated_by": actor,
+            }})
+            updated_ck = db["chunk_keyword"].find_one(ck_filter)
+            try:
+                sync_doc_to_postgres(db, "chunk_keyword", updated_ck)
+            except Exception as _e:
+                sync_errors.append({"chunk_keyword_id": str(ck_doc["_id"]), "error": str(_e)})
+            soft_deleted_count += 1
+
+    if added_oids:
+        for ck_doc in db["chunk_keyword"].find({
+            "chunk_id": {"$in": chunk_ids},
+            "keyword_id": {"$in": added_oids},
+            "is_deleted": True,
+        }):
+            ck_filter = {"_id": ck_doc["_id"]}
+            db["chunk_keyword"].update_one(ck_filter, {"$set": {
+                "is_deleted": False, "deleted_at": None, "updated_at": now, "updated_by": actor,
+            }})
+            updated_ck = db["chunk_keyword"].find_one(ck_filter)
+            try:
+                sync_doc_to_postgres(db, "chunk_keyword", updated_ck)
+            except Exception as _e:
+                sync_errors.append({"chunk_keyword_id": str(ck_doc["_id"]), "error": str(_e)})
+            restored_count += 1
+
+    return {"soft_deleted_count": soft_deleted_count, "restored_count": restored_count, "sync_errors": sync_errors}
 
 
 @router.put("/documents/{collection_name}/{oid}", summary="Update document (generic)")
@@ -327,8 +405,27 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             if _dup:
                 raise HTTPException(status_code=409, detail=f"subject_name '{_chk_name}' already exists in this class")
 
+    # topic_bag: snapshot old keyword_ids before normalization so we can diff after
+    _old_kw_ids: set = set()
+    if col == "topic_bag" and "keyword_refs" in body:
+        _existing_bag = db[col].find_one(id_filter, {"keyword_refs": 1})
+        for _ref in ((_existing_bag or {}).get("keyword_refs") or []):
+            _kid = _ref.get("keyword_id")
+            if _kid is not None:
+                _old_kw_ids.add(str(_kid))
+
     # topic_bag: validate/resolve keyword_refs before the update goes to Mongo
     _topic_bag_kw_refs_changed = _handle_topic_bag_update(col, body)
+
+    # topic_bag: extract new keyword_ids after normalization and compute diff
+    _new_kw_ids: set = set()
+    if _topic_bag_kw_refs_changed:
+        for _ref in (body.get("keyword_refs") or []):
+            _kid = _ref.get("keyword_id")
+            if _kid is not None:
+                _new_kw_ids.add(str(_kid))
+    _removed_kw_ids = _old_kw_ids - _new_kw_ids
+    _added_kw_ids = _new_kw_ids - _old_kw_ids
 
     if "is_deleted" in body:
         body["is_deleted"] = _coerce_bool(body["is_deleted"], "is_deleted")
@@ -358,15 +455,24 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             pg_user_id = str(sync["pg_id"])
             db[col].update_one(id_filter, {"$set": {"user_id": pg_user_id}})
 
-    # topic_bag: keyword_refs changed → rebuild topic.keyword_embedding_text and re-sync topic
-    # to PG+Neo4j. sync_doc_to_postgres("topic", ...) reads topic_bag.keyword_refs, writes
-    # keyword_embedding_text back to the topic doc, generates the embedding, and syncs PG+Neo4j.
+    # topic_bag: keyword_refs changed → reconcile chunk_keyword rows, then re-sync topic embedding
     _topic_bag_sync: Optional[dict] = None
+    _ck_reconcile: Optional[dict] = None
     if _topic_bag_kw_refs_changed:
         try:
             _bag_doc = db[col].find_one(id_filter, {"topic_id": 1})
             _topic_oid = (_bag_doc or {}).get("topic_id")
             if _topic_oid:
+                # 1. Soft-delete/restore chunk_keyword rows for changed keyword_refs
+                if _removed_kw_ids or _added_kw_ids:
+                    _ck_reconcile = _reconcile_topic_bag_chunk_keywords(
+                        db, _topic_oid,
+                        removed_kw_ids=_removed_kw_ids,
+                        added_kw_ids=_added_kw_ids,
+                        now=now,
+                        actor=actor,
+                    )
+                # 2. Rebuild topic.keyword_embedding_text and re-sync topic to PG+Neo4j
                 _topic_doc = db["topic"].find_one({"_id": _topic_oid, "is_deleted": {"$ne": True}})
                 if _topic_doc:
                     _topic_bag_sync = sync_doc_to_postgres(db, "topic", _topic_doc)
@@ -376,12 +482,17 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
     result_payload: dict = {"updated": True, "matched": r.matched_count, "modified": r.modified_count, "_id": oid, "sync": sync}
     if _topic_bag_sync is not None:
         result_payload["topic_bag_sync"] = _topic_bag_sync
+    if _ck_reconcile is not None:
+        result_payload["chunk_keyword_reconcile"] = _ck_reconcile
     return result_payload
 
 @router.delete("/documents/{collection_name}/{oid}", summary="Soft delete document (generic)")
 def delete_document(request: Request, collection_name: str = Path(...), oid: str = Path(...)):
     col = _normalize_collection_name(collection_name)
     _check_collection_exist(col)
+
+    if col == "topic_bag":
+        raise HTTPException(status_code=403, detail="topic_bag is system-managed and must not be deleted manually")
 
     actor = _get_actor(request)
 

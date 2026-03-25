@@ -119,8 +119,11 @@ function parseValue(v) {
 // ---- Collections hidden from the list entirely ----
 const COLLECTIONS_HIDDEN = new Set(["import_job"]);
 
-// ---- Collections where create is disabled (browse/edit only) ----
+// ---- Collections where create is disabled ----
 const COLLECTIONS_NO_CREATE = new Set(["topic_bag"]);
+
+// ---- Collections where delete (and restore) is disabled ----
+const COLLECTIONS_NO_DELETE = new Set(["topic_bag"]);
 
 // ---- Per-collection create config ----
 // locked: Set of key names whose key is fixed (not renameable, not removable)
@@ -298,7 +301,7 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
   }, [value]);
 
   const [newId, setNewId] = useState("");
-  const [dupError, setDupError] = useState(false);
+  const [addError, setAddError] = useState(null);
 
   function deleteItem(i) {
     onChange(JSON.stringify(items.filter((_, idx) => idx !== i), null, 2));
@@ -308,11 +311,15 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
     const kid = newId.trim();
     if (!kid) return;
     if (items.some((it) => String(it.keyword_id) === kid)) {
-      setDupError(true);
+      setAddError("keyword_id đã có trong danh sách");
       return;
     }
-    setDupError(false);
-    const kname = keywordMap[kid] || "";
+    if (!(kid in keywordMap)) {
+      setAddError("Không tìm thấy từ khoá hoặc từ khoá đã bị xoá");
+      return;
+    }
+    setAddError(null);
+    const kname = keywordMap[kid];
     onChange(JSON.stringify([...items, { keyword_id: kid, keyword_name: kname }], null, 2));
     setNewId("");
   }
@@ -341,15 +348,15 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
       </div>
       <div className="kw-refs-add-row">
         <input
-          className={`kv-input kw-refs-add-input${dupError ? " kv-input--error" : ""}`}
+          className={`kv-input kw-refs-add-input${addError ? " kv-input--error" : ""}`}
           value={newId}
-          onChange={(e) => { setNewId(e.target.value); setDupError(false); }}
+          onChange={(e) => { setNewId(e.target.value); setAddError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
           placeholder="keyword_id…"
         />
         <button type="button" className="kw-refs-add-btn" onClick={addItem}>Add</button>
       </div>
-      {dupError && <p className="kw-refs-dup-err">keyword_id already in list</p>}
+      {addError && <p className="kw-refs-dup-err">{addError}</p>}
     </div>
   );
 }
@@ -563,19 +570,35 @@ export default function MongoDB() {
     return m;
   }, [classDocs]);
 
-  // ---- Keyword docs for topic_bag editor (maps keyword _id → keyword_name) ----
+  // ---- Keyword docs for topic_bag editor + chunk_keyword list (maps keyword _id → keyword_name) ----
   const [keywordDocs, setKeywordDocs] = useState([]);
   useEffect(() => {
-    if (currentCollection !== "topic_bag") { setKeywordDocs([]); return; }
+    if (currentCollection !== "topic_bag" && currentCollection !== "chunk_keyword") { setKeywordDocs([]); return; }
     mongoApi.listDocuments("keyword", 500, 0)
       .then(d => setKeywordDocs(d.documents || []))
       .catch(() => setKeywordDocs([]));
   }, [currentCollection]);
   const keywordMap = useMemo(() => {
     const m = {};
-    keywordDocs.forEach(k => { m[String(k._id)] = k.keyword_name || ""; });
+    keywordDocs
+      .filter(k => !k.is_deleted)
+      .forEach(k => { m[String(k._id)] = k.keyword_name || ""; });
     return m;
   }, [keywordDocs]);
+
+  // ---- Chunk docs for chunk_keyword list (maps chunk _id → chunk_name) ----
+  const [chunkDocs, setChunkDocs] = useState([]);
+  useEffect(() => {
+    if (currentCollection !== "chunk_keyword") { setChunkDocs([]); return; }
+    mongoApi.listDocuments("chunk", 500, 0)
+      .then(d => setChunkDocs(d.documents || []))
+      .catch(() => setChunkDocs([]));
+  }, [currentCollection]);
+  const chunkMap = useMemo(() => {
+    const m = {};
+    chunkDocs.forEach(c => { m[String(c._id)] = c.chunk_name || ""; });
+    return m;
+  }, [chunkDocs]);
 
   async function reloadCollections() {
     setErr("");
@@ -827,6 +850,8 @@ export default function MongoDB() {
         _created_date: createdDate,
         _created_by: d.created_by || "-",
         _class_name: d.class_id != null ? (classMap[String(d.class_id)] || String(d.class_id)) : "",
+        _chunk_name: d.chunk_id != null ? (chunkMap[String(d.chunk_id)] || String(d.chunk_id)) : "",
+        _keyword_name: d.keyword_id != null ? (keywordMap[String(d.keyword_id)] || String(d.keyword_id)) : "",
       };
 
       return row;
@@ -837,11 +862,13 @@ export default function MongoDB() {
       : list.filter(
         (d) =>
           String(d._id || "").includes(s) ||
-          String(d._title || "").toLowerCase().includes(s)
+          String(d._title || "").toLowerCase().includes(s) ||
+          String(d._chunk_name || "").toLowerCase().includes(s) ||
+          String(d._keyword_name || "").toLowerCase().includes(s)
       );
 
     return filtered.slice();
-  }, [docs, q, currentCollection, classMap]);
+  }, [docs, q, currentCollection, classMap, chunkMap, keywordMap]);
 
   const collectionColumns = [
     {
@@ -900,7 +927,30 @@ export default function MongoDB() {
         render: (r) => <span className="mongo-meta-cell" title={r._class_name || ""}>{r._class_name || "—"}</span>,
       });
     }
-    // chunk_keyword: no extra columns — keep list view simple
+
+    if (currentCollection === "chunk_keyword") {
+      // Replace generic NAME column with chunk name + keyword name columns
+      base.splice(0, 1,
+        {
+          key: "_chunk_name",
+          label: "TÊN MỤC",
+          render: (r) => (
+            <div className="file-cell">
+              <div className="file-left">
+                <div className="file-icon file-other"><DocIcon /></div>
+                <div className="file-name" title={r._chunk_name || ""}>{r._chunk_name || "(unknown chunk)"}</div>
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: "_keyword_name",
+          label: "TÊN TỪ KHOÁ",
+          width: "180px",
+          render: (r) => <span className="mongo-meta-cell" title={r._keyword_name || ""}>{r._keyword_name || "—"}</span>,
+        }
+      );
+    }
 
     return base;
   }, [currentCollection]);
@@ -1190,14 +1240,16 @@ export default function MongoDB() {
               </>
             ) : !isEditingDoc ? (
               <>
-                {selectedDoc?.is_deleted ? (
-                  <button className="minio-btn mab-btn" style={{ color: "#16A34A", background: "#D1FAE5" }} onClick={restoreDocFromDetail}>
-                    Khôi phục
-                  </button>
-                ) : (
-                  <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
-                    <TrashIcon /> Xoá
-                  </button>
+                {!COLLECTIONS_NO_DELETE.has(currentCollection) && (
+                  selectedDoc?.is_deleted ? (
+                    <button className="minio-btn mab-btn" style={{ color: "#16A34A", background: "#D1FAE5" }} onClick={restoreDocFromDetail}>
+                      Khôi phục
+                    </button>
+                  ) : (
+                    <button className="minio-btn mab-btn" style={{ color: "#E11D48", background: "#FFE4E6" }} onClick={deleteDocFromDetail}>
+                      <TrashIcon /> Xoá
+                    </button>
+                  )
                 )}
                 <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setIsEditingDoc(true)}>
                   <EditIcon /> Sửa
@@ -1373,14 +1425,16 @@ export default function MongoDB() {
                 <button className="mfi-action-btn" onClick={(e) => { e.stopPropagation(); const doc = docs.find(d => String(d._id) === String(row._id)); setCurrentDocId(String(row._id)); setIsEditingDoc(true); if (doc) setDetailPairs(buildPairsFromDoc(doc, currentCollection)); }}>
                   <EditIcon /> Sửa
                 </button>
-                {row.is_deleted ? (
-                  <button className="mfi-action-btn restore" onClick={(e) => { e.stopPropagation(); restoreDoc(row); }}>
-                    Khôi phục
-                  </button>
-                ) : (
-                  <button className="mfi-action-btn danger" onClick={(e) => { e.stopPropagation(); deleteDoc(row); }}>
-                    <TrashIcon /> Xoá
-                  </button>
+                {!COLLECTIONS_NO_DELETE.has(currentCollection) && (
+                  row.is_deleted ? (
+                    <button className="mfi-action-btn restore" onClick={(e) => { e.stopPropagation(); restoreDoc(row); }}>
+                      Khôi phục
+                    </button>
+                  ) : (
+                    <button className="mfi-action-btn danger" onClick={(e) => { e.stopPropagation(); deleteDoc(row); }}>
+                      <TrashIcon /> Xoá
+                    </button>
+                  )
                 )}
               </div>
             )}

@@ -66,7 +66,7 @@ def _user_normalize_and_validate(col: str, body: Dict[str, Any], *, is_create: b
         body["password"] = pw
 
 
-def _auto_create_topic_bag(db, topic_oid, *, actor: str, now) -> None:
+def _auto_create_topic_bag(db, topic_oid, topic_name: str, *, actor: str, now) -> None:
     """Auto-create an empty topic_bag for a newly inserted topic.
     Idempotent — no-op if an active bag already exists.
     topic_bag starts empty; embedding sync happens later when keyword_refs is updated.
@@ -78,6 +78,7 @@ def _auto_create_topic_bag(db, topic_oid, *, actor: str, now) -> None:
             return
         db["topic_bag"].insert_one({
             "topic_id": topic_oid,
+            "topic_name": topic_name,
             "keyword_refs": [],
             "total_keywords": 0,
             "is_deleted": False,
@@ -374,6 +375,7 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
 
     # topic: auto-create an empty topic_bag so keyword_refs can be edited from the UI later.
     if col == "topic" and result.inserted_id:
-        _auto_create_topic_bag(db, result.inserted_id, actor=actor, now=now)
+        _topic_name = str(body.get("topic_name") or "").strip()
+        _auto_create_topic_bag(db, result.inserted_id, _topic_name, actor=actor, now=now)
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
