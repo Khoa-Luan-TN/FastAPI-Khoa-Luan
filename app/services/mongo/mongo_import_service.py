@@ -999,6 +999,48 @@ def import_excel_to_mongo(
     return report
 
 
+def backfill_subject_minio_markers(db) -> Dict[str, Any]:
+    """Ensure MinIO subject folder markers exist for every non-deleted subject in Mongo.
+
+    Also backfills asset_prefixes on subject docs that are missing it (imported before
+    the subject-marker fix). Safe to call multiple times — operations are idempotent.
+    """
+    client, bucket = _get_import_minio()
+    if not client:
+        return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
+
+    errors: List[Dict[str, Any]] = []
+    processed = 0
+    backfilled = 0
+
+    for subj_doc in db["subject"].find(
+        {"is_deleted": {"$ne": True}},
+        {"subject_name": 1, "class_id": 1, "asset_prefixes": 1},
+    ):
+        processed += 1
+        asset_prefixes = subj_doc.get("asset_prefixes")
+
+        if not asset_prefixes:
+            cls_doc = (
+                db["class"].find_one({"_id": subj_doc["class_id"]}, {"class_name": 1})
+                if subj_doc.get("class_id") else None
+            )
+            cls_slug = slugify_vi(cls_doc.get("class_name") or "") if cls_doc else ""
+            subj_slug = slugify_vi(subj_doc.get("subject_name") or "")
+            if cls_slug and subj_slug:
+                asset_prefixes = {"documents": f"documents/{cls_slug}/{subj_slug}/subject"}
+                db["subject"].update_one(
+                    {"_id": subj_doc["_id"]},
+                    {"$set": {"asset_prefixes": asset_prefixes}},
+                )
+                backfilled += 1
+
+        if asset_prefixes:
+            ensure_asset_prefix_markers(client, bucket, asset_prefixes, errors=errors)
+
+    return {"ok": True, "processed": processed, "backfilled": backfilled, "errors": errors}
+
+
 def backfill_class_minio_roots(db) -> Dict[str, Any]:
     """Ensure MinIO root markers exist for every non-deleted class already in Mongo.
 

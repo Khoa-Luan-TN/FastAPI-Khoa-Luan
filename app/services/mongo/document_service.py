@@ -14,7 +14,7 @@ from fastapi import HTTPException
 
 from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.sync.sync_service import sync_doc_to_postgres
-from app.services.shared._utils import utc_now
+from app.services.shared._utils import utc_now, slugify_vi
 
 db = get_mongo_db()
 
@@ -112,7 +112,8 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             raise HTTPException(status_code=422, detail="subject.class_id is required")
         if not _OID.is_valid(cls_ref):
             raise HTTPException(status_code=422, detail=f"subject.class_id '{cls_ref}' is not a valid ObjectId")
-        if not db["class"].find_one({"_id": _OID(cls_ref), "is_deleted": {"$ne": True}}):
+        _cls_doc = db["class"].find_one({"_id": _OID(cls_ref), "is_deleted": {"$ne": True}})
+        if not _cls_doc:
             raise HTTPException(status_code=422, detail=f"class '{cls_ref}' not found or is deleted")
         body["class_id"] = _OID(cls_ref)
         if db["subject"].find_one({
@@ -121,6 +122,12 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             "is_deleted": {"$ne": True},
         }, {"_id": 1}):
             raise HTTPException(status_code=409, detail=f"subject_name '{subj_name}' already exists in this class")
+        # Compute and store asset_prefixes. subject_name/class_name are locked in the UI
+        # to prevent MinIO path migration issues (renaming would orphan existing assets).
+        _cls_slug = slugify_vi(_cls_doc.get("class_name") or "")
+        _subj_slug = slugify_vi(subj_name)
+        if _cls_slug and _subj_slug:
+            body["asset_prefixes"] = {"documents": f"documents/{_cls_slug}/{_subj_slug}/subject"}
 
     # keyword: strip client-supplied keyword_id/keyword_slug; always derive from keyword_name.
     # PG trigger generates the business keyword_id (kw_<slug>) — Mongo does not store it.
@@ -242,11 +249,23 @@ def create_document_core(collection_name: str, body: Dict[str, Any], *, actor: s
             if _bucket:
                 from app.services.infrastructure.minio_client import get_minio_client
                 from app.services.minio.minio_marker_service import ensure_class_root_markers
-                from app.services.shared._utils import slugify_vi
                 ensure_class_root_markers(
                     get_minio_client(), _bucket, slugify_vi(body.get("class_name") or "")
                 )
         except Exception:
             pass  # MinIO failure does not block class creation
+
+    # Subject stores asset_prefixes.documents; create the folder marker immediately.
+    # subject_name/class_name are locked in the UI to prevent MinIO path migration issues.
+    if col == "subject" and body.get("asset_prefixes"):
+        try:
+            import os as _os
+            _bucket = (_os.getenv("MINIO_BUCKET") or "").strip()
+            if _bucket:
+                from app.services.infrastructure.minio_client import get_minio_client
+                from app.services.minio.minio_marker_service import ensure_asset_prefix_markers
+                ensure_asset_prefix_markers(get_minio_client(), _bucket, body["asset_prefixes"])
+        except Exception:
+            pass  # MinIO failure does not block subject creation
 
     return {"inserted": True, "_id": str(result.inserted_id), "sync": sync}
