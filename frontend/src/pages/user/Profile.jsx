@@ -88,24 +88,28 @@ export default function Profile() {
       <div className="u-profile-grid">
         {/* Avatar card */}
         <div className="u-profile-card">
-          <div className="u-profile-avatar">{username[0].toUpperCase()}</div>
-          <div className="u-profile-name">{username}</div>
-          <div className="u-profile-role">
-            {role === "admin" ? "Quản trị viên" : "Người dùng"}
+          <div className="u-profile-hero">
+            <div className="u-profile-avatar">{username[0].toUpperCase()}</div>
+            <div className="u-profile-name">{username}</div>
+            <span className={`u-role-badge u-role-badge--${role}`}>
+              {role === "admin" ? "Quản trị viên" : "Người dùng"}
+            </span>
           </div>
           <div className="u-profile-stats">
-            <div className="u-profile-stat">
+            <div className="u-profile-stat u-profile-stat--search" onClick={() => navigate("/user/history")} style={{ cursor: "pointer" }}>
               <span className="u-profile-stat-value">{historyCount}</span>
               <span className="u-profile-stat-label">Tìm kiếm</span>
             </div>
-            <div className="u-profile-stat">
+            <div className="u-profile-stat u-profile-stat--saved" onClick={() => navigate("/user/saved")} style={{ cursor: "pointer" }}>
               <span className="u-profile-stat-value">{savedCount}</span>
               <span className="u-profile-stat-label">Đã lưu</span>
             </div>
           </div>
-          <button className="u-profile-logout" onClick={logout}>
-            <LogoutIcon /> Đăng xuất
-          </button>
+          <div style={{ padding: "0 22px 22px" }}>
+            <button className="u-profile-logout" onClick={logout}>
+              <LogoutIcon /> Đăng xuất
+            </button>
+          </div>
         </div>
 
         {/* Info + shortcuts */}

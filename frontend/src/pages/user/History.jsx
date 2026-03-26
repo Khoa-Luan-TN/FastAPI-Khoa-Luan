@@ -64,8 +64,16 @@ export default function History() {
       </div>
 
       {loading ? (
-        <div className="u-empty">
-          <p className="u-empty-desc">Đang tải...</p>
+        <div className="u-history-list">
+          {[1,2,3,4].map((i) => (
+            <div key={i} className="u-history-item u-fadein" style={{ animationDelay: `${i * 0.06}s` }}>
+              <div className="u-history-icon" style={{ opacity: 0.3 }}><SearchIcon size={16} /></div>
+              <div className="u-history-content">
+                <div className="u-skeleton" style={{ height: 14, width: "55%", borderRadius: 6 }} />
+                <div className="u-skeleton" style={{ height: 12, width: "30%", borderRadius: 6, marginTop: 6 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : history.length === 0 ? (
         <div className="u-empty">

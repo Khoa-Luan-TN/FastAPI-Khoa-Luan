@@ -916,75 +916,79 @@
   background: var(--us-white);
   border: 1px solid var(--us-border);
   border-radius: var(--us-radius-lg);
-  padding: 28px 22px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--us-shadow-xs);
+}
+
+/* Hero section inside profile card (gradient band + avatar) */
+.u-profile-hero {
+  background: linear-gradient(160deg, #EFF6FF 0%, #EEF2FF 100%);
+  border-bottom: 1px solid var(--us-border-light);
+  padding: 28px 22px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: var(--us-shadow-xs);
+  gap: 8px;
 }
 
 .u-profile-avatar {
-  width: 70px;
-  height: 70px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: linear-gradient(135deg, #2563EB, #6366F1);
   color: #fff;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.28);
+  margin-bottom: 4px;
 }
 
 .u-profile-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--us-text);
-  margin: 0 0 6px;
-}
-
-.u-profile-role {
-  display: inline-block;
-  padding: 3px 13px;
-  border-radius: 100px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--us-primary-light);
-  color: var(--us-primary);
-  border: 1px solid #BFDBFE;
-  margin-bottom: 18px;
+  margin: 0;
 }
 
 .u-profile-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  width: 100%;
-  margin-bottom: 20px;
+  border-bottom: 1px solid var(--us-border-light);
 }
 
 .u-profile-stat {
-  background: var(--us-bg);
-  border: 1px solid var(--us-border);
-  border-radius: var(--us-radius-sm);
-  padding: 11px 10px;
+  padding: 16px 10px;
   text-align: center;
+  transition: background 0.13s;
 }
+
+.u-profile-stat--search { border-right: 1px solid var(--us-border-light); }
+
+.u-profile-stat[style*="cursor"]:hover { background: var(--us-bg); }
 
 .u-profile-stat-value {
   display: block;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--us-primary);
+  line-height: 1.2;
 }
+
+.u-profile-stat--search .u-profile-stat-value { color: #2563EB; }
+.u-profile-stat--saved  .u-profile-stat-value { color: #7C3AED; }
 
 .u-profile-stat-label {
   font-size: 11px;
   color: var(--us-text-muted);
   font-weight: 600;
+  margin-top: 2px;
+  display: block;
 }
 
 .u-profile-logout {

@@ -18,85 +18,13 @@ const CloseIcon = ({ size = 15 }) => (
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
-const DownloadIcon = ({ size = 13 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-
-// ---- Assets section ----
-function AssetsSection({ assets }) {
-  const docs   = assets?.documents || [];
-  const images = assets?.images    || [];
-  const videos = assets?.videos    || [];
-  const hasAny = docs.length + images.length + videos.length > 0;
-
-  if (!hasAny) {
-    return (
-      <>
-        <p className="u-modal-section-label">Tài liệu đính kèm</p>
-        <p style={{ fontSize: 13, color: "var(--us-text-muted)", margin: 0 }}>
-          Chưa có tài liệu đính kèm.
-        </p>
-      </>
-    );
-  }
-
-  return (
-    <>
-      {docs.length > 0 && (
-        <>
-          <p className="u-modal-section-label">Tài liệu</p>
-          <div className="u-asset-list">
-            {docs.map((d, i) => (
-              <div key={d.object_key || i} className="u-asset-row">
-                <span className="u-asset-name">{d.file_name || d.object_key || "Tài liệu"}</span>
-                <a href={d.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
-                  <DownloadIcon size={13} /> Tải xuống
-                </a>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      {images.length > 0 && (
-        <>
-          <p className="u-modal-section-label">Hình ảnh</p>
-          <div className="u-asset-list">
-            {images.map((img, i) => (
-              <div key={img.object_key || i} className="u-asset-row">
-                <span className="u-asset-name">{img.file_name || img.object_key || "Hình ảnh"}</span>
-                <a href={img.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
-                  <DownloadIcon size={13} /> Tải xuống
-                </a>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      {videos.length > 0 && (
-        <>
-          <p className="u-modal-section-label">Video</p>
-          <div className="u-asset-list">
-            {videos.map((vid, i) => (
-              <div key={vid.object_key || i} className="u-asset-row">
-                <span className="u-asset-name">{vid.file_name || vid.object_key || "Video"}</span>
-                <a href={vid.url} target="_blank" rel="noopener noreferrer" className="u-file-btn u-file-btn--download">
-                  <DownloadIcon size={13} /> Tải xuống
-                </a>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </>
-  );
-}
 
 const LEVEL_LABEL = {
-  topic:  "Chủ đề",
-  lesson: "Bài học",
-  chunk:  "Phần nội dung",
+  subject: "Môn học",
+  topic:   "Chủ đề",
+  lesson:  "Bài học",
+  chunk:   "Phần nội dung",
+  keyword: "Từ khoá",
 };
 
 function mapDoc(raw) {
@@ -113,7 +41,9 @@ function mapDoc(raw) {
 
 function DetailModal({ doc, onUnsave, onClose }) {
   if (!doc) return null;
-  const levelLabel = LEVEL_LABEL[doc.level] || "";
+  const levelLabel = LEVEL_LABEL[doc.level] || doc.level || "";
+  const hasDesc = Boolean(doc.descShort);
+  const showDescFallback = doc.level !== "subject" && doc.level !== "keyword";
 
   return (
     <div className="u-modal-overlay" onClick={onClose}>
@@ -125,31 +55,37 @@ function DetailModal({ doc, onUnsave, onClose }) {
           </div>
           <div className="u-modal-badges">
             {doc.level && <span className={`u-cat ${doc.level}`}>{levelLabel}</span>}
-            {doc.subject && doc.subject !== "Tài liệu" && (
-              <span className="u-modal-badge-subject">{doc.subject}</span>
-            )}
-            {doc.className && (
-              <span className="u-modal-badge-class">{doc.className}</span>
-            )}
+            {doc.subject && <span className="u-modal-badge-subject">{doc.subject}</span>}
+            {doc.className && <span className="u-modal-badge-class">{doc.className}</span>}
           </div>
         </div>
 
         <div className="u-modal-body">
-          <div>
-            <p className="u-modal-section-label">Mô tả</p>
-            <p className="u-modal-desc">{doc.descShort || "Mô tả đang được cập nhật."}</p>
-          </div>
-
-          {doc.tags && doc.tags.length > 0 && (
+          {(hasDesc || showDescFallback) && (
             <div>
-              <p className="u-modal-section-label">Từ khoá</p>
-              <div className="u-doc-tags">
-                {doc.tags.map((t) => <span key={t} className="u-tag">{t}</span>)}
-              </div>
+              <p className="u-modal-section-label">Mô tả</p>
+              <p className="u-modal-desc">
+                {hasDesc ? doc.descShort : "Mô tả đang được cập nhật."}
+              </p>
             </div>
           )}
 
-          <AssetsSection assets={doc.assets} />
+          {(doc.subject || doc.className) && (
+            <div className="u-ctx-panel">
+              {doc.subject && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">Môn học</span>
+                  <span className="u-ctx-value">{doc.subject}</span>
+                </div>
+              )}
+              {doc.className && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">Lớp</span>
+                  <span className="u-ctx-value">{doc.className}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="u-modal-footer">
@@ -206,8 +142,9 @@ export default function Saved() {
       ) : (
         <div className="u-saved-grid">
           {docs.map((doc, i) => {
-            const levelLabel = LEVEL_LABEL[doc.level] || "";
+            const levelLabel = LEVEL_LABEL[doc.level] || doc.level || "";
             const cardVariant = doc.level ? `u-doc-card--${doc.level}` : "";
+            const noFallback = doc.level === "subject" || doc.level === "keyword";
             return (
               <div
                 key={doc.id}
@@ -217,11 +154,8 @@ export default function Saved() {
               >
                 <div className="u-doc-card-top">
                   <div className="u-doc-badges">
-                    {doc.level
-                      ? <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
-                      : <span className="u-subject-badge">{doc.category || "Tài liệu"}</span>
-                    }
-                    {doc.subject && doc.subject !== "Tài liệu" && (
+                    <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
+                    {doc.subject && doc.level !== "subject" && (
                       <span className="u-subject-badge">{doc.subject}</span>
                     )}
                   </div>
@@ -235,7 +169,11 @@ export default function Saved() {
                 </div>
 
                 <h3 className="u-doc-title">{doc.title}</h3>
-                <p className="u-doc-desc">{doc.descShort || "Mô tả đang được cập nhật."}</p>
+                {(doc.descShort || !noFallback) && (
+                  <p className="u-doc-desc">
+                    {doc.descShort || "Mô tả đang được cập nhật."}
+                  </p>
+                )}
 
                 <div className="u-doc-footer">
                   {doc.className && (

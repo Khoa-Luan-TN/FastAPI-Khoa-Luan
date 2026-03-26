@@ -616,7 +616,7 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
       <div className="u-doc-card-top">
         <div className="u-doc-badges">
           <span className={`u-cat ${doc.level}`}>{levelLabel}</span>
-          {doc.subjectName && (
+          {doc.level !== "subject" && doc.subjectName && (
             <span className="u-subject-badge">{doc.subjectName}</span>
           )}
         </div>
@@ -646,7 +646,10 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
         {doc.className && (
           <span className="u-meta-class-pill">{doc.className}</span>
         )}
-        {doc.context && (
+        {doc.level === "keyword" && (doc.aliases || []).length > 0 && (
+          <span className="u-meta-breadcrumb">{doc.aliases.length} bí danh</span>
+        )}
+        {doc.level !== "keyword" && doc.context && (
           <span className="u-meta-breadcrumb" title={doc.context}>
             {doc.context.length > 44 ? doc.context.slice(0, 44) + "…" : doc.context}
           </span>
