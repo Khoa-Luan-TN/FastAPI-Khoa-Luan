@@ -1,6 +1,7 @@
 // frontend/src/pages/user/UserHome.jsx
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { executeSearch } from "../../services/searchApi";
+import * as userActionsApi from "../../services/userActionsApi";
 
 // ---- Icons ----
 const SearchIcon = ({ size = 18 }) => (
@@ -721,41 +722,34 @@ export default function UserHome() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [savedIds, setSavedIds] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("u_saved") || "[]")); }
-    catch { return new Set(); }
-  });
+  const [savedIds, setSavedIds] = useState(new Set());
 
   const textareaRef = useRef(null);
 
-  function persistSaved(next) {
-    setSavedIds(next);
-    localStorage.setItem("u_saved", JSON.stringify([...next]));
-  }
+  useEffect(() => {
+    userActionsApi.listSaved().then((data) => {
+      setSavedIds(new Set((data?.items || []).map((d) => d.target_id)));
+    }).catch(() => {});
+  }, []);
 
   function toggleSave(doc) {
+    const willSave = !savedIds.has(doc.id);
     const next = new Set(savedIds);
-    const willSave = !next.has(doc.id);
     if (willSave) next.add(doc.id); else next.delete(doc.id);
-    persistSaved(next);
+    setSavedIds(next);
 
-    const existing = JSON.parse(localStorage.getItem("u_saved_docs") || "[]");
-    const filtered = existing.filter((d) => d.id !== doc.id);
     if (willSave) {
-      filtered.push({
-        id: doc.id,
-        level: doc.level || "chunk",
-        title: doc.title,
-        descShort: doc.description || "",
-        desc: doc.description || "",
-        category: doc.subjectName || "Tài liệu",
-        subject: doc.subjectName || "Tài liệu",
-        className: doc.className || null,
-        tags: [],
-        assets: doc.assets || { documents: [], images: [], videos: [] },
-      });
+      userActionsApi.saveDocument({
+        target_id:    doc.id,
+        target_level: doc.level || "chunk",
+        target_title: doc.title || "",
+        class_name:   doc.className || "",
+        subject_name: doc.subjectName || "",
+        desc_short:   doc.description || "",
+      }).catch(() => {});
+    } else {
+      userActionsApi.unsaveByTarget(doc.id, doc.level || "chunk").catch(() => {});
     }
-    localStorage.setItem("u_saved_docs", JSON.stringify(filtered));
   }
 
   const doSearch = useCallback(async (q) => {
@@ -773,11 +767,8 @@ export default function UserHome() {
       setGroups(g);
 
       const totalCount = g.subjects.length + g.topics.length + g.lessons.length + g.chunks.length + g.keywords.length;
-      const hist = JSON.parse(localStorage.getItem("u_history") || "[]");
-      localStorage.setItem("u_history", JSON.stringify([
-        { id: Date.now(), query: trimmed, count: totalCount, date: new Date().toLocaleString("vi-VN") },
-        ...hist.slice(0, 19),
-      ]));
+      const topLevels = Object.keys(g).filter((k) => g[k].length > 0);
+      userActionsApi.createHistory({ query: trimmed, result_count: totalCount, top_levels: topLevels }).catch(() => {});
     } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
       setGroups({ subjects: [], topics: [], lessons: [], chunks: [], keywords: [] });

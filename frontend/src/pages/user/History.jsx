@@ -1,6 +1,7 @@
 // frontend/src/pages/user/History.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import * as userActionsApi from "../../services/userActionsApi";
 
 const SearchIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -19,23 +20,15 @@ const TrashIcon = ({ size = 14 }) => (
   </svg>
 );
 
-const DEMO_HISTORY = [
-  { id: "h1", query: "Giải phương trình vi phân bậc nhất", count: 6, date: "Hôm nay, 14:23" },
-  { id: "h2", query: "Lý thuyết tập hợp và ánh xạ", count: 4, date: "Hôm nay, 10:05" },
-  { id: "h3", query: "Phản ứng oxi hoá khử trong hoá học", count: 5, date: "Hôm qua, 16:47" },
-  { id: "h4", query: "Văn học Việt Nam hiện đại", count: 3, date: "Hôm qua, 09:12" },
-  { id: "h5", query: "Cơ học lượng tử phương trình Schrödinger", count: 6, date: "23/03/2025" },
-  { id: "h6", query: "Python machine learning và khoa học dữ liệu", count: 7, date: "20/03/2025" },
-  { id: "h7", query: "Kinh tế vĩ mô mô hình IS-LM AD-AS", count: 5, date: "18/03/2025" },
-];
-
 export default function History() {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("u_history") || "[]");
-    setHistory(saved.length > 0 ? saved : DEMO_HISTORY);
+    userActionsApi.listHistory().then((data) => {
+      setHistory(data?.items || []);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   function runSearch(query) {
@@ -44,15 +37,14 @@ export default function History() {
   }
 
   function removeEntry(id) {
-    const next = history.filter((h) => h.id !== id);
-    setHistory(next);
-    localStorage.setItem("u_history", JSON.stringify(next));
+    setHistory((prev) => prev.filter((h) => h.id !== id));
+    userActionsApi.deleteHistoryEntry(id).catch(() => {});
   }
 
   function clearAll() {
     if (!confirm("Xoá toàn bộ lịch sử tìm kiếm?")) return;
     setHistory([]);
-    localStorage.removeItem("u_history");
+    userActionsApi.clearHistory().catch(() => {});
   }
 
   return (
@@ -71,7 +63,11 @@ export default function History() {
         )}
       </div>
 
-      {history.length === 0 ? (
+      {loading ? (
+        <div className="u-empty">
+          <p className="u-empty-desc">Đang tải...</p>
+        </div>
+      ) : history.length === 0 ? (
         <div className="u-empty">
           <div className="u-empty-icon"><SearchIcon size={42} /></div>
           <p className="u-empty-title">Chưa có lịch sử tìm kiếm</p>

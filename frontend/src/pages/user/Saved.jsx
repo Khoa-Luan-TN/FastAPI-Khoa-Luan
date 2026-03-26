@@ -1,6 +1,7 @@
 // frontend/src/pages/user/Saved.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import * as userActionsApi from "../../services/userActionsApi";
 
 const BookmarkIcon = ({ size = 15, filled = false }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -98,35 +99,17 @@ const LEVEL_LABEL = {
   chunk:  "Phần nội dung",
 };
 
-const DEMO_SAVED = [
-  {
-    id: "doc_001",
-    level: "topic",
-    title: "Phương trình vi phân và ứng dụng trong vật lý",
-    desc: "Tài liệu trình bày phương pháp giải phương trình vi phân bậc nhất và bậc hai, kèm ứng dụng trong các bài toán vật lý cơ học như dao động điều hoà và mạch điện RLC.",
-    descShort: "Giải phương trình vi phân bậc nhất và bậc hai với ứng dụng trong cơ học và điện học.",
-    category: "Toán học", subject: "Giải tích nâng cao",
-    className: "Lớp 12", tags: ["vi phân", "phương trình", "dao động"],
-  },
-  {
-    id: "doc_003",
-    level: "lesson",
-    title: "Phản ứng oxi hoá khử và ứng dụng trong điện hoá",
-    desc: "Phân tích cơ chế phản ứng oxi hoá khử, cân bằng phương trình theo phương pháp thăng bằng electron và ion-electron. Bao gồm pin điện hoá, điện phân và ăn mòn kim loại.",
-    descShort: "Phản ứng oxi hoá khử, cân bằng phương trình và ứng dụng trong điện hoá học.",
-    category: "Hoá học", subject: "Hoá học vô cơ",
-    className: "Lớp 11", tags: ["oxi hoá", "khử", "điện hoá"],
-  },
-  {
-    id: "doc_007",
-    level: "chunk",
-    title: "Lập trình Python cho Khoa học dữ liệu",
-    desc: "Hướng dẫn từ cơ bản đến nâng cao về Python trong phân tích dữ liệu: NumPy, Pandas, Matplotlib và Scikit-learn. Bao gồm bài tập thực hành và dự án mẫu về Machine Learning.",
-    descShort: "Hướng dẫn Python cho khoa học dữ liệu: NumPy, Pandas và Machine Learning cơ bản.",
-    category: "Tin học", subject: "Khoa học dữ liệu",
-    className: "Lớp 10", tags: ["Python", "Data Science", "ML"],
-  },
-];
+function mapDoc(raw) {
+  return {
+    id:        raw.target_id,
+    level:     raw.target_level,
+    title:     raw.target_title || "",
+    descShort: raw.desc_short || "",
+    subject:   raw.subject_name || "",
+    className: raw.class_name || "",
+    _mongoId:  raw.id,
+  };
+}
 
 function DetailModal({ doc, onUnsave, onClose }) {
   if (!doc) return null;
@@ -154,7 +137,7 @@ function DetailModal({ doc, onUnsave, onClose }) {
         <div className="u-modal-body">
           <div>
             <p className="u-modal-section-label">Mô tả</p>
-            <p className="u-modal-desc">{doc.desc || doc.descShort || "Mô tả đang được cập nhật."}</p>
+            <p className="u-modal-desc">{doc.descShort || "Mô tả đang được cập nhật."}</p>
           </div>
 
           {doc.tags && doc.tags.length > 0 && (
@@ -190,17 +173,14 @@ export default function Saved() {
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    const raw = JSON.parse(localStorage.getItem("u_saved_docs") || "[]");
-    setDocs(raw.length > 0 ? raw : DEMO_SAVED);
+    userActionsApi.listSaved().then((data) => {
+      setDocs((data?.items || []).map(mapDoc));
+    }).catch(() => {});
   }, []);
 
   function unsave(doc) {
-    const next = docs.filter((d) => d.id !== doc.id);
-    setDocs(next);
-    localStorage.setItem("u_saved_docs", JSON.stringify(next));
-    const ids = new Set(JSON.parse(localStorage.getItem("u_saved") || "[]"));
-    ids.delete(doc.id);
-    localStorage.setItem("u_saved", JSON.stringify([...ids]));
+    setDocs((prev) => prev.filter((d) => d.id !== doc.id));
+    userActionsApi.unsaveByTarget(doc.id, doc.level || "chunk").catch(() => {});
   }
 
   return (
@@ -255,7 +235,7 @@ export default function Saved() {
                 </div>
 
                 <h3 className="u-doc-title">{doc.title}</h3>
-                <p className="u-doc-desc">{doc.desc || doc.descShort || "Mô tả đang được cập nhật."}</p>
+                <p className="u-doc-desc">{doc.descShort || "Mô tả đang được cập nhật."}</p>
 
                 <div className="u-doc-footer">
                   {doc.className && (

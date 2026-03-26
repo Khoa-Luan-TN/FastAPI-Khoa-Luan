@@ -1,5 +1,7 @@
 // frontend/src/pages/user/Profile.jsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import * as userActionsApi from "../../services/userActionsApi";
 
 const LogoutIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,8 +59,15 @@ export default function Profile() {
   const userId   = localStorage.getItem("user_id") || "—";
   const role     = localStorage.getItem("role") || "user";
 
-  const historyCount = JSON.parse(localStorage.getItem("u_history") || "[]").length;
-  const savedCount   = JSON.parse(localStorage.getItem("u_saved") || "[]").length;
+  const [historyCount, setHistoryCount] = useState(0);
+  const [savedCount, setSavedCount]     = useState(0);
+
+  useEffect(() => {
+    userActionsApi.getCounts().then((data) => {
+      setHistoryCount(data?.history_count ?? 0);
+      setSavedCount(data?.saved_count ?? 0);
+    }).catch(() => {});
+  }, []);
 
   function logout() {
     localStorage.removeItem("role");

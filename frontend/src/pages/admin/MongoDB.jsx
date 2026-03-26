@@ -118,7 +118,7 @@ function parseValue(v) {
 }
 
 // ---- Collections hidden from the list entirely ----
-const COLLECTIONS_HIDDEN = new Set(["import_job"]);
+const COLLECTIONS_HIDDEN = new Set(["import_job", "search_history", "saved_document"]);
 
 // ---- Collections where create is disabled ----
 const COLLECTIONS_NO_CREATE = new Set(["topic_bag"]);

@@ -36,6 +36,8 @@ from app.routers.postgre import router as postgre_router
 from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
 from app.routers.search import router as search_router
+from app.routers.user_actions import router as user_actions_router
+from app.routers.user_actions import ensure_user_indexes
 
 from app.services.infrastructure.postgre_client import engine, Base
 import app.models.model_postgre
@@ -61,6 +63,10 @@ async def lifespan(app: FastAPI):
         ensure_all_import_key_indexes(get_mongo_db())
     except Exception as _e:
         logging.getLogger("app").warning("import_key index migration warning: %s", _e)
+    try:
+        ensure_user_indexes(get_mongo_db())
+    except Exception as _e:
+        logging.getLogger("app").warning("user_indexes setup warning: %s", _e)
     # Ensure MinIO root markers exist for all class docs imported before the
     # class-marker fix. Idempotent — safe to run on every startup.
     try:
@@ -150,3 +156,4 @@ app.include_router(postgre_router)
 app.include_router(mongo_router)
 app.include_router(neo_router)
 app.include_router(search_router)
+app.include_router(user_actions_router)
