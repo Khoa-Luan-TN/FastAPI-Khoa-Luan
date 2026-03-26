@@ -59,14 +59,17 @@ export default function Profile() {
   const userId   = localStorage.getItem("user_id") || "—";
   const role     = localStorage.getItem("role") || "user";
 
-  const [historyCount, setHistoryCount] = useState(0);
-  const [savedCount, setSavedCount]     = useState(0);
+  const [historyCount, setHistoryCount] = useState(null);
+  const [savedCount, setSavedCount]     = useState(null);
 
   useEffect(() => {
     userActionsApi.getCounts().then((data) => {
       setHistoryCount(data?.history_count ?? 0);
       setSavedCount(data?.saved_count ?? 0);
-    }).catch(() => {});
+    }).catch(() => {
+      setHistoryCount(0);
+      setSavedCount(0);
+    });
   }, []);
 
   function logout() {
@@ -90,22 +93,24 @@ export default function Profile() {
         <div className="u-profile-card">
           <div className="u-profile-hero">
             <div className="u-profile-avatar">{username[0].toUpperCase()}</div>
-            <div className="u-profile-name">{username}</div>
-            <span className={`u-role-badge u-role-badge--${role}`}>
-              {role === "admin" ? "Quản trị viên" : "Người dùng"}
-            </span>
+            <div className="u-profile-hero-info">
+              <div className="u-profile-name">{username}</div>
+              <span className={`u-role-badge u-role-badge--${role}`}>
+                {role === "admin" ? "Quản trị viên" : "Người dùng"}
+              </span>
+            </div>
           </div>
           <div className="u-profile-stats">
-            <div className="u-profile-stat u-profile-stat--search" onClick={() => navigate("/user/history")} style={{ cursor: "pointer" }}>
-              <span className="u-profile-stat-value">{historyCount}</span>
+            <div className="u-profile-stat u-profile-stat--search u-profile-stat--clickable" onClick={() => navigate("/user/history")}>
+              <span className="u-profile-stat-value">{historyCount ?? "—"}</span>
               <span className="u-profile-stat-label">Tìm kiếm</span>
             </div>
-            <div className="u-profile-stat u-profile-stat--saved" onClick={() => navigate("/user/saved")} style={{ cursor: "pointer" }}>
-              <span className="u-profile-stat-value">{savedCount}</span>
+            <div className="u-profile-stat u-profile-stat--saved u-profile-stat--clickable" onClick={() => navigate("/user/saved")}>
+              <span className="u-profile-stat-value">{savedCount ?? "—"}</span>
               <span className="u-profile-stat-label">Đã lưu</span>
             </div>
           </div>
-          <div style={{ padding: "0 22px 22px" }}>
+          <div className="u-profile-logout-wrap">
             <button className="u-profile-logout" onClick={logout}>
               <LogoutIcon /> Đăng xuất
             </button>
@@ -113,7 +118,7 @@ export default function Profile() {
         </div>
 
         {/* Info + shortcuts */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="u-profile-right-col">
           <div className="u-info-card">
             <div className="u-info-card-title">Thông tin tài khoản</div>
             <div className="u-info-rows">
@@ -148,9 +153,7 @@ export default function Profile() {
             <div className="u-info-card-title">Truy cập nhanh</div>
             <div className="u-info-rows">
               <div className="u-quick-nav-row" onClick={() => navigate("/user")}>
-                <div className="u-info-row-icon" style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
-                  <SearchIcon />
-                </div>
+                <div className="u-info-row-icon u-quick-nav-icon--search"><SearchIcon /></div>
                 <div>
                   <div className="u-quick-nav-label">Tìm kiếm</div>
                   <div className="u-quick-nav-desc">Tìm tài liệu học tập</div>
@@ -158,22 +161,22 @@ export default function Profile() {
                 <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
               <div className="u-quick-nav-row" onClick={() => navigate("/user/history")}>
-                <div className="u-info-row-icon" style={{ background: "#F0F9FF", color: "#0369A1", border: "1px solid #BAE6FD" }}>
-                  <HistoryIcon />
-                </div>
+                <div className="u-info-row-icon u-quick-nav-icon--history"><HistoryIcon /></div>
                 <div>
                   <div className="u-quick-nav-label">Lịch sử</div>
-                  <div className="u-quick-nav-desc">{historyCount} lần tìm kiếm</div>
+                  <div className="u-quick-nav-desc">
+                    {historyCount != null ? `${historyCount} lần tìm kiếm` : "Xem lịch sử"}
+                  </div>
                 </div>
                 <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
               <div className="u-quick-nav-row" onClick={() => navigate("/user/saved")}>
-                <div className="u-info-row-icon" style={{ background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE" }}>
-                  <BookmarkIcon />
-                </div>
+                <div className="u-info-row-icon u-quick-nav-icon--saved"><BookmarkIcon /></div>
                 <div>
                   <div className="u-quick-nav-label">Đã lưu</div>
-                  <div className="u-quick-nav-desc">{savedCount} tài liệu</div>
+                  <div className="u-quick-nav-desc">
+                    {savedCount != null ? `${savedCount} tài liệu` : "Xem tài liệu đã lưu"}
+                  </div>
                 </div>
                 <div className="u-quick-nav-arrow"><ArrowRightIcon /></div>
               </div>
