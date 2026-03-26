@@ -83,6 +83,8 @@ def _probe_keyword(
         "topic_documents": [],
         "lesson_documents": [],
         "chunk_documents": [],
+        "subject_documents": [],
+        "keyword_documents": [],
     }
 
     top_topics = _probe_top_topics(neo, keyword, class_ids)
@@ -117,13 +119,21 @@ def _probe_keyword(
             continue
         seen_kw_oids.add(matched_kw_oid)
 
+        kw_id = str(matched_kw_oid)
+        kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
         base["matched_keywords"].append({
             k: v for k, v in matched_kw.items() if k != "_oid"
+        })
+        base["keyword_documents"].append({
+            "id":      kw_id,
+            "name":    matched_kw.get("keyword_name"),
+            "aliases": matched_kw.get("aliases") or [],
+            "assets":  kw_assets,
         })
         hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
         all_hits.extend(hits)
 
-    base["topic_documents"], base["lesson_documents"], base["chunk_documents"] = (
+    base["topic_documents"], base["lesson_documents"], base["chunk_documents"], base["subject_documents"] = (
         _build_documents_from_hits(all_hits)
     )
     return base
@@ -347,6 +357,7 @@ def _build_chunk_hit(
     topic_id = topic_name = topic_num = None
     topic_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
     subject_id = subject_name = subject_type = None
+    subject_assets: Dict[str, List] = {"documents": [], "images": [], "videos": []}
     class_id = class_name = None
 
     if lesson_oid is not None:
@@ -379,9 +390,10 @@ def _build_chunk_hit(
                             {"subject_name": 1, "subject_type": 1, "class_id": 1},
                         )
                         if subj_doc:
-                            subject_id   = str(subject_oid)
-                            subject_name = subj_doc.get("subject_name")
-                            subject_type = subj_doc.get("subject_type")
+                            subject_id     = str(subject_oid)
+                            subject_name   = subj_doc.get("subject_name")
+                            subject_type   = subj_doc.get("subject_type")
+                            subject_assets = _fetch_owner_assets(db, "subject", subject_id)
 
                             class_oid = _to_oid(subj_doc.get("class_id"))
                             if class_oid is not None:
@@ -423,10 +435,11 @@ def _build_chunk_hit(
         "topic_name":   topic_name,
         "topic_num":    topic_num,
         "topic_assets": topic_assets,
-        "subject_id":   subject_id,
-        "subject_name": subject_name,
-        "subject_type": subject_type,
-        "class_id":     class_id,
+        "subject_id":     subject_id,
+        "subject_name":   subject_name,
+        "subject_type":   subject_type,
+        "subject_assets": subject_assets,
+        "class_id":       class_id,
         "class_name":   class_name,
         "path_description":   path_description,
         "topic_description":  descriptions["topic_description"],
@@ -437,13 +450,25 @@ def _build_chunk_hit(
 
 def _build_documents_from_hits(
     hits: List[Dict[str, Any]],
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Deduplicate chunk hits into separate topic / lesson / chunk document lists."""
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Deduplicate chunk hits into separate topic / lesson / chunk / subject document lists."""
     topic_map: Dict[str, Dict[str, Any]] = {}
     lesson_map: Dict[str, Dict[str, Any]] = {}
     chunk_map: Dict[str, Dict[str, Any]] = {}
+    subject_map: Dict[str, Dict[str, Any]] = {}
 
     for hit in hits:
+        sid = hit.get("subject_id")
+        if sid and sid not in subject_map:
+            subject_map[sid] = {
+                "id":           sid,
+                "name":         hit.get("subject_name"),
+                "type":         hit.get("subject_type"),
+                "class_id":     hit.get("class_id"),
+                "class_name":   hit.get("class_name"),
+                "assets":       hit.get("subject_assets", {"documents": [], "images": [], "videos": []}),
+            }
+
         tid = hit.get("topic_id")
         if tid and tid not in topic_map:
             topic_map[tid] = {
@@ -491,7 +516,7 @@ def _build_documents_from_hits(
                 "assets":      hit.get("chunk_assets", {"documents": [], "images": [], "videos": []}),
             }
 
-    return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values())
+    return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values()), list(subject_map.values())
 
 
 def _resolve_class_ids(neo: Session, class_hint: Optional[int]) -> List[str]:

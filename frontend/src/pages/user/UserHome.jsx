@@ -85,6 +85,16 @@ const ChunkIcon = ({ size = 14 }) => (
     <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
   </svg>
 );
+const SubjectIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" /><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+  </svg>
+);
+const KeywordIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
+  </svg>
+);
 
 // ---- Search suggestions ----
 const SUGGESTIONS = [
@@ -94,18 +104,39 @@ const SUGGESTIONS = [
 ];
 
 const LEVEL_LABEL = {
-  topic: "Chủ đề",
-  lesson: "Bài học",
-  chunk: "Phần nội dung",
+  subject: "Môn học",
+  topic:   "Chủ đề",
+  lesson:  "Bài học",
+  chunk:   "Phần nội dung",
+  keyword: "Từ khoá",
 };
 
-// ---- Adapter: map new API response (topic_documents/lesson_documents/chunk_documents) ----
+// ---- Adapter: map new API response ----
 function buildSearchGroups(data) {
+  const subjectMap = new Map();
   const topicMap = new Map();
   const lessonMap = new Map();
   const chunkMap = new Map();
+  const keywordMap = new Map();
 
   for (const kwr of (data.per_keyword_results || [])) {
+    for (const doc of (kwr.subject_documents || [])) {
+      if (doc.id && !subjectMap.has(doc.id)) {
+        subjectMap.set(doc.id, {
+          id: doc.id,
+          level: "subject",
+          title: doc.name || doc.id,
+          description: doc.description || "",
+          context: doc.class_name || "",
+          className: doc.class_name || null,
+          subjectName: doc.name || null,
+          subjectType: doc.type || null,
+          aliases: [],
+          assets: doc.assets || { documents: [], images: [], videos: [] },
+        });
+      }
+    }
+
     for (const doc of (kwr.topic_documents || [])) {
       if (doc.id && !topicMap.has(doc.id)) {
         topicMap.set(doc.id, {
@@ -191,12 +222,30 @@ function buildSearchGroups(data) {
         });
       }
     }
+
+    for (const doc of (kwr.keyword_documents || [])) {
+      if (doc.id && !keywordMap.has(doc.id)) {
+        keywordMap.set(doc.id, {
+          id: doc.id,
+          level: "keyword",
+          title: doc.name || doc.id,
+          description: doc.description || "",
+          context: "",
+          className: null,
+          subjectName: null,
+          aliases: doc.aliases || [],
+          assets: doc.assets || { documents: [], images: [], videos: [] },
+        });
+      }
+    }
   }
 
   return {
-    topics: [...topicMap.values()],
-    lessons: [...lessonMap.values()],
-    chunks: [...chunkMap.values()],
+    subjects: [...subjectMap.values()],
+    topics:   [...topicMap.values()],
+    lessons:  [...lessonMap.values()],
+    chunks:   [...chunkMap.values()],
+    keywords: [...keywordMap.values()],
   };
 }
 
@@ -465,8 +514,36 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
         </div>
 
         <div className="u-modal-body">
-          {/* Hierarchy context panel */}
-          {(doc.topicName || doc.lessonName) && (
+          {/* Keyword: aliases panel */}
+          {doc.level === "keyword" && (doc.aliases || []).length > 0 && (
+            <div className="u-ctx-panel">
+              <div className="u-ctx-row">
+                <span className="u-ctx-label">Bí danh</span>
+                <span className="u-ctx-value">{doc.aliases.join(", ")}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Subject: type + class panel */}
+          {doc.level === "subject" && (doc.subjectType || doc.className) && (
+            <div className="u-ctx-panel">
+              {doc.subjectType && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">Loại</span>
+                  <span className="u-ctx-value">{doc.subjectType}</span>
+                </div>
+              )}
+              {doc.className && (
+                <div className="u-ctx-row">
+                  <span className="u-ctx-label">Lớp</span>
+                  <span className="u-ctx-value">{doc.className}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Hierarchy context panel for topic/lesson/chunk */}
+          {(doc.topicName || doc.lessonName) && doc.level !== "subject" && doc.level !== "keyword" && (
             <div className="u-ctx-panel">
               {doc.topicName && doc.level !== "topic" && (
                 <div className="u-ctx-row">
@@ -487,12 +564,24 @@ function SearchResultDetailModal({ doc, savedIds, onToggleSave, onClose }) {
             </div>
           )}
 
-          <div>
-            <p className="u-modal-section-label">Mô tả</p>
-            <p className="u-modal-desc">
-              {doc.description || "Mô tả đang được cập nhật."}
-            </p>
-          </div>
+          {(doc.level !== "subject" && doc.level !== "keyword")
+            ? (
+              <div>
+                <p className="u-modal-section-label">Mô tả</p>
+                <p className="u-modal-desc">
+                  {doc.description || "Mô tả đang được cập nhật."}
+                </p>
+              </div>
+            )
+            : doc.description
+              ? (
+                <div>
+                  <p className="u-modal-section-label">Mô tả</p>
+                  <p className="u-modal-desc">{doc.description}</p>
+                </div>
+              )
+              : null
+          }
 
           <AssetsSection assets={doc.assets} />
         </div>
@@ -541,9 +630,16 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
 
       <h3 className="u-doc-title">{doc.title}</h3>
 
-      <p className="u-doc-desc">
-        {doc.description || "Mô tả đang được cập nhật."}
-      </p>
+      {(doc.level !== "subject" && doc.level !== "keyword")
+        ? (
+          <p className="u-doc-desc">
+            {doc.description || "Mô tả đang được cập nhật."}
+          </p>
+        )
+        : doc.description
+          ? <p className="u-doc-desc">{doc.description}</p>
+          : null
+      }
 
       <div className="u-doc-footer">
         {doc.className && (
@@ -567,9 +663,11 @@ function SearchResultCard({ doc, savedIds, onToggleSave, onOpen, index }) {
 
 // ---- ResultSection ----
 const SECTION_META = {
-  topic:  { Icon: TopicIcon,  accent: "#7C3AED", label: "Chủ đề" },
-  lesson: { Icon: LessonIcon, accent: "#1D4ED8", label: "Bài học" },
-  chunk:  { Icon: ChunkIcon,  accent: "#047857", label: "Phần nội dung" },
+  subject: { Icon: SubjectIcon, accent: "#B45309", label: "Môn học" },
+  topic:   { Icon: TopicIcon,   accent: "#7C3AED", label: "Chủ đề" },
+  lesson:  { Icon: LessonIcon,  accent: "#1D4ED8", label: "Bài học" },
+  chunk:   { Icon: ChunkIcon,   accent: "#047857", label: "Phần nội dung" },
+  keyword: { Icon: KeywordIcon, accent: "#0369A1", label: "Từ khoá" },
 };
 
 function ResultSection({ level, items, savedIds, onToggleSave, onOpen, indexOffset = 0 }) {
@@ -674,7 +772,7 @@ export default function UserHome() {
       const g = buildSearchGroups(data);
       setGroups(g);
 
-      const totalCount = g.topics.length + g.lessons.length + g.chunks.length;
+      const totalCount = g.subjects.length + g.topics.length + g.lessons.length + g.chunks.length + g.keywords.length;
       const hist = JSON.parse(localStorage.getItem("u_history") || "[]");
       localStorage.setItem("u_history", JSON.stringify([
         { id: Date.now(), query: trimmed, count: totalCount, date: new Date().toLocaleString("vi-VN") },
@@ -682,7 +780,7 @@ export default function UserHome() {
       ]));
     } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
-      setGroups({ topics: [], lessons: [], chunks: [] });
+      setGroups({ subjects: [], topics: [], lessons: [], chunks: [], keywords: [] });
     } finally {
       setLoading(false);
     }
@@ -701,7 +799,7 @@ export default function UserHome() {
   }
 
   const totalCount = groups
-    ? groups.topics.length + groups.lessons.length + groups.chunks.length
+    ? groups.subjects.length + groups.topics.length + groups.lessons.length + groups.chunks.length + groups.keywords.length
     : 0;
   const isEmpty = groups !== null && totalCount === 0;
 
@@ -782,12 +880,20 @@ export default function UserHome() {
           ) : (
             <div className="u-results-body">
               <ResultSection
+                level="subject"
+                items={groups.subjects}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                onOpen={setSelectedDoc}
+                indexOffset={0}
+              />
+              <ResultSection
                 level="topic"
                 items={groups.topics}
                 savedIds={savedIds}
                 onToggleSave={toggleSave}
                 onOpen={setSelectedDoc}
-                indexOffset={0}
+                indexOffset={groups.subjects.length}
               />
               <ResultSection
                 level="lesson"
@@ -795,7 +901,7 @@ export default function UserHome() {
                 savedIds={savedIds}
                 onToggleSave={toggleSave}
                 onOpen={setSelectedDoc}
-                indexOffset={groups.topics.length}
+                indexOffset={groups.subjects.length + groups.topics.length}
               />
               <ResultSection
                 level="chunk"
@@ -803,7 +909,15 @@ export default function UserHome() {
                 savedIds={savedIds}
                 onToggleSave={toggleSave}
                 onOpen={setSelectedDoc}
-                indexOffset={groups.topics.length + groups.lessons.length}
+                indexOffset={groups.subjects.length + groups.topics.length + groups.lessons.length}
+              />
+              <ResultSection
+                level="keyword"
+                items={groups.keywords}
+                savedIds={savedIds}
+                onToggleSave={toggleSave}
+                onOpen={setSelectedDoc}
+                indexOffset={groups.subjects.length + groups.topics.length + groups.lessons.length + groups.chunks.length}
               />
             </div>
           )}
