@@ -277,7 +277,7 @@ export default function MinIO() {
   const [openUpload, setOpenUpload] = useState(false);
   const [openFilter, setOpenFilter] = useState(false);
   const [filters, setFilters] = useState({ type: "all" });
-  const [remote, setRemote] = useState({ folders: [], files: [] });
+  const [remote, setRemote] = useState({ folders: [], files: [], pathParts: [] });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -300,7 +300,7 @@ export default function MinIO() {
     let alive = true;
     async function load() {
       if (isRoot) {
-        setRemote({ folders: [], files: [] });
+        setRemote({ folders: [], files: [], pathParts: [] });
         setLoading(false);
         return;
       }
@@ -309,11 +309,15 @@ export default function MinIO() {
       try {
         const data = await minioApi.minioList(currentPath);
         if (!alive) return;
-        setRemote({ folders: data.folders || [], files: data.files || [] });
+        setRemote({
+          folders: data.folders || [],
+          files: data.files || [],
+          pathParts: data.path_parts || [],
+        });
       } catch (e) {
         if (!alive) return;
         setErr(String(e?.message || e));
-        setRemote({ folders: [], files: [] });
+        setRemote({ folders: [], files: [], pathParts: [] });
       } finally {
         alive && setLoading(false);
       }
@@ -323,24 +327,39 @@ export default function MinIO() {
       alive = false;
     };
   }, [currentPath, isRoot]);
+  const FOLDER_ORDER = {
+    subject: 0,
+    topic: 1,
+    lesson: 2,
+    chunk: 3,
+  };
 
   const folderRows = useMemo(() => {
     const s = q.trim().toLowerCase();
+
     const items = (remote.folders || []).map((f) => ({
       id: `f-${f.fullPath}`,
       name: f.name,
+      displayName: f.display_name || f.name,
       fullPath: f.fullPath,
     }));
-    return (!s ? items : items.filter((x) => x.name.toLowerCase().includes(s))).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-  }, [remote.folders, q]);
 
+    const filtered = !s ? items : items.filter((x) => x.displayName.toLowerCase().includes(s));
+
+    return filtered.sort((a, b) => {
+      const oa = FOLDER_ORDER[a.name] ?? 999;
+      const ob = FOLDER_ORDER[b.name] ?? 999;
+
+      if (oa !== ob) return oa - ob;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  }, [remote.folders, q]);
   const fileRows = useMemo(() => {
     if (!isLeaf) return [];
     const list = (remote.files || []).map((x) => ({
       id: x.object_key,
       name: x.name,
+      displayName: x.display_name || x.name,
       size: x.size || 0,
       updatedAt: x.last_modified
         ? (() => {
@@ -354,8 +373,8 @@ export default function MinIO() {
     const byType =
       filters.type === "all" ? list : list.filter((r) => getFileType(r.name) === filters.type);
     const s = q.trim().toLowerCase();
-    return (!s ? byType : byType.filter((r) => r.name.toLowerCase().includes(s))).sort((a, b) =>
-      a.name.localeCompare(b.name)
+    return (!s ? byType : byType.filter((r) => r.displayName.toLowerCase().includes(s))).sort(
+      (a, b) => a.displayName.localeCompare(b.displayName)
     );
   }, [remote.files, q, filters, isLeaf]);
 
@@ -373,7 +392,11 @@ export default function MinIO() {
       await minioApi.uploadFiles(currentPath, files);
       setOpenUpload(false);
       const data = await minioApi.minioList(currentPath);
-      setRemote({ folders: data.folders || [], files: data.files || [] });
+      setRemote({
+        folders: data.folders || [],
+        files: data.files || [],
+        pathParts: data.path_parts || [],
+      });
     } catch (e) {
       alert(String(e?.message || e));
     }
@@ -392,7 +415,11 @@ export default function MinIO() {
         try {
           await minioApi.renameObject(row.object_key, finalName);
           const data = await minioApi.minioList(currentPath);
-          setRemote({ folders: data.folders || [], files: data.files || [] });
+          setRemote({
+            folders: data.folders || [],
+            files: data.files || [],
+            pathParts: data.path_parts || [],
+          });
         } catch (err) {
           alert(String(err?.message || err));
         }
@@ -411,7 +438,11 @@ export default function MinIO() {
         try {
           await minioApi.deleteObject(row.object_key);
           const data = await minioApi.minioList(currentPath);
-          setRemote({ folders: data.folders || [], files: data.files || [] });
+          setRemote({
+            folders: data.folders || [],
+            files: data.files || [],
+            pathParts: data.path_parts || [],
+          });
         } catch (err) {
           alert(String(err?.message || err));
         }
@@ -419,7 +450,15 @@ export default function MinIO() {
     });
   }
 
-  const breadcrumbParts = isRoot ? [] : parts;
+  const breadcrumbParts = isRoot
+    ? []
+    : remote.pathParts?.length
+      ? remote.pathParts
+      : parts.map((part, idx) => ({
+          name: part,
+          display_name: getPartLabel(part),
+          fullPath: parts.slice(0, idx + 1).join("/"),
+        }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -457,9 +496,16 @@ export default function MinIO() {
               <span className="mci-text">MinIO</span>
             </span>
             {breadcrumbParts.map((part, idx) => {
-              const path = breadcrumbParts.slice(0, idx + 1).join("/");
+              const path =
+                part.fullPath ||
+                breadcrumbParts
+                  .slice(0, idx + 1)
+                  .map((x) => x.name)
+                  .join("/");
               const isLast = idx === breadcrumbParts.length - 1;
-              const CIcon = getCrumbIcon(part, idx);
+              const rawName = part.name;
+              const displayName = part.display_name || getPartLabel(rawName);
+              const CIcon = getCrumbIcon(rawName, idx);
               return (
                 <span key={idx} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <span className="mci-chevron">
@@ -472,7 +518,7 @@ export default function MinIO() {
                     <span className="mci-icon">
                       <CIcon size={14} />
                     </span>
-                    <span className="mci-text">{getPartLabel(part)}</span>
+                    <span className="mci-text">{displayName}</span>
                   </span>
                 </span>
               );
@@ -574,7 +620,7 @@ export default function MinIO() {
               <div className="mfr-icon">
                 <FolderIcon />
               </div>
-              <span className="mfr-name">{row.name}</span>
+              <span className="mfr-name">{row.displayName}</span>
               <span className="mfr-arrow">›</span>
             </div>
           ))}
@@ -616,7 +662,7 @@ export default function MinIO() {
                       <div className={`mfi-icon ${type}`}>
                         <TypeIcon />
                       </div>
-                      <span className="mfi-name">{row.name}</span>
+                      <span className="mfi-name">{row.displayName}</span>
                     </div>
                     <span className={`mfi-type-badge ${type}`}>{getExt(row.name) || type}</span>
                     <span className="mfi-size">{formatBytes(row.size)}</span>

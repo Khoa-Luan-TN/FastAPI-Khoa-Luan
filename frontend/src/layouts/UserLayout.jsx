@@ -1,3 +1,4 @@
+// src/layouts/UserLayout.jsx
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import "../styles/user.css";
 

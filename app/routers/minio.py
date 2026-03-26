@@ -7,6 +7,8 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Req
 from minio.commonconfig import CopySource
 from minio.error import S3Error
 
+from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.shared._utils import slugify_vi
 from app.schemas.minio_schemas import RenameObjectBody
 from app.services.infrastructure.minio_client import get_minio_client
 from app.services.minio.minio_marker_service import ensure_root_folders
@@ -17,6 +19,7 @@ from app.services.mongo.mongo_minio_service import (
 )
 
 router = APIRouter(prefix="/admin/minio", tags=["Minio"])
+db = get_mongo_db()
 
 BUCKET = (os.getenv("MINIO_BUCKET") or "").strip()
 MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
@@ -24,6 +27,115 @@ MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1
 ROOT_FOLDERS = ("documents", "videos", "images")
 EDU_KINDS = ("topic", "lesson", "chunk")
 
+DISPLAY_LABELS = {
+    "documents": "Tài liệu",
+    "images": "Hình ảnh",
+    "videos": "Video",
+    "subject": "Môn học",
+    "topic": "Chủ đề",
+    "lesson": "Bài học",
+    "chunk": "Mục",
+    "keyword": "Từ khóa",
+}
+
+
+def _find_name_by_slug(col: str, name_field: str, slug: str, extra_filter: dict | None = None) -> str | None:
+    q = dict(extra_filter or {})
+    q["is_deleted"] = {"$ne": True}
+
+    for doc in db[col].find(q, {name_field: 1}):
+        name = str(doc.get(name_field) or "").strip()
+        if name and slugify_vi(name) == slug:
+            return name
+    return None
+
+
+def _resolve_class_name(class_slug: str) -> str | None:
+    return _find_name_by_slug("class", "class_name", class_slug)
+
+
+def _resolve_subject_name(class_slug: str, subject_slug: str) -> str | None:
+    class_doc = None
+    for d in db["class"].find({"is_deleted": {"$ne": True}}, {"_id": 1, "class_name": 1}):
+        class_name = str(d.get("class_name") or "").strip()
+        if class_name and slugify_vi(class_name) == class_slug:
+            class_doc = d
+            break
+
+    if not class_doc:
+        return None
+
+    return _find_name_by_slug(
+        "subject",
+        "subject_name",
+        subject_slug,
+        {"class_id": class_doc["_id"]},
+    )
+
+
+def _resolve_asset_owner_name(root: str, full_path: str) -> str | None:
+    field = f"asset_prefixes.{root}"
+
+    for col, name_field in (
+        ("keyword", "keyword_name"),
+        ("topic", "topic_name"),
+        ("lesson", "lesson_name"),
+        ("chunk", "chunk_name"),
+    ):
+        doc = db[col].find_one(
+            {field: full_path, "is_deleted": {"$ne": True}},
+            {name_field: 1},
+        )
+        if doc and doc.get(name_field):
+            return str(doc[name_field]).strip()
+
+    return None
+
+
+def _display_name_for_path(path: str) -> str:
+    ps = _parts(path)
+    if not ps:
+        return ""
+
+    root = ps[0]
+    last = ps[-1]
+
+    if len(ps) == 1:
+        return DISPLAY_LABELS.get(last, last)
+
+    if last in ("subject", "topic", "lesson", "chunk", "keyword"):
+        return DISPLAY_LABELS.get(last, last)
+
+    if len(ps) == 2:
+        if root in ("images", "videos") and last == "keyword":
+            return DISPLAY_LABELS["keyword"]
+        return _resolve_class_name(last) or last
+
+    if len(ps) == 3:
+        if root in ("images", "videos") and ps[1] == "keyword":
+            return _resolve_asset_owner_name(root, path) or last
+        return _resolve_subject_name(ps[1], ps[2]) or last
+
+    if len(ps) >= 4 and ps[-2] in EDU_KINDS:
+        return _resolve_asset_owner_name(root, path) or last
+
+    return DISPLAY_LABELS.get(last, last)
+
+
+def _build_path_parts(path: str) -> List[dict]:
+    out = []
+    current = []
+    for part in _parts(path):
+        current.append(part)
+        full = "/".join(current)
+        out.append(
+            {
+                "name": part,
+                "display_name": _display_name_for_path(full),
+                "fullPath": full,
+            }
+        )
+    return out
 
 def _require_bucket():
     if not BUCKET:
@@ -132,7 +244,13 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                 full = obj.object_name.rstrip("/")
                 name = full.split("/")[-1] if full else ""
                 if name:
-                    folders.append({"name": name, "fullPath": full})
+                    folders.append(
+                        {
+                            "name": name,
+                            "display_name": _display_name_for_path(full),
+                            "fullPath": full,
+                        }
+                    )
             else:
                 object_key = obj.object_name
                 name = object_key.split("/")[-1]
@@ -140,6 +258,7 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
                     {
                         "object_key": object_key,
                         "name": name,
+                        "display_name": name,
                         "size": obj.size,
                         "etag": obj.etag,
                         "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
@@ -150,10 +269,17 @@ def list_structure(path: str = Query("", description="VD: documents, documents/t
         if _is_subject_leaf(ps) or _is_edu_leaf(ps) or _is_keyword_leaf(ps):
             folders = []
 
-        folders.sort(key=lambda x: x["name"].lower())
-        files.sort(key=lambda x: x["name"].lower())
+        folders.sort(key=lambda x: (x.get("display_name") or x["name"]).lower())
+        files.sort(key=lambda x: (x.get("display_name") or x["name"]).lower())
 
-        return {"bucket": BUCKET, "path": p, "prefix": prefix, "folders": folders, "files": files}
+        return {
+            "bucket": BUCKET,
+            "path": p,
+            "prefix": prefix,
+            "path_parts": _build_path_parts(p),
+            "folders": folders,
+            "files": files,
+        }
 
     except S3Error as e:
         raise HTTPException(status_code=500, detail=f"MinIO error: {e}") from e
