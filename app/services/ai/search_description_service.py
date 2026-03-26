@@ -65,6 +65,62 @@ _EMPTY: dict[str, str] = {
     "chunk_description": "",
 }
 
+_KW_PROMPT_TEMPLATE = """\
+Bạn là trợ lý viết mô tả học liệu tiếng Việt cho nội dung sách giáo khoa.
+
+Thông tin từ khoá:
+- Lớp: {class_name}
+- Môn học: {subject_name}
+- Loại sách: {subject_type}
+- Từ khoá: {keyword_name}
+
+Nhiệm vụ:
+Viết một mô tả ngắn (1 đến 2 câu) bằng tiếng Việt cho từ khoá trên trong bối cảnh môn học đã cho.
+
+Yêu cầu:
+- Chỉ dùng thông tin đã cung cấp.
+- Không thêm kiến thức bên ngoài, không suy diễn.
+- Giọng văn trung tính, khách quan, giống mô tả học liệu.
+- Không dùng markdown, không bullet.
+- Không dùng đại từ như: "chúng ta", "ta", "mọi người".
+
+Trả lời đúng định dạng JSON sau và không có gì khác:
+{{
+  "keyword_description": "<mô tả từ khoá>"
+}}
+"""
+
+
+def generate_keyword_description(
+    *,
+    class_name: str | None = None,
+    subject_name: str | None = None,
+    subject_type: str | None = None,
+    keyword_name: str | None = None,
+    model: str = "gemini-2.5-flash",
+) -> str:
+    """Generate a single keyword-level description from class/subject/keyword context.
+
+    Returns an empty string on failure or missing input.
+    """
+    if not keyword_name or not keyword_name.strip():
+        return ""
+
+    prompt = _KW_PROMPT_TEMPLATE.format(
+        class_name=str(class_name or "").strip() or "—",
+        subject_name=str(subject_name or "").strip() or "—",
+        subject_type=str(subject_type or "").strip() or "—",
+        keyword_name=keyword_name.strip(),
+    )
+
+    try:
+        raw = generate_text(prompt, model=model)
+        parsed = extract_json(raw)
+        return str(parsed.get("keyword_description") or "").strip()
+    except Exception as exc:
+        _log.debug("generate_keyword_description failed: %s", exc)
+        return ""
+
 
 def generate_hierarchy_descriptions(
     path_description: str,

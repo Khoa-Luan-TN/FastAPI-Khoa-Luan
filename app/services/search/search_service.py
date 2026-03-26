@@ -16,7 +16,10 @@ from app.services.ai.gemini_keyword_service import extract_query_keywords
 from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.search.neo_search_service import search_top_topics_by_embedding
 from app.services.infrastructure.postgre_client import SessionLocal
-from app.services.ai.search_description_service import generate_hierarchy_descriptions
+from app.services.ai.search_description_service import (
+    generate_hierarchy_descriptions,
+    generate_keyword_description,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -121,16 +124,26 @@ def _probe_keyword(
 
         kw_id = str(matched_kw_oid)
         kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
+        hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+
+        first_hit = hits[0] if hits else {}
+        kw_description = generate_keyword_description(
+            class_name=first_hit.get("class_name"),
+            subject_name=first_hit.get("subject_name"),
+            subject_type=first_hit.get("subject_type"),
+            keyword_name=matched_kw.get("keyword_name"),
+        )
+
         base["matched_keywords"].append({
             k: v for k, v in matched_kw.items() if k != "_oid"
         })
         base["keyword_documents"].append({
-            "id":      kw_id,
-            "name":    matched_kw.get("keyword_name"),
-            "aliases": matched_kw.get("aliases") or [],
-            "assets":  kw_assets,
+            "id":          kw_id,
+            "name":        matched_kw.get("keyword_name"),
+            "aliases":     matched_kw.get("aliases") or [],
+            "assets":      kw_assets,
+            "description": kw_description,
         })
-        hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
         all_hits.extend(hits)
 
     base["topic_documents"], base["lesson_documents"], base["chunk_documents"], base["subject_documents"] = (
