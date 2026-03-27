@@ -1,4 +1,4 @@
-#sgk_extract/pdf_output.py
+# gemini_pipeline/sgk_extract/pdf_output.py
 from __future__ import annotations
 
 import json
@@ -277,7 +277,10 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
 
     Topic end rules:
       topic[i].end_printed = topic[i+1].start_printed - 1
-      last topic: end_printed = printed_end_of_main
+      last topic: end_printed = main_end  (= printed_end_of_main - 1)
+
+    printed_end_of_main from Gemini = first post-main section's printed page (e.g. "Phụ lục ... 165" → 165).
+    Python computes main_end = printed_end_of_main - 1 (= 164).
 
     PDF page = printed_page + offset, clamped to [1, total_pages].
     """
@@ -288,13 +291,18 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
         offset = 0
         _norm_log.warning("[NORM] Invalid offset %r, defaulting to 0", data.get("offset"))
 
-    # ── Extract printed_end_of_main ───────────────────────────────────────────
+    # ── Extract printed_end_of_main and compute main_end ─────────────────────
+    # Gemini returns the printed page of the FIRST post-main section.
+    # Python always subtracts 1 to get the last main content page.
     try:
-        printed_end_of_main = int(data["printed_end_of_main"])
+        raw_post_main = int(data["printed_end_of_main"])
+        main_end = raw_post_main - 1
+        main_end_source = f"printed_end_of_main={raw_post_main} → main_end={main_end}"
     except (KeyError, TypeError, ValueError):
-        printed_end_of_main = total_pages - offset
+        main_end = total_pages - offset
+        main_end_source = f"fallback (total_pages={total_pages} - offset={offset} = {main_end})"
         _norm_log.warning(
-            "[NORM] Missing/invalid printed_end_of_main, defaulting to %s", printed_end_of_main
+            "[NORM] Missing/invalid printed_end_of_main, defaulting main_end to %s", main_end
         )
 
     # ── Flatten + sort ────────────────────────────────────────────────────────
@@ -324,7 +332,8 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
         if i + 1 < len(topics):
             top["end_printed"] = topics[i + 1]["start_printed"] - 1
         else:
-            top["end_printed"] = printed_end_of_main
+            top["end_printed"] = main_end
+            print(f"[NORM] Last topic {top.get('num','?')}: start_printed={top['start_printed']}  end_printed={main_end}  source={main_end_source}")
 
     # ── Assign lessons to topics (nearest preceding topic by start_printed) ───
     topic_lesson_map: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
@@ -348,7 +357,7 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
         if i + 1 < len(lessons):
             les["end_printed"] = lessons[i + 1]["start_printed"] - 1
         else:
-            les["end_printed"] = printed_end_of_main  # will be overridden below
+            les["end_printed"] = main_end  # will be overridden below
 
     # Override: last lesson in each topic ends exactly at topic.end_printed
     # (prevents last lesson from crossing into the next topic's header pages)
@@ -374,7 +383,7 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
 
     # ── Print summary ─────────────────────────────────────────────────────────
     print("[NORM] ── Manifest normalization (start_printed → PDF) ───────────")
-    print(f"[NORM]   total_pages={total_pages}  offset={offset}  printed_end_of_main={printed_end_of_main}")
+    print(f"[NORM]   total_pages={total_pages}  offset={offset}  main_end={main_end}")
     print(f"[NORM]   topics={len(final_topics)}  lessons={len(final_lessons)}")
     for top in final_topics:
         label = f"{top.get('heading', '')} {top.get('title', '')[:40]}".strip()

@@ -1,4 +1,4 @@
-# sgk_extract/prompts.py
+# gemini_pipeline/sgk_extract/prompts.py
 def build_topic_lesson_prompt() -> str:
     return """
 Bạn là một chương trình trích xuất cấu trúc từ SGK PDF.
@@ -10,8 +10,9 @@ Python sẽ tự tính end từ start_printed — BẠN KHÔNG CẦN VÀ KHÔNG 
 TRƯỜNG CẦN TRẢ VỀ:
 1. offset        : số nguyên = (số trang PDF thực) - (số in trên chân trang) cho bất kỳ trang nội dung chính nào.
                    Ví dụ: trang PDF số 6 có in số "3" → offset = 6 - 3 = 3.
-2. printed_end_of_main : số trang IN cuối cùng của nội dung chính (trang IN ngay trước "Bảng ...", "Phụ lục", "Đáp án ...", v.v.).
-                         Nếu không có phụ lục, dùng số trang IN của trang cuối cùng có nội dung bài học.
+2. printed_end_of_main : số trang IN của MỤC ĐẦU TIÊN không thuộc nội dung chính ("Bảng ...", "Phụ lục", "Đáp án ...", v.v.).
+                         Ví dụ: "Phụ lục ... 165" → trả về 165. Python sẽ tự trừ 1 để lấy trang nội dung cuối.
+                         Nếu không có phụ lục, trả về số trang IN của trang nội dung cuối cùng + 1.
 3. list_topic    : các CHỦ ĐỀ — mỗi mục CHỈ cần start_printed (số trang IN trong mục lục), heading, title.
 4. list_lesson   : các BÀI    — mỗi mục CHỈ cần start_printed (số trang IN trong mục lục), heading, title.
 
@@ -29,8 +30,8 @@ QUY TẮC NHẬN DIỆN (RẤT QUAN TRỌNG):
 CÁCH XÁC ĐỊNH printed_end_of_main:
 - Tìm dòng trong Mục lục ngay sau "Bài cuối cùng" mà KHÔNG phải "Bài <SỐ>." và có số trang.
   (Ví dụ: "Bảng giải thích thuật ngữ ... 158", "Phụ lục ... 162")
-- printed_end_of_main = (số trang in của dòng đó) - 1.
-- Nếu không có dòng như vậy, dùng số trang in của trang nội dung cuối cùng trước phần phụ lục.
+- Trả về SỐ TRANG của dòng đó TRỰC TIẾP — KHÔNG trừ 1. Python sẽ trừ.
+- Nếu không có dòng như vậy, trả về số trang in của trang nội dung cuối cùng + 1.
 
 YÊU CẦU OUTPUT:
 - Chỉ JSON thuần, KHÔNG giải thích, KHÔNG markdown.
@@ -39,7 +40,7 @@ YÊU CẦU OUTPUT:
 FORMAT:
 {
   "offset": 3,
-  "printed_end_of_main": 157,
+  "printed_end_of_main": 158,
   "list_topic": [
     {"topic_01": {"start_printed": 3,  "heading": "Chủ đề 1.", "title": "..." }},
     {"topic_02": {"start_printed": 28, "heading": "Chủ đề 2.", "title": "..." }}

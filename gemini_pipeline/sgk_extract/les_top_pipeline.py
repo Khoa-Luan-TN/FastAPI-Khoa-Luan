@@ -1,4 +1,4 @@
-# sgk_extract/les_top_pipeline.py
+# gemini_pipeline/sgk_extract/les_top_pipeline.py
 from __future__ import annotations
 
 import os
@@ -122,6 +122,9 @@ def verify_topics_and_get_offset(
             v_off = matched - sp
             verified_offsets.append(v_off)
             print(f"[VERIFY]   {full_topic_label!r}: matched page={matched}  verified_offset={v_off}")
+            if len(verified_offsets) >= 2 and verified_offsets[0] == verified_offsets[1]:
+                print(f"[VERIFY] Early stop: first 2 verified topics agreed on offset={verified_offsets[0]}")
+                return verified_offsets[0]
         else:
             print(f"[VERIFY]   {full_topic_label!r}: no match found in {candidates}")
 

@@ -1,4 +1,4 @@
-# sgk_extract/chunk_pipeline.py
+# gemini_pipeline/sgk_extract/chunk_pipeline.py
 from __future__ import annotations
 
 import json
