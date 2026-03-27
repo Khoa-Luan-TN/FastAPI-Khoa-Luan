@@ -21,10 +21,14 @@ ROOT_FOLDERS = {"documents", "images", "videos"}
 
 def _ensure_asset_indexes():
     try:
+        db["asset"].drop_index("object_key_1")
+    except Exception:
+        pass
+    try:
         db["asset"].create_index(
             "object_key",
             unique=True,
-            partialFilterExpression={"is_deleted": {"$ne": True}},
+            partialFilterExpression={"is_deleted": False},
         )
     except Exception:
         pass

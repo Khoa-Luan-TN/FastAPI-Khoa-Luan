@@ -381,7 +381,7 @@ def _keyword_asset_prefixes(keyword_slug: str, mongo_id_str: str) -> Dict[str, s
 def _ensure_keyword_related_indexes(db) -> None:
     ensure_keyword_alias_indexes(db)
 
-    _ACTIVE = {"is_deleted": {"$ne": True}}
+    _ACTIVE = {"is_deleted": False}
     try:
         db["keyword"].drop_index("import_key_1")
     except Exception:

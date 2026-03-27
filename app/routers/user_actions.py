@@ -29,10 +29,22 @@ def _fmt(dt: Any) -> str:
 
 def ensure_user_indexes(db) -> None:
     db[_COL_HISTORY].create_index([("user_id", 1), ("created_at", -1)])
+    # Backfill: active saved_document records that are missing is_deleted must have it set
+    # explicitly to False so they are covered by the equality-based partial index below.
+    db[_COL_SAVED].update_many(
+        {"is_deleted": None},
+        {"$set": {"is_deleted": False}},
+    )
+    # Drop the old index (it may carry an unsupported $ne partialFilterExpression) so
+    # MongoDB will accept the recreated index with a supported equality filter.
+    try:
+        db[_COL_SAVED].drop_index("saved_unique_active")
+    except Exception:
+        pass
     db[_COL_SAVED].create_index(
         [("user_id", 1), ("target_id", 1), ("target_level", 1)],
         unique=True,
-        partialFilterExpression={"is_deleted": {"$ne": True}},
+        partialFilterExpression={"is_deleted": False},
         name="saved_unique_active",
     )
     db[_COL_SAVED].create_index([("user_id", 1), ("saved_at", -1)])
