@@ -4,74 +4,64 @@ def build_topic_lesson_prompt() -> str:
 Bạn là một chương trình trích xuất cấu trúc từ SGK PDF.
 
 MỤC TIÊU:
-Trả về:
-- list_topic: các CHỦ ĐỀ
-- list_lesson: các BÀI
-với start/end là SỐ TRANG PDF (1-based), inclusive để cắt PDF.
+Đọc trang MỤC LỤC và trả về ĐÚNG 4 trường sau.
+Python sẽ tự tính end từ start_printed — BẠN KHÔNG CẦN VÀ KHÔNG ĐƯỢC tự tính end.
 
-QUY TẮC NHẬN DIỆN TRONG MỤC LỤC (RẤT QUAN TRỌNG):
-1) LESSON (BÀI) CHỈ là các dòng bắt đầu bằng đúng mẫu:
-   "Bài <SỐ>."
-   Ví dụ hợp lệ: "Bài 31. ...."
-   Không hợp lệ và PHẢI BỎ QUA: "Bảng ...", "Phụ lục", "Tài liệu ...", "Đáp án ...", "Mục lục", "Lời nói đầu", ...
-   (dù các dòng đó có số trang).
+TRƯỜNG CẦN TRẢ VỀ:
+1. offset        : số nguyên = (số trang PDF thực) - (số in trên chân trang) cho bất kỳ trang nội dung chính nào.
+                   Ví dụ: trang PDF số 6 có in số "3" → offset = 6 - 3 = 3.
+2. printed_end_of_main : số trang IN cuối cùng của nội dung chính (trang IN ngay trước "Bảng ...", "Phụ lục", "Đáp án ...", v.v.).
+                         Nếu không có phụ lục, dùng số trang IN của trang cuối cùng có nội dung bài học.
+3. list_topic    : các CHỦ ĐỀ — mỗi mục CHỈ cần start_printed (số trang IN trong mục lục), heading, title.
+4. list_lesson   : các BÀI    — mỗi mục CHỈ cần start_printed (số trang IN trong mục lục), heading, title.
 
-2) TOPIC (CHỦ ĐỀ) CHỈ là các dòng bắt đầu bằng đúng mẫu:
-   "Chủ đề <SỐ>."
-   Ví dụ: "Chủ đề 7. ...."
-   Không dùng các dòng khác làm topic.
+QUY TẮC NHẬN DIỆN (RẤT QUAN TRỌNG):
+1) LESSON (BÀI): CHỈ các dòng bắt đầu bằng đúng mẫu "Bài <SỐ>."
+   Ví dụ hợp lệ: "Bài 31. ..."
+   PHẢI BỎ QUA: "Bảng ...", "Phụ lục", "Tài liệu ...", "Đáp án ...", "Mục lục", "Lời nói đầu", ...
 
-3) KẾT THÚC NỘI DUNG (ĐỂ KHÔNG ĂN DƯ PHỤ LỤC):
-   - Sau khi tìm ra BÀI CUỐI CÙNG trong Mục lục (dòng "Bài <SỐ>."),
-     hãy tìm dòng kế tiếp trong Mục lục mà KHÔNG phải "Bài <SỐ>." và có số trang.
-     Dòng đó gọi là "mốc phụ lục/ngoại dung" (ví dụ: "Bảng giải thích...", "Phụ lục"...).
-   - Nếu có mốc này:
-       printed_end_of_main = (trang IN bắt đầu của mốc này) - 1
-     Nếu KHÔNG có mốc này:
-       printed_end_of_main = trang IN của trang nội dung cuối cùng (trước phần phụ lục) nếu nhận ra được,
-       còn không thì dùng trang PDF cuối của file.
+2) TOPIC (CHỦ ĐỀ): CHỈ các dòng bắt đầu bằng đúng mẫu "Chủ đề <SỐ>."
+   Ví dụ: "Chủ đề 7. ..."
+   KHÔNG dùng các dòng khác làm topic.
 
-CÁCH LÀM (bạn tự làm nội bộ, KHÔNG cần trả ra):
-A) Đọc trang MỤC LỤC để lấy:
-   - start_printed_topic cho từng Chủ đề
-   - start_printed_lesson cho từng Bài (CHỈ theo mẫu "Bài <SỐ>.")
-   - nếu có, lấy start_printed của mốc phụ lục/ngoại dung đầu tiên sau Bài cuối
+3) Nếu không chắc mục nào thì bỏ mục đó.
 
-B) Tính độ lệch trang:
-   offset = (pdf_page_thực_tế của trang có số in) - (printed_page in trên chân trang)
-
-C) Quy đổi printed -> pdf:
-   start_pdf = start_printed + offset
-   end_pdf = (start_printed của mục kế tiếp + offset - 1)
-
-D) Riêng mục CUỐI:
-   - BÀI CUỐI:
-       end_pdf = printed_end_of_main + offset   (nếu có printed_end_of_main)
-       nếu không có printed_end_of_main thì end_pdf = trang PDF cuối của file
-   - CHỦ ĐỀ CUỐI:
-       end_pdf phải KHÔNG vượt quá end_pdf của BÀI CUỐI (tức là không ăn sang phụ lục).
+CÁCH XÁC ĐỊNH printed_end_of_main:
+- Tìm dòng trong Mục lục ngay sau "Bài cuối cùng" mà KHÔNG phải "Bài <SỐ>." và có số trang.
+  (Ví dụ: "Bảng giải thích thuật ngữ ... 158", "Phụ lục ... 162")
+- printed_end_of_main = (số trang in của dòng đó) - 1.
+- Nếu không có dòng như vậy, dùng số trang in của trang nội dung cuối cùng trước phần phụ lục.
 
 YÊU CẦU OUTPUT:
-- Chỉ trả về JSON thuần, KHÔNG giải thích, KHÔNG markdown.
-- Key BẮT BUỘC:
-  list_topic: topic_01, topic_02, ...
-  list_lesson: lesson_01, lesson_02, ...
-- Nếu không chắc mục nào thì bỏ mục đó.
-- start/end hợp lệ: 1 <= start <= end <= tổng số trang PDF.
+- Chỉ JSON thuần, KHÔNG giải thích, KHÔNG markdown.
+- start_printed là số trang IN (số in trên chân trang), KHÔNG phải số trang PDF.
 
 FORMAT:
 {
+  "offset": 3,
+  "printed_end_of_main": 157,
   "list_topic": [
-    {"topic_01": {"start": 9, "end": 30, "heading": "Chủ đề 1.", "title": "..." }},
-    {"topic_02": {"start": 31, "end": 55, "heading": "Chủ đề 2.", "title": "..." }}
+    {"topic_01": {"start_printed": 3,  "heading": "Chủ đề 1.", "title": "..." }},
+    {"topic_02": {"start_printed": 28, "heading": "Chủ đề 2.", "title": "..." }}
   ],
   "list_lesson": [
-    {"lesson_01": {"start": 9, "end": 13, "heading": "Bài 1.", "title": "..." }},
-    {"lesson_02": {"start": 14, "end": 18, "heading": "Bài 2.", "title": "..." }}
+    {"lesson_01": {"start_printed": 3,  "heading": "Bài 1.", "title": "..." }},
+    {"lesson_02": {"start_printed": 8,  "heading": "Bài 2.", "title": "..." }}
   ]
 }
 
 """
+
+def build_topic_verify_prompt(heading: str) -> str:
+    return f"""Bạn đang xem đúng 1 trang PDF.
+
+Hãy trả lời: Trang này có phải là trang BẮT ĐẦU của "{heading}" không?
+"Trang bắt đầu" là trang nơi tiêu đề "{heading}" xuất hiện lần đầu tiên trong bài.
+
+Chỉ trả về JSON thuần, không markdown, không giải thích:
+{{"match": true}}  hoặc  {{"match": false}}
+"""
+
 
 def build_chunk_prompt_start_head(total_pages: int) -> str:
     return f"""

@@ -3,79 +3,172 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections import Counter
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from pypdf import PdfReader, PdfWriter
 
-from .pdf_output import prepare_workspace, save_manifest, split_from_manifest
-from .prompts import build_topic_lesson_prompt
+from .pdf_output import (
+    prepare_workspace,
+    save_manifest,
+    split_from_manifest,
+    normalize_manifest,
+    _flatten_start_printed_items,
+)
+from .prompts import build_topic_lesson_prompt, build_topic_verify_prompt
 from .gemini_runner import extract_structure_from_pdf
 
 
 def _make_preview_first_pages(src_pdf: str, first_n_pages: int = 20) -> str:
-    """
-    Tạo 1 PDF tạm chỉ gồm first_n_pages trang đầu để Gemini đọc mục lục.
-    File này chỉ dùng để upload, xong có thể xoá.
-    """
+    """Create a temp PDF with only the first N pages for TOC extraction."""
     reader = PdfReader(src_pdf)
-    n_total = len(reader.pages)
-    n = min(max(1, first_n_pages), n_total)
-
+    n = min(max(1, first_n_pages), len(reader.pages))
     writer = PdfWriter()
     for i in range(n):
         writer.add_page(reader.pages[i])
-
     fd, tmp_path = tempfile.mkstemp(suffix=f"_preview_{n}p.pdf")
     os.close(fd)
-
     with open(tmp_path, "wb") as f:
         writer.write(f)
-
     return tmp_path
 
 
+def _make_single_page_pdf(src_pdf: str, page_1based: int) -> str:
+    """Extract a single page (1-based) from src_pdf into a temp file."""
+    reader = PdfReader(src_pdf)
+    writer = PdfWriter()
+    writer.add_page(reader.pages[page_1based - 1])
+    fd, tmp_path = tempfile.mkstemp(suffix=f"_page{page_1based}.pdf")
+    os.close(fd)
+    with open(tmp_path, "wb") as f:
+        writer.write(f)
+    return tmp_path
+
+
+def verify_topics_and_get_offset(
+    key_manager,
+    src_pdf: str,
+    raw_data: Dict[str, Any],
+    total_pages: int,
+    model: str,
+    probe_radius: int = 3,
+) -> int:
+    """
+    Verify topic start pages using binary Gemini calls on single-page PDFs.
+
+    For each topic:
+      predicted_pdf_page = start_printed + raw_offset
+      Probe order: predicted, +1, -1, +2, -2, ..., +probe_radius, -probe_radius
+      Stop at first page where Gemini confirms the topic heading.
+      verified_offset = matched_page - start_printed
+
+    Final offset = most common verified_offset across all topics.
+    Falls back to raw_offset if no topic verifies.
+    """
+    try:
+        raw_offset = int(raw_data.get("offset", 0))
+    except (TypeError, ValueError):
+        raw_offset = 0
+
+    topics = _flatten_start_printed_items(raw_data.get("list_topic", []))
+    if not topics:
+        print(f"[VERIFY] No topics to verify. Using raw offset={raw_offset}")
+        return raw_offset
+
+    print(f"[VERIFY] ── Topic verification ── raw_offset={raw_offset}  topics={len(topics)}")
+
+    verified_offsets: List[int] = []
+
+    for top in topics:
+        sp: int = top["start_printed"]
+        heading: str = top["heading"]
+        predicted = sp + raw_offset
+
+        # Build probe order: 0, +1, -1, +2, -2, ..., +probe_radius, -probe_radius
+        deltas: List[int] = [0]
+        for i in range(1, probe_radius + 1):
+            deltas.append(i)
+            deltas.append(-i)
+        candidates = [predicted + d for d in deltas if 1 <= predicted + d <= total_pages]
+
+        print(f"[VERIFY]   {heading}: start_printed={sp}  predicted={predicted}  candidates={candidates}")
+
+        matched: Optional[int] = None
+        for candidate in candidates:
+            tmp = _make_single_page_pdf(src_pdf, candidate)
+            try:
+                result = extract_structure_from_pdf(
+                    key_manager,
+                    tmp,
+                    build_topic_verify_prompt(heading),
+                    model=model,
+                )
+                if result.get("match") is True:
+                    matched = candidate
+                    break
+                else:
+                    print(f"[VERIFY]     page {candidate}: no match")
+            except Exception as exc:
+                print(f"[VERIFY]     page {candidate}: error – {exc}")
+            finally:
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+
+        if matched is not None:
+            v_off = matched - sp
+            verified_offsets.append(v_off)
+            print(f"[VERIFY]   {heading}: matched page={matched}  verified_offset={v_off}")
+        else:
+            print(f"[VERIFY]   {heading}: no match found in {candidates}")
+
+    if not verified_offsets:
+        print(f"[VERIFY] No topics verified. Falling back to raw offset={raw_offset}")
+        return raw_offset
+
+    counter = Counter(verified_offsets)
+    final_offset, vote_count = counter.most_common(1)[0]
+    print(f"[VERIFY] Final offset={final_offset}  (agreed by {vote_count}/{len(verified_offsets)} topics)")
+    return final_offset
+
+
 def run_extract_save_split(key_manager, pdf_path: str, model: str = "gemini-2.5-flash"):
-    # ✅ tổng số trang của PDF gốc
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
 
-    # ✅ prompt gốc + thêm note để Gemini biết nó đang xem preview
-    base_prompt = build_topic_lesson_prompt()
+    # 1) Build preview (first 20 pages) and ask Gemini for TOC structure
     prompt = (
-        "QUAN TRỌNG:\n"
-        "- File PDF bạn đang xem chỉ là BẢN XEM TRƯỚC (preview) gồm 20 trang đầu để đọc MỤC LỤC.\n"
-        f"- Nhưng start/end bạn trả về phải là SỐ TRANG PDF của FILE GỐC (1-based), tổng số trang = {total_pages_full}.\n"
-        f"- start/end phải nằm trong [1, {total_pages_full}].\n\n"
-        + base_prompt
+        "QUAN TRỌNG: File PDF này chỉ là BẢN XEM TRƯỚC (preview) gồm 20 trang đầu để đọc MỤC LỤC.\n"
+        "Hãy trả về offset, printed_end_of_main, và start_printed cho từng topic/lesson.\n\n"
+        + build_topic_lesson_prompt()
     )
-
-    # ✅ tạo preview 20 trang
     preview_pdf = _make_preview_first_pages(pdf_path, first_n_pages=20)
-
     try:
-        # 1) Gemini đọc preview -> trả dict ranges theo PDF gốc
         data: Dict[str, Any] = extract_structure_from_pdf(
-            key_manager,
-            preview_pdf,     # ✅ gửi preview thay vì file gốc >50MB
-            prompt,
-            model=model,
+            key_manager, preview_pdf, prompt, model=model
         )
     finally:
-        # ✅ xoá file tạm (nếu bạn muốn giữ để debug thì comment 2 dòng này)
         try:
             os.remove(preview_pdf)
         except Exception:
             pass
 
-    # 2) Tạo workspace Output/<pdf_stem>/
+    # 2) Verify topic start pages against the full PDF and compute final offset
+    final_offset = verify_topics_and_get_offset(
+        key_manager, pdf_path, data, total_pages_full, model=model
+    )
+    data["offset"] = final_offset
+
+    # 3) Normalize manifest: compute all ends from ordered start_printed + final offset
+    data = normalize_manifest(data, total_pages=total_pages_full)
+
+    # 4) Workspace + save + split
     ws = prepare_workspace(pdf_path, output_root="Output")
     base_dir = ws["base_dir"]
     pdf_stem = Path(pdf_path).stem
 
-    # 3) Lưu JSON manifest
     json_path = save_manifest(base_dir, pdf_stem, data)
-
-    # 4) ✅ Cắt từ PDF GỐC (đầy đủ trang)
     split_result = split_from_manifest(pdf_path, data, base_dir)
 
     return data, str(json_path), split_result
