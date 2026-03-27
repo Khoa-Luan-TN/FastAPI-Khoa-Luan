@@ -24,32 +24,74 @@ from google.genai.errors import ClientError
 _log = logging.getLogger(__name__)
 
 # ── Rotatable error detection ─────────────────────────────────────────────────
-# These indicate quota/rate limits — rotating to the next key may succeed.
+
+# HTTP status codes that indicate quota / rate limits (key should cool down)
+_QUOTA_STATUS = {429}
+
+# HTTP status codes for transient server / infra errors (worth rotating + cooling down)
+_TRANSIENT_STATUS = {500, 502, 503}
+
+# Message patterns that indicate a rotatable condition regardless of status code
 _ROTATABLE_PATTERNS = [
+    # Quota / rate-limit
     "resource_exhausted",
     "rate_limit",
     "ratelimitexceeded",
     "quota",
     "too many requests",
     "too_many_requests",
+    # Transient server / infra errors
+    "unavailable",
+    "service unavailable",
+    "deadline_exceeded",
+    "deadline exceeded",
+    "bad gateway",
+    "internal server error",
+    # Network-level transient errors
+    "connection reset",
+    "connection refused",
+    "remotedisconnected",
+    "timed out",
+    "timeout",
 ]
 
 
 def _is_rotatable(e: Exception) -> bool:
     """
     True if rotating to another key is worth trying.
-    400 (malformed request) is never rotatable — the payload is the problem, not the key.
-    429 is always rotatable (rate-limit / quota).
-    Other ClientErrors are checked by message pattern.
+
+    Non-rotatable:
+      400 — malformed request; the payload is the problem, not the key.
+
+    Rotatable (key enters cooldown, next key tried):
+      429       — rate-limit / quota exhausted.
+      500/502/503 — transient server errors; rotating may hit a healthier backend.
+      Any exception whose message matches _ROTATABLE_PATTERNS.
     """
     if isinstance(e, ClientError):
         status = getattr(e, "status_code", None)
         if status == 400:
-            return False   # bad request — payload problem, rotation won't help
-        if status == 429:
-            return True    # rate-limit / quota exhausted
+            return False
+        if status in _QUOTA_STATUS or status in _TRANSIENT_STATUS:
+            return True
     msg = str(e).lower()
     return any(p in msg for p in _ROTATABLE_PATTERNS)
+
+
+def _error_label(e: Exception) -> str:
+    """Short category string for log messages."""
+    if isinstance(e, ClientError):
+        status = getattr(e, "status_code", None)
+        if status in _QUOTA_STATUS:
+            return "quota/rate-limit"
+        if status in _TRANSIENT_STATUS:
+            return "transient-server"
+    msg = str(e).lower()
+    if any(p in msg for p in ["resource_exhausted", "quota", "rate_limit", "too many"]):
+        return "quota/rate-limit"
+    if any(p in msg for p in ["unavailable", "deadline", "timeout", "connection", "gateway"]):
+        return "transient"
+    return "retryable"
 
 
 def _mask_key(key: str) -> str:
@@ -216,13 +258,14 @@ class GeminiPool:
                         if _is_rotatable(e):
                             last_err = e
                             status = getattr(e, "status_code", None)
+                            label = _error_label(e)
                             print(
-                                f"[GeminiPool] Key#{idx + 1} quota/rate-limit "
+                                f"[GeminiPool] Key#{idx + 1} {label} "
                                 f"(status={status}, attempt {attempt + 1}/{self._n}): {str(e)[:120]}"
                             )
                             _log.info(
-                                "[GeminiPool] Key#%d quota/rate (attempt %d/%d): %s",
-                                idx + 1, attempt + 1, self._n, str(e)[:120],
+                                "[GeminiPool] Key#%d %s (attempt %d/%d): %s",
+                                idx + 1, label, attempt + 1, self._n, str(e)[:120],
                             )
                             self._set_cooldown(idx)
                             continue

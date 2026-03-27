@@ -222,14 +222,16 @@ def extract_keywords_for_book(
 
     lesson_dirs = sorted([d for d in chunk_root.iterdir() if d.is_dir()])
     summary.total_lessons = len(lesson_dirs)
+    n_lessons = len(lesson_dirs)
 
-    for lesson_dir in lesson_dirs:
+    for li, lesson_dir in enumerate(lesson_dirs, 1):
         chunk_dirs = _chunk_dirs_of_lesson(lesson_dir)
         if not chunk_dirs:
             continue
 
         lesson_type = infer_lesson_type(chunk_dirs)
         nk = num_keywords_for_lesson_type(lesson_type)
+        print(f"[LESSON] {li}/{n_lessons}: {lesson_dir.name}  ({len(chunk_dirs)} chunk(s), type={lesson_type})")
         # ✅ update lesson-level json: Output/<book>/Lesson/lesson_XX/<book>_lesson_XX.json
         lesson_json = update_lesson_level_json(
             book_dir=book_dir,
@@ -248,7 +250,8 @@ def extract_keywords_for_book(
             summary.lesson_type_written += 1
             print(f"[META] {lesson_dir.name}: lesson_type={lesson_type}, chunk_count={len(chunk_dirs)} -> {meta_path}")
 
-        for chunk_dir in chunk_dirs:
+        n_chunks = len(chunk_dirs)
+        for ci, chunk_dir in enumerate(chunk_dirs, 1):
             chunk_pdf = _find_chunk_pdf(chunk_dir)
             if chunk_pdf is None:
                 continue
@@ -258,9 +261,10 @@ def extract_keywords_for_book(
             kw_path = chunk_pdf.with_suffix(".keywords.json")
             if (not force_reprocess) and kw_path.exists() and _has_nonempty_keywords(kw_path):
                 summary.skipped += 1
-                print(f"[SKIP] {kw_path} (already has keywords)")
+                print(f"[SKIP] {lesson_dir.name}/{chunk_dir.name} ({ci}/{n_chunks})")
                 continue
 
+            print(f"[PROC] {lesson_dir.name}/{chunk_dir.name} ({ci}/{n_chunks}) → {chunk_pdf.name}")
             try:
                 result = extract_keywords_from_chunk_pdf(
                     key_manager=key_manager,
@@ -276,14 +280,14 @@ def extract_keywords_for_book(
 
                 kw_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
                 summary.extracted += 1
-                print(f"[OK] {kw_path} ({len(result.get('keywords', []))} keywords)")
+                print(f"[OK] {lesson_dir.name}/{chunk_dir.name} → {len(result.get('keywords', []))} keywords")
 
             except Exception as e:
                 summary.failed += 1
                 # Ghi file để lần sau biết chunk nào fail (vẫn giữ schema keywords)
                 fail_payload = {"keywords": [], "error": str(e)}
                 kw_path.write_text(json.dumps(fail_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-                print(f"[FAIL] {chunk_pdf} -> {e}")
+                print(f"[FAIL] {lesson_dir.name}/{chunk_dir.name} → {e}")
 
     return summary
 
