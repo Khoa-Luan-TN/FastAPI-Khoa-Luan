@@ -49,15 +49,27 @@ def main(workspace: Path) -> None:
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", "gemini-2.5-flash")
 
+    # Derive a unique output root so that different jobs with the same
+    # original PDF filename never share output directories.
+    job_id = config.get("job_id") or workspace.name
+    pdf_stem = Path(pdf_path).stem
+    # Strip any existing _<8hex> suffix added by book_review_service to avoid
+    # double-suffixing, but it's harmless either way since pdf_stem already
+    # encodes job_id[:8] from the service layer.
+    unique_output_root = _GEMINI_ROOT / "Output" / f"{pdf_stem}_{job_id[:8]}"
+    print(f"[light_extract] output_root={unique_output_root}")
+
     key_manager = get_key_manager(api_config)
 
-    # Step 1: topic / lesson split + workspace creation
-    data, json_path, _split = run_extract_save_split(key_manager, pdf_path, model=model)
+    # Step 1: topic / lesson split → writes into unique_output_root/<pdf_stem>/
+    data, json_path, _split = run_extract_save_split(
+        key_manager, pdf_path, model=model, output_root=unique_output_root
+    )
     book_dir = Path(json_path).parent
 
-    # Step 2: chunk split
+    # Step 2: chunk split — resume=False to avoid stale data from any prior run
     chunk_summary = run_extract_and_split_chunks_for_book(
-        key_manager, book_dir, model=model, resume=True
+        key_manager, book_dir, model=model, resume=False
     )
 
     # Read chunk metadata files

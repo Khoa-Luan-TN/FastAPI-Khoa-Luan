@@ -59,6 +59,7 @@ def create_job(
     pdf_path.write_bytes(pdf_bytes)
 
     job_config = {
+        "job_id": job_id,
         "source_pdf_path": str(pdf_path),
         "api_config": str(_GEMINI_CONFIG),
         "model": model,

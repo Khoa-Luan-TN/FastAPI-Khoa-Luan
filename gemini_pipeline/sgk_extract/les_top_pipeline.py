@@ -138,7 +138,12 @@ def verify_topics_and_get_offset(
     return final_offset
 
 
-def run_extract_save_split(key_manager, pdf_path: str, model: str = "gemini-2.5-flash"):
+def run_extract_save_split(
+    key_manager,
+    pdf_path: str,
+    model: str = "gemini-2.5-flash",
+    output_root: "str | Path | None" = None,
+):
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
 
     # 1) Build preview (first 20 pages) and ask Gemini for TOC structure
@@ -168,7 +173,8 @@ def run_extract_save_split(key_manager, pdf_path: str, model: str = "gemini-2.5-
     data = normalize_manifest(data, total_pages=total_pages_full)
 
     # 4) Workspace + save + split
-    ws = prepare_workspace(pdf_path, output_root="Output")
+    _root = output_root if output_root is not None else "Output"
+    ws = prepare_workspace(pdf_path, output_root=_root)
     base_dir = ws["base_dir"]
     pdf_stem = Path(pdf_path).stem
 
