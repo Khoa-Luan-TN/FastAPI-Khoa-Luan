@@ -1,46 +1,31 @@
 # sgk_extract/gemini_runner.py
+from __future__ import annotations
+
 import json
 import re
 
-from google import genai
-from google.genai import types
-from google.genai.errors import ClientError
+from .gemini_client import GeminiPool
 
 
 def _parse_json_loose(text: str) -> dict:
-
     """
-    Gemini đôi khi trả:
-    - JSON trong ```json ... ```
-    - hoặc có thêm chữ trước/sau
-    Hàm này cố gắng lấy khối JSON lớn nhất hợp lý để parse.
+    Extract and parse the largest plausible JSON object from text.
+    Gemini sometimes wraps JSON in ```json ... ``` or adds surrounding prose.
     """
     clean = (text or "").strip()
 
-    # 1) Ưu tiên JSON trong ```json ... ```
+    # 1) Prefer JSON inside ```json ... ```
     m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", clean, flags=re.DOTALL | re.IGNORECASE)
     if m:
         return json.loads(m.group(1))
 
-    # 2) Fallback: lấy từ dấu { đầu tiên đến dấu } cuối cùng
+    # 2) Fallback: first '{' to last '}'
     first = clean.find("{")
     last = clean.rfind("}")
     if first != -1 and last != -1 and last > first:
         return json.loads(clean[first:last + 1])
 
-    # 3) Không thấy JSON
     raise json.JSONDecodeError("No JSON object found", clean, 0)
-
-
-def _should_rotate(err: ClientError) -> bool:
-    status = getattr(err, "status_code", None)
-    msg = str(err).lower()
-
-    if status in (400, 401, 403, 429):   # ✅ thêm 400 để test
-        return True
-
-    keywords = ["resource_exhausted", "quota", "rate", "limit", "exceeded", "too many requests"]
-    return any(k in msg for k in keywords)
 
 
 def extract_structure_from_pdf(
@@ -48,60 +33,44 @@ def extract_structure_from_pdf(
     pdf_path: str,
     prompt: str,
     model: str = "gemini-2.5-flash",
+    wait_for_available_key: bool = True,
 ) -> dict:
     """
-    Rotate keys: thử key1 -> fail quota/rate -> thử key2 -> ...
-    Thành công thì return dict.
+    Upload *pdf_path* to Gemini and return the parsed JSON response dict.
+
+    A GeminiPool is created once per *key_manager* instance (attached as
+    ``key_manager._gemini_pool``) so cooldown state persists across calls
+    within the same pipeline run.
+
+    Parameters
+    ----------
+    key_manager : KeyManager
+        Provides ``key_manager.keys`` (list of API key strings).
+    pdf_path : str
+        Path to the PDF file to upload.
+    prompt : str
+        Prompt text sent alongside the PDF.
+    model : str
+        Gemini model identifier.
+    wait_for_available_key : bool
+        If True (default), block until a key exits cooldown rather than raising
+        immediately. Suitable for long-running batch jobs.
     """
-    keys = key_manager.keys
-    n = len(keys)
-    start_idx = key_manager.get_start_index_and_advance()
+    if not hasattr(key_manager, "_gemini_pool"):
+        key_manager._gemini_pool = GeminiPool(key_manager.keys)
 
-    config = types.GenerateContentConfig(
-        temperature=0,
-        response_mime_type="application/json",
-    )
+    pool: GeminiPool = key_manager._gemini_pool
 
-    last_err = None
+    raw = ""
+    try:
+        raw = pool.generate_with_pdf(
+            pdf_path=pdf_path,
+            prompt=prompt,
+            model=model,
+            wait_for_available_key=wait_for_available_key,
+        )
+        return _parse_json_loose(raw)
 
-    for step in range(n):
-        key_idx = (start_idx + step) % n
-        api_key = keys[key_idx]
-        raw = ""
-        try:
-            client = genai.Client(api_key=api_key)
-
-            # Đổi key => upload lại
-            uploaded = client.files.upload(file=pdf_path)
-
-            resp = client.models.generate_content(
-                model=model,
-                contents=[prompt, uploaded],
-                config=config,
-            )
-
-            raw = (resp.text or "").strip()
-            return _parse_json_loose(raw)
-
-        except ClientError as e:
-            last_err = e
-            print(f"[KeyRotation] Key#{key_idx+1}/{n} error:", getattr(e, "status_code", None), str(e))
-
-            # ✅ in chi tiết payload lỗi (nếu có)
-            try:
-                import json as _json
-                detail = getattr(e, "response_json", None)
-                if detail:
-                    print("[GeminiErrorDetail]\n", _json.dumps(detail, ensure_ascii=False, indent=2))
-            except Exception:
-                pass
-
-            if _should_rotate(e):
-                continue
-            raise
-        
-        except json.JSONDecodeError as e:
-            snippet = (raw[:500] + "..." if len(raw) > 500 else raw)
-            raise RuntimeError(f"Gemini trả về không phải JSON hợp lệ. Snippet:\n{snippet}") from e
-
-    raise RuntimeError("Tất cả keys đều đang lỗi quota/rate/invalid.") from last_err
+    except json.JSONDecodeError as e:
+        snippet = raw[:500] + ("..." if len(raw) > 500 else "")
+        raise RuntimeError(f"Gemini returned invalid JSON. Snippet:\n{snippet}") from e
