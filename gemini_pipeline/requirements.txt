@@ -1,0 +1,25 @@
+# gemini_pipeline — local Python 3.11 dependencies
+#
+# Install:
+#   cd gemini_pipeline
+#   python3.11 -m venv .env
+#   source .env/bin/activate
+#   pip install -U pip
+#   pip install -r requirements.txt
+
+# Environment / config loading
+python-dotenv
+
+# PDF read + split (les_top_pipeline, chunk_pipeline, pdf_output)
+pypdf
+
+# Gemini API client (gemini_runner, keyword_extract_one)
+google-genai
+
+# Kaggle CLI — needed only if you use the Kaggle upload/run step in auto_split.py
+# Installs the `kaggle` command used by scripts/kaggle/cli.py via subprocess
+kaggle
+
+# NOTE: chunk_postprocess.py (cv2, numpy, paddleocr, fitz, pypdfium2) runs on Kaggle,
+# not locally. Those packages are installed automatically by the Kaggle kernel script
+# (scripts/kaggle/kernels/debug-cutlines-auto/script.py). Do NOT add them here.

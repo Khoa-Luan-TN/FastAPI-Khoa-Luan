@@ -1,5 +1,26 @@
 # Deployment Guide
 
+## Project structure
+
+```
+FastAPI-Khoa-Luan/
+  app/                  ← FastAPI backend
+  frontend/             ← React/Vite UI
+  gemini_pipeline/      ← Textbook extraction pipeline (runs independently)
+    Input/              ← Source PDFs
+    Output/             ← Processed bundles (imported via /admin/book-bundle)
+    sgk_extract/        ← Core pipeline code
+    scripts/            ← Entry points + Kaggle helpers
+```
+
+`gemini_pipeline/` is self-contained and runs separately from the FastAPI app.
+The FastAPI app only consumes already-generated bundles from `gemini_pipeline/Output/`
+via the admin page at `/admin/book-bundle`.
+See `gemini_pipeline/readme.md` for pipeline setup and usage.
+
+---
+
+
 ## Prerequisites
 
 - Docker Engine ≥ 24 and Docker Compose ≥ 2.20

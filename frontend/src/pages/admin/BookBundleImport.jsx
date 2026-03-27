@@ -77,16 +77,13 @@ export default function BookBundleImport() {
               name="bundle_path"
               value={form.bundle_path}
               onChange={handleChange}
-              placeholder="/abs/path/to/Output/<book_stem>"
+              placeholder="/abs/path/to/gemini_pipeline/Output/<book_stem>"
               required
             />
             <span style={s.hint}>
-              Đường dẫn tuyệt đối trên server tới thư mục Output/&lt;book_stem&gt;/.
-              Cấu trúc bundle cần có:{" "}
-              <code style={s.code}>&lt;book_stem&gt;.json</code>,{" "}
-              <code style={s.code}>Topic/</code>,{" "}
-              <code style={s.code}>Lesson/</code>,{" "}
-              <code style={s.code}>Chunk/</code>
+              Đường dẫn tuyệt đối trên server tới thư mục <code style={s.code}>gemini_pipeline/Output/&lt;book_stem&gt;/</code>.
+              Bundle cần có: <code style={s.code}>&lt;book_stem&gt;.json</code>,{" "}
+              <code style={s.code}>Topic/</code>, <code style={s.code}>Lesson/</code>, <code style={s.code}>Chunk/</code>
             </span>
           </div>
 
