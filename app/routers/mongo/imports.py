@@ -158,7 +158,14 @@ async def import_book_bundle_endpoint(
     upload_pdfs      = bool(body.get("upload_pdfs", True))
 
     raw_source_pdf = str(body.get("source_pdf_path") or "").strip()
-    source_pdf_path: Optional[Path] = Path(raw_source_pdf) if raw_source_pdf else None
+    source_pdf_path: Optional[Path] = None
+    if raw_source_pdf:
+        source_pdf_path = Path(raw_source_pdf)
+        if not source_pdf_path.exists():
+            raise HTTPException(
+                status_code=422,
+                detail=f"source_pdf_path does not exist: {raw_source_pdf}",
+            )
 
     topic_names: Optional[Dict[str, str]] = (
         {str(k): str(v) for k, v in raw_topic_names.items()}
@@ -188,6 +195,12 @@ async def import_book_bundle_endpoint(
             status_code=422,
             detail="Manifest list_topic is empty — bundle has no topics. Verify this is a fully processed Gemini-Api output bundle.",
         )
+    _missing_dirs = [d for d in ("Topic", "Lesson", "Chunk") if not (_bundle_dir / d).is_dir()]
+    if _missing_dirs:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Bundle is missing required subdirectory/ies: {', '.join(_missing_dirs)}. Expected Topic/, Lesson/, and Chunk/ inside bundle_path.",
+        )
 
     from app.services.mongo.book_bundle_import_service import import_book_bundle
 
@@ -205,4 +218,4 @@ async def import_book_bundle_endpoint(
         upload_pdfs=upload_pdfs,
     )
 
-    return {"ok": report.get("ok", False), "report": report}
+    return report

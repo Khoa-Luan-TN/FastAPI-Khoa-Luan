@@ -214,7 +214,13 @@ def _sync_entity(sync_one, col: str, import_key: str, db, errors: List[Dict[str,
     if not full:
         return
     try:
-        sync_one(col, full)
+        result = sync_one(col, full)
+        if isinstance(result, dict) and result.get("ok") is not True:
+            errors.append({
+                "col": col,
+                "import_key": import_key,
+                "error": result.get("error", "sync returned ok!=True"),
+            })
     except Exception as exc:
         errors.append({"col": col, "import_key": import_key, "error": str(exc)})
 
@@ -278,18 +284,33 @@ def import_book_bundle(
     upload_pdfs:     Set False to skip MinIO PDF upload.
     """
     bundle_dir = Path(bundle_dir)
+
+    def _fail(msg: str) -> Dict[str, Any]:
+        return {
+            "ok": False,
+            "message": msg,
+            "bundle_path": str(bundle_dir),
+            "class_name": class_name,
+            "subject_name": subject_name,
+            "subject_type_used": subject_type,
+            "source_pdf_path_used": str(source_pdf_path) if source_pdf_path else None,
+            "upload_pdfs": upload_pdfs,
+            "counts": {},
+            "sync_errors": [],
+        }
+
     if not bundle_dir.is_dir():
-        return {"ok": False, "error": f"bundle_dir not found: {bundle_dir}"}
+        return _fail(f"bundle_dir not found: {bundle_dir}")
 
     book_stem = bundle_dir.name
     manifest_path = bundle_dir / f"{book_stem}.json"
     if not manifest_path.exists():
-        return {"ok": False, "error": f"Manifest not found: {manifest_path}"}
+        return _fail(f"Manifest not found: {manifest_path}")
 
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except Exception as exc:
-        return {"ok": False, "error": f"Cannot read manifest: {exc}"}
+        return _fail(f"Cannot read manifest: {exc}")
 
     # ── MinIO setup ──────────────────────────────────────────────────────────
     bucket = (os.getenv("MINIO_BUCKET") or "").strip()
@@ -309,30 +330,14 @@ def import_book_bundle(
     class_slug   = slugify_vi(class_name)
     subject_slug = slugify_vi(subject_name)
 
-    report: Dict[str, Any] = {
-        "ok": False,
-        "bundle_path": str(bundle_dir),
-        "book_stem": book_stem,
-        "class_name": class_name,
-        "subject_name": subject_name,
-        "subject_type_used": subject_type,
-        "source_pdf_path_used": str(source_pdf_path) if source_pdf_path else None,
-        "upload_pdfs": upload_pdfs,
-        "class":    {},
-        "subject":  {},
-        "topics":   [],
-        "lessons":  [],
-        "chunks":   [],
-        "keywords": {"inserted": 0, "reused": 0, "chunk_keyword_inserted": 0, "errors": []},
-        "minio_errors": [],
-        "errors": [],
-    }
-
     # ── Ensure sparse-unique import_key indexes ──────────────────────────────
     for col in ("class", "subject", "topic", "lesson", "chunk"):
         _ensure_import_index(db, col)
 
-    errors: List[Dict[str, Any]] = report["errors"]
+    _topics_out:  List[Dict[str, Any]] = []
+    _lessons_out: List[Dict[str, Any]] = []
+    _chunks_out:  List[Dict[str, Any]] = []
+    errors:       List[Dict[str, Any]] = []
 
     # ─────────────────────────────────────────────────────────────────────────
     # 1. CLASS
@@ -341,7 +346,6 @@ def import_book_bundle(
     class_id, class_op = _upsert_by_import_key(
         db, "class", class_key, {"class_name": class_name}, actor=actor
     )
-    report["class"] = {"id": class_id, "op": class_op, "import_key": class_key}
 
     if minio_client:
         try:
@@ -367,12 +371,6 @@ def import_book_bundle(
         subj_doc["asset_prefixes"] = ap_subj
 
     subj_id, subj_op = _upsert_by_import_key(db, "subject", subj_key, subj_doc, actor=actor)
-    report["subject"] = {
-        "id": subj_id,
-        "op": subj_op,
-        "import_key": subj_key,
-        "subject_type": subject_type,
-    }
 
     if minio_client and ap_subj:
         try:
@@ -382,6 +380,7 @@ def import_book_bundle(
 
     # Upload original book PDF to subject documents folder
     book_pdf_uploaded = False
+    _resolved_source_pdf: Optional[Path] = source_pdf_path
     if minio_client and ap_subj:
         _source_pdf: Optional[Path] = None
         if source_pdf_path and Path(source_pdf_path).exists():
@@ -396,6 +395,7 @@ def import_book_bundle(
                         _sp = _td.get("source_pdf") or ""
                         if _sp and Path(_sp).exists():
                             _source_pdf = Path(_sp)
+                            _resolved_source_pdf = _source_pdf
                             break
                     except Exception:
                         continue
@@ -404,8 +404,6 @@ def import_book_bundle(
                 minio_client, bucket, ap_subj, _source_pdf,
                 actor=actor, minio_errors=minio_errors,
             )
-    report["subject"]["book_pdf_uploaded"] = book_pdf_uploaded
-
     if subj_op != "noop":
         _sync_entity(sync_one, "subject", subj_key, db, errors)
 
@@ -416,10 +414,9 @@ def import_book_bundle(
     lesson_list = _parse_manifest_list(manifest, "list_lesson")
 
     if not topic_list:
-        report["errors"].append({"col": "manifest", "error": "list_topic is empty — no topics to import"})
-        return report  # ok remains False
+        return _fail("list_topic is empty — bundle has no topics to import")
     if not lesson_list:
-        report["errors"].append({"col": "manifest", "error": "list_lesson is empty — no lessons to import"})
+        errors.append({"col": "manifest", "error": "list_lesson is empty — no lessons to import"})
 
     lesson_topic_map = _infer_lesson_topic_map(topic_list, lesson_list)
 
@@ -471,7 +468,7 @@ def import_book_bundle(
         if topic_op != "noop":
             _sync_entity(sync_one, "topic", topic_key, db, errors)
 
-        report["topics"].append({
+        _topics_out.append({
             "num": topic_num,
             "name": topic_name,
             "id": topic_id,
@@ -530,7 +527,7 @@ def import_book_bundle(
         if lesson_op != "noop":
             _sync_entity(sync_one, "lesson", lesson_key, db, errors)
 
-        report["lessons"].append({
+        _lessons_out.append({
             "num":         lesson_num,
             "name":        lesson_name,
             "topic_num":   topic_num,
@@ -647,7 +644,7 @@ def import_book_bundle(
                 if chunk_op != "noop":
                     _sync_entity(sync_one, "chunk", chunk_key, db, errors)
 
-                report["chunks"].append({
+                _chunks_out.append({
                     "lesson_num":  lesson_num,
                     "chunk_num":   chunk_num,
                     "id":          chunk_id,
@@ -711,7 +708,12 @@ def import_book_bundle(
                             )
                             if ck_doc:
                                 try:
-                                    sync_one("chunk_keyword", ck_doc)
+                                    _ck_result = sync_one("chunk_keyword", ck_doc)
+                                    if isinstance(_ck_result, dict) and _ck_result.get("ok") is not True:
+                                        kw_errors.append({
+                                            "chunk_keyword": kw_name,
+                                            "error": _ck_result.get("error", "sync returned ok!=True"),
+                                        })
                                 except Exception as _sce:
                                     kw_errors.append({"chunk_keyword": kw_name, "error": str(_sce)})
 
@@ -723,52 +725,62 @@ def import_book_bundle(
                     except Exception as exc:
                         kw_errors.append({"keyword": kw_name, "error": str(exc)})
 
-    report["keywords"] = {
-        "inserted":               kw_inserted,
-        "reused":                 kw_reused,
-        "chunk_keyword_inserted": ck_inserted,
-        "errors":                 kw_errors[:50],
-    }
-
     # ── Finalize topic embeddings after all keywords are loaded ──────────────
+    finalize_result: Dict[str, Any] = {}
     if sync_one and affected_topic_ids:
-        finalize_errors: List[Dict[str, Any]] = []
-        finalize_result = _finalize_topic_embeddings(
-            db, affected_topic_ids, sync_one, finalize_errors
-        )
-        report["topic_embedding_finalize"] = finalize_result
+        _fe: List[Dict[str, Any]] = []
+        finalize_result = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, _fe)
+        errors.extend(_fe)
 
+    # ── Build UI-friendly response ────────────────────────────────────────────
     def _ops(lst: List[Dict[str, Any]], op: str) -> int:
         return sum(1 for x in lst if x.get("op") == op)
 
-    report["summary"] = {
-        "topics":  {
-            "total":    len(report["topics"]),
-            "inserted": _ops(report["topics"],  "insert"),
-            "updated":  _ops(report["topics"],  "update"),
-            "noop":     _ops(report["topics"],  "noop"),
+    n_t = len(_topics_out)
+    n_l = len(_lessons_out)
+    n_c = len(_chunks_out)
+    total_err = len(errors) + len(kw_errors) + len(minio_errors)
+    message = f"Imported {n_t} topic(s), {n_l} lesson(s), {n_c} chunk(s)."
+    if total_err:
+        message += f" {total_err} error(s)."
+
+    return {
+        "ok": True,
+        "message": message,
+        "bundle_path": str(bundle_dir),
+        "class_name": class_name,
+        "subject_name": subject_name,
+        "subject_type_used": subject_type,
+        "source_pdf_path_used": str(_resolved_source_pdf) if _resolved_source_pdf else None,
+        "upload_pdfs": upload_pdfs,
+        "counts": {
+            "class_op":   class_op,
+            "subject_op": subj_op,
+            "book_pdf_uploaded": book_pdf_uploaded,
+            "topics": {
+                "total":    n_t,
+                "inserted": _ops(_topics_out,  "insert"),
+                "updated":  _ops(_topics_out,  "update"),
+                "noop":     _ops(_topics_out,  "noop"),
+            },
+            "lessons": {
+                "total":    n_l,
+                "inserted": _ops(_lessons_out, "insert"),
+                "updated":  _ops(_lessons_out, "update"),
+                "noop":     _ops(_lessons_out, "noop"),
+            },
+            "chunks": {
+                "total":    n_c,
+                "inserted": _ops(_chunks_out,  "insert"),
+                "updated":  _ops(_chunks_out,  "update"),
+                "noop":     _ops(_chunks_out,  "noop"),
+            },
+            "keywords_inserted":       kw_inserted,
+            "keywords_reused":         kw_reused,
+            "chunk_keywords_inserted": ck_inserted,
+            "topic_bags_affected":     len(affected_topic_ids),
+            "topic_embeddings_synced": finalize_result.get("finalized_topics", 0),
+            "minio_error_count":       len(minio_errors),
         },
-        "lessons": {
-            "total":    len(report["lessons"]),
-            "inserted": _ops(report["lessons"], "insert"),
-            "updated":  _ops(report["lessons"], "update"),
-            "noop":     _ops(report["lessons"], "noop"),
-        },
-        "chunks":  {
-            "total":    len(report["chunks"]),
-            "inserted": _ops(report["chunks"],  "insert"),
-            "updated":  _ops(report["chunks"],  "update"),
-            "noop":     _ops(report["chunks"],  "noop"),
-        },
-        "keywords_inserted":       kw_inserted,
-        "keywords_reused":         kw_reused,
-        "chunk_keywords_inserted": ck_inserted,
-        "topic_bags_affected":     len(affected_topic_ids),
-        "book_pdf_uploaded":       report["subject"].get("book_pdf_uploaded", False),
-        "sync_errors":             len(errors),
-        "minio_error_count":       len(minio_errors),
-        "kw_error_count":          len(kw_errors),
+        "sync_errors": (errors + kw_errors)[:30] + minio_errors[:20],
     }
-    report["minio_errors"] = minio_errors[:50]
-    report["ok"] = True
-    return report
