@@ -146,61 +146,96 @@ FORMAT:
 
 def build_content_head_verify_prompt(heading: str, title: str) -> str:
     return f"""
-Bạn đang xem đúng 1 trang PDF của 1 bài học trong SGK scan.
+Bạn đang xem đúng 1 trang PDF (1 trang duy nhất) của 1 bài học trong SGK scan.
 
-CANDIDATE:
-- heading: "{heading}"
-- title: "{title}"
+CANDIDATE CẦN XÁC ĐỊNH:
+  heading: "{heading}"
+  title:   "{title}"
 
 NHIỆM VỤ DUY NHẤT:
-Xác định content_head của candidate "{heading} {title}".
+Quyết định content_head cho candidate có heading "{heading}" và title khớp hoặc rất gần với "{title}" TRÊN CHÍNH TRANG NÀY.
 
-CÁCH LÀM BẮT BUỘC:
-1) Tìm đúng dòng tiêu đề "{heading} {title}" trên trang này.
-2) CHỈ xét vùng nằm PHÍA TRÊN candidate trên CHÍNH trang này.
-3) TUYỆT ĐỐI bỏ qua mọi nội dung nằm BÊN DƯỚI candidate.
-4) TUYỆT ĐỐI không suy luận từ trang trước hay trang sau.
+BƯỚC BẮT BUỘC — làm theo đúng thứ tự:
+1. Tìm candidate trên trang này: tìm heading "{heading}" và title khớp hoặc rất gần "{title}".
+   - Title có thể xuất hiện trên 1 dòng hoặc trải qua nhiều dòng liên tiếp.
+   - OCR có thể làm thay đổi nhẹ ký tự; chấp nhận nếu nội dung nhìn vào là giống nhau.
+2. Vẽ một đường ngang tưởng tượng ngay PHÍA TRÊN dòng tiêu đề đó.
+3. Chỉ xét vùng NẰM TRÊN đường đó (= phía trên candidate).
+4. Kiểm tra vùng đó: có nội dung thật không?
 
-ĐỊNH NGHĨA:
-- content_head = true nếu trên CHÍNH trang này, phía TRÊN candidate còn có nội dung thật.
-- content_head = false nếu phía trên candidate chỉ có:
-  - khoảng trắng
-  - header
-  - footer
+QUY TẮC PHÂN LOẠI:
+
+content_head = true
+  Khi vùng PHÍA TRÊN candidate chứa BẤT KỲ nội dung thật nào:
+  - đoạn văn (dù chỉ 1 câu)
+  - câu hỏi hoặc danh sách đánh số
+  - hình ảnh hoặc chú thích hình
+  - bảng hoặc sơ đồ
+  - box bài tập / luyện tập / vận dụng / hoạt động
+
+content_head = false
+  Khi vùng PHÍA TRÊN candidate CHỈ chứa:
+  - khoảng trắng / dòng trống
+  - tên sách / tên chủ đề chạy trên đầu trang (running header)
   - số trang
-  - trang trí không mang nội dung học
+  - đường kẻ trang trí không mang nội dung học
 
-"NỘI DUNG THẬT" bao gồm:
-- đoạn văn
-- câu hỏi
-- bài tập
-- hình ảnh
-- bảng
-- sơ đồ
-- chú thích hình
-- box nội dung
-- bất kỳ khối nội dung học tập nào
+RÀNG BUỘC TUYỆT ĐỐI:
+- KHÔNG được dùng bất kỳ nội dung nào nằm BÊN DƯỚI candidate để kết luận true.
+- KHÔNG suy luận từ trang trước hay trang sau — đây là 1 trang duy nhất.
+- Nếu không tìm thấy candidate trên trang: trả found_candidate_on_page = false và content_head = false.
 
-QUY TẮC RẤT QUAN TRỌNG:
-- Nếu candidate nằm gần đầu trang và phía trên chỉ là khoảng trắng/header/footer/số trang => false.
-- Nếu phía trên candidate có nội dung thật dù chỉ 1 dòng, 1 câu hỏi, 1 hình, 1 bảng, 1 box => true.
-- Các câu hỏi / danh sách đánh số phía trên candidate vẫn là nội dung thật => true.
-- Không được trả true chỉ vì trên TRANG có nhiều nội dung; nội dung đó phải nằm PHÍA TRÊN candidate.
-- Không được trả false chỉ vì candidate là heading đầu tiên xuất hiện trên trang; vẫn phải kiểm tra xem phía trên nó có nội dung thật hay không.
+VÍ DỤ ĐÚNG:
+- Phía trên candidate có câu hỏi đánh số 1., 2. => content_head = true.
+- Phía trên candidate có đoạn văn 2-3 dòng => content_head = true.
+- Phía trên candidate chỉ có tên chương + khoảng trắng => content_head = false.
+- "Hoạt động 2 ..." nằm BÊN DƯỚI candidate => KHÔNG được dùng => content_head = false.
 
-VÍ DỤ:
-- Phía trên candidate có 1 đoạn văn ngắn hoặc danh sách câu hỏi => true.
-- Phía trên candidate có 1 hình + chú thích hình => true.
-- Phía trên candidate chỉ là vùng trống rồi đến candidate => false.
-- Nếu box "Hoạt động", câu hỏi, hình ảnh nằm BÊN DƯỚI candidate => không được dùng để kết luận true.
-
-FORMAT:
+FORMAT TRẢ VỀ (JSON thuần, không markdown):
 {{
   "content_head": true,
-  "reason": "Có nội dung thật phía trên candidate trên chính trang này",
   "found_candidate_on_page": true,
   "above_has_real_content": true,
-  "above_is_only_whitespace_or_header": false
+  "above_is_only_whitespace_or_header": false,
+  "reason": "mô tả ngắn nội dung phía trên candidate"
+}}
+"""
+
+
+def build_chunk_start_verify_prompt(heading: str, title: str) -> str:
+    return f"""
+Bạn đang xem đúng 1 trang PDF (1 trang duy nhất) của 1 bài học trong SGK scan.
+
+CANDIDATE CẦN XÁC NHẬN:
+  heading: "{heading}"
+  title:   "{title}"
+
+NHIỆM VỤ DUY NHẤT:
+Xác định trang này CÓ PHẢI là trang bắt đầu thật sự của mục có heading "{heading}" và title khớp hoặc rất gần với "{title}" không.
+
+ĐỊNH NGHĨA "TRANG BẮT ĐẦU THẬT SỰ":
+- Heading "{heading}" và title khớp hoặc rất gần "{title}" XUẤT HIỆN TRỰC TIẾP trên trang này như một TIÊU ĐỀ MỤC CHÍNH.
+- Title có thể xuất hiện trên 1 dòng hoặc trải qua nhiều dòng liên tiếp.
+- OCR có thể làm thay đổi nhẹ ký tự; chấp nhận nếu nội dung nhìn vào là giống nhau.
+- Tiêu đề đó phải là dòng tiêu đề cấp mục (section heading), không phải:
+  - nhắc đến trong câu văn
+  - liệt kê trong mục lục
+  - nhãn hoạt động / bài tập / nhiệm vụ
+  - ý con đánh số bên dưới tiêu đề khác
+
+KHÔNG PHẢI trang bắt đầu thật sự nếu:
+- Trang không chứa heading "{heading}" kèm title khớp hoặc rất gần "{title}" theo đúng định nghĩa trên.
+- Tiêu đề chỉ được nhắc đến như một tham chiếu hoặc trong câu văn.
+
+RÀNG BUỘC:
+- Chỉ xét nội dung trên CHÍNH trang này.
+- Không suy luận từ trang trước hay trang sau.
+
+FORMAT TRẢ VỀ (JSON thuần, không markdown):
+{{
+  "match": true,
+  "found_heading_on_page": true,
+  "reason": "mô tả ngắn vị trí và dạng xuất hiện của tiêu đề trên trang"
 }}
 """
 

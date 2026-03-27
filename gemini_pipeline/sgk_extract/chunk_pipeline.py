@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 from .gemini_runner import extract_structure_from_pdf
 from .pdf_output import split_pdf_by_ranges
-from .prompts import build_chunk_prompt_start_head
+from .prompts import (
+    build_chunk_prompt_start_head,
+    build_chunk_start_verify_prompt,
+    build_content_head_verify_prompt,
+)
 
 
 _TOP_LEVEL_HEADING_RE = re.compile(r"^\d+\.$")
@@ -46,59 +52,192 @@ def _is_valid_main_chunk(heading: str, title: str) -> bool:
     return True
 
 
+def _make_single_page_pdf(src_pdf: Path, page_no: int) -> str:
+    """Extract exactly one page (1-based) into a temp PDF for Gemini upload."""
+    reader = PdfReader(str(src_pdf))
+    if page_no < 1 or page_no > len(reader.pages):
+        raise ValueError(f"page_no {page_no} out of range for {src_pdf}")
+    writer = PdfWriter()
+    writer.add_page(reader.pages[page_no - 1])
+    fd, tmp_path = tempfile.mkstemp(suffix=f"_verify_p{page_no}.pdf")
+    os.close(fd)
+    with open(tmp_path, "wb") as f:
+        writer.write(f)
+    return tmp_path
+
+
+def _verify_chunk_start_with_gemini(
+    key_manager,
+    lesson_pdf: Path,
+    page_no: int,
+    heading: str,
+    title: str,
+    model: str,
+) -> bool:
+    """
+    Check whether `heading title` appears as a real section heading on `page_no`.
+    Returns True if confirmed, False otherwise (including on error).
+    """
+    tmp_pdf = _make_single_page_pdf(lesson_pdf, page_no)
+    try:
+        result = extract_structure_from_pdf(
+            key_manager,
+            tmp_pdf,
+            build_chunk_start_verify_prompt(heading, title),
+            model=model,
+        )
+        print(
+            f"[CHUNK][START-VERIFY-RAW] page={page_no} heading={heading!r} "
+            f"title={title!r} result={json.dumps(result, ensure_ascii=False)}"
+        )
+        return bool(result.get("match", False))
+    except Exception as exc:
+        print(
+            f"[CHUNK][START-VERIFY-ERR] page={page_no} heading={heading!r} "
+            f"title={title!r} err={exc}"
+        )
+        return False
+    finally:
+        try:
+            os.remove(tmp_pdf)
+        except Exception:
+            pass
+
+
+def _verify_content_head_with_gemini(
+    key_manager,
+    lesson_pdf: Path,
+    page_no: int,
+    heading: str,
+    title: str,
+    model: str,
+) -> bool:
+    """
+    Send exactly the candidate page to Gemini and ask whether there is real
+    content ABOVE the heading on that page.  No previous/next page context.
+    Falls back to False on any error.
+    """
+    tmp_pdf = _make_single_page_pdf(lesson_pdf, page_no)
+    try:
+        result = extract_structure_from_pdf(
+            key_manager,
+            tmp_pdf,
+            build_content_head_verify_prompt(heading, title),
+            model=model,
+        )
+        print(
+            f"[CHUNK][VERIFY-RAW] page={page_no} heading={heading!r} "
+            f"title={title!r} result={json.dumps(result, ensure_ascii=False)}"
+        )
+        return bool(result.get("content_head", False))
+    except Exception as exc:
+        print(
+            f"[CHUNK][VERIFY-ERR] page={page_no} heading={heading!r} "
+            f"title={title!r} err={exc}"
+        )
+        return False
+    finally:
+        try:
+            os.remove(tmp_pdf)
+        except Exception:
+            pass
+
+
 def _normalize_raw_list_chunk(
+    key_manager,
     list_chunk_raw: List[Dict[str, Dict[str, Any]]],
+    lesson_pdf: Path,
     total_pages: int,
+    model: str,
 ) -> List[Dict[str, Dict[str, Any]]]:
     """
-    Filter junk candidates, dedup by start page, assign content_head
-    deterministically (no extra Gemini calls):
-      - chunk[0]:            content_head = False  (always)
-      - chunk[i] i>0:        content_head = True   only when start[i] == start[i-1]
-                             (two headings literally on the same PDF page)
-                             content_head = False  otherwise
+    1. Filter junk candidates.
+    2. Sort and deduplicate by start page.
+    3. Verify content_head per candidate via single-page Gemini call.
+       chunk[0] is always False (preserved from original logic).
     """
     tmp_items: List[Tuple[int, str, str]] = []
 
     for item in list_chunk_raw:
         if not isinstance(item, dict) or len(item) != 1:
             continue
-
         _name, obj = next(iter(item.items()))
         if not isinstance(obj, dict):
             continue
-
         s = obj.get("start")
         heading = _norm_text(obj.get("heading", ""))
         title = _norm_text(obj.get("title", ""))
-
         if not isinstance(s, int):
             continue
         if s < 1 or s > total_pages:
             continue
         if not _is_valid_main_chunk(heading, title):
             continue
-
         tmp_items.append((s, heading, title))
 
     tmp_items.sort(key=lambda x: x[0])
 
-    # Keep first occurrence of each start page
-    seen_starts: set = set()
-    unique_items: List[Tuple[int, str, str]] = []
+    # ── Step 1: start verification + optional shift (no dedup yet) ──────────
+    verified_items: List[Tuple[int, str, str]] = []
     for s, heading, title in tmp_items:
-        if s not in seen_starts:
-            seen_starts.add(s)
+        confirmed = _verify_chunk_start_with_gemini(
+            key_manager=key_manager,
+            lesson_pdf=lesson_pdf,
+            page_no=s,
+            heading=heading,
+            title=title,
+            model=model,
+        )
+        if not confirmed and s + 1 <= total_pages:
+            confirmed_next = _verify_chunk_start_with_gemini(
+                key_manager=key_manager,
+                lesson_pdf=lesson_pdf,
+                page_no=s + 1,
+                heading=heading,
+                title=title,
+                model=model,
+            )
+            if confirmed_next:
+                print(
+                    f"[CHUNK][START-SHIFT] heading={heading!r} title={title!r} "
+                    f"start {s} -> {s + 1}"
+                )
+                s = s + 1
+        verified_items.append((s, heading, title))
+
+    # ── Dedup by (start, heading, title) after verification/shift ───────────
+    seen_keys: set = set()
+    unique_items: List[Tuple[int, str, str]] = []
+    for s, heading, title in verified_items:
+        key = (s, heading, title)
+        if key not in seen_keys:
+            seen_keys.add(key)
             unique_items.append((s, heading, title))
 
-    # Assign content_head deterministically
+    # ── Step 2: content_head on the (corrected) start page ──────────────────
     result: List[Dict[str, Dict[str, Any]]] = []
+
     for i, (s, heading, title) in enumerate(unique_items):
         if i == 0:
             content_head = False
         else:
-            prev_start = unique_items[i - 1][0]
-            content_head = (s == prev_start)
+            content_head = _verify_content_head_with_gemini(
+                key_manager=key_manager,
+                lesson_pdf=lesson_pdf,
+                page_no=s,
+                heading=heading,
+                title=title,
+                model=model,
+            )
+            print(
+                f"[CHUNK][VERIFY] page={s} heading={heading!r} "
+                f"title={title!r} content_head={content_head}"
+            )
+            if not content_head:
+                print(
+                    f"[CHUNK][VERIFY-FALSE] page={s} heading={heading!r} "
+                    f"title={title!r} -> False"
+                )
 
         result.append(
             {
@@ -296,8 +435,11 @@ def run_extract_and_split_chunks_for_book(
 
             if isinstance(list_chunk_raw, list) and list_chunk_raw:
                 list_chunk_raw = _normalize_raw_list_chunk(
+                    key_manager=key_manager,
                     list_chunk_raw=list_chunk_raw,
+                    lesson_pdf=lesson_pdf,
                     total_pages=total_pages,
+                    model=model,
                 )
 
                 print("[CHUNK][RAW-NORM]", json.dumps(list_chunk_raw, ensure_ascii=False))

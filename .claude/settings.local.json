@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import gemini_pipeline.sgk_extract.chunk_pipeline; import gemini_pipeline.sgk_extract.prompts; print\\(''OK''\\)\")"
+    ]
+  }
+}
