@@ -52,14 +52,33 @@ FORMAT:
 
 """
 
-def build_topic_verify_prompt(heading: str) -> str:
-    return f"""Bạn đang xem đúng 1 trang PDF.
+def build_topic_verify_prompt(full_topic_label: str) -> str:
+    return f"""Bạn đang xem đúng 1 trang PDF (1 trang duy nhất).
 
-Hãy trả lời: Trang này có phải là trang BẮT ĐẦU của "{heading}" không?
-"Trang bắt đầu" là trang nơi tiêu đề "{heading}" xuất hiện lần đầu tiên trong bài.
+NHIỆM VỤ: Xác định trang này CÓ PHẢI là trang BẮT ĐẦU THẬT SỰ của chủ đề sau không:
+  "{full_topic_label}"
 
-Chỉ trả về JSON thuần, không markdown, không giải thích:
-{{"match": true}}  hoặc  {{"match": false}}
+ĐỊNH NGHĨA "TRANG BẮT ĐẦU THẬT SỰ":
+- Trang ĐẦU TIÊN nơi NỘI DUNG của chủ đề này thực sự bắt đầu.
+- Nhãn chủ đề "{full_topic_label}" phải XUẤT HIỆN TRỰC TIẾP trên trang này như tiêu đề chương/chủ đề chính.
+- KHÔNG PHẢI trang bắt đầu nếu:
+  - Đây là trang Mục lục (liệt kê danh sách các bài/chủ đề kèm số trang).
+  - Trang chỉ nhắc đến hoặc tham chiếu đến chủ đề mà không có nội dung bài học thật sự.
+  - Trang bìa, trang tóm tắt, trang giới thiệu chung.
+
+Trả về JSON thuần (không markdown, không giải thích):
+{{
+  "match": true,
+  "is_toc_page": false,
+  "full_label_exact": true,
+  "confidence": 0.95
+}}
+
+Giải thích các trường:
+- match           : true chỉ khi đây là trang bắt đầu thật sự của chủ đề theo định nghĩa trên.
+- is_toc_page     : true nếu trang này là trang Mục lục hoặc chỉ liệt kê tiêu đề/số trang.
+- full_label_exact: true nếu "{full_topic_label}" xuất hiện chính xác (hoặc rất sát) trên trang này như tiêu đề chính.
+- confidence      : mức độ chắc chắn (0.0–1.0) về kết quả match.
 """
 
 

@@ -83,16 +83,17 @@ def verify_topics_and_get_offset(
     for top in topics:
         sp: int = top["start_printed"]
         heading: str = top["heading"]
+        title: str = top.get("title", "")
+        heading_base = heading.rstrip(".")
+        full_topic_label = f"{heading_base}: {title}" if title else heading_base
         predicted = sp + raw_offset
 
-        # Build probe order: 0, +1, -1, +2, -2, ..., +probe_radius, -probe_radius
-        deltas: List[int] = [0]
-        for i in range(1, probe_radius + 1):
-            deltas.append(i)
-            deltas.append(-i)
-        candidates = [predicted + d for d in deltas if 1 <= predicted + d <= total_pages]
+        # Build candidate window in ascending page order
+        start = max(1, predicted - probe_radius)
+        end = min(total_pages, predicted + probe_radius)
+        candidates = list(range(start, end + 1))
 
-        print(f"[VERIFY]   {heading}: start_printed={sp}  predicted={predicted}  candidates={candidates}")
+        print(f"[VERIFY]   {full_topic_label!r}: start_printed={sp}  predicted={predicted}  candidates={candidates}")
 
         matched: Optional[int] = None
         for candidate in candidates:
@@ -101,7 +102,7 @@ def verify_topics_and_get_offset(
                 result = extract_structure_from_pdf(
                     key_manager,
                     tmp,
-                    build_topic_verify_prompt(heading),
+                    build_topic_verify_prompt(full_topic_label),
                     model=model,
                 )
                 if result.get("match") is True:
@@ -120,9 +121,9 @@ def verify_topics_and_get_offset(
         if matched is not None:
             v_off = matched - sp
             verified_offsets.append(v_off)
-            print(f"[VERIFY]   {heading}: matched page={matched}  verified_offset={v_off}")
+            print(f"[VERIFY]   {full_topic_label!r}: matched page={matched}  verified_offset={v_off}")
         else:
-            print(f"[VERIFY]   {heading}: no match found in {candidates}")
+            print(f"[VERIFY]   {full_topic_label!r}: no match found in {candidates}")
 
     if not verified_offsets:
         print(f"[VERIFY] No topics verified. Falling back to raw offset={raw_offset}")
