@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(python -c \":*)",
-      "Bash(python -c \"import gemini_pipeline.sgk_extract.chunk_pipeline; import gemini_pipeline.sgk_extract.prompts; print\\(''OK''\\)\")"
+      "Bash(python -c \"import gemini_pipeline.sgk_extract.chunk_pipeline; import gemini_pipeline.sgk_extract.prompts; print\\(''OK''\\)\")",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -name sync_service.py -o -name *.py -path *routers*)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/src -type f \\\\\\(-name *.jsx -o -name *.tsx -o -name *.ts -o -name *.js \\\\\\))",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f \\\\\\(-name *api* -o -name *client* -o -name *service* \\\\\\) \\\\\\(-name *.js -o -name *.ts -o -name *.jsx -o -name *.tsx \\\\\\))",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend -name *mongoAdminApi* -o -name *mongo*api*)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f -name *.js -o -name *.ts -o -name *.jsx -o -name *.tsx)"
     ]
   }
 }

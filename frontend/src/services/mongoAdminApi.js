@@ -139,3 +139,73 @@ export function importBookBundle(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+// ── Review-first book ingestion ───────────────────────────────────────────────
+
+// POST /admin/mongo/book-review/jobs  (multipart)
+export function createReviewJob(classN, subjectN, subjectType, model, pdfFile) {
+  const fd = new FormData();
+  fd.append("class_name", classN);
+  fd.append("subject_name", subjectN);
+  fd.append("subject_type", subjectType);
+  fd.append("model", model);
+  fd.append("file", pdfFile);
+  return httpUpload(`${API_BASE}/admin/mongo/book-review/jobs`, fd);
+}
+
+// GET /admin/mongo/book-review/jobs/:id
+export function getReviewJob(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}`);
+}
+
+// PUT /admin/mongo/book-review/jobs/:id/topics
+export function saveReviewTopics(jobId, topics) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics`, {
+    method: "PUT",
+    body: JSON.stringify({ topics }),
+  });
+}
+
+// PUT /admin/mongo/book-review/jobs/:id/lessons
+export function saveReviewLessons(jobId, lessons) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons`, {
+    method: "PUT",
+    body: JSON.stringify({ lessons }),
+  });
+}
+
+// PUT /admin/mongo/book-review/jobs/:id/chunks
+export function saveReviewChunks(jobId, chunks) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`, {
+    method: "PUT",
+    body: JSON.stringify({ chunks }),
+  });
+}
+
+// POST /admin/mongo/book-review/jobs/:id/approve-topics
+export function approveTopics(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`, {
+    method: "POST",
+  });
+}
+
+// POST /admin/mongo/book-review/jobs/:id/approve-lessons
+export function approveLessons(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`, {
+    method: "POST",
+  });
+}
+
+// POST /admin/mongo/book-review/jobs/:id/approve-chunks
+export function approveChunks(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`, {
+    method: "POST",
+  });
+}
+
+// POST /admin/mongo/book-review/jobs/:id/trigger-heavy
+export function triggerHeavyStage(jobId) {
+  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`, {
+    method: "POST",
+  });
+}

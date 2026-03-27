@@ -5,6 +5,7 @@ from app.routers.mongo.collections import router as collections_router
 from app.routers.mongo.documents import router as documents_router
 from app.routers.mongo.imports import router as imports_router
 from app.routers.mongo.import_jobs import router as import_jobs_router
+from app.routers.mongo.book_review import router as book_review_router
 
 router = APIRouter(prefix="/admin/mongo", tags=["Mongo"])
 
@@ -12,3 +13,4 @@ router.include_router(collections_router)
 router.include_router(documents_router)
 router.include_router(imports_router)
 router.include_router(import_jobs_router)
+router.include_router(book_review_router)
