@@ -130,3 +130,12 @@ export function importExcelTracked(file, collectionName) {
 export function getImportJobStatus(jobId) {
   return httpJson(`${API_BASE}/admin/mongo/import-jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
 }
+
+// POST /admin/mongo/import/book-bundle
+// payload: { bundle_path, class_name, subject_name, subject_type?, source_pdf_path?, upload_pdfs? }
+export function importBookBundle(payload) {
+  return httpJson(`${API_BASE}/admin/mongo/import/book-bundle`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

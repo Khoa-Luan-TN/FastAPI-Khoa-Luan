@@ -12,6 +12,7 @@ import MongoDB from "./pages/admin/MongoDB";
 import PostgreSQL from "./pages/admin/PostgreSQL";
 import Neo4j from "./pages/admin/Neo4j";
 import Users from "./pages/admin/Users";
+import BookBundleImport from "./pages/admin/BookBundleImport";
 
 import UserHome from "./pages/user/UserHome";
 import History from "./pages/user/History";
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="postgres" element={<PostgreSQL />} />
           <Route path="neo4j" element={<Neo4j />} />
           <Route path="users" element={<Users />} />
+          <Route path="book-bundle" element={<BookBundleImport />} />
         </Route>
 
         <Route path="*" element={<h1>404 - Not Found</h1>} />

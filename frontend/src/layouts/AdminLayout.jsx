@@ -50,6 +50,11 @@ const Icon = {
       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
+  Import: () => (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
 };
 
 const ROUTE_LABELS = {
@@ -59,6 +64,7 @@ const ROUTE_LABELS = {
   "/admin/postgres": "PostgreSQL",
   "/admin/neo4j": "Neo4j",
   "/admin/users": "Tài khoản",
+  "/admin/book-bundle": "Import sách",
 };
 
 const ROUTE_ICONS = {
@@ -68,6 +74,7 @@ const ROUTE_ICONS = {
   "/admin/postgres": Icon.Table,
   "/admin/neo4j": Icon.Graph,
   "/admin/users": Icon.Users,
+  "/admin/book-bundle": Icon.Import,
 };
 
 export default function AdminLayout() {
@@ -118,6 +125,12 @@ export default function AdminLayout() {
           </NavLink>
           <NavLink to="/admin/neo4j" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <span className="nav-icon"><Icon.Graph /></span>Neo4j
+          </NavLink>
+
+          {/* Nhập dữ liệu */}
+          <span className="nav-group-label">Nhập dữ liệu</span>
+          <NavLink to="/admin/book-bundle" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon"><Icon.Import /></span>Import sách
           </NavLink>
 
           {/* Người dùng */}
