@@ -225,11 +225,14 @@ async def serve_chunk_pdf(job_id: str, idx: int):
 
 # ── Debug topic selection ─────────────────────────────────────────────────────
 
-@router.post("/book-review/jobs/{job_id}/debug-topic", summary="Set or clear debug topic index")
+@router.post("/book-review/jobs/{job_id}/debug-topic", summary="Set debug mode: enabled flag + topic index")
 async def set_debug_topic(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
+    enabled = bool(body.get("enabled", False))
+    raw_idx = body.get("topic_index")
+    topic_index = int(raw_idx) if raw_idx is not None else None
     from app.services.mongo.book_review_service import set_debug_topic as _set
-    result = _set(db, job_id, body.get("topic_index"))
+    result = _set(db, job_id, enabled, topic_index)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result["error"])
     return result

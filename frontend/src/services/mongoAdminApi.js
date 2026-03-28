@@ -259,11 +259,11 @@ export function reviewChunkPdfUrl(jobId, idx, key = 0) {
 }
 
 // POST /admin/mongo/book-review/jobs/:id/debug-topic
-// topicIndex: number | null  (null clears debug mode)
-export function setDebugTopic(jobId, topicIndex) {
+// enabled: bool, topicIndex: number | null
+export function setDebugTopic(jobId, enabled, topicIndex) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/debug-topic`,
-    { method: "POST", body: JSON.stringify({ topic_index: topicIndex }) },
+    { method: "POST", body: JSON.stringify({ enabled: !!enabled, topic_index: topicIndex ?? null }) },
   );
 }
 

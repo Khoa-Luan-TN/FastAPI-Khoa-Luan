@@ -256,12 +256,11 @@ export default function BookBundleImport() {
     });
   }
 
-  async function handleSetDebugTopic(idx) {
-    const isAlready = job?.debug_topic_index === idx;
+  async function handleSetDebugTopic({ enabled, topicIndex }) {
     setActing(true);
     setJobError("");
     try {
-      await setDebugTopic(job.job_id, isAlready ? null : idx);
+      await setDebugTopic(job.job_id, enabled, enabled ? topicIndex : null);
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
     } catch (err) {
@@ -879,36 +878,55 @@ function TopicReviewPane({
               </div>
             </div>
             {(() => {
-              const isDebug = job.debug_topic_index === topicIdx;
+              const debugEnabled = !!job.debug_single_topic_enabled;
+              const isSelected = job.debug_topic_index === topicIdx;
+              const selectedTitle = debugEnabled && job.debug_topic_index != null
+                ? (editTopics[job.debug_topic_index]?.heading || "") + " " + (editTopics[job.debug_topic_index]?.title || "")
+                : null;
               return (
                 <div
                   style={{
                     marginTop: 10,
-                    padding: "6px 10px",
+                    padding: "8px 10px",
                     borderRadius: 6,
-                    background: isDebug ? "#fef3c7" : "#f9fafb",
-                    border: `1px solid ${isDebug ? "#fbbf24" : "#e5e7eb"}`,
+                    background: debugEnabled ? "#fef3c7" : "#f9fafb",
+                    border: `1px solid ${debugEnabled ? "#fbbf24" : "#e5e7eb"}`,
                     fontSize: 12,
-                    color: isDebug ? "#92400e" : "#6b7280",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
+                    color: debugEnabled ? "#92400e" : "#6b7280",
                   }}
                 >
-                  <span>{isDebug ? "🐛 Debug topic đang active" : "Debug mode: chưa chọn"}</span>
-                  <button
-                    style={{
-                      ...s.btnSecondary,
-                      fontSize: 11,
-                      padding: "2px 8px",
-                      background: isDebug ? "#fbbf24" : undefined,
-                      color: isDebug ? "#78350f" : undefined,
-                    }}
-                    disabled={loading}
-                    onClick={() => onSetDebugTopic(topicIdx)}
-                  >
-                    {isDebug ? "Bỏ debug" : "Debug topic này"}
-                  </button>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none" }}>
+                    <input
+                      type="checkbox"
+                      checked={debugEnabled}
+                      disabled={loading}
+                      onChange={(e) =>
+                        onSetDebugTopic({ enabled: e.target.checked, topicIndex: e.target.checked ? topicIdx : null })
+                      }
+                    />
+                    <span style={{ fontWeight: 600 }}>
+                      {debugEnabled ? "🐛 Debug mode ON" : "Debug mode OFF (full book)"}
+                    </span>
+                    {debugEnabled && selectedTitle && (
+                      <span style={{ marginLeft: 4, color: "#78350f" }}>
+                        — topic {job.debug_topic_index + 1}: {selectedTitle.trim()}
+                      </span>
+                    )}
+                  </label>
+                  {debugEnabled && !isSelected && (
+                    <button
+                      style={{ ...s.btnSecondary, fontSize: 11, padding: "2px 8px", marginTop: 6 }}
+                      disabled={loading}
+                      onClick={() => onSetDebugTopic({ enabled: true, topicIndex: topicIdx })}
+                    >
+                      Chọn topic {topicIdx + 1} để debug
+                    </button>
+                  )}
+                  {debugEnabled && isSelected && (
+                    <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "#15803d", fontWeight: 600 }}>
+                      ✓ Topic này đang được debug
+                    </span>
+                  )}
                 </div>
               );
             })()}

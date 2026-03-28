@@ -410,17 +410,19 @@ def _run_topics(workspace: Path, config: dict) -> None:
 
 # ── Stage: lessons ────────────────────────────────────────────────────────────
 
-def _read_debug_topic_index(workspace: Path) -> Optional[int]:
-    """Return the debug_topic_index from debug_config.json, or None if not set."""
+def _read_debug_config(workspace: Path):
+    """Return (enabled: bool, topic_index: int | None) from debug_config.json."""
     p = workspace / "debug_config.json"
     if not p.exists():
-        return None
+        return False, None
     try:
         cfg = json.loads(p.read_text(encoding="utf-8"))
+        enabled = bool(cfg.get("enabled", False))
         v = cfg.get("topic_index")
-        return int(v) if v is not None else None
+        topic_index = int(v) if v is not None else None
+        return enabled, topic_index
     except Exception:
-        return None
+        return False, None
 
 
 def _run_lessons(workspace: Path, config: dict) -> None:
@@ -441,12 +443,12 @@ def _run_lessons(workspace: Path, config: dict) -> None:
     log(f"approved topics: {len(approved_topics)}")
 
     # ── Debug mode: restrict to a single topic ────────────────────────────────
-    debug_topic_index = _read_debug_topic_index(workspace)
-    if debug_topic_index is not None:
+    debug_enabled, debug_topic_index = _read_debug_config(workspace)
+    if debug_enabled and debug_topic_index is not None:
         if 0 <= debug_topic_index < len(approved_topics):
             dbg = approved_topics[debug_topic_index]
             log(
-                f"[DEBUG] debug_topic_index={debug_topic_index} "
+                f"[DEBUG] debug_single_topic_enabled=true  debug_topic_index={debug_topic_index} "
                 f"topic='{dbg.get('heading', '')} {dbg.get('title', '')}' "
                 f"pages {dbg.get('start')}-{dbg.get('end')} "
                 f"— restricting lessons to this topic only"
@@ -457,7 +459,11 @@ def _run_lessons(workspace: Path, config: dict) -> None:
                 f"[DEBUG] debug_topic_index={debug_topic_index} out of range "
                 f"({len(approved_topics)} topics) — ignoring, running full book"
             )
+            debug_enabled = False
             debug_topic_index = None
+    else:
+        debug_enabled = False
+        debug_topic_index = None
 
     raw_lessons: list = state.get("raw_lessons", [])
     book_stem: str = state.get("book_stem", "book")
@@ -590,8 +596,10 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     log(f"book_stem={book_stem}")
 
     # ── Debug mode: restrict to lessons of a single topic ─────────────────────
-    debug_topic_index = _read_debug_topic_index(workspace)
-    if debug_topic_index is not None:
+    debug_enabled, debug_topic_index = _read_debug_config(workspace)
+    debug_topic_for_manifest = None
+
+    if debug_enabled and debug_topic_index is not None:
         approved_topics_path = workspace / "approved_topics.json"
         if approved_topics_path.exists():
             all_topics = json.loads(approved_topics_path.read_text(encoding="utf-8"))
@@ -600,7 +608,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
                 t_start = int(dbg.get("start") or 1)
                 t_end = int(dbg.get("end") or t_start)
                 log(
-                    f"[DEBUG] debug_topic_index={debug_topic_index} "
+                    f"[DEBUG] debug_single_topic_enabled=true  debug_topic_index={debug_topic_index} "
                     f"topic='{dbg.get('heading', '')} {dbg.get('title', '')}' "
                     f"pages {t_start}-{t_end}"
                 )
@@ -613,16 +621,18 @@ def _run_chunks(workspace: Path, config: dict) -> None:
                     f"[DEBUG] filtered lessons for chunking: {before} -> {len(approved_lessons)} "
                     f"(lesson PDFs to chunk: {len(approved_lessons)})"
                 )
+                debug_topic_for_manifest = dbg
             else:
                 log(
                     f"[DEBUG] debug_topic_index={debug_topic_index} out of range "
                     f"({len(all_topics)} topics) — ignoring, running full book"
                 )
-                debug_topic_index = None
+                debug_enabled = False
         else:
-            log("[DEBUG] approved_topics.json not found — ignoring debug_topic_index, running full book")
-            debug_topic_index = None
+            log("[DEBUG] approved_topics.json not found — ignoring debug mode, running full book")
+            debug_enabled = False
     else:
+        debug_enabled = False
         log(f"chunks stage: processing {len(approved_lessons)} lessons (full mode)")
 
     bundle_dir = workspace / book_stem
@@ -630,14 +640,22 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, approved_lessons)
     log(f"lesson PDFs rebuilt under {bundle_dir / 'Lesson'}")
 
-    approved_topics_path = workspace / "approved_topics.json"
-    approved_topics = (
-        json.loads(approved_topics_path.read_text(encoding="utf-8"))
-        if approved_topics_path.exists()
-        else []
-    )
-    _write_bundle_manifest(bundle_dir, book_stem, approved_topics, approved_lessons)
-    log("bundle manifest updated from approved topics/lessons")
+    # Canonical manifest: single-topic in debug mode, full book otherwise
+    if debug_enabled and debug_topic_for_manifest is not None:
+        topics_for_manifest = [debug_topic_for_manifest]
+        log(
+            f"[DEBUG] writing canonical single-topic manifest for topic_index={debug_topic_index} "
+            f"with {len(approved_lessons)} lessons"
+        )
+    else:
+        approved_topics_path = workspace / "approved_topics.json"
+        topics_for_manifest = (
+            json.loads(approved_topics_path.read_text(encoding="utf-8"))
+            if approved_topics_path.exists()
+            else []
+        )
+    _write_bundle_manifest(bundle_dir, book_stem, topics_for_manifest, approved_lessons)
+    log("bundle manifest updated")
 
     lesson_count = len(approved_lessons)
     log(f"starting chunk extraction for {lesson_count} lessons")
