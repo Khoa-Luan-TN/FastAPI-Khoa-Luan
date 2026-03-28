@@ -27,8 +27,6 @@ import json
 import os
 import shutil
 import sys
-import threading
-import time
 import traceback
 from pathlib import Path
 from typing import Any, Optional
@@ -50,6 +48,8 @@ from sgk_extract.pdf_output import (  # noqa: E402
 from sgk_extract.gemini_runner import extract_structure_from_pdf  # noqa: E402
 from sgk_extract.prompts import build_topic_lesson_prompt  # noqa: E402
 from sgk_extract.chunk_pipeline import run_extract_and_split_chunks_for_book  # noqa: E402
+
+_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 
 def _write_progress(
@@ -82,7 +82,6 @@ def _write_progress(
 
 
 def _write_partial(workspace: Path, field: str, items: list) -> None:
-    """Write partial extraction results so get_job can overlay them incrementally."""
     try:
         (workspace / f"{field}_partial.json").write_text(
             json.dumps(items, ensure_ascii=False),
@@ -93,13 +92,26 @@ def _write_partial(workspace: Path, field: str, items: list) -> None:
 
 
 def _append_log(log_path: Path, msg: str) -> None:
-    """Append a timestamped line to a stage log file."""
     try:
         ts = datetime.datetime.now().strftime("%H:%M:%S")
         with open(log_path, "a", encoding="utf-8") as fh:
             fh.write(f"[{ts}] {msg}\n")
     except Exception:
         pass
+
+
+def _make_stage_logger(workspace: Path, stage: str):
+    log_path = workspace / f"{stage}.log"
+    try:
+        log_path.write_text("", encoding="utf-8")
+    except Exception:
+        pass
+
+    def log(msg: str) -> None:
+        _append_log(log_path, msg)
+        print(f"[light_extract] {stage}: {msg}")
+
+    return log
 
 
 def _flatten(items: Any) -> list:
@@ -121,15 +133,17 @@ def _flatten(items: Any) -> list:
 
 
 def _slice_pdf(source_pdf: str, start: int, end: int, out_path: Path) -> None:
-    """Slice pages [start, end] (1-based inclusive) from source_pdf into out_path."""
     from pypdf import PdfReader, PdfWriter
+
     reader = PdfReader(source_pdf)
     total = len(reader.pages)
     s = max(1, min(start, total))
     e = max(s, min(end, total))
+
     writer = PdfWriter()
     for i in range(s - 1, e):
         writer.add_page(reader.pages[i])
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "wb") as fh:
         writer.write(fh)
@@ -141,7 +155,6 @@ def _write_bundle_manifest(
     topics: list,
     lessons: list,
 ) -> None:
-    """Write <bundle_dir>/<book_stem>.json manifest consumed by import_book_bundle."""
     list_topic = [
         {t.get("name") or f"topic_{i + 1:02d}": {
             "start": t.get("start") or 1,
@@ -167,7 +180,8 @@ def _write_bundle_manifest(
     }
     bundle_dir.mkdir(parents=True, exist_ok=True)
     (bundle_dir / f"{book_stem}.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
@@ -177,11 +191,6 @@ def _build_lesson_pdfs(
     source_pdf: str,
     lessons: list,
 ) -> None:
-    """
-    (Re)create bundle_dir/Lesson/ with one sub-folder per lesson, each containing
-    a PDF slice from source_pdf cut to lesson.start … lesson.end.
-    Clears any existing Lesson/ content first so stale PDFs do not persist.
-    """
     lesson_dir = bundle_dir / "Lesson"
     if lesson_dir.exists():
         shutil.rmtree(lesson_dir)
@@ -196,7 +205,6 @@ def _build_lesson_pdfs(
         out_pdf = les_folder / f"{book_stem}_{safe_name}.pdf"
         _slice_pdf(source_pdf, lesson.get("start") or 1, lesson.get("end") or 1, out_pdf)
 
-        # Write lesson meta JSON so import_book_bundle can discover source_pdf
         meta = {
             "kind": "lesson",
             "name": safe_name,
@@ -210,7 +218,8 @@ def _build_lesson_pdfs(
             "raw_title": (lesson.get("title") or "").strip(),
         }
         out_pdf.with_suffix(".json").write_text(
-            json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(meta, ensure_ascii=False, indent=2),
+            encoding="utf-8",
         )
 
 
@@ -219,24 +228,14 @@ def _build_lesson_pdfs(
 def _run_topics(workspace: Path, config: dict) -> None:
     pdf_path = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
-    model = config.get("model", "gemini-2.5-flash")
-    job_id = config.get("job_id") or workspace.name
+    model = config.get("model", _DEFAULT_MODEL)
+
     pdf_stem = Path(pdf_path).stem
-    unique_output_root = _GEMINI_ROOT / "Output" / f"{pdf_stem}_{job_id[:8]}"
+    unique_output_root = _GEMINI_ROOT / "Output" / pdf_stem
 
-    log_path = workspace / "topics.log"
-    try:
-        log_path.write_text("", encoding="utf-8")
-    except Exception:
-        pass
-
-    def log(msg: str) -> None:
-        _append_log(log_path, msg)
-        print(f"[light_extract] topics: {msg}")
-
+    log = _make_stage_logger(workspace, "topics")
     log(f"stage=topics  pdf={Path(pdf_path).name}  output_root={unique_output_root}")
 
-    # ── Step 1: preparing ───────────────────────────────────────────────────
     _write_progress(
         workspace,
         status="extracting_topics",
@@ -250,16 +249,12 @@ def _run_topics(workspace: Path, config: dict) -> None:
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
     log(f"PDF pages: {total_pages_full}")
 
-    # ── Shared Gemini status callback ───────────────────────────────────────
-    # Tracks the "current" progress stage so the callback can update progress.json
-    # with the right stage while forwarding pool-level events (cooldown, send, receive).
     _active_stage: list[str] = ["waiting_gemini_topics"]
-    _active_cur:   list[int | None] = [None]
-    _active_tot:   list[int | None] = [None]
-    _active_pct:   list[int | None] = [None]
+    _active_cur: list[int | None] = [None]
+    _active_tot: list[int | None] = [None]
+    _active_pct: list[int | None] = [None]
 
     def _gemini_status_cb(msg: str) -> None:
-        # Detect all-keys-cooldown to switch progress_stage
         is_all_cooldown = "Tất cả" in msg and "cooldown" in msg
         stage = "waiting_gemini_key_cooldown" if is_all_cooldown else _active_stage[0]
         _write_progress(
@@ -273,7 +268,6 @@ def _run_topics(workspace: Path, config: dict) -> None:
         )
         log(f"gemini: {msg}")
 
-    # ── Step 2: upload preview to Gemini ───────────────────────────────────
     _write_progress(
         workspace,
         status="extracting_topics",
@@ -290,7 +284,6 @@ def _run_topics(workspace: Path, config: dict) -> None:
     preview_pdf = _make_preview_first_pages(pdf_path, first_n_pages=20)
     log("preview PDF ready, sending to Gemini")
 
-    # ── Step 3: wait for Gemini response ───────────────────────────────────
     _active_stage[0] = "waiting_gemini_topics"
     _active_cur[0] = _active_tot[0] = _active_pct[0] = None
     _write_progress(
@@ -303,7 +296,11 @@ def _run_topics(workspace: Path, config: dict) -> None:
 
     try:
         data = extract_structure_from_pdf(
-            key_manager, preview_pdf, prompt, model=model, status_cb=_gemini_status_cb
+            key_manager,
+            preview_pdf,
+            prompt,
+            model=model,
+            status_cb=_gemini_status_cb,
         )
     finally:
         try:
@@ -315,7 +312,6 @@ def _run_topics(workspace: Path, config: dict) -> None:
     n_lessons_raw = len(data.get("list_lesson", []))
     log(f"Gemini response received: {n_topics_raw} topics, {n_lessons_raw} lessons (raw)")
 
-    # ── Step 3b: verify topic page offsets ─────────────────────────────────
     _active_stage[0] = "verifying_topic_offsets"
     _active_cur[0] = 0
     _active_tot[0] = n_topics_raw
@@ -348,15 +344,19 @@ def _run_topics(workspace: Path, config: dict) -> None:
         log(f"verify {current}/{total}: {message}")
 
     final_offset = verify_topics_and_get_offset(
-        key_manager, pdf_path, data, total_pages_full, model=model,
-        progress_cb=_verify_cb, status_cb=_gemini_status_cb,
+        key_manager,
+        pdf_path,
+        data,
+        total_pages_full,
+        model=model,
+        progress_cb=_verify_cb,
+        status_cb=_gemini_status_cb,
     )
     data["offset"] = final_offset
     log(f"verified offset={final_offset}")
 
     data = normalize_manifest(data, total_pages=total_pages_full)
 
-    # ── Step 4: save outputs ────────────────────────────────────────────────
     _write_progress(
         workspace,
         status="extracting_topics",
@@ -383,7 +383,8 @@ def _run_topics(workspace: Path, config: dict) -> None:
         "raw_lessons": raw_lessons,
     }
     (workspace / "extraction_state.json").write_text(
-        json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(state, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
     result = {
@@ -392,11 +393,11 @@ def _run_topics(workspace: Path, config: dict) -> None:
         "topics": topics,
     }
     (workspace / "result.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
     log("all outputs saved")
 
-    # ── Step 5: done ────────────────────────────────────────────────────────
     _write_progress(
         workspace,
         status="reviewing_topics",
@@ -410,18 +411,6 @@ def _run_topics(workspace: Path, config: dict) -> None:
 # ── Stage: lessons ────────────────────────────────────────────────────────────
 
 def _run_lessons(workspace: Path, config: dict) -> None:
-    """
-    Rebuild lessons from approved topics.
-
-    For each approved topic (with admin-edited start/end), derives the lesson list
-    by clipping raw_lessons to that topic's approved page range.  Lessons that fall
-    outside every approved topic boundary are excluded; lessons that straddle a
-    boundary are clipped to the first overlapping topic.
-
-    Rebuilt lesson PDFs are sliced fresh from the source PDF using the derived
-    page ranges and stored in workspace/<book_stem>/Lesson/.  A manifest is written
-    so that the subsequent chunks stage and heavy stage use the approved structure.
-    """
     approved_path = workspace / "approved_topics.json"
     if not approved_path.exists():
         raise FileNotFoundError(
@@ -434,10 +423,16 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         raise FileNotFoundError("extraction_state.json not found — topics stage must run first")
     state = json.loads(state_path.read_text(encoding="utf-8"))
 
+    log = _make_stage_logger(workspace, "lessons")
+    log("stage=lessons")
+    log(f"approved topics: {len(approved_topics)}")
+
     raw_lessons: list = state.get("raw_lessons", [])
     book_stem: str = state.get("book_stem", "book")
     pdf_path: str = config["source_pdf_path"]
     n = len(approved_topics)
+
+    log(f"raw lessons from state: {len(raw_lessons)}")
 
     _write_progress(
         workspace,
@@ -449,8 +444,6 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         progress_percent=0,
     )
 
-    # Each raw_lesson is assigned to the first approved topic it overlaps with.
-    # Its page range is clipped to that topic's approved [start, end].
     seen_raw_keys: set = set()
     lessons_out: list = []
 
@@ -464,11 +457,9 @@ def _run_lessons(workspace: Path, config: dict) -> None:
             l_end = int(lesson.get("end") or 0)
             raw_key = (l_start, l_end)
 
-            # Skip if already assigned to a previous topic
             if raw_key in seen_raw_keys:
                 continue
 
-            # Include if the raw lesson has any overlap with this topic's approved range
             if l_end >= t_start and l_start <= t_end:
                 seen_raw_keys.add(raw_key)
                 topic_lessons.append({
@@ -478,7 +469,6 @@ def _run_lessons(workspace: Path, config: dict) -> None:
                 })
 
         if not topic_lessons:
-            # No matching lessons — treat the entire topic range as one lesson
             topic_lessons.append({
                 "name": f"lesson_{len(lessons_out) + 1:02d}",
                 "start": t_start,
@@ -500,16 +490,18 @@ def _run_lessons(workspace: Path, config: dict) -> None:
             progress_total=n,
             progress_percent=pct,
         )
+        log(f"topic {i + 1}/{n}: pages {t_start}-{t_end} -> {len(topic_lessons)} lessons")
 
-    # Build rebuilt bundle: lesson PDFs sliced from source PDF using approved topic ranges
+    log("rebuilding lesson bundle from approved topics")
     bundle_dir = workspace / book_stem
     _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, lessons_out)
     _write_bundle_manifest(bundle_dir, book_stem, approved_topics, lessons_out)
+    log(f"lesson bundle ready: {bundle_dir}")
 
-    # Persist rebuilt bundle path so chunks stage and heavy stage use it
     state["rebuilt_bundle_path"] = str(bundle_dir)
     (workspace / "extraction_state.json").write_text(
-        json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(state, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
     result = {
@@ -518,7 +510,8 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         "lessons": lessons_out,
     }
     (workspace / "result.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
     _write_progress(
@@ -530,20 +523,12 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         progress_total=n,
         progress_percent=100,
     )
+    log("reviewing_lessons: lesson extraction complete")
 
 
 # ── Stage: chunks ─────────────────────────────────────────────────────────────
 
 def _run_chunks(workspace: Path, config: dict) -> None:
-    """
-    Extract chunks from approved lessons.
-
-    Reads approved_lessons.json (written by service after admin edits).
-    Rebuilds lesson PDFs inside workspace/<book_stem>/Lesson/ by slicing the
-    source PDF to each lesson's approved start/end range — replacing any stale
-    lesson PDFs left over from the lessons stage.  Chunk extraction then runs
-    on those rebuilt lesson PDFs, so lesson range edits truly drive chunking.
-    """
     approved_path = workspace / "approved_lessons.json"
     if not approved_path.exists():
         raise FileNotFoundError(
@@ -556,18 +541,23 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         raise FileNotFoundError("extraction_state.json not found — topics stage must run first")
     state = json.loads(state_path.read_text(encoding="utf-8"))
 
+    log = _make_stage_logger(workspace, "chunks")
+    log("stage=chunks")
+    log(f"approved lessons: {len(approved_lessons)}")
+
     book_stem: str = state.get("book_stem", "book")
     pdf_path: str = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
-    model = config.get("model", "gemini-2.5-flash")
+    model = config.get("model", _DEFAULT_MODEL)
     key_manager = get_key_manager(api_config)
 
-    # Rebuild lesson PDFs from source PDF using admin-approved lesson ranges.
-    # This replaces any stale lesson PDFs so chunk extraction runs on the right pages.
-    bundle_dir = workspace / book_stem
-    _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, approved_lessons)
+    log(f"book_stem={book_stem}")
 
-    # Update manifest with approved lesson list (topic list comes from saved state)
+    bundle_dir = workspace / book_stem
+    log("rebuilding lesson PDFs from approved lessons")
+    _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, approved_lessons)
+    log(f"lesson PDFs rebuilt under {bundle_dir / 'Lesson'}")
+
     approved_topics_path = workspace / "approved_topics.json"
     approved_topics = (
         json.loads(approved_topics_path.read_text(encoding="utf-8"))
@@ -575,11 +565,11 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         else []
     )
     _write_bundle_manifest(bundle_dir, book_stem, approved_topics, approved_lessons)
+    log("bundle manifest updated from approved topics/lessons")
 
     lesson_count = len(approved_lessons)
+    log(f"starting chunk extraction for {lesson_count} lessons")
 
-    # Snapshot all JSON files already in bundle_dir before extraction starts;
-    # new ones appearing afterwards are chunk meta files.
     initial_json_files: set[str] = set(str(f) for f in bundle_dir.rglob("*.json"))
     seen_chunk_files: set[str] = set()
     chunks_so_far: list = []
@@ -605,7 +595,8 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             progress_total=total,
             progress_percent=pct,
         )
-        # Scan for JSON files created since extraction began (chunk meta files)
+        log(f"chunk progress {done}/{total}: {lesson_pdf.name}")
+
         for jf in bundle_dir.rglob("*.json"):
             key = str(jf)
             if key not in initial_json_files and key not in seen_chunk_files:
@@ -619,11 +610,14 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             _write_partial(workspace, "chunks", chunks_so_far)
 
     chunk_summary = run_extract_and_split_chunks_for_book(
-        key_manager, bundle_dir, model=model, resume=False, progress_cb=_chunk_cb
+        key_manager,
+        bundle_dir,
+        model=model,
+        resume=False,
+        progress_cb=_chunk_cb,
     )
+    log("chunk extraction pipeline finished, collecting chunk metadata")
 
-    # Collect final chunk list from meta files declared by the pipeline.
-    # All lessons in bundle_dir/Lesson/ are already approved — no further filtering needed.
     chunks: list = []
     for meta_file in chunk_summary.get("chunk_meta_files", []):
         try:
@@ -632,13 +626,16 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         except Exception:
             pass
 
+    log(f"final chunks collected: {len(chunks)}")
+
     result = {
         "ok": True,
         "bundle_path": str(bundle_dir),
         "chunks": chunks,
     }
     (workspace / "result.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(result, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
     _write_progress(
@@ -650,6 +647,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         progress_total=lesson_count,
         progress_percent=100,
     )
+    log("reviewing_chunks: chunk extraction complete")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -672,6 +670,7 @@ if __name__ == "__main__":
     parser.add_argument("--stage", required=True, choices=["topics", "lessons", "chunks"])
     args = parser.parse_args()
     ws = Path(args.workspace)
+
     try:
         main(ws, args.stage)
     except Exception as exc:
@@ -685,11 +684,13 @@ if __name__ == "__main__":
         err = {"ok": False, "error": str(exc), "traceback": tb}
         try:
             (ws / "result.json").write_text(
-                json.dumps(err, ensure_ascii=False, indent=2), encoding="utf-8"
+                json.dumps(err, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
         except Exception:
             pass
-        # Append error to stage log so live_log_tail shows what went wrong
-        _append_log(ws / "topics.log", f"ERROR: {exc}")
-        _append_log(ws / "topics.log", tb[:1000])
+
+        log_path = ws / f"{args.stage}.log"
+        _append_log(log_path, f"ERROR: {exc}")
+        _append_log(log_path, tb[:1000])
         sys.exit(1)

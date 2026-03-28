@@ -21,9 +21,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from pymongo import ReturnDocument
 from pymongo.database import Database
 
 COLLECTION = "book_review_jobs"
+
+# Only one extraction stage may run at a time across all review jobs.
+# Concurrent stages compete for Gemini quota and cause mutual 429s.
+_extraction_semaphore = threading.BoundedSemaphore(1)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _GEMINI_DIR = _PROJECT_ROOT / "gemini_pipeline"
@@ -48,7 +53,7 @@ def create_job(
     subject_type: str,
     pdf_bytes: bytes,
     original_filename: str,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-2.5-flash-lite",
 ) -> Dict[str, Any]:
     job_id = str(uuid.uuid4())
     workspace = _REVIEW_WORKSPACE / job_id
@@ -69,6 +74,7 @@ def create_job(
         json.dumps(job_config, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    now = _utc_now()
     doc: Dict[str, Any] = {
         "job_id": job_id,
         "class_name": class_name,
@@ -81,11 +87,11 @@ def create_job(
         "topics": [],
         "lessons": [],
         "chunks": [],
-        "status": "uploaded",
+        "status": "extracting_topics",
         "error": None,
         "heavy_report": None,
-        "created_at": _utc_now(),
-        "updated_at": _utc_now(),
+        "created_at": now,
+        "updated_at": now,
     }
     _col(db).insert_one(doc)
     doc.pop("_id", None)
@@ -110,7 +116,30 @@ def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
 
 
 def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
-    python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+    # Signal that this job is queued while another extraction is running
+    if not _extraction_semaphore.acquire(blocking=False):
+        try:
+            progress_path = workspace / "progress.json"
+            progress_path.write_text(
+                json.dumps({
+                    "status": f"extracting_{stage}",
+                    "progress_stage": "waiting_extraction_slot",
+                    "progress_message": "Chờ luồng trích xuất khác hoàn thành…",
+                }, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+        _extraction_semaphore.acquire(blocking=True)
+
+    try:
+        python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+        _run_stage_inner(db, job_id, workspace, stage, python_exec)
+    finally:
+        _extraction_semaphore.release()
+
+
+def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, python_exec: str) -> None:
     try:
         proc = subprocess.run(
             [python_exec, str(_LIGHT_SCRIPT), "--workspace", str(workspace), "--stage", stage],
@@ -308,31 +337,32 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> None:
 
 def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
     """
-    Advance from reviewing_topics → extracting_lessons.
+    Advance from reviewing_topics → extracting_lessons (atomic).
 
-    Writes approved_topics.json to the workspace (current DB topics after admin edits)
-    so the lessons subprocess can derive lessons from the approved topic page ranges.
+    Uses find_one_and_update so a concurrent duplicate request gets the
+    updated doc back (status already changed) and simply returns False.
+    Writes approved_topics.json to the workspace so the lessons subprocess
+    can derive lessons from the approved topic page ranges.
     Clears the stale lessons array in DB so the UI starts fresh.
     """
-    doc = _col(db).find_one({"job_id": job_id})
-    if not doc or doc.get("status") != "reviewing_topics":
+    doc = _col(db).find_one_and_update(
+        {"job_id": job_id, "status": "reviewing_topics"},
+        {"$set": {
+            "status": "extracting_lessons",
+            "lessons": [],
+            "updated_at": _utc_now(),
+        }},
+        return_document=ReturnDocument.BEFORE,
+    )
+    if not doc:
         return False
-    workspace = Path(doc["workspace"])
 
-    # Persist approved (possibly edited) topics for the subprocess
+    workspace = Path(doc["workspace"])
     approved_topics = doc.get("topics", [])
     (workspace / "approved_topics.json").write_text(
         json.dumps(approved_topics, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    _col(db).update_one(
-        {"job_id": job_id},
-        {"$set": {
-            "status": "extracting_lessons",
-            "lessons": [],        # clear stale data
-            "updated_at": _utc_now(),
-        }},
-    )
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "lessons"), daemon=True
     ).start()
@@ -341,31 +371,32 @@ def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
 
 def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
     """
-    Advance from reviewing_lessons → extracting_chunks.
+    Advance from reviewing_lessons → extracting_chunks (atomic).
 
-    Writes approved_lessons.json to the workspace (current DB lessons after admin edits)
-    so the chunks subprocess can process only the approved lesson set.
+    Uses find_one_and_update so a concurrent duplicate request gets the
+    updated doc back (status already changed) and simply returns False.
+    Writes approved_lessons.json to the workspace so the chunks subprocess
+    can process only the approved lesson set.
     Clears the stale chunks array in DB so the UI starts fresh.
     """
-    doc = _col(db).find_one({"job_id": job_id})
-    if not doc or doc.get("status") != "reviewing_lessons":
+    doc = _col(db).find_one_and_update(
+        {"job_id": job_id, "status": "reviewing_lessons"},
+        {"$set": {
+            "status": "extracting_chunks",
+            "chunks": [],
+            "updated_at": _utc_now(),
+        }},
+        return_document=ReturnDocument.BEFORE,
+    )
+    if not doc:
         return False
-    workspace = Path(doc["workspace"])
 
-    # Persist approved (possibly edited) lessons for the subprocess
+    workspace = Path(doc["workspace"])
     approved_lessons = doc.get("lessons", [])
     (workspace / "approved_lessons.json").write_text(
         json.dumps(approved_lessons, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    _col(db).update_one(
-        {"job_id": job_id},
-        {"$set": {
-            "status": "extracting_chunks",
-            "chunks": [],         # clear stale data
-            "updated_at": _utc_now(),
-        }},
-    )
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "chunks"), daemon=True
     ).start()

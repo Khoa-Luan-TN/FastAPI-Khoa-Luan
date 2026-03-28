@@ -66,7 +66,7 @@ async def create_review_job(
     class_name: str = Form(...),
     subject_name: str = Form(...),
     subject_type: str = Form("Kết nối tri thức"),
-    model: str = Form("gemini-2.5-flash"),
+    model: str = Form("gemini-2.5-flash-lite"),
     file: UploadFile = File(...),
 ):
     _actor(request)
@@ -105,9 +105,11 @@ async def serve_source_pdf(job_id: str):
     src = job.get("source_pdf_path")
     if not src or not Path(src).exists():
         raise HTTPException(status_code=404, detail="Source PDF not found")
-    # No filename= so browsers render inline rather than forcing a download
-    return FileResponse(str(src), media_type="application/pdf",
-                        headers={"Content-Disposition": "inline"})
+    return FileResponse(
+        str(src),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline"},
+    )
 
 
 @router.get("/book-review/jobs/{job_id}/pdf/topic/{idx}", summary="Serve topic preview PDF")
@@ -118,17 +120,23 @@ async def serve_topic_pdf(job_id: str, idx: int):
         raise HTTPException(status_code=404, detail="Topic index out of range")
     topic = topics[idx]
 
-    # Prefer recut PDF if available
     recut = topic.get("recut_pdf")
     if recut and Path(recut).exists():
-        return FileResponse(str(recut), media_type="application/pdf")
+        return FileResponse(
+            str(recut),
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline"},
+        )
 
-    # Fall back to original bundle PDF
     bundle_path = job.get("bundle_path")
     if bundle_path:
         pdf_path = _find_topic_pdf(bundle_path, topic)
         if pdf_path and pdf_path.exists():
-            return FileResponse(str(pdf_path), media_type="application/pdf")
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                headers={"Content-Disposition": "inline"},
+            )
 
     raise HTTPException(status_code=404, detail="Topic PDF not found — extraction may still be running")
 
@@ -187,7 +195,12 @@ async def update_chunks(job_id: str, body: Dict[str, Any] = Body(...)):
 
 _PAST_TOPICS_STATUSES = {
     "extracting_lessons", "reviewing_lessons",
-    "extracting_chunks",  "reviewing_chunks",
+    "extracting_chunks", "reviewing_chunks",
+    "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
+}
+
+_PAST_LESSONS_STATUSES = {
+    "extracting_chunks", "reviewing_chunks",
     "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
 }
 
@@ -198,8 +211,6 @@ async def approve_topics(job_id: str):
     if not approve_topics_and_start_lessons(db, job_id):
         job = _get_or_404(job_id)
         current = job["status"]
-        # If the job already advanced past topic review (stale/double click),
-        # return a graceful success so the frontend can refetch and show the real stage.
         if current in _PAST_TOPICS_STATUSES:
             return {"ok": True, "already_advanced": True, "status": current}
         raise HTTPException(
@@ -214,9 +225,12 @@ async def approve_lessons(job_id: str):
     from app.services.mongo.book_review_service import approve_lessons_and_start_chunks
     if not approve_lessons_and_start_chunks(db, job_id):
         job = _get_or_404(job_id)
+        current = job["status"]
+        if current in _PAST_LESSONS_STATUSES:
+            return {"ok": True, "already_advanced": True, "status": current}
         raise HTTPException(
             status_code=409,
-            detail=f"Job must be in 'reviewing_lessons' status (current: {job['status']})",
+            detail=f"Job must be in 'reviewing_lessons' status (current: {current})",
         )
     return {"ok": True}
 
