@@ -93,6 +93,7 @@ def main():
 
     # 4) apply zip into Output/
     if not args.no_apply:
+        print("[STAGE:applying]", flush=True)
         dst = safe_extract_zip_to_output(zip_path, OUTPUT_ROOT, overwrite=args.overwrite)
         log.info("✅ Applied to: %s", dst)
     else:

@@ -65,6 +65,7 @@ def push_kernel(kernel_dir: Path, kernel_ref: str) -> None:
         raise FileNotFoundError(f"Missing kernel_dir: {kernel_dir}")
     run_cmd(["kaggle", "kernels", "push", "-p", str(kernel_dir)])
     wait_kernel_complete(kernel_ref)
+    print("[STAGE:kernel_done]", flush=True)
 
 
 def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -> None:
@@ -73,6 +74,7 @@ def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -
     if force:
         cmd.append("--force")
 
+    print("[STAGE:downloading]", flush=True)
     # ✅ stream để thấy tiến trình
     run_cmd(cmd, stream=True)
 

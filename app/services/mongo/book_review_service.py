@@ -1159,53 +1159,84 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                                "Đang build Kaggle pack và đẩy dataset + kernel lên Kaggle…", 8)
         _log.info("[heavy/%s] Stage: heavy_kaggle_submitting — book_stem=%s", job_id, book_stem)
 
-        # Update to heavy_kaggle_running just before the blocking subprocess call.
-        # The CLI handles: dataset push + kernel push + wait + download + apply.
+        # Launch Kaggle CLI subprocess; parse stage markers from output incrementally
+        # so the UI advances truthfully: kernel_running → downloading → applying.
         _current_stage = "heavy_kaggle_running"
         _update_heavy_progress(db, job_id, "heavy_kaggle_running",
-                               "Kaggle kernel đang chạy — chờ hoàn thành (bao gồm tải kết quả về)…", 20)
+                               "Kaggle kernel đang chạy — chờ hoàn thành…", 20)
         _log.info("[heavy/%s] Stage: heavy_kaggle_running — launching Kaggle CLI subprocess", job_id)
 
         kaggle_log_path = workspace / "kaggle_subprocess.log"
-        kaggle_proc = subprocess.run(
+        kaggle_log_lines: List[str] = []
+        kaggle_returncode = -1
+
+        with subprocess.Popen(
             [python_exec, "-m", "scripts.kaggle.cli", book_stem, "--overwrite"],
             cwd=str(_GEMINI_DIR),
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            timeout=7200,
-        )
+            bufsize=1,
+        ) as _kaggle_popen:
+            assert _kaggle_popen.stdout is not None
+            for _raw_line in _kaggle_popen.stdout:
+                _line = _raw_line.rstrip()
+                kaggle_log_lines.append(_line)
+                if len(kaggle_log_lines) > 200:
+                    kaggle_log_lines = kaggle_log_lines[-200:]
+                _tail = kaggle_log_lines[-50:]
+                if "[STAGE:kernel_done]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        "Kaggle kernel hoàn thành — đang tải kết quả về…", 45,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle kernel done → heavy_kaggle_downloading", job_id)
+                elif "[STAGE:downloading]" in _line:
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        "Đang tải kết quả từ Kaggle về máy chủ…", 50,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:applying]" in _line:
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        "Đang giải nén và áp dụng kết quả Kaggle vào bundle…", 53,
+                        log_tail=_tail,
+                    )
+            kaggle_returncode = _kaggle_popen.wait()
 
-        kaggle_log = (kaggle_proc.stdout or "") + (kaggle_proc.stderr or "")
         try:
-            kaggle_log_path.write_text(kaggle_log, encoding="utf-8")
+            kaggle_log_path.write_text("\n".join(kaggle_log_lines), encoding="utf-8")
         except Exception:
             pass
 
-        kaggle_log_lines = kaggle_log.splitlines()[-50:]
         _log.info("[heavy/%s] Kaggle CLI subprocess returned — returncode=%d",
-                  job_id, kaggle_proc.returncode)
+                  job_id, kaggle_returncode)
 
-        if kaggle_proc.returncode != 0:
+        if kaggle_returncode != 0:
+            _error_tail = kaggle_log_lines[-50:]
             _update_heavy_progress(db, job_id, "heavy_error",
-                                   f"Kaggle thất bại (exit {kaggle_proc.returncode})", 0,
-                                   log_tail=kaggle_log_lines)
+                                   f"Kaggle thất bại (exit {kaggle_returncode})", 0,
+                                   log_tail=_error_tail)
             _col(db).update_one(
                 {"job_id": job_id},
-                {"$set": {"heavy_error_stage": "heavy_kaggle_running"}},
+                {"$set": {"heavy_error_stage": _current_stage}},
             )
             raise ValueError(
-                f"Kaggle subprocess failed (exit {kaggle_proc.returncode}): "
-                f"{(kaggle_proc.stderr or '')[:1000]}"
+                f"Kaggle subprocess failed (exit {kaggle_returncode}):\n"
+                + "\n".join(_error_tail[-15:])
             )
 
-        _log.info("[heavy/%s] Kaggle CLI completed OK — advancing to heavy_kaggle_downloading", job_id)
+        _log.info("[heavy/%s] Kaggle CLI completed OK — bundle at %s", job_id, output_book_dir)
 
-        # ── Stage: Kaggle downloading — apply result into local Output/ ───────
+        # ── Stage: Kaggle downloading — confirm bundle path ───────────────────
         _current_stage = "heavy_kaggle_downloading"
         _update_heavy_progress(db, job_id, "heavy_kaggle_downloading",
-                               "Kaggle hoàn thành — đang áp dụng kết quả vào bundle…", 55,
-                               log_tail=kaggle_log_lines)
-        _log.info("[heavy/%s] Stage: heavy_kaggle_downloading — Updating bundle_path to %s",
+                               "Kaggle hoàn thành — đang xác nhận bundle…", 55,
+                               log_tail=kaggle_log_lines[-50:])
+        _log.info("[heavy/%s] Stage: heavy_kaggle_downloading — updating bundle_path to %s",
                   job_id, output_book_dir)
 
         # After Kaggle extraction, bundle is now at Output/<book_stem>
@@ -1307,6 +1338,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         source_pdf_path = Path(raw_source) if raw_source else None
 
         def _import_progress_cb(stage: str, message: str, percent: int, counts=None) -> None:
+            nonlocal _current_stage
+            _current_stage = stage
             _update_heavy_progress(db, job_id, stage, message, percent, counts=counts)
 
         report = import_book_bundle(
