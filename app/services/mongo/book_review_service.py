@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import subprocess
 import threading
@@ -26,6 +27,8 @@ from pymongo.database import Database
 
 COLLECTION = "book_review_jobs"
 
+_log = logging.getLogger(__name__)
+
 # Only one extraction stage may run at a time across all review jobs.
 # Concurrent stages compete for Gemini quota and cause mutual 429s.
 _extraction_semaphore = threading.BoundedSemaphore(1)
@@ -35,6 +38,7 @@ _GEMINI_DIR = _PROJECT_ROOT / "gemini_pipeline"
 _REVIEW_WORKSPACE = _GEMINI_DIR / "ReviewWorkspace"
 _GEMINI_PYTHON = _GEMINI_DIR / ".env" / "bin" / "python"
 _LIGHT_SCRIPT = _GEMINI_DIR / "scripts" / "light_extract_job.py"
+_KEYWORD_SCRIPT = _GEMINI_DIR / "scripts" / "keyword_extract_book.py"
 _GEMINI_CONFIG = _GEMINI_DIR / "config.env"
 
 
@@ -538,6 +542,20 @@ def _num_pad(heading: str) -> str:
     return m.group(0).zfill(2) if m else ""
 
 
+def _normalize_vi_title(text: str) -> str:
+    """Convert predominantly ALL-CAPS Vietnamese title to sentence case."""
+    if not text:
+        return text
+    alpha_chars = [c for c in text if c.isalpha()]
+    if not alpha_chars:
+        return text
+    upper_count = sum(1 for c in alpha_chars if c.isupper())
+    if upper_count / len(alpha_chars) < 0.7:
+        return text
+    lowered = text.lower()
+    return lowered[0].upper() + lowered[1:] if lowered else text
+
+
 def _build_name_dict(items: List[Dict[str, Any]]) -> Dict[str, str]:
     names: Dict[str, str] = {}
     for item in items:
@@ -545,7 +563,8 @@ def _build_name_dict(items: List[Dict[str, Any]]) -> Dict[str, str]:
         title = (item.get("title") or "").strip()
         num = _num_pad(heading)
         if num:
-            names[num] = f"{heading} {title}".strip() if title else heading
+            raw = title if title else heading
+            names[num] = _normalize_vi_title(raw)
     return names
 
 
@@ -987,8 +1006,70 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         if not bundle_path:
             raise ValueError("bundle_path not set — extraction may have failed")
 
+        workspace = Path(doc.get("workspace", ""))
+        python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+
+        # ── Step 1: Keyword extraction ────────────────────────────────────────
+        kw_summary_path = workspace / "keyword_summary.json"
+        _log.info("[heavy/%s] Keyword extraction started — bundle: %s", job_id, bundle_path)
+
+        try:
+            kw_proc = subprocess.run(
+                [
+                    python_exec, str(_KEYWORD_SCRIPT),
+                    "--bundle-dir", bundle_path,
+                    "--output", str(kw_summary_path),
+                ],
+                cwd=str(_GEMINI_DIR),
+                capture_output=True,
+                text=True,
+                timeout=1800,
+            )
+            try:
+                (workspace / "keyword_subprocess.log").write_text(
+                    (kw_proc.stdout or "") + (kw_proc.stderr or ""), encoding="utf-8"
+                )
+            except Exception:
+                pass
+
+            if kw_proc.returncode != 0:
+                stderr_tail = (kw_proc.stderr or "")[:2000]
+                raise ValueError(
+                    f"Keyword extraction subprocess exited {kw_proc.returncode}: {stderr_tail}"
+                )
+
+            kw_summary: Dict[str, Any] = {}
+            if kw_summary_path.exists():
+                try:
+                    kw_summary = json.loads(kw_summary_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
+            kw_extracted = kw_summary.get("extracted", 0)
+            kw_skipped = kw_summary.get("skipped", 0)
+            kw_failed = kw_summary.get("failed", 0)
+            _log.info(
+                "[heavy/%s] Keyword extraction done — extracted=%d skipped=%d failed=%d",
+                job_id, kw_extracted, kw_skipped, kw_failed,
+            )
+
+            if kw_failed > 0:
+                raise ValueError(
+                    f"Keyword extraction had failures — "
+                    f"extracted={kw_extracted}, skipped={kw_skipped}, failed={kw_failed}. "
+                    f"Check keyword_subprocess.log for details."
+                )
+
+        except subprocess.TimeoutExpired:
+            raise ValueError("Keyword extraction timed out after 30 minutes")
+
+        # ── Step 2: Import bundle ─────────────────────────────────────────────
         topic_names = _build_name_dict(doc.get("topics", [])) or None
         lesson_names = _build_name_dict(doc.get("lessons", [])) or None
+        _log.info(
+            "[heavy/%s] Keyword stage passed (extracted=%d, skipped=%d). Starting import.",
+            job_id, kw_extracted, kw_skipped,
+        )
 
         raw_source = doc.get("source_pdf_path")
         source_pdf_path = Path(raw_source) if raw_source else None
@@ -1006,6 +1087,10 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             sync_one=sync_one,
             upload_pdfs=True,
         )
+
+        if isinstance(report, dict) and kw_summary:
+            report["keyword_extraction_summary"] = kw_summary
+
         _col(db).update_one(
             {"job_id": job_id},
             {"$set": {

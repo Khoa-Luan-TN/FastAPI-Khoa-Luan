@@ -53,6 +53,20 @@ _log = logging.getLogger(__name__)
 _DEFAULT_SUBJECT_TYPE = "Kết nối tri thức"
 
 
+def _normalize_vi_title(text: str) -> str:
+    """Convert predominantly ALL-CAPS Vietnamese title to sentence case."""
+    if not text:
+        return text
+    alpha_chars = [c for c in text if c.isalpha()]
+    if not alpha_chars:
+        return text
+    upper_count = sum(1 for c in alpha_chars if c.isupper())
+    if upper_count / len(alpha_chars) < 0.7:
+        return text
+    lowered = text.lower()
+    return lowered[0].upper() + lowered[1:] if lowered else text
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -426,6 +440,22 @@ def import_book_bundle(
 
     subj_oid = ObjectId(subj_id) if ObjectId.is_valid(subj_id) else subj_id
 
+    # Pre-scan Chunk/ to count chunk dirs per lesson (used for lesson_type inference)
+    chunk_root = bundle_dir / "Chunk"
+    _lesson_chunk_counts: Dict[str, int] = {}
+    if chunk_root.exists():
+        for _lcd in chunk_root.iterdir():
+            if not _lcd.is_dir():
+                continue
+            _m = re.search(r"_lesson_(\d+)$", _lcd.name)
+            if _m:
+                _lnum = f"{int(_m.group(1)):02d}"
+                _count = sum(
+                    1 for _cd in _lcd.iterdir()
+                    if _cd.is_dir() and re.search(r"chunk_\d+$", _cd.name)
+                )
+                _lesson_chunk_counts[_lnum] = _count
+
     # ─────────────────────────────────────────────────────────────────────────
     # 4. TOPICS
     # ─────────────────────────────────────────────────────────────────────────
@@ -433,13 +463,15 @@ def import_book_bundle(
 
     for t in topic_list:
         topic_num  = t["num_2d"]
-        topic_name = (topic_names or {}).get(topic_num) or f"Chủ đề {int(topic_num)}"
+        topic_name = _normalize_vi_title(
+            (topic_names or {}).get(topic_num) or f"Chủ đề {int(topic_num)}"
+        )
         ap_topic  = _asset_prefixes_for("topic", class_slug, subject_slug, topic_num=topic_num)
         topic_key = f"topic/{class_slug}/{subject_slug}/topic_{topic_num}"
 
         topic_doc: Dict[str, Any] = {
             "topic_name": topic_name,
-            "topic_num":  topic_num,
+            "topic_num":  int(topic_num),
             "subject_id": subj_oid,
         }
         if ap_topic:
@@ -492,7 +524,9 @@ def import_book_bundle(
             errors.append({"col": "lesson", "num": lesson_num, "error": f"topic {topic_num} was not imported"})
             continue
 
-        lesson_name = (lesson_names or {}).get(lesson_num) or f"Bài {int(lesson_num)}"
+        lesson_name = _normalize_vi_title(
+            (lesson_names or {}).get(lesson_num) or f"Bài {int(lesson_num)}"
+        )
         ap_lesson  = _asset_prefixes_for(
             "lesson", class_slug, subject_slug,
             topic_num=topic_num, lesson_num=lesson_num,
@@ -500,11 +534,18 @@ def import_book_bundle(
         lesson_key = f"lesson/{class_slug}/{subject_slug}/topic_{topic_num}/lesson_{lesson_num}"
         topic_oid   = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
 
+        _lcc = _lesson_chunk_counts.get(lesson_num, 0)
+        lesson_type = ("thuc hanh" if _lcc == 1 else "ly thuyet") if _lcc > 0 else None
+
         lesson_doc: Dict[str, Any] = {
             "lesson_name": lesson_name,
-            "lesson_num":  lesson_num,
+            "lesson_num":  int(lesson_num),
             "topic_id":    topic_oid,
         }
+        if lesson_type:
+            lesson_doc["lesson_type"] = lesson_type
+        if _lcc > 0:
+            lesson_doc["chunk_count"] = _lcc
         if ap_lesson:
             lesson_doc["asset_prefixes"] = ap_lesson
 
@@ -539,7 +580,6 @@ def import_book_bundle(
     # ─────────────────────────────────────────────────────────────────────────
     # 6. CHUNKS + KEYWORDS
     # ─────────────────────────────────────────────────────────────────────────
-    chunk_root = bundle_dir / "Chunk"
     affected_topic_ids: Set[str] = set()
     kw_inserted = kw_reused = ck_inserted = 0
     kw_errors: List[Dict[str, Any]] = []
@@ -572,7 +612,8 @@ def import_book_bundle(
                 m2 = re.search(r"chunk_(\d+)$", chunk_dir.name)
                 if not m2:
                     continue
-                chunk_num = f"{int(m2.group(1)):02d}"
+                chunk_num_int = int(m2.group(1))
+                chunk_num = f"{chunk_num_int:02d}"
 
                 # Find chunk metadata JSON (exclude .keywords.json)
                 chunk_jsons = [
@@ -592,8 +633,11 @@ def import_book_bundle(
                                    "error": f"JSON parse error: {exc}"})
                     continue
 
-                chunk_title = chunk_meta.get("title") or f"Phần {int(chunk_num)}"
+                chunk_title = _normalize_vi_title(
+                    chunk_meta.get("title") or f"Phần {chunk_num_int}"
+                )
                 lesson_type = chunk_meta.get("lesson_type") or ""
+                chunk_count_meta = chunk_meta.get("chunk_count")
 
                 if not topic_num:
                     errors.append({"col": "chunk", "lesson": lesson_num, "chunk": chunk_num,
@@ -612,13 +656,15 @@ def import_book_bundle(
 
                 chunk_doc: Dict[str, Any] = {
                     "chunk_name": chunk_title,
-                    "chunk_num":  chunk_num,
+                    "chunk_num":  chunk_num_int,
                     "lesson_id":  lesson_oid,
                 }
                 if ap_chunk:
                     chunk_doc["asset_prefixes"] = ap_chunk
                 if lesson_type:
                     chunk_doc["lesson_type"] = lesson_type
+                if chunk_count_meta is not None:
+                    chunk_doc["chunk_count"] = chunk_count_meta
 
                 chunk_id, chunk_op = _upsert_by_import_key(
                     db, "chunk", chunk_key, chunk_doc, actor=actor

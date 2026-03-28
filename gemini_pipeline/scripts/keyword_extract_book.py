@@ -129,30 +129,25 @@ def _update_lesson_type_meta(
     chunk_count: int,
 ) -> Tuple[Optional[Path], bool]:
     """
-    Ghi lesson_type vào "lesson meta json" theo ưu tiên:
-    1) meta json của chunk_01 (cùng stem với pdf chunk_01)
-    2) fallback: tạo lesson_meta.json ở lesson_dir
-    Return: (path_written, changed?)
+    Write lesson_type and chunk_count into EVERY chunk JSON in this lesson dir.
+    Also writes best-effort to lesson_meta.json fallback.
+    Returns (last_path_written, any_changed).
     """
     chunk_dirs = _chunk_dirs_of_lesson(lesson_dir)
     if not chunk_dirs:
         return (None, False)
 
-    # Prefer chunk_01 if exists
-    chunk01 = None
-    for d in chunk_dirs:
-        if d.name == "chunk_01":
-            chunk01 = d
-            break
-    if chunk01 is None:
-        chunk01 = chunk_dirs[0]
+    any_changed = False
+    last_path: Optional[Path] = None
 
-    chunk01_pdf = _find_chunk_pdf(chunk01)
-    meta_path = None
-    if chunk01_pdf is not None:
-        meta_path = chunk01_pdf.with_suffix(".json")
+    for chunk_dir in chunk_dirs:
+        chunk_pdf = _find_chunk_pdf(chunk_dir)
+        if chunk_pdf is None:
+            continue
+        meta_path = chunk_pdf.with_suffix(".json")
+        if not meta_path.exists():
+            continue
 
-    if meta_path is not None and meta_path.exists():
         meta = _safe_load_json(meta_path)
         if not isinstance(meta, dict):
             meta = {}
@@ -162,25 +157,26 @@ def _update_lesson_type_meta(
         meta["chunk_count"] = chunk_count
         after = (meta.get("lesson_type"), meta.get("chunk_count"))
 
-        changed = (before != after)
-        if changed:
+        if before != after:
             meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-        return (meta_path, changed)
+            any_changed = True
+        last_path = meta_path
 
-    # Fallback lesson-level meta
+    # Best-effort fallback lesson-level meta
     fallback = lesson_dir / "lesson_meta.json"
-    meta = _safe_load_json(fallback) if fallback.exists() else {}
-    if not isinstance(meta, dict):
-        meta = {}
+    fb_meta = _safe_load_json(fallback) if fallback.exists() else {}
+    if not isinstance(fb_meta, dict):
+        fb_meta = {}
+    fb_before = (fb_meta.get("lesson_type"), fb_meta.get("chunk_count"))
+    fb_meta["lesson_type"] = lesson_type
+    fb_meta["chunk_count"] = chunk_count
+    if fb_before != (fb_meta["lesson_type"], fb_meta["chunk_count"]) or not fallback.exists():
+        fallback.write_text(json.dumps(fb_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        any_changed = True
+    if last_path is None:
+        last_path = fallback
 
-    before = (meta.get("lesson_type"), meta.get("chunk_count"))
-    meta["lesson_type"] = lesson_type
-    meta["chunk_count"] = chunk_count
-    after = (meta.get("lesson_type"), meta.get("chunk_count"))
-
-    changed = (before != after) or (not fallback.exists())
-    fallback.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    return (fallback, changed)
+    return (last_path, any_changed)
 
 
 @dataclass
@@ -294,14 +290,25 @@ def extract_keywords_for_book(
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("book_stem", help="Tên book_stem (Output/<book_stem>)")
+    ap.add_argument("book_stem", nargs="?", default=None,
+                    help="Tên book_stem (Output/<book_stem>) — bỏ qua nếu dùng --bundle-dir")
+    ap.add_argument("--bundle-dir", default=None,
+                    help="Absolute path to bundle dir (overrides book_stem / Output/ assumption)")
     ap.add_argument("--config", default="config.env")
     ap.add_argument("--model", default="gemini-2.5-flash")
     ap.add_argument("--force", action="store_true", help="FORCE_REPROCESS keywords")
+    ap.add_argument("--output", default=None,
+                    help="Write JSON summary to this file path (for subprocess callers)")
     args = ap.parse_args()
 
+    if args.bundle_dir:
+        book_dir = Path(args.bundle_dir)
+    elif args.book_stem:
+        book_dir = Path("Output") / args.book_stem
+    else:
+        ap.error("Provide book_stem positional arg or --bundle-dir <absolute_path>")
+
     key_manager = get_key_manager(args.config)
-    book_dir = Path("Output") / args.book_stem
 
     summary = extract_keywords_for_book(
         key_manager=key_manager,
@@ -309,8 +316,15 @@ def main():
         model=args.model,
         force_reprocess=args.force,
     )
+
+    summary_dict = summary.to_dict()
     print("\n=== KEYWORD BATCH SUMMARY ===")
-    print(json.dumps(summary.to_dict(), ensure_ascii=False, indent=2))
+    print(json.dumps(summary_dict, ensure_ascii=False, indent=2))
+
+    if args.output:
+        Path(args.output).write_text(
+            json.dumps(summary_dict, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
 
 if __name__ == "__main__":
