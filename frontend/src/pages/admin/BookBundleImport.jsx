@@ -29,35 +29,35 @@ const TRANSIENT_STATUSES = new Set([
 ]);
 
 const STATUS_LABEL = {
-  uploaded:                  "Đang chuẩn bị trích xuất…",
-  extracting_topics:         "Đang tách chủ đề…",
-  reviewing_topics:          "Kiểm tra Chủ đề",
-  extracting_lessons:        "Đang tách bài học…",
-  reviewing_lessons:         "Kiểm tra Bài",
-  extracting_chunks:         "Đang tách chunk…",
-  reviewing_chunks:          "Kiểm tra Phần",
-  approved_for_heavy_stage:  "Sẵn sàng xử lý nặng",
-  heavy_stage_running:       "Đang xử lý nặng…",
-  heavy_stage_done:          "Hoàn tất",
-  error:                     "Lỗi",
+  uploaded:                 "Đang chuẩn bị trích xuất…",
+  extracting_topics:        "Đang tách chủ đề…",
+  reviewing_topics:         "Kiểm tra Chủ đề",
+  extracting_lessons:       "Đang tách bài học…",
+  reviewing_lessons:        "Kiểm tra Bài",
+  extracting_chunks:        "Đang tách chunk…",
+  reviewing_chunks:         "Kiểm tra Phần",
+  approved_for_heavy_stage: "Sẵn sàng xử lý nặng",
+  heavy_stage_running:      "Đang xử lý nặng…",
+  heavy_stage_done:         "Hoàn tất",
+  error:                    "Lỗi",
 };
 
 export default function BookBundleImport() {
   // ── Upload phase ──────────────────────────────────────────────────────────
-  const [phase, setPhase]           = useState("upload");
-  const [form, setForm]             = useState({
+  const [phase, setPhase]             = useState("upload");
+  const [form, setForm]               = useState({
     class_name: "", subject_name: "", subject_type: DEFAULT_SUBJECT_TYPE, model: DEFAULT_MODEL,
   });
-  const [pdfFile, setPdfFile]       = useState(null);
-  const [uploading, setUploading]   = useState(false);
+  const [pdfFile, setPdfFile]         = useState(null);
+  const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState("");
 
   // ── Job phase ─────────────────────────────────────────────────────────────
-  const [job, setJob]               = useState(null);
-  const [jobError, setJobError]     = useState("");
-  const [acting, setActing]         = useState(false);
+  const [job, setJob]         = useState(null);
+  const [jobError, setJobError] = useState("");
+  const [acting, setActing]   = useState(false);
 
-  // ── Edit lists ────────────────────────────────────────────────────────────
+  // ── Edit lists — merged incrementally, user edits preserved ──────────────
   const [editTopics,  setEditTopics]  = useState([]);
   const [editLessons, setEditLessons] = useState([]);
   const [editChunks,  setEditChunks]  = useState([]);
@@ -69,7 +69,7 @@ export default function BookBundleImport() {
 
   const pollRef = useRef(null);
 
-  // ── Polling ───────────────────────────────────────────────────────────────
+  // ── Polling — always merge on every tick to pick up incremental items ─────
   useEffect(() => {
     if (phase !== "job" || !job) return;
     if (!TRANSIENT_STATUSES.has(job.status)) { clearInterval(pollRef.current); return; }
@@ -78,9 +78,10 @@ export default function BookBundleImport() {
       try {
         const res = await getReviewJob(job.job_id);
         setJob(res.job);
+        // Always merge (not replace) so user edits on already-seen items are preserved
+        mergeEdit(res.job);
         if (!TRANSIENT_STATUSES.has(res.job.status)) {
           clearInterval(pollRef.current);
-          syncEdit(res.job);
         }
       } catch (_) { /* ignore */ }
     }, POLL_MS);
@@ -88,7 +89,41 @@ export default function BookBundleImport() {
     return () => clearInterval(pollRef.current);
   }, [phase, job?.status, job?.job_id]);
 
-  function syncEdit(j) {
+  /**
+   * Append-only merge of job items into local edit state.
+   * Only adds items that weren't already present (by index).
+   * Existing edits and approvals are never reset.
+   */
+  function mergeEdit(j) {
+    const newTopics  = (j.topics  || []).map((x) => ({ ...x }));
+    const newLessons = (j.lessons || []).map((x) => ({ ...x }));
+    const newChunks  = (j.chunks  || []).map((x) => ({ ...x }));
+
+    setEditTopics((prev) =>
+      newTopics.length > prev.length
+        ? [...prev, ...newTopics.slice(prev.length)]
+        : prev,
+    );
+    setEditLessons((prev) =>
+      newLessons.length > prev.length
+        ? [...prev, ...newLessons.slice(prev.length)]
+        : prev,
+    );
+    setEditChunks((prev) =>
+      newChunks.length > prev.length
+        ? [...prev, ...newChunks.slice(prev.length)]
+        : prev,
+    );
+    // Extend approval array for newly arrived topics only
+    setTopicApprovals((prev) =>
+      newTopics.length > prev.length
+        ? [...prev, ...new Array(newTopics.length - prev.length).fill(false)]
+        : prev,
+    );
+  }
+
+  /** Full reset — used only when switching to a brand-new job. */
+  function resetEdit(j) {
     const topics  = (j.topics  || []).map((x) => ({ ...x }));
     const lessons = (j.lessons || []).map((x) => ({ ...x }));
     const chunks  = (j.chunks  || []).map((x) => ({ ...x }));
@@ -113,8 +148,8 @@ export default function BookBundleImport() {
         form.model || DEFAULT_MODEL,
         pdfFile,
       );
+      resetEdit(res.job);
       setJob(res.job);
-      syncEdit(res.job);
       setPhase("job");
     } catch (err) {
       setUploadError(String(err?.message || err));
@@ -131,7 +166,7 @@ export default function BookBundleImport() {
       await fn();
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
-      syncEdit(res.job);
+      mergeEdit(res.job);
     } catch (err) {
       setJobError(String(err?.message || err));
     } finally {
@@ -192,7 +227,7 @@ export default function BookBundleImport() {
     });
   }
 
-  // Saves topics then triggers lesson extraction on backend
+  // Saves topics to DB then triggers lessons extraction on backend
   const handleApproveAllTopics = () => act(async () => {
     await saveReviewTopics(job.job_id, editTopics);
     await approveTopics(job.job_id);
@@ -204,7 +239,7 @@ export default function BookBundleImport() {
     await saveReviewLessons(job.job_id, editLessons);
     await approveLessons(job.job_id);
   });
-  // Saves chunks then marks approved_for_heavy_stage on backend
+  // Saves chunks then marks approved_for_heavy_stage
   const handleApproveChunks = () => act(async () => {
     await saveReviewChunks(job.job_id, editChunks);
     await approveChunks(job.job_id);
@@ -231,15 +266,30 @@ export default function BookBundleImport() {
     setPreviewKey(0);
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const status = job?.status;
+
+  const isExtractingTopics  = status === "extracting_topics";
+  const isTopicStage        = status === "reviewing_topics";
+  const isExtractingLessons = status === "extracting_lessons";
+  const isLessonStage       = status === "reviewing_lessons";
+  const isExtractingChunks  = status === "extracting_chunks";
+  const isChunkStage        = status === "reviewing_chunks";
+
+  // Show review pane as soon as items are available, even while extracting
+  const showTopicReview  = (isTopicStage  || isExtractingTopics)  && editTopics.length  > 0;
+  const showLessonReview = (isLessonStage || isExtractingLessons) && editLessons.length > 0;
+  const showChunkReview  = (isChunkStage  || isExtractingChunks)  && editChunks.length  > 0;
+
+  // Approval buttons only enabled when extraction is fully done
   const allTopicsApproved = topicApprovals.length > 0 && topicApprovals.every(Boolean);
-  const isTopicStage  = job?.status === "reviewing_topics";
-  const isLessonStage = job?.status === "reviewing_lessons";
-  const isChunkStage  = job?.status === "reviewing_chunks";
+  const canApproveTopics  = isTopicStage  && allTopicsApproved;
+  const canApproveLessons = isLessonStage;
+  const canApproveChunks  = isChunkStage;
 
   const PAST_TOPICS_STATUSES = new Set([
     "extracting_lessons", "reviewing_lessons",
-    "extracting_chunks", "reviewing_chunks",
+    "extracting_chunks",  "reviewing_chunks",
     "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
   ]);
   const PAST_LESSONS_STATUSES = new Set([
@@ -247,11 +297,11 @@ export default function BookBundleImport() {
     "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
   ]);
 
-  const isPastTopics  = job && PAST_TOPICS_STATUSES.has(job.status);
-  const isPastLessons = job && PAST_LESSONS_STATUSES.has(job.status);
+  const isPastTopics  = job && PAST_TOPICS_STATUSES.has(status);
+  const isPastLessons = job && PAST_LESSONS_STATUSES.has(status);
 
   return (
-    <div style={{ ...s.page, maxWidth: isTopicStage ? 1200 : 760 }}>
+    <div style={{ ...s.page, maxWidth: isTopicStage || isExtractingTopics ? 1200 : 760 }}>
       <h2 style={s.heading}>Import sách</h2>
       <p style={s.sub}>
         Upload PDF sách giáo khoa — hệ thống trích xuất cấu trúc Chủ đề / Bài / Phần để kiểm tra trước khi import.
@@ -329,7 +379,7 @@ export default function BookBundleImport() {
             </div>
           )}
 
-          {/* Extraction progress */}
+          {/* Extraction progress banner — shown during any extracting status */}
           {TRANSIENT_STATUSES.has(job.status) && job.status !== "heavy_stage_running" && (
             <ExtractionProgress job={job} />
           )}
@@ -337,14 +387,14 @@ export default function BookBundleImport() {
             <div style={s.infoBox}>Đang chạy import vào database — vui lòng chờ…</div>
           )}
 
-          {/* ── Topic review: visual two-pane ── */}
-          {isTopicStage && editTopics.length > 0 && (
+          {/* ── Topic review: two-pane (shown during extracting_topics OR reviewing_topics if items available) ── */}
+          {showTopicReview && (
             <TopicReviewPane
               job={job}
               editTopics={editTopics}
               topicIdx={topicIdx}
               topicApprovals={topicApprovals}
-              allApproved={allTopicsApproved}
+              canApproveAll={canApproveTopics}
               previewKey={previewKey}
               onEditItem={handleEditTopicItem}
               onNavigateTo={handleTopicNavigateTo}
@@ -356,21 +406,22 @@ export default function BookBundleImport() {
             />
           )}
 
-          {/* ── Topics summary after review ── */}
+          {/* Topics summary after review */}
           {isPastTopics && (
             <CompactList title="✓ Chủ đề" items={job.topics} fields={["heading", "title"]} />
           )}
 
-          {/* ── Lesson review: flat editable list ── */}
-          {isLessonStage && (
+          {/* ── Lesson review (shown during extracting_lessons OR reviewing_lessons if items available) ── */}
+          {showLessonReview && (
             <ReviewSection
-              title="Bài"
+              title={`Bài${isExtractingLessons ? " (đang tải…)" : ""}`}
               items={editLessons}
               editable
               onChange={setEditLessons}
               fields={["heading", "title"]}
               onSave={handleSaveLessons}
               onApprove={handleApproveLessons}
+              showApprove={canApproveLessons}
               loading={acting}
             />
           )}
@@ -378,16 +429,17 @@ export default function BookBundleImport() {
             <CompactList title="✓ Bài" items={job.lessons} fields={["heading", "title"]} />
           )}
 
-          {/* ── Chunk review: flat editable list ── */}
-          {isChunkStage && (
+          {/* ── Chunk review (shown during extracting_chunks OR reviewing_chunks if items available) ── */}
+          {showChunkReview && (
             <ReviewSection
-              title="Phần (Chunk)"
+              title={`Phần (Chunk)${isExtractingChunks ? " (đang tải…)" : ""}`}
               items={editChunks}
               editable
               onChange={setEditChunks}
               fields={["title"]}
               onSave={handleSaveChunks}
               onApprove={handleApproveChunks}
+              showApprove={canApproveChunks}
               loading={acting}
             />
           )}
@@ -420,7 +472,7 @@ export default function BookBundleImport() {
 // TopicReviewPane — two-pane visual review for one topic at a time
 // ─────────────────────────────────────────────────────────────────────────────
 function TopicReviewPane({
-  job, editTopics, topicIdx, topicApprovals, allApproved, previewKey,
+  job, editTopics, topicIdx, topicApprovals, canApproveAll, previewKey,
   onEditItem, onNavigateTo, onSave, onRecut, onApproveThis, onApproveAll, loading,
 }) {
   const topic = editTopics[topicIdx] || {};
@@ -450,7 +502,8 @@ function TopicReviewPane({
           disabled={topicIdx >= total - 1 || loading}
           onClick={() => onNavigateTo(topicIdx + 1)}
         >Sau →</button>
-        {allApproved && (
+        {/* Approve-all only when extraction is done AND every topic individually approved */}
+        {canApproveAll && (
           <button
             style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
             disabled={loading}
@@ -564,7 +617,7 @@ function TopicReviewPane({
 // ─────────────────────────────────────────────────────────────────────────────
 // ReviewSection — flat editable list (lessons, chunks)
 // ─────────────────────────────────────────────────────────────────────────────
-function ReviewSection({ title, items, editable, onChange, fields, onSave, onApprove, loading }) {
+function ReviewSection({ title, items, editable, onChange, fields, onSave, onApprove, showApprove, loading }) {
   if (!items || items.length === 0) return null;
 
   function handleChange(idx, field, value) {
@@ -578,7 +631,10 @@ function ReviewSection({ title, items, editable, onChange, fields, onSave, onApp
         {editable && (
           <div style={{ display: "flex", gap: 8 }}>
             <button style={s.btnSecondary} disabled={loading} onClick={onSave}>Lưu</button>
-            <button style={s.btnPrimary} disabled={loading} onClick={onApprove}>Xác nhận</button>
+            {/* Approve button only shown when extraction is complete for this stage */}
+            {showApprove && (
+              <button style={s.btnPrimary} disabled={loading} onClick={onApprove}>Xác nhận</button>
+            )}
           </div>
         )}
       </div>

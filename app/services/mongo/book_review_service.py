@@ -182,6 +182,13 @@ _PROGRESS_FIELDS = (
 
 _EXTRACTION_STATUSES = {"uploaded", "extracting_topics", "extracting_lessons", "extracting_chunks"}
 
+# Maps extraction status → workspace partial file field name
+_PARTIAL_FIELD: Dict[str, str] = {
+    "extracting_topics": "topics",
+    "extracting_lessons": "lessons",
+    "extracting_chunks": "chunks",
+}
+
 
 def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
     doc = _col(db).find_one({"job_id": job_id})
@@ -189,11 +196,14 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
         return None
     doc.pop("_id", None)
 
-    # While extraction subprocess is running, overlay live progress from progress.json
-    if doc.get("status") in _EXTRACTION_STATUSES:
+    status = doc.get("status")
+    if status in _EXTRACTION_STATUSES:
         workspace = doc.get("workspace")
         if workspace:
-            progress_path = Path(workspace) / "progress.json"
+            wp = Path(workspace)
+
+            # Overlay live progress fields from progress.json
+            progress_path = wp / "progress.json"
             if progress_path.exists():
                 try:
                     progress = json.loads(progress_path.read_text(encoding="utf-8"))
@@ -202,6 +212,19 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                             doc[key] = progress[key]
                 except Exception:
                     pass
+
+            # Overlay partial items written incrementally by the subprocess.
+            # Only expand: never shrink (user edits on already-seen items stay valid).
+            partial_field = _PARTIAL_FIELD.get(status)
+            if partial_field:
+                partial_path = wp / f"{partial_field}_partial.json"
+                if partial_path.exists():
+                    try:
+                        partial_items = json.loads(partial_path.read_text(encoding="utf-8"))
+                        if len(partial_items) > len(doc.get(partial_field, [])):
+                            doc[partial_field] = partial_items
+                    except Exception:
+                        pass
 
     return doc
 
@@ -228,14 +251,31 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> None:
 
 
 def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
-    """Advance from reviewing_topics → extracting_lessons, then trigger lessons extraction."""
+    """
+    Advance from reviewing_topics → extracting_lessons.
+
+    Writes approved_topics.json to the workspace (current DB topics after admin edits)
+    so the lessons subprocess can derive lessons from the approved topic page ranges.
+    Clears the stale lessons array in DB so the UI starts fresh.
+    """
     doc = _col(db).find_one({"job_id": job_id})
     if not doc or doc.get("status") != "reviewing_topics":
         return False
     workspace = Path(doc["workspace"])
+
+    # Persist approved (possibly edited) topics for the subprocess
+    approved_topics = doc.get("topics", [])
+    (workspace / "approved_topics.json").write_text(
+        json.dumps(approved_topics, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
     _col(db).update_one(
         {"job_id": job_id},
-        {"$set": {"status": "extracting_lessons", "updated_at": _utc_now()}},
+        {"$set": {
+            "status": "extracting_lessons",
+            "lessons": [],        # clear stale data
+            "updated_at": _utc_now(),
+        }},
     )
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "lessons"), daemon=True
@@ -244,14 +284,31 @@ def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
 
 
 def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
-    """Advance from reviewing_lessons → extracting_chunks, then trigger chunks extraction."""
+    """
+    Advance from reviewing_lessons → extracting_chunks.
+
+    Writes approved_lessons.json to the workspace (current DB lessons after admin edits)
+    so the chunks subprocess can process only the approved lesson set.
+    Clears the stale chunks array in DB so the UI starts fresh.
+    """
     doc = _col(db).find_one({"job_id": job_id})
     if not doc or doc.get("status") != "reviewing_lessons":
         return False
     workspace = Path(doc["workspace"])
+
+    # Persist approved (possibly edited) lessons for the subprocess
+    approved_lessons = doc.get("lessons", [])
+    (workspace / "approved_lessons.json").write_text(
+        json.dumps(approved_lessons, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
     _col(db).update_one(
         {"job_id": job_id},
-        {"$set": {"status": "extracting_chunks", "updated_at": _utc_now()}},
+        {"$set": {
+            "status": "extracting_chunks",
+            "chunks": [],         # clear stale data
+            "updated_at": _utc_now(),
+        }},
     )
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "chunks"), daemon=True
