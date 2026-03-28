@@ -15,6 +15,7 @@ from .utils import (
     build_kaggle_pack,
     push_dataset_version,
     push_kernel,
+    clean_dl_dir,
     download_kernel_output,
     safe_extract_zip_to_output,
 )
@@ -87,22 +88,54 @@ def main():
     else:
         log.info("Skip kernel push/wait.")
 
-    # 3) download output
-    download_kernel_output(KERNEL_REF, DL_DIR, force=False)
+    # 3) clean stale artifacts then download fresh kernel output
+    log.info("Cleaning stale download artifacts for book_stem=%r in %s", args.book_stem, DL_DIR)
+    clean_dl_dir(DL_DIR, args.book_stem)
+    log.info("Download directory clean — starting fresh download")
 
-    zip_path = DL_DIR / f"{args.book_stem}_postprocessed.zip"
-    if not zip_path.exists():
-        raise FileNotFoundError(f"Missing kernel zip output: {zip_path}")
+    download_kernel_output(KERNEL_REF, DL_DIR, force=True)
 
-    log.info("Downloaded: %s", zip_path)
+    expected_zip = DL_DIR / f"{args.book_stem}_postprocessed.zip"
+    log.info("Expected zip: %s", expected_zip)
+
+    found_zips = sorted(DL_DIR.glob("*_postprocessed.zip"))
+    log.info(
+        "Postprocessed zips present after download (%d): %s",
+        len(found_zips),
+        [p.name for p in found_zips],
+    )
+
+    if not expected_zip.exists():
+        found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
+        raise FileNotFoundError(
+            f"Missing kernel zip output for book_stem={args.book_stem!r}\n"
+            f"  expected : {expected_zip}\n"
+            f"  found zips: {[p.name for p in found_zips]}\n"
+            f"  found stems: {found_stems}\n"
+            f"  Likely cause: Kaggle kernel produced output for a different book_stem, "
+            f"or the kernel did not run for this book."
+        )
+
+    log.info("Downloaded: %s", expected_zip)
+
+    # Stem guard: refuse to apply a zip that belongs to a different book
+    with __import__("zipfile").ZipFile(expected_zip, "r") as _z:
+        _top = sorted({p.split("/", 1)[0] for p in _z.namelist() if p and not p.endswith("/")})
+    if len(_top) != 1 or _top[0] != args.book_stem:
+        raise RuntimeError(
+            f"Zip stem mismatch — will not apply wrong output.\n"
+            f"  expected top-level folder: {args.book_stem!r}\n"
+            f"  zip contains             : {_top}\n"
+            f"  zip path                 : {expected_zip}"
+        )
 
     # 4) apply zip into Output/
     if not args.no_apply:
         print("[STAGE:applying]", flush=True)
-        dst = safe_extract_zip_to_output(zip_path, OUTPUT_ROOT, overwrite=args.overwrite)
+        dst = safe_extract_zip_to_output(expected_zip, OUTPUT_ROOT, overwrite=args.overwrite)
         log.info("✅ Applied to: %s", dst)
     else:
-        log.info("No-apply: kept zip at %s", zip_path)
+        log.info("No-apply: kept zip at %s", expected_zip)
 
     log.info("✅ DONE.")
 

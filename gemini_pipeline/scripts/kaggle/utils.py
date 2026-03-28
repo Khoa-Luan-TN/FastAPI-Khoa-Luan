@@ -77,6 +77,55 @@ def push_kernel(kernel_dir: Path, kernel_ref: str) -> None:
     print("[STAGE:kernel_done]", flush=True)
 
 
+def clean_dl_dir(dl_dir: Path, book_stem: str) -> None:
+    """
+    Remove stale artifacts from a previous run so that Kaggle CLI cannot
+    skip downloading fresh files for *book_stem*.
+
+    Removes:
+      - all  *_postprocessed.zip  files (any book_stem)
+      - any  <other_stem>/        subdirectory that is NOT book_stem
+      - any  <other_stem>_*       files whose stem-prefix is NOT book_stem
+    Leaves intact anything that belongs to book_stem so that the subsequent
+    --force download replaces it cleanly.
+    """
+    if not dl_dir.exists():
+        log.info("[clean_dl_dir] directory does not exist yet — nothing to clean: %s", dl_dir)
+        return
+
+    log.info("[clean_dl_dir] cleaning stale artifacts in %s for book_stem=%r", dl_dir, book_stem)
+    removed: list[str] = []
+
+    for entry in sorted(dl_dir.iterdir()):
+        # Remove ALL postprocessed zips — fresh ones will be re-downloaded
+        if entry.is_file() and entry.name.endswith("_postprocessed.zip"):
+            entry.unlink()
+            removed.append(entry.name)
+            continue
+
+        # Remove subdirectories that belong to a different book_stem
+        if entry.is_dir() and entry.name != book_stem:
+            shutil.rmtree(entry)
+            removed.append(entry.name + "/")
+            continue
+
+        # Remove loose files whose stem-prefix looks like a different book_stem
+        # (e.g. OldBook_something.json left from a prior run)
+        if entry.is_file():
+            # If the filename starts with a known-different-stem prefix, remove it
+            if not entry.name.startswith(book_stem) and "_" in entry.name:
+                # Only remove if it looks like it belongs to another book (has a long prefix)
+                prefix_candidate = entry.name.split("_")[0]
+                if prefix_candidate and prefix_candidate != book_stem:
+                    entry.unlink()
+                    removed.append(entry.name)
+
+    if removed:
+        log.info("[clean_dl_dir] removed %d stale artifact(s): %s", len(removed), removed)
+    else:
+        log.info("[clean_dl_dir] nothing stale to remove")
+
+
 def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -> None:
     dl_dir.mkdir(parents=True, exist_ok=True)
     cmd = ["kaggle", "kernels", "output", kernel_ref, "-p", str(dl_dir)]
