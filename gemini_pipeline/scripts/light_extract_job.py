@@ -223,6 +223,55 @@ def _build_lesson_pdfs(
         )
 
 
+def _build_topic_pdfs(
+    bundle_dir: Path,
+    book_stem: str,
+    source_pdf: str,
+    topics: list,
+) -> None:
+    """
+    Slice source_pdf into canonical topic PDFs and write companion JSON metadata.
+
+    Layout: bundle_dir/Topic/topic_NN/<book_stem>_topic_NN.pdf
+    This matches _find_topic_pdf strategy 1 (rglob *_topic_NN.pdf) and
+    strategy 2 (subdir named topic_NN) in book_bundle_import_service.py.
+    """
+    topic_dir = bundle_dir / "Topic"
+    if topic_dir.exists():
+        shutil.rmtree(topic_dir)
+    topic_dir.mkdir(parents=True, exist_ok=True)
+
+    for idx, topic in enumerate(topics):
+        top_name = (topic.get("name") or f"topic_{idx + 1:02d}").strip()
+        safe_name = top_name.replace("/", "_").replace("\\", "_")
+        # Ensure the folder name always starts with "topic_" for deterministic discovery
+        if not safe_name.lower().startswith("topic_"):
+            safe_name = f"topic_{idx + 1:02d}"
+        top_folder = topic_dir / safe_name
+        top_folder.mkdir(parents=True, exist_ok=True)
+
+        out_pdf = top_folder / f"{book_stem}_{safe_name}.pdf"
+        _slice_pdf(source_pdf, topic.get("start") or 1, topic.get("end") or 1, out_pdf)
+
+        topic_num = safe_name.split("_")[-1] if "_" in safe_name else f"{idx + 1:02d}"
+        meta = {
+            "kind": "topic",
+            "name": safe_name,
+            "start": topic.get("start") or 1,
+            "end": topic.get("end") or 1,
+            "source_pdf": str(Path(source_pdf).resolve()),
+            "pdf": str(out_pdf.resolve()),
+            "topic_num": topic_num,
+            "topic_name": (topic.get("title") or "").strip(),
+            "raw_heading": (topic.get("heading") or "").strip(),
+            "raw_title": (topic.get("title") or "").strip(),
+        }
+        out_pdf.with_suffix(".json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+
 # ── Stage: topics ─────────────────────────────────────────────────────────────
 
 def _run_topics(workspace: Path, config: dict) -> None:
@@ -542,11 +591,13 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         )
         log(f"topic {i + 1}/{n}: pages {t_start}-{t_end} -> {len(topic_lessons)} lessons")
 
-    log("rebuilding lesson bundle from approved topics")
+    log("rebuilding bundle from approved topics (Topic/ + Lesson/)")
     bundle_dir = workspace / book_stem
+    _build_topic_pdfs(bundle_dir, book_stem, pdf_path, approved_topics)
+    log(f"topic PDFs rebuilt under {bundle_dir / 'Topic'} ({len(approved_topics)} topic(s))")
     _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, lessons_out)
     _write_bundle_manifest(bundle_dir, book_stem, approved_topics, lessons_out)
-    log(f"lesson bundle ready: {bundle_dir}")
+    log(f"bundle ready: {bundle_dir}")
 
     state["rebuilt_bundle_path"] = str(bundle_dir)
     (workspace / "extraction_state.json").write_text(
@@ -658,9 +709,6 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         log(f"chunks stage: processing {len(approved_lessons)} lessons (full mode)")
 
     bundle_dir = workspace / book_stem
-    log("rebuilding lesson PDFs from approved lessons")
-    _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, approved_lessons)
-    log(f"lesson PDFs rebuilt under {bundle_dir / 'Lesson'}")
 
     # Canonical manifest: single-topic in debug mode, full book otherwise
     if debug_enabled and debug_topic_for_manifest is not None:
@@ -676,6 +724,12 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             if approved_topics_path.exists()
             else []
         )
+
+    log("rebuilding bundle from approved topics/lessons (Topic/ + Lesson/)")
+    _build_topic_pdfs(bundle_dir, book_stem, pdf_path, topics_for_manifest)
+    log(f"topic PDFs rebuilt under {bundle_dir / 'Topic'} ({len(topics_for_manifest)} topic(s))")
+    _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, approved_lessons)
+    log(f"lesson PDFs rebuilt under {bundle_dir / 'Lesson'}")
     _write_bundle_manifest(bundle_dir, book_stem, topics_for_manifest, approved_lessons)
     log("bundle manifest updated")
 
