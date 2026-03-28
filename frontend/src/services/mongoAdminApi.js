@@ -258,6 +258,15 @@ export function reviewChunkPdfUrl(jobId, idx, key = 0) {
   return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}?k=${key}`;
 }
 
+// POST /admin/mongo/book-review/jobs/:id/debug-topic
+// topicIndex: number | null  (null clears debug mode)
+export function setDebugTopic(jobId, topicIndex) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/debug-topic`,
+    { method: "POST", body: JSON.stringify({ topic_index: topicIndex }) },
+  );
+}
+
 export function patchReviewChunk(jobId, idx, patch) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,

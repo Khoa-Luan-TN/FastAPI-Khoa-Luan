@@ -410,6 +410,19 @@ def _run_topics(workspace: Path, config: dict) -> None:
 
 # ── Stage: lessons ────────────────────────────────────────────────────────────
 
+def _read_debug_topic_index(workspace: Path) -> Optional[int]:
+    """Return the debug_topic_index from debug_config.json, or None if not set."""
+    p = workspace / "debug_config.json"
+    if not p.exists():
+        return None
+    try:
+        cfg = json.loads(p.read_text(encoding="utf-8"))
+        v = cfg.get("topic_index")
+        return int(v) if v is not None else None
+    except Exception:
+        return None
+
+
 def _run_lessons(workspace: Path, config: dict) -> None:
     approved_path = workspace / "approved_topics.json"
     if not approved_path.exists():
@@ -427,12 +440,35 @@ def _run_lessons(workspace: Path, config: dict) -> None:
     log("stage=lessons")
     log(f"approved topics: {len(approved_topics)}")
 
+    # ── Debug mode: restrict to a single topic ────────────────────────────────
+    debug_topic_index = _read_debug_topic_index(workspace)
+    if debug_topic_index is not None:
+        if 0 <= debug_topic_index < len(approved_topics):
+            dbg = approved_topics[debug_topic_index]
+            log(
+                f"[DEBUG] debug_topic_index={debug_topic_index} "
+                f"topic='{dbg.get('heading', '')} {dbg.get('title', '')}' "
+                f"pages {dbg.get('start')}-{dbg.get('end')} "
+                f"— restricting lessons to this topic only"
+            )
+            approved_topics = [dbg]
+        else:
+            log(
+                f"[DEBUG] debug_topic_index={debug_topic_index} out of range "
+                f"({len(approved_topics)} topics) — ignoring, running full book"
+            )
+            debug_topic_index = None
+
     raw_lessons: list = state.get("raw_lessons", [])
     book_stem: str = state.get("book_stem", "book")
     pdf_path: str = config["source_pdf_path"]
     n = len(approved_topics)
 
     log(f"raw lessons from state: {len(raw_lessons)}")
+    if debug_topic_index is not None:
+        log(f"[DEBUG] lessons stage: processing {n} topic (debug mode)")
+    else:
+        log(f"lessons stage: processing {n} topics (full mode)")
 
     _write_progress(
         workspace,
@@ -552,6 +588,42 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     key_manager = get_key_manager(api_config)
 
     log(f"book_stem={book_stem}")
+
+    # ── Debug mode: restrict to lessons of a single topic ─────────────────────
+    debug_topic_index = _read_debug_topic_index(workspace)
+    if debug_topic_index is not None:
+        approved_topics_path = workspace / "approved_topics.json"
+        if approved_topics_path.exists():
+            all_topics = json.loads(approved_topics_path.read_text(encoding="utf-8"))
+            if 0 <= debug_topic_index < len(all_topics):
+                dbg = all_topics[debug_topic_index]
+                t_start = int(dbg.get("start") or 1)
+                t_end = int(dbg.get("end") or t_start)
+                log(
+                    f"[DEBUG] debug_topic_index={debug_topic_index} "
+                    f"topic='{dbg.get('heading', '')} {dbg.get('title', '')}' "
+                    f"pages {t_start}-{t_end}"
+                )
+                before = len(approved_lessons)
+                approved_lessons = [
+                    l for l in approved_lessons
+                    if int(l.get("end") or 0) >= t_start and int(l.get("start") or 0) <= t_end
+                ]
+                log(
+                    f"[DEBUG] filtered lessons for chunking: {before} -> {len(approved_lessons)} "
+                    f"(lesson PDFs to chunk: {len(approved_lessons)})"
+                )
+            else:
+                log(
+                    f"[DEBUG] debug_topic_index={debug_topic_index} out of range "
+                    f"({len(all_topics)} topics) — ignoring, running full book"
+                )
+                debug_topic_index = None
+        else:
+            log("[DEBUG] approved_topics.json not found — ignoring debug_topic_index, running full book")
+            debug_topic_index = None
+    else:
+        log(f"chunks stage: processing {len(approved_lessons)} lessons (full mode)")
 
     bundle_dir = workspace / book_stem
     log("rebuilding lesson PDFs from approved lessons")

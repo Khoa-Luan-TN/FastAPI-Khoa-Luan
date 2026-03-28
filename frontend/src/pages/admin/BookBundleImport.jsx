@@ -19,6 +19,7 @@ import {
   recutReviewLesson,
   reviewChunkPdfUrl,
   patchReviewChunk,
+  setDebugTopic,
 } from "../../services/mongoAdminApi";
 
 const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
@@ -253,6 +254,21 @@ export default function BookBundleImport() {
       if (nextUnapproved >= 0) setTopicIdx(nextUnapproved);
       return next;
     });
+  }
+
+  async function handleSetDebugTopic(idx) {
+    const isAlready = job?.debug_topic_index === idx;
+    setActing(true);
+    setJobError("");
+    try {
+      await setDebugTopic(job.job_id, isAlready ? null : idx);
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
   }
 
   const handleApproveAllTopics = () =>
@@ -660,6 +676,7 @@ export default function BookBundleImport() {
               onRecut={handleRecutCurrentTopic}
               onApproveThis={handleApproveThisTopic}
               onApproveAll={handleApproveAllTopics}
+              onSetDebugTopic={handleSetDebugTopic}
               loading={acting}
             />
           )}
@@ -747,6 +764,7 @@ function TopicReviewPane({
   onRecut,
   onApproveThis,
   onApproveAll,
+  onSetDebugTopic,
   loading,
 }) {
   const topic = editTopics[topicIdx] || {};
@@ -860,6 +878,40 @@ function TopicReviewPane({
                 </Field>
               </div>
             </div>
+            {(() => {
+              const isDebug = job.debug_topic_index === topicIdx;
+              return (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    background: isDebug ? "#fef3c7" : "#f9fafb",
+                    border: `1px solid ${isDebug ? "#fbbf24" : "#e5e7eb"}`,
+                    fontSize: 12,
+                    color: isDebug ? "#92400e" : "#6b7280",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span>{isDebug ? "🐛 Debug topic đang active" : "Debug mode: chưa chọn"}</span>
+                  <button
+                    style={{
+                      ...s.btnSecondary,
+                      fontSize: 11,
+                      padding: "2px 8px",
+                      background: isDebug ? "#fbbf24" : undefined,
+                      color: isDebug ? "#78350f" : undefined,
+                    }}
+                    disabled={loading}
+                    onClick={() => onSetDebugTopic(topicIdx)}
+                  >
+                    {isDebug ? "Bỏ debug" : "Debug topic này"}
+                  </button>
+                </div>
+              );
+            })()}
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
                 Lưu & đồng bộ

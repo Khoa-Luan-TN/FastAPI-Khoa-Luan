@@ -90,6 +90,7 @@ def create_job(
         "status": "extracting_topics",
         "error": None,
         "heavy_report": None,
+        "debug_topic_index": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -343,6 +344,29 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> None:
         {"job_id": job_id},
         {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
     )
+
+
+def set_debug_topic(db: Database, job_id: str, topic_index: Optional[int]) -> Dict[str, Any]:
+    """Set or clear the debug topic index. Persists to MongoDB and workspace/debug_config.json."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return {"ok": False, "error": "Job not found"}
+
+    if topic_index is not None:
+        topics = doc.get("topics", [])
+        if not (0 <= topic_index < len(topics)):
+            return {"ok": False, "error": f"Topic index {topic_index} out of range (have {len(topics)} topics)"}
+
+    workspace = Path(doc["workspace"])
+    (workspace / "debug_config.json").write_text(
+        json.dumps({"topic_index": topic_index}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"debug_topic_index": topic_index, "updated_at": _utc_now()}},
+    )
+    return {"ok": True, "debug_topic_index": topic_index}
 
 
 def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:

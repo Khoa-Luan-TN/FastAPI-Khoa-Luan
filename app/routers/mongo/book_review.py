@@ -223,6 +223,18 @@ async def serve_chunk_pdf(job_id: str, idx: int):
     raise HTTPException(status_code=404, detail="Chunk PDF not found — extraction may still be running")
 
 
+# ── Debug topic selection ─────────────────────────────────────────────────────
+
+@router.post("/book-review/jobs/{job_id}/debug-topic", summary="Set or clear debug topic index")
+async def set_debug_topic(job_id: str, body: Dict[str, Any] = Body(...)):
+    _get_or_404(job_id)
+    from app.services.mongo.book_review_service import set_debug_topic as _set
+    result = _set(db, job_id, body.get("topic_index"))
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
 # ── Per-topic edit / recut ────────────────────────────────────────────────────
 
 @router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Sync a single topic item to bundle")
