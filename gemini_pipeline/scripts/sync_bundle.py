@@ -56,10 +56,98 @@ def _num_from_heading(heading: str) -> str:
     return m.group(0) if m else ""
 
 
+def _build_manifest_items_from_meta(parent_dir: Path, kind: str) -> list[dict]:
+    """
+    Read canonical item JSONs from Topic/ or Lesson/ and convert them into
+    manifest list format:
+      [{"topic_01": {...}}, ...]
+      [{"lesson_01": {...}}, ...]
+    """
+    prefix = "topic_" if kind == "topic" else "lesson_"
+    items: list[dict] = []
+
+    if not parent_dir.exists():
+        return items
+
+    meta_files = sorted(parent_dir.rglob("*.json"))
+    flat: list[dict] = []
+
+    for meta_path in meta_files:
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        name = str(meta.get("name") or "").strip()
+        start = meta.get("start")
+        end = meta.get("end")
+        heading = (meta.get("heading") or "").strip()
+        title = (meta.get("title") or "").strip()
+
+        if not name.startswith(prefix):
+            continue
+        if not isinstance(start, int) or not isinstance(end, int):
+            continue
+
+        flat.append({
+            "name": name,
+            "start": start,
+            "end": end,
+            "heading": heading,
+            "title": title,
+        })
+
+    flat.sort(key=lambda x: (x["start"], x["name"]))
+
+    for item in flat:
+        items.append({
+            item["name"]: {
+                "start": item["start"],
+                "end": item["end"],
+                "heading": item["heading"],
+                "title": item["title"],
+            }
+        })
+
+    return items
+
+
+def _rewrite_bundle_manifest(bundle_path: Path, book_stem: str) -> Path:
+    """
+    Rebuild <bundle_path>/<book_stem>.json from canonical Topic/ and Lesson/ item JSONs.
+    """
+    topic_dir = bundle_path / "Topic"
+    lesson_dir = bundle_path / "Lesson"
+
+    manifest = {
+        "list_topic": _build_manifest_items_from_meta(topic_dir, "topic"),
+        "list_lesson": _build_manifest_items_from_meta(lesson_dir, "lesson"),
+    }
+
+    manifest_path = bundle_path / f"{book_stem}.json"
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return manifest_path
+
+
+def _extract_book_stem_from_bundle(bundle_path: Path, source_pdf: str) -> str:
+    """
+    Prefer existing manifest filename if present; fallback to source_pdf stem.
+    """
+    existing = sorted(bundle_path.glob("*.json"))
+    for p in existing:
+        # skip obvious non-manifest jsons
+        if p.name.startswith("topic_") or p.name.startswith("lesson_"):
+            continue
+        return p.stem
+    return Path(source_pdf).stem
+
 def _sync_topic_lesson(data: dict, kind: str) -> None:
     bundle_path = Path(data["bundle_path"])
     source_pdf = data["source_pdf"]
-    book_stem = Path(source_pdf).stem
+    book_stem = _extract_book_stem_from_bundle(bundle_path, source_pdf)
 
     name = data["name"]
     start = int(data["start"])
@@ -81,18 +169,75 @@ def _sync_topic_lesson(data: dict, kind: str) -> None:
 
     pdf_path = split_pdf_item_to_folder(source_pdf, item, parent_dir, book_stem, kind=kind)
     if not pdf_path:
-        print(json.dumps({"ok": False, "error": "Failed to split PDF — check start/end and source file"}))
+        print(json.dumps({
+            "ok": False,
+            "error": "Failed to split PDF — check start/end and source file",
+        }))
         return
 
     meta_path = pdf_path.with_suffix(".json")
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
 
-    print(json.dumps({"ok": True, "pdf": str(pdf_path), "meta": meta}, ensure_ascii=False))
+    manifest_path = _rewrite_bundle_manifest(bundle_path, book_stem)
+
+    print(json.dumps({
+        "ok": True,
+        "pdf": str(pdf_path),
+        "meta": meta,
+        "manifest": str(manifest_path),
+    }, ensure_ascii=False))
+
+def _normalize_manual_chunks(input_chunks: list[dict], total_pages: int) -> list[dict]:
+    """
+    Manual review mode:
+    - trust admin-provided start/end/content_head
+    - validate bounds
+    - sort canonically by start/end
+    - renumber chunk_01..chunk_NN deterministically
+    """
+    normalized: list[dict] = []
+
+    for idx, c in enumerate(input_chunks):
+        try:
+            start = int(c.get("start", 1))
+            end = int(c.get("end", start))
+        except Exception:
+            raise ValueError(f"Chunk #{idx + 1}: start/end must be integers")
+
+        start = max(1, min(start, total_pages))
+        end = max(1, min(end, total_pages))
+
+        if end < start:
+            raise ValueError(f"Chunk #{idx + 1}: end ({end}) must be >= start ({start})")
+
+        normalized.append({
+            "start": start,
+            "end": end,
+            "content_head": bool(c.get("content_head", False)),
+            "heading": (c.get("heading") or "").strip(),
+            "title": (c.get("title") or "").strip(),
+        })
+
+    normalized.sort(key=lambda x: (x["start"], x["end"], x["heading"], x["title"]))
+
+    out: list[dict] = []
+    for idx, item in enumerate(normalized):
+        chunk_name = f"chunk_{idx + 1:02d}"
+        out.append({
+            chunk_name: {
+                "start": item["start"],
+                "end": item["end"],
+                "content_head": item["content_head"],
+                "heading": item["heading"],
+                "title": item["title"],
+            }
+        })
+    return out
 
 def _sync_chunks(data: dict) -> None:
     bundle_path = Path(data["bundle_path"])
     lesson_stem = data["lesson_stem"]
-    input_chunks = data["chunks"]  # list of {start, content_head, heading, title}
+    input_chunks = data["chunks"]  # list of {start, end?, content_head, heading, title}
 
     lesson_root = bundle_path / "Lesson"
     found_pdfs = sorted(p for p in lesson_root.rglob("*.pdf") if p.stem == lesson_stem)
@@ -108,23 +253,25 @@ def _sync_chunks(data: dict) -> None:
     from pypdf import PdfReader
     total_pages = len(PdfReader(lesson_pdf).pages)
 
-    from sgk_extract.chunk_pipeline import _compute_chunks_from_start_head
+    has_manual_end = all(c.get("end") is not None for c in input_chunks)
 
-    items = [
-        (
-            int(c.get("start", 1)),
-            bool(c.get("content_head", False)),
-            (c.get("heading") or "").strip(),
-            (c.get("title") or "").strip(),
-        )
-        for c in input_chunks
-    ]
-
-    computed = _compute_chunks_from_start_head(items, total_pages)
+    if has_manual_end:
+        computed = _normalize_manual_chunks(input_chunks, total_pages)
+    else:
+        from sgk_extract.chunk_pipeline import _compute_chunks_from_start_head
+        items = [
+            (
+                int(c.get("start", 1)),
+                bool(c.get("content_head", False)),
+                (c.get("heading") or "").strip(),
+                (c.get("title") or "").strip(),
+            )
+            for c in input_chunks
+        ]
+        computed = _compute_chunks_from_start_head(items, total_pages)
 
     chunk_base = bundle_path / "Chunk" / lesson_stem
 
-    # IMPORTANT: clean old canonical chunk artifacts first
     if chunk_base.exists():
         shutil.rmtree(chunk_base)
     chunk_base.mkdir(parents=True, exist_ok=True)
@@ -174,11 +321,17 @@ def _sync_chunks(data: dict) -> None:
             encoding="utf-8",
         )
 
+        kw_path = chunk_dir / f"{lesson_stem}_{chunk_name}.keywords.json"
+        if not kw_path.exists():
+            kw_path.write_text(
+                json.dumps({"keywords": []}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
         result_chunks.append(meta)
 
     print(json.dumps({"ok": True, "chunks": result_chunks}, ensure_ascii=False))
-
-
+    
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync bundle artifacts after admin edit")
     parser.add_argument("--kind", required=True, choices=["topic", "lesson", "chunks"])

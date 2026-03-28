@@ -569,6 +569,20 @@ def _run_lessons(workspace: Path, config: dict) -> None:
 
 
 # ── Stage: chunks ─────────────────────────────────────────────────────────────
+def _is_real_chunk_meta(meta_path: Path, meta: Any) -> bool:
+    if meta_path.name.endswith(".keywords.json"):
+        return False
+    if not isinstance(meta, dict):
+        return False
+    if meta.get("kind") and meta.get("kind") != "chunk":
+        return False
+    return (
+        bool(meta.get("lesson_stem"))
+        and bool(meta.get("chunk"))
+        and bool(meta.get("chunk_pdf"))
+        and isinstance(meta.get("start"), int)
+        and isinstance(meta.get("end"), int)
+    )
 
 def _run_chunks(workspace: Path, config: dict) -> None:
     approved_path = workspace / "approved_lessons.json"
@@ -713,12 +727,20 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             key = str(jf)
             if key not in initial_json_files and key not in seen_chunk_files:
                 try:
-                    meta = json.loads(jf.read_text(encoding="utf-8"))
+                    meta_path = Path(jf)
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+
+                    if not _is_real_chunk_meta(meta_path, meta):
+                        seen_chunk_files.add(key)
+                        continue
+
                     chunks_so_far.append(meta)
                     seen_chunk_files.add(key)
                 except Exception:
                     pass
+
         if chunks_so_far:
+            chunks_so_far.sort(key=lambda x: (x.get("lesson_stem", ""), x.get("chunk", "")))
             _write_partial(workspace, "chunks", chunks_so_far)
 
     chunk_summary = run_extract_and_split_chunks_for_book(
@@ -734,13 +756,18 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     chunks: list = []
     for meta_file in chunk_summary.get("chunk_meta_files", []):
         try:
-            meta = json.loads(Path(meta_file).read_text(encoding="utf-8"))
+            meta_path = Path(meta_file)
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+
+            if not _is_real_chunk_meta(meta_path, meta):
+                continue
+
             chunks.append(meta)
         except Exception:
             pass
 
     log(f"final chunks collected: {len(chunks)}")
-
+    chunks.sort(key=lambda x: (x.get("lesson_stem", ""), x.get("chunk", "")))
     result = {
         "ok": True,
         "bundle_path": str(bundle_dir),

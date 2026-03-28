@@ -117,6 +117,7 @@ def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
         return []
 
 
+
 def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
     # Signal that this job is queued while another extraction is running
     if not _extraction_semaphore.acquire(blocking=False):
@@ -480,12 +481,12 @@ def _build_name_dict(items: List[Dict[str, Any]]) -> Dict[str, str]:
 
 
 def sync_topic_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
-    """Update a topic item in MongoDB and rebuild its bundle PDF + metadata JSON."""
+    """Update a topic item only after bundle sync succeeds."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return {"ok": False, "error": "Job not found"}
 
-    topics = list(doc.get("topics", []))
+    topics = [dict(t) for t in doc.get("topics", [])]
     if not (0 <= idx < len(topics)):
         return {"ok": False, "error": "Index out of range"}
 
@@ -495,17 +496,22 @@ def sync_topic_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[s
 
     bundle_path = doc.get("bundle_path")
     source_pdf = doc.get("source_pdf_path")
-    if bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists():
-        topic = topics[idx]
-        _run_sync_script("topic", {
-            "bundle_path": bundle_path,
-            "source_pdf": source_pdf,
-            "name": topic.get("name", f"topic_{idx + 1:02d}"),
-            "start": topic.get("start", 1),
-            "end": topic.get("end", 1),
-            "heading": topic.get("heading", ""),
-            "title": topic.get("title", ""),
-        })
+    if not (bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists()):
+        return {"ok": False, "error": "bundle_path or source_pdf missing"}
+
+    topic = topics[idx]
+    result = _run_sync_script("topic", {
+        "bundle_path": bundle_path,
+        "source_pdf": source_pdf,
+        "name": topic.get("name", f"topic_{idx + 1:02d}"),
+        "start": topic.get("start", 1),
+        "end": topic.get("end", 1),
+        "heading": topic.get("heading", ""),
+        "title": topic.get("title", ""),
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Topic sync failed")}
 
     _col(db).update_one(
         {"job_id": job_id},
@@ -513,14 +519,13 @@ def sync_topic_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[s
     )
     return {"ok": True}
 
-
 def sync_lesson_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
-    """Update a lesson item in MongoDB and rebuild its bundle PDF + metadata JSON."""
+    """Update a lesson item only after bundle sync succeeds."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return {"ok": False, "error": "Job not found"}
 
-    lessons = list(doc.get("lessons", []))
+    lessons = [dict(l) for l in doc.get("lessons", [])]
     if not (0 <= idx < len(lessons)):
         return {"ok": False, "error": "Index out of range"}
 
@@ -530,17 +535,22 @@ def sync_lesson_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[
 
     bundle_path = doc.get("bundle_path")
     source_pdf = doc.get("source_pdf_path")
-    if bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists():
-        lesson = lessons[idx]
-        _run_sync_script("lesson", {
-            "bundle_path": bundle_path,
-            "source_pdf": source_pdf,
-            "name": lesson.get("name", f"lesson_{idx + 1:02d}"),
-            "start": lesson.get("start", 1),
-            "end": lesson.get("end", 1),
-            "heading": lesson.get("heading", ""),
-            "title": lesson.get("title", ""),
-        })
+    if not (bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists()):
+        return {"ok": False, "error": "bundle_path or source_pdf missing"}
+
+    lesson = lessons[idx]
+    result = _run_sync_script("lesson", {
+        "bundle_path": bundle_path,
+        "source_pdf": source_pdf,
+        "name": lesson.get("name", f"lesson_{idx + 1:02d}"),
+        "start": lesson.get("start", 1),
+        "end": lesson.get("end", 1),
+        "heading": lesson.get("heading", ""),
+        "title": lesson.get("title", ""),
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Lesson sync failed")}
 
     _col(db).update_one(
         {"job_id": job_id},
@@ -548,9 +558,8 @@ def sync_lesson_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[
     )
     return {"ok": True}
 
-
 def sync_chunk_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
-    """Update a chunk item, recompute the full lesson chunk list, and rebuild all bundle artifacts."""
+    """Update a chunk item, rebuild the full lesson chunk list, and persist only after sync succeeds."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return {"ok": False, "error": "Job not found"}
@@ -559,11 +568,10 @@ def sync_chunk_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[s
     if not (0 <= idx < len(chunks)):
         return {"ok": False, "error": "Index out of range"}
 
-    # Work on a copy first; do NOT persist Mongo until canonical rebuild succeeds
     working_chunks = [dict(c) for c in chunks]
 
     for k, v in patch.items():
-        if k in {"heading", "title", "start", "content_head"}:
+        if k in {"heading", "title", "start", "end", "content_head"}:
             working_chunks[idx][k] = v
 
     lesson_stem = working_chunks[idx].get("lesson_stem")
@@ -573,12 +581,14 @@ def sync_chunk_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[s
         return {"ok": False, "error": "bundle_path or lesson_stem missing"}
 
     lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
+
     result = _run_sync_script("chunks", {
         "bundle_path": bundle_path,
         "lesson_stem": lesson_stem,
         "chunks": [
             {
                 "start": c.get("start", 1),
+                "end": c.get("end", c.get("start", 1)),
                 "content_head": c.get("content_head", False),
                 "heading": c.get("heading", ""),
                 "title": c.get("title", ""),

@@ -84,6 +84,15 @@ export default function BookBundleImport() {
   const pollRef = useRef(null);
 
   useEffect(() => {
+    if (chunkIdx >= editChunks.length && editChunks.length > 0) {
+      setChunkIdx(editChunks.length - 1);
+    }
+    if (editChunks.length === 0 && chunkIdx !== 0) {
+      setChunkIdx(0);
+    }
+  }, [chunkIdx, editChunks.length]);
+
+  useEffect(() => {
     if (phase !== "job" || !job) return;
     if (!TRANSIENT_STATUSES.has(job.status)) {
       clearInterval(pollRef.current);
@@ -111,30 +120,29 @@ export default function BookBundleImport() {
     const newLessons = (j.lessons || []).map((x) => ({ ...x }));
     const newChunks = (j.chunks || []).map((x) => ({ ...x }));
 
-    setEditTopics((prev) =>
-      newTopics.length > prev.length ? [...prev, ...newTopics.slice(prev.length)] : prev
-    );
-    setEditLessons((prev) =>
-      newLessons.length > prev.length ? [...prev, ...newLessons.slice(prev.length)] : prev
-    );
-    setEditChunks((prev) =>
-      newChunks.length > prev.length ? [...prev, ...newChunks.slice(prev.length)] : prev
-    );
-    setTopicApprovals((prev) =>
-      newTopics.length > prev.length
-        ? [...prev, ...new Array(newTopics.length - prev.length).fill(false)]
-        : prev
-    );
-    setLessonApprovals((prev) =>
-      newLessons.length > prev.length
-        ? [...prev, ...new Array(newLessons.length - prev.length).fill(false)]
-        : prev
-    );
-    setChunkApprovals((prev) =>
-      newChunks.length > prev.length
-        ? [...prev, ...new Array(newChunks.length - prev.length).fill(false)]
-        : prev
-    );
+    setEditTopics((prev) => newTopics.map((item, i) => ({ ...(prev[i] || {}), ...item })));
+
+    setEditLessons((prev) => newLessons.map((item, i) => ({ ...(prev[i] || {}), ...item })));
+
+    setEditChunks((prev) => newChunks.map((item, i) => ({ ...(prev[i] || {}), ...item })));
+
+    setTopicApprovals((prev) => {
+      const next = prev.slice(0, newTopics.length);
+      while (next.length < newTopics.length) next.push(false);
+      return next;
+    });
+
+    setLessonApprovals((prev) => {
+      const next = prev.slice(0, newLessons.length);
+      while (next.length < newLessons.length) next.push(false);
+      return next;
+    });
+
+    setChunkApprovals((prev) => {
+      const next = prev.slice(0, newChunks.length);
+      while (next.length < newChunks.length) next.push(false);
+      return next;
+    });
   }
 
   function resetEdit(j) {
@@ -399,6 +407,7 @@ export default function BookBundleImport() {
   }
 
   async function handleSaveCurrentChunk() {
+    if (job?.status !== "reviewing_chunks") return;
     const c = editChunks[chunkIdx];
     if (!c) return;
     setActing(true);
@@ -408,10 +417,10 @@ export default function BookBundleImport() {
         heading: c.heading,
         title: c.title,
         start: c.start,
+        end: c.end,
         content_head: c.content_head ?? false,
       });
-      // Hard-replace editChunks with canonical server state (ends are recomputed)
-      const res = await getReviewJob(job.job_id);
+      // Hard-replace editChunks with canonical server state after manual start/end sync      const res = await getReviewJob(job.job_id);
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
@@ -429,6 +438,7 @@ export default function BookBundleImport() {
   }
 
   function handleApproveThisChunk() {
+    if (job?.status !== "reviewing_chunks") return;
     setChunkApprovals((prev) => {
       const next = prev.map((v, i) => (i === chunkIdx ? true : v));
       const nextUnapproved = next.findIndex((v, i) => !v && i > chunkIdx);
@@ -439,6 +449,7 @@ export default function BookBundleImport() {
 
   const handleApproveAllChunks = () =>
     act(async () => {
+      if (job?.status !== "reviewing_chunks") return;
       await saveReviewChunks(job.job_id, editChunks);
       await approveChunks(job.job_id);
     });
@@ -484,7 +495,7 @@ export default function BookBundleImport() {
 
   const showTopicReview = (isTopicStage || isExtractingTopics) && editTopics.length > 0;
   const showLessonReview = (isLessonStage || isExtractingLessons) && editLessons.length > 0;
-  const showChunkReview = (isChunkStage || isExtractingChunks) && editChunks.length > 0;
+  const showChunkReview = isChunkStage && editChunks.length > 0;
 
   const allTopicsApproved = topicApprovals.length > 0 && topicApprovals.every(Boolean);
   const allLessonsApproved = lessonApprovals.length > 0 && lessonApprovals.every(Boolean);
@@ -1226,14 +1237,14 @@ function ChunkReviewPane({
         </span>
         <button
           style={s.btnSecondary}
-          disabled={chunkIdx === 0 || loading}
+          disabled={chunkIdx === 0 || loading || job.status !== "reviewing_chunks"}
           onClick={() => onNavigateTo(chunkIdx - 1)}
         >
           ← Trước
         </button>
         <button
           style={s.btnSecondary}
-          disabled={chunkIdx >= total - 1 || loading}
+          disabled={chunkIdx >= total - 1 || loading || job.status !== "reviewing_chunks"}
           onClick={() => onNavigateTo(chunkIdx + 1)}
         >
           Sau →
@@ -1241,7 +1252,7 @@ function ChunkReviewPane({
         {canApproveAll && (
           <button
             style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
-            disabled={loading}
+            disabled={loading || job.status !== "reviewing_chunks"}
             onClick={onApproveAll}
           >
             {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả phần"}
@@ -1281,7 +1292,7 @@ function ChunkReviewPane({
             <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.6 }}>
               <div>Bài: {chunk.lesson_stem || "—"}</div>
               <div>Trang bắt đầu (trong bài): {chunk.start ?? "—"}</div>
-              <div>Trang kết thúc (tự tính): {chunk.end ?? "—"}</div>
+              <div>Trang kết thúc (trong bài): {chunk.end ?? "—"}</div>
               <div>content_head: {chunk.content_head ? "true" : "false"}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1299,15 +1310,27 @@ function ChunkReviewPane({
                   onChange={(e) => set("title", e.target.value)}
                 />
               </Field>
-              <Field label="Trang bắt đầu (trong bài)">
-                <input
-                  style={s.input}
-                  type="number"
-                  min={1}
-                  value={chunk.start ?? ""}
-                  onChange={(e) => set("start", parseInt(e.target.value, 10) || chunk.start)}
-                />
-              </Field>
+              <div style={s.row2}>
+                <Field label="Trang bắt đầu (trong bài)">
+                  <input
+                    style={s.input}
+                    type="number"
+                    min={1}
+                    value={chunk.start ?? ""}
+                    onChange={(e) => set("start", parseInt(e.target.value, 10) || chunk.start)}
+                  />
+                </Field>
+                <Field label="Trang kết thúc (trong bài)">
+                  <input
+                    style={s.input}
+                    type="number"
+                    min={1}
+                    value={chunk.end ?? ""}
+                    onChange={(e) => set("end", parseInt(e.target.value, 10) || chunk.end)}
+                  />
+                </Field>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}></div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <label
                   style={{ fontSize: 13, color: "#374151", userSelect: "none", cursor: "pointer" }}
@@ -1318,12 +1341,16 @@ function ChunkReviewPane({
                     onChange={(e) => set("content_head", e.target.checked)}
                     style={{ marginRight: 6 }}
                   />
-                  Trang đầu là nội dung (content_head) — dùng trang trước làm ranh giới
+                  Trang đầu là nội dung (content_head) — cờ metadata để debug{" "}
                 </label>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-              <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
+              <button
+                style={s.btnSecondary}
+                disabled={loading || job.status !== "reviewing_chunks"}
+                onClick={onSave}
+              >
                 Lưu & cập nhật chunk
               </button>
               <button
@@ -1331,7 +1358,7 @@ function ChunkReviewPane({
                   ...s.btnPrimary,
                   background: chunkApprovals[chunkIdx] ? "#15803d" : "#2563eb",
                 }}
-                disabled={loading}
+                disabled={loading || job.status !== "reviewing_chunks"}
                 onClick={onApproveThis}
               >
                 {chunkApprovals[chunkIdx] ? "✓ Đã duyệt" : "Duyệt phần này"}
