@@ -1192,10 +1192,17 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                     _current_stage = "heavy_kaggle_submitting"
                     _update_heavy_progress(
                         db, job_id, "heavy_kaggle_submitting",
-                        "Đang version dataset lên Kaggle…", 16,
+                        "Đang chờ Kaggle hoàn tất version dataset…", 16,
                         log_tail=_tail,
                     )
-                    _log.info("[heavy/%s] Kaggle: dataset_versioning", job_id)
+                elif "[STAGE:dataset_versioned]" in _line:
+                    _current_stage = "heavy_kaggle_submitting"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_submitting",
+                        "Dataset version xong — chuẩn bị push kernel…", 19,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle: dataset_versioned → preparing kernel push", job_id)
                 elif "[STAGE:kernel_pushing]" in _line:
                     _current_stage = "heavy_kaggle_submitting"
                     _update_heavy_progress(

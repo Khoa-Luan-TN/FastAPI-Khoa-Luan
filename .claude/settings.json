@@ -29,7 +29,11 @@
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"topic_embedding\\\\|embedding_model\\\\|vector.*index\" {})",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"EMBEDDING_MODEL_NAME\\\\|get_setting\\\\|get_env\" {})",
       "Bash(xargs ls:*)",
-      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f -name *kaggle*)"
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f -name *kaggle*)",
+      "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/*.toml)",
+      "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/*.ini)",
+      "Bash(/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/.env/bin/pip show:*)",
+      "Bash(/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/.env/bin/python -c \"import watchfiles; print\\(watchfiles.__version__\\)\")"
     ]
   }
 }

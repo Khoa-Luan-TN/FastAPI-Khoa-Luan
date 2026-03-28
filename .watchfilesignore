@@ -1,0 +1,9 @@
+# Runtime-generated directories that must never trigger a dev-server reload.
+# These are written to by the heavy-stage background thread; a reload would
+# kill the thread and leave MongoDB jobs stuck at heavy_stage_running.
+gemini_pipeline/kaggle_pack/
+gemini_pipeline/Output/
+gemini_pipeline/ReviewWorkspace/
+gemini_pipeline/.env/
+__pycache__/
+*.pyc
