@@ -301,3 +301,10 @@ export function recutReviewChunk(jobId, idx) {
     { method: "POST" }
   );
 }
+
+export function deleteReviewChunk(jobId, idx) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,
+    { method: "DELETE" },
+  );
+}

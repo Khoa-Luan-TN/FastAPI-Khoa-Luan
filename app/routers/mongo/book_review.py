@@ -352,6 +352,18 @@ async def recut_lesson(job_id: str, idx: int):
     return {"ok": True}
 
 
+@router.delete("/book-review/jobs/{job_id}/chunks/{idx}", summary="Delete a chunk and rebuild the lesson chunk bundle")
+async def delete_chunk(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("chunks", []))):
+        raise HTTPException(status_code=404, detail="Chunk index out of range")
+    from app.services.mongo.book_review_service import delete_chunk_from_lesson
+    result = delete_chunk_from_lesson(db, job_id, idx)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Delete chunk failed"))
+    return {"ok": True, "chunks": result.get("chunks", [])}
+
+
 @router.patch("/book-review/jobs/{job_id}/chunks/{idx}", summary="Sync a single chunk edit — recomputes and rebuilds all chunks for its lesson")
 async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)

@@ -832,6 +832,82 @@ def recut_lesson_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 
+def delete_chunk_from_lesson(db: Database, job_id: str, idx: int) -> Dict[str, Any]:
+    """Remove the chunk at idx, rebuild the lesson's chunk bundle from remaining chunks."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return {"ok": False, "error": "Job not found"}
+
+    chunks = list(doc.get("chunks", []))
+    if not (0 <= idx < len(chunks)):
+        return {"ok": False, "error": "Index out of range"}
+
+    lesson_stem = chunks[idx].get("lesson_stem")
+    bundle_path = doc.get("bundle_path")
+
+    if not (bundle_path and lesson_stem and Path(bundle_path).exists()):
+        return {"ok": False, "error": "bundle_path or lesson_stem missing"}
+
+    working_chunks = [dict(c) for c in chunks]
+    del working_chunks[idx]
+
+    lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
+
+    if not lesson_chunks:
+        chunk_lesson_dir = Path(bundle_path) / "Chunk" / lesson_stem
+        try:
+            if chunk_lesson_dir.exists():
+                import shutil
+                shutil.rmtree(chunk_lesson_dir)
+        except Exception as exc:
+            return {"ok": False, "error": f"Failed to remove empty lesson chunk dir: {exc}"}
+
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"chunks": working_chunks, "updated_at": _utc_now()}},
+        )
+        return {"ok": True, "chunks": working_chunks}
+
+    result = _run_sync_script("chunks", {
+        "bundle_path": bundle_path,
+        "lesson_stem": lesson_stem,
+        "chunks": [
+            {
+                "start": c.get("start", 1),
+                "end": c.get("end", c.get("start", 1)),
+                "content_head": c.get("content_head", False),
+                "heading": c.get("heading", ""),
+                "title": c.get("title", ""),
+            }
+            for c in lesson_chunks
+        ],
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Chunk sync failed after delete")}
+
+    new_lesson_chunks = result.get("chunks", [])
+    rebuilt: List[Dict[str, Any]] = []
+    replaced = False
+
+    for c in working_chunks:
+        if c.get("lesson_stem") == lesson_stem:
+            if not replaced:
+                rebuilt.extend(new_lesson_chunks)
+                replaced = True
+        else:
+            rebuilt.append(c)
+
+    if not replaced:
+        rebuilt.extend(new_lesson_chunks)
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"chunks": rebuilt, "updated_at": _utc_now()}},
+    )
+    return {"ok": True, "chunks": rebuilt}
+
+
 def recut_chunk_preview(db: Database, job_id: str, idx: int) -> Dict[str, Any]:
     """
     Rebuild chunk PDFs/JSONs for the chunk's lesson using the CURRENT stored chunk metadata.

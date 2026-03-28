@@ -85,64 +85,53 @@ Giải thích các trường:
 
 def build_chunk_prompt_start_head(total_pages: int) -> str:
     return f"""
-Bạn đang đọc 1 file PDF chỉ chứa DUY NHẤT 1 BÀI (LESSON) trong SGK dạng scan.
+Bạn đang đọc 1 file PDF chỉ chứa DUY NHẤT 1 BÀI (LESSON) (PDF scan).
 
 MỤC TIÊU:
-Trả về list_chunk là các MỤC CHÍNH thật sự của bài theo trang PDF của CHÍNH FILE này.
+Trả về list_chunk là các MỤC CHÍNH của bài theo trang PDF của CHÍNH FILE này.
 
-CHỈ tạo chunk khi THẤY RÕ tiêu đề mục chính hợp lệ.
-Nếu không chắc chắn 100% => BỎ QUA, không bịa.
+CHỈ tạo chunk khi THẤY RÕ "TIÊU ĐỀ MỤC CHÍNH" hợp lệ.
+Nếu không chắc chắn 100% => BỎ QUA (không bịa).
 
-ĐỊNH NGHĨA MỤC CHÍNH HỢP LỆ:
-- Có mẫu "<số>." ở ĐẦU DÒNG, ví dụ: "1.", "2.", "3.", ...
-- Phần chữ ngay sau "<số>." là tiêu đề mục chính của nội dung bài học.
-- Phần chữ này thường IN HOA TOÀN BỘ.
-- Chữ của tiêu đề mục chính thường LỚN HƠN chữ nội dung/đoạn văn bên dưới nó.
-- Nhưng KHÔNG phải tiêu đề rất lớn của cả Bài hoặc Chủ đề.
+ĐỊNH NGHĨA "TIÊU ĐỀ MỤC CHÍNH" HỢP LỆ:
+- Có mẫu "<số>." ở ĐẦU DÒNG (ví dụ "1.", "2.", "3.", ...)
+- Phần chữ ngay sau "<số>." là TIÊU ĐỀ IN HOA TOÀN BỘ (không có chữ thường)
+- Không thuộc/không nằm trong các phần: "NHIỆM VỤ", "CÂU HỎI", "BÀI TẬP", "LUYỆN TẬP", "VẬN DỤNG", "HƯỚNG DẪN", "BƯỚC"...
+- Không phải câu mệnh lệnh/thao tác (NHÁY, CHỌN, MỞ, THỰC HIỆN, HÃY, EM HÃY...)
 
-KHÔNG ĐƯỢC NHẦM VỚI:
-- tiêu đề "Bài ..."
-- tiêu đề bài học
-- tiêu đề chủ đề
-- câu hỏi, bài tập, nhiệm vụ, ý nhỏ đánh số 1., 2., 3.
+RẤT QUAN TRỌNG (CHỐNG BỊA):
+- Nếu KHÔNG nhìn thấy mục "1." thật sự (ở đầu dòng) => trả list_chunk rỗng [].
+- TUYỆT ĐỐI không suy ra "1." chỉ vì thấy chữ IN HOA.
 
-LOẠI BỎ TUYỆT ĐỐI:
-- Các dòng nằm trong hoặc nằm dưới các phần:
-  "NHIỆM VỤ", "CÂU HỎI", "BÀI TẬP", "LUYỆN TẬP", "VẬN DỤNG", "HƯỚNG DẪN", "BƯỚC".
-- Các câu hỏi / bài tập / yêu cầu / thao tác đánh số 1., 2., 3.
-- Các dòng có dấu hiệu là câu hỏi hoặc yêu cầu làm bài.
-- Nếu có khối màu nổi bật như "LUYỆN TẬP", "VẬN DỤNG", hoặc có icon ở mép trái, thì các dòng 1., 2., 3. bên dưới KHÔNG phải chunk.
+OUTPUT MỖI CHUNK (BẮT BUỘC ĐỦ 4 TRƯỜNG):
+- start: SỐ TRANG PDF (1-based) nơi tiêu đề mục chính xuất hiện lần đầu.
+- content_head: true/false
+- heading: CHỈ CHỨA SỐ MỤC dạng "1." / "2." / "3." ... (không kèm chữ).
+- title: CHỈ PHẦN CHỮ SAU "<số>.", GIỮ NGUYÊN IN HOA.
+  - Không được có chữ thường.
+  - Nếu tiêu đề xuống dòng, nối lại bằng 1 dấu cách.
 
-RẤT QUAN TRỌNG:
-- Nếu KHÔNG nhìn thấy mục "1." thật sự ở đầu dòng như một tiêu đề mục chính => trả list_chunk rỗng [].
-- TUYỆT ĐỐI không suy ra "1." chỉ vì thấy chữ in hoa.
-- Nếu nghi ngờ giữa "mục chính thật" và "ý nhỏ/câu hỏi/bài tập" => BỎ QUA.
-
-OUTPUT MỖI CHUNK:
-- start: số trang PDF (1-based) nơi tiêu đề mục chính xuất hiện lần đầu.
-- heading: CHỈ CHỨA số mục dạng "1." / "2." / "3." ...
-- title: CHỈ PHẦN CHỮ SAU "<số>.", giữ nguyên nội dung tiêu đề, nối dòng bằng 1 dấu cách nếu cần.
+content_head:
+- true  nếu trên CÙNG trang start, phía TRÊN tiêu đề còn có nội dung thuộc mục trước
+        (đoạn văn/hình/bảng/câu hỏi/bài tập/tổng kết...). KHÔNG tính header/footer/số trang.
+- false nếu phía trên chỉ có header/footer/số trang hoặc tiêu đề nằm ngay đầu trang nội dung.
 
 RÀNG BUỘC:
-- heading phải tăng dần theo thứ tự xuất hiện: 1., 2., 3., ...
-- 1 <= start <= {total_pages}
-- Nếu bài không có mục chính hợp lệ => trả list_chunk rỗng [].
+- heading phải tăng dần theo thứ tự xuất hiện (1., 2., 3., ...).
+- 1 <= start <= {total_pages}.
+- Nếu bài KHÔNG có mục chính hợp lệ => trả list_chunk rỗng [].
 
 YÊU CẦU OUTPUT:
-- Chỉ trả JSON thuần.
-- Không giải thích.
-- Không markdown.
+- Chỉ JSON thuần, KHÔNG giải thích, KHÔNG markdown.
 
 FORMAT:
 {{
   "list_chunk": [
-    {{"chunk_01": {{"start": 1, "heading": "1.", "title": "..."}}}},
-    {{"chunk_02": {{"start": 3, "heading": "2.", "title": "..."}}}}
+    {{"chunk_01": {{"start": 1, "content_head": false, "heading": "1.", "title": "..."}}}},
+    {{"chunk_02": {{"start": 3, "content_head": true,  "heading": "2.", "title": "..."}}}}
   ]
 }}
 """
-
-
 
 def build_content_head_verify_prompt(heading: str, title: str) -> str:
     return f"""

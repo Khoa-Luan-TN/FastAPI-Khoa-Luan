@@ -19,6 +19,7 @@ import {
   recutReviewLesson,
   reviewChunkPdfUrl,
   patchReviewChunk,
+  deleteReviewChunk,
   setDebugTopic,
   reviewChunkLessonPdfUrl,
   recutReviewChunk,
@@ -407,12 +408,56 @@ export default function BookBundleImport() {
     setChunkIdx(clamped);
   }
 
+  // After a lesson-level rebuild, find the best new index to land on.
+  // anchorChunk: the chunk the user was viewing before the operation.
+  // isDelete: if true, the anchor chunk itself was removed.
+  function _bestChunkIdxAfterRebuild(newChunks, anchorChunk, isDelete = false) {
+    if (!anchorChunk || !newChunks.length) return 0;
+    const ls = anchorChunk.lesson_stem;
+    const start = anchorChunk.start;
+
+    if (!isDelete) {
+      // Prefer same lesson + same start (user only edited metadata, not boundaries)
+      const exact = newChunks.findIndex(
+        (c) => c.lesson_stem === ls && c.start === start
+      );
+      if (exact >= 0) return exact;
+    }
+
+    // For delete or start not found: find first chunk in same lesson at or after anchor start
+    const lessonEntries = newChunks
+      .map((c, i) => ({ c, i }))
+      .filter(({ c }) => c.lesson_stem === ls);
+    if (lessonEntries.length > 0) {
+      const after = lessonEntries.find(({ c }) => c.start >= start);
+      if (after) return after.i;
+      return lessonEntries[lessonEntries.length - 1].i;
+    }
+
+    return Math.max(0, Math.min(newChunks.length - 1, chunkIdx));
+  }
+
+  // Rebuild approvals for newChunks, preserving approvals for chunks outside affectedLessonStem.
+  function _rebuildApprovals(oldChunks, oldApprovals, newChunks, affectedLessonStem) {
+    const lookup = new Map();
+    oldChunks.forEach((c, i) => {
+      if (c.lesson_stem !== affectedLessonStem) {
+        lookup.set(`${c.lesson_stem}||${c.start}`, oldApprovals[i] ?? false);
+      }
+    });
+    return newChunks.map((c) => {
+      if (c.lesson_stem === affectedLessonStem) return false;
+      return lookup.get(`${c.lesson_stem}||${c.start}`) ?? false;
+    });
+  }
+
   async function handleSaveCurrentChunk() {
     if (job?.status !== "reviewing_chunks") return;
     const c = editChunks[chunkIdx];
     if (!c) return;
     setActing(true);
     setJobError("");
+    const prevChunks = editChunks;
     try {
       await patchReviewChunk(job.job_id, chunkIdx, {
         heading: c.heading,
@@ -421,14 +466,12 @@ export default function BookBundleImport() {
         end: c.end,
         content_head: c.content_head ?? false,
       });
-
-      // Hard-replace editChunks with canonical server state after manual start/end sync
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
-      setChunkApprovals(canonical.map(() => false));
-      setChunkIdx(0);
+      setChunkIdx(_bestChunkIdxAfterRebuild(canonical, c));
+      setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
       setChunkPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
@@ -443,9 +486,8 @@ export default function BookBundleImport() {
     if (!c) return;
     setActing(true);
     setJobError("");
+    const prevChunks = editChunks;
     try {
-      // Keep chunk UX aligned with topic/lesson:
-      // first sync current edits, then run explicit recut on current stored state.
       await patchReviewChunk(job.job_id, chunkIdx, {
         heading: c.heading,
         title: c.title,
@@ -453,15 +495,41 @@ export default function BookBundleImport() {
         end: c.end,
         content_head: c.content_head ?? false,
       });
-
       await recutReviewChunk(job.job_id, chunkIdx);
-
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
-      setChunkApprovals(canonical.map(() => false));
-      setChunkIdx(0);
+      setChunkIdx(_bestChunkIdxAfterRebuild(canonical, c));
+      setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
+      setChunkPreviewKey((k) => k + 1);
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleDeleteCurrentChunk() {
+    if (job?.status !== "reviewing_chunks") return;
+    const c = editChunks[chunkIdx];
+    if (!c) return;
+    const label = [c.heading, c.title].filter(Boolean).join(" ").trim() || `chunk ${chunkIdx + 1}`;
+    if (!window.confirm(`Xóa phần "${label}" (${c.lesson_stem}, trang ${c.start}–${c.end ?? "?"})?\n\nHành động này sẽ rebuild lại chunk bundle của bài.`)) return;
+    setActing(true);
+    setJobError("");
+    const prevChunks = editChunks;
+    try {
+      await deleteReviewChunk(job.job_id, chunkIdx);
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
+      setEditChunks(canonical);
+      const newIdx = canonical.length > 0
+        ? Math.min(_bestChunkIdxAfterRebuild(canonical, c, true), canonical.length - 1)
+        : 0;
+      setChunkIdx(newIdx);
+      setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
       setChunkPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
@@ -786,6 +854,7 @@ export default function BookBundleImport() {
               onNavigateTo={handleChunkNavigateTo}
               onSave={handleSaveCurrentChunk}
               onRecut={handleRecutCurrentChunk}
+              onDelete={handleDeleteCurrentChunk}
               onApproveThis={handleApproveThisChunk}
               onApproveAll={handleApproveAllChunks}
               loading={acting}
@@ -1252,6 +1321,7 @@ function ChunkReviewPane({
   onNavigateTo,
   onSave,
   onRecut,
+  onDelete,
   onApproveThis,
   onApproveAll,
   loading,
@@ -1404,6 +1474,13 @@ function ChunkReviewPane({
                 onClick={onRecut}
               >
                 Cắt lại chunk
+              </button>
+              <button
+                style={{ ...s.btnSecondary, color: "#dc2626", borderColor: "#dc2626" }}
+                disabled={loading || job.status !== "reviewing_chunks"}
+                onClick={onDelete}
+              >
+                Xóa phần này
               </button>
               <button
                 style={{
