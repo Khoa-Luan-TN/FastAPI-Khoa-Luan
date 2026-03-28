@@ -1,4 +1,3 @@
-# sgk_extract/gemini_client.py
 """
 Robust Gemini key pool for the pipeline.
 Adapted from app/services/infrastructure/gemini_client.py for PDF-upload use cases.
@@ -10,44 +9,81 @@ Strategy:
   - wait_for_available_key=True (bulk mode): if every key is in cooldown, sleep until
     the earliest one wakes up and retry. Hard ceiling is max_wait_seconds.
   - wait_for_available_key=False (fast mode): raise immediately when all keys are exhausted.
+
+This version reads pacing/cooldown defaults from gemini_pipeline/config.env:
+  - GEMINI_MIN_INTERVAL
+  - GEMINI_COOLDOWN_SECONDS
+
+Recommended to reduce 429 bursts:
+  GEMINI_MIN_INTERVAL=5.0
+  GEMINI_COOLDOWN_SECONDS=300
 """
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
+from pathlib import Path
 
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 
 _log = logging.getLogger(__name__)
 
+# ── Config loading ───────────────────────────────────────────────────────────
+
+_CONFIG_LOADED = False
+_DEFAULT_MIN_INTERVAL = 5.0
+_DEFAULT_COOLDOWN_SECONDS = 300
+
+
+def _load_runtime_config() -> tuple[float, int]:
+    """
+    Load pacing/cooldown config from gemini_pipeline/config.env once.
+    Safe to call repeatedly.
+    """
+    global _CONFIG_LOADED, _DEFAULT_MIN_INTERVAL, _DEFAULT_COOLDOWN_SECONDS
+
+    if not _CONFIG_LOADED:
+        env_path = Path(__file__).resolve().parents[1] / "config.env"
+        load_dotenv(env_path)
+
+        try:
+            _DEFAULT_MIN_INTERVAL = float(os.getenv("GEMINI_MIN_INTERVAL", "5.0"))
+        except Exception:
+            _DEFAULT_MIN_INTERVAL = 5.0
+
+        try:
+            _DEFAULT_COOLDOWN_SECONDS = int(os.getenv("GEMINI_COOLDOWN_SECONDS", "300"))
+        except Exception:
+            _DEFAULT_COOLDOWN_SECONDS = 300
+
+        _CONFIG_LOADED = True
+
+    return _DEFAULT_MIN_INTERVAL, _DEFAULT_COOLDOWN_SECONDS
+
+
 # ── Rotatable error detection ─────────────────────────────────────────────────
 
-# HTTP status codes that indicate quota / rate limits (key should cool down)
 _QUOTA_STATUS = {429}
-
-# HTTP status codes for transient server / infra errors (worth rotating + cooling down)
 _TRANSIENT_STATUS = {500, 502, 503}
 
-# Message patterns that indicate a rotatable condition regardless of status code
 _ROTATABLE_PATTERNS = [
-    # Quota / rate-limit
     "resource_exhausted",
     "rate_limit",
     "ratelimitexceeded",
     "quota",
     "too many requests",
     "too_many_requests",
-    # Transient server / infra errors
     "unavailable",
     "service unavailable",
     "deadline_exceeded",
     "deadline exceeded",
     "bad gateway",
     "internal server error",
-    # Network-level transient errors
     "connection reset",
     "connection refused",
     "remotedisconnected",
@@ -63,9 +99,9 @@ def _is_rotatable(e: Exception) -> bool:
     Non-rotatable:
       400 — malformed request; the payload is the problem, not the key.
 
-    Rotatable (key enters cooldown, next key tried):
+    Rotatable:
       429       — rate-limit / quota exhausted.
-      500/502/503 — transient server errors; rotating may hit a healthier backend.
+      500/502/503 — transient server errors.
       Any exception whose message matches _ROTATABLE_PATTERNS.
     """
     if isinstance(e, ClientError):
@@ -110,24 +146,29 @@ class GeminiPool:
     ----------
     keys : list[str]
         API keys to rotate across.
-    cooldown_seconds : int
-        How long a key stays unavailable after a quota/rate error. Default 300.
-    min_interval : float
-        Minimum seconds between consecutive uses of the same key. Default 2.0.
+    cooldown_seconds : int | None
+        How long a key stays unavailable after a quota/rate error.
+        If None, reads GEMINI_COOLDOWN_SECONDS from config.env.
+    min_interval : float | None
+        Minimum seconds between consecutive uses of the same key.
+        If None, reads GEMINI_MIN_INTERVAL from config.env.
     """
 
     def __init__(
         self,
         keys: list[str],
-        cooldown_seconds: int = 300,
-        min_interval: float = 2.0,
+        cooldown_seconds: int | None = None,
+        min_interval: float | None = None,
     ) -> None:
         if not keys:
             raise ValueError("GeminiPool requires at least one API key")
+
+        cfg_min_interval, cfg_cooldown = _load_runtime_config()
+
         self._keys = list(keys)
         self._n = len(keys)
-        self._cooldown_seconds = cooldown_seconds
-        self._min_interval = min_interval
+        self._cooldown_seconds = int(cfg_cooldown if cooldown_seconds is None else cooldown_seconds)
+        self._min_interval = float(cfg_min_interval if min_interval is None else min_interval)
 
         # Rotation state (guarded by _lock for short critical sections only)
         self._lock = threading.Lock()
@@ -144,7 +185,7 @@ class GeminiPool:
 
         _log.info(
             "[GeminiPool] Initialized %d key(s) | cooldown=%ds min_interval=%.1fs",
-            self._n, cooldown_seconds, min_interval,
+            self._n, self._cooldown_seconds, self._min_interval,
         )
 
     # ── Internal helpers ──────────────────────────────────────────────────────
@@ -210,14 +251,8 @@ class GeminiPool:
         cooldown and the next key in round-robin order is tried immediately.
 
         When *wait_for_available_key* is True and every key is cooling down, the pool
-        sleeps until the earliest key wakes up and retries.  The hard ceiling is
+        sleeps until the earliest key wakes up and retries. The hard ceiling is
         *max_wait_seconds*; a RuntimeError is raised if exceeded.
-
-        Raises
-        ------
-        RuntimeError
-            On non-retryable Gemini errors (e.g. 400 bad request), all keys exhausted
-            when wait_for_available_key=False, or max_wait_seconds exceeded.
         """
         job_start = time.monotonic()
         wait_round = 0
@@ -240,7 +275,7 @@ class GeminiPool:
                 tried.append(idx + 1)
 
                 with self._key_locks[idx]:
-                    # Re-check after acquiring lock (another thread may have set cooldown)
+                    # Re-check after acquiring the per-key lock
                     if self._in_cooldown(idx, time.monotonic()):
                         _log.info("[GeminiPool] Key#%d entered cooldown while waiting — skip", idx + 1)
                         continue
@@ -290,12 +325,13 @@ class GeminiPool:
                                     pass
                             self._set_cooldown(idx)
                             continue
-                        raise  # non-retryable — propagate immediately
+                        raise
 
-                # ── Success ───────────────────────────────────────────────────
+                # Success
                 with self._lock:
                     self._next_idx = (idx + 1) % self._n
                     self._call_count += 1
+
                 _log.info(
                     "[GeminiPool] ✓ Key#%d (%s) | total_calls=%d",
                     idx + 1, _mask_key(key), self._call_count,
@@ -307,7 +343,7 @@ class GeminiPool:
                         pass
                 return text
 
-            # ── All keys tried this round ─────────────────────────────────────
+            # All keys tried this round
             if not wait_for_available_key:
                 raise RuntimeError(
                     f"All {self._n} Gemini key(s) exhausted or in cooldown. "

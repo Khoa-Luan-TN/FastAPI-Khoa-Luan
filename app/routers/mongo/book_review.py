@@ -105,7 +105,9 @@ async def serve_source_pdf(job_id: str):
     src = job.get("source_pdf_path")
     if not src or not Path(src).exists():
         raise HTTPException(status_code=404, detail="Source PDF not found")
-    return FileResponse(str(src), media_type="application/pdf", filename=Path(src).name)
+    # No filename= so browsers render inline rather than forcing a download
+    return FileResponse(str(src), media_type="application/pdf",
+                        headers={"Content-Disposition": "inline"})
 
 
 @router.get("/book-review/jobs/{job_id}/pdf/topic/{idx}", summary="Serve topic preview PDF")
@@ -183,14 +185,26 @@ async def update_chunks(job_id: str, body: Dict[str, Any] = Body(...)):
 
 # ── Approve stages ────────────────────────────────────────────────────────────
 
+_PAST_TOPICS_STATUSES = {
+    "extracting_lessons", "reviewing_lessons",
+    "extracting_chunks",  "reviewing_chunks",
+    "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
+}
+
+
 @router.post("/book-review/jobs/{job_id}/approve-topics", summary="Approve topics and start lesson extraction")
 async def approve_topics(job_id: str):
     from app.services.mongo.book_review_service import approve_topics_and_start_lessons
     if not approve_topics_and_start_lessons(db, job_id):
         job = _get_or_404(job_id)
+        current = job["status"]
+        # If the job already advanced past topic review (stale/double click),
+        # return a graceful success so the frontend can refetch and show the real stage.
+        if current in _PAST_TOPICS_STATUSES:
+            return {"ok": True, "already_advanced": True, "status": current}
         raise HTTPException(
             status_code=409,
-            detail=f"Job must be in 'reviewing_topics' status to approve topics (current: {job['status']})",
+            detail=f"Job must be in 'reviewing_topics' status to approve topics (current: {current})",
         )
     return {"ok": True}
 

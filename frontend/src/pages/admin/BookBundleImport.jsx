@@ -227,10 +227,11 @@ export default function BookBundleImport() {
     });
   }
 
-  // Saves topics to DB then triggers lessons extraction on backend
+  // Saves topics to DB then triggers lessons extraction on backend.
+  // If backend says already_advanced (stale click), just refetch — act() handles the rest.
   const handleApproveAllTopics = () => act(async () => {
     await saveReviewTopics(job.job_id, editTopics);
-    await approveTopics(job.job_id);
+    await approveTopics(job.job_id); // returns ok=true even if already advanced
   });
 
   // ── Lesson / chunk / heavy handlers ──────────────────────────────────────
