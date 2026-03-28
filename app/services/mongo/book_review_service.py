@@ -1153,18 +1153,13 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         shutil.copytree(str(bundle_path), str(output_book_dir))
         _log.info("[heavy/%s] Bundle copy OK -> %s", job_id, output_book_dir)
 
-        # ── Stage: Kaggle submitting — build pack, push dataset ──────────────
+        # ── Stage: Kaggle — launch CLI subprocess, parse stage markers incrementally ─
+        # Markers emitted by cli.py/utils.py drive all sub-stage transitions.
         _current_stage = "heavy_kaggle_submitting"
         _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
-                               "Đang build Kaggle pack và đẩy dataset + kernel lên Kaggle…", 8)
-        _log.info("[heavy/%s] Stage: heavy_kaggle_submitting — book_stem=%s", job_id, book_stem)
-
-        # Launch Kaggle CLI subprocess; parse stage markers from output incrementally
-        # so the UI advances truthfully: kernel_running → downloading → applying.
-        _current_stage = "heavy_kaggle_running"
-        _update_heavy_progress(db, job_id, "heavy_kaggle_running",
-                               "Kaggle kernel đang chạy — chờ hoàn thành…", 20)
-        _log.info("[heavy/%s] Stage: heavy_kaggle_running — launching Kaggle CLI subprocess", job_id)
+                               "Đang chuẩn bị Kaggle pack…", 10)
+        _log.info("[heavy/%s] Stage: heavy_kaggle_submitting — launching Kaggle CLI subprocess, book_stem=%s",
+                  job_id, book_stem)
 
         kaggle_log_path = workspace / "kaggle_subprocess.log"
         kaggle_log_lines: List[str] = []
@@ -1185,24 +1180,58 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 if len(kaggle_log_lines) > 200:
                     kaggle_log_lines = kaggle_log_lines[-200:]
                 _tail = kaggle_log_lines[-50:]
-                if "[STAGE:kernel_done]" in _line:
+                if "[STAGE:dataset_building]" in _line:
+                    _current_stage = "heavy_kaggle_submitting"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_submitting",
+                        "Đang build Kaggle pack…", 12,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle: dataset_building", job_id)
+                elif "[STAGE:dataset_versioning]" in _line:
+                    _current_stage = "heavy_kaggle_submitting"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_submitting",
+                        "Đang version dataset lên Kaggle…", 16,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle: dataset_versioning", job_id)
+                elif "[STAGE:kernel_pushing]" in _line:
+                    _current_stage = "heavy_kaggle_submitting"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_submitting",
+                        "Đang push kernel lên Kaggle…", 20,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle: kernel_pushing", job_id)
+                elif "[STAGE:kernel_waiting]" in _line:
+                    _current_stage = "heavy_kaggle_running"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_running",
+                        "Kernel đang chạy trên Kaggle…", 25,
+                        log_tail=_tail,
+                    )
+                    _log.info("[heavy/%s] Kaggle: kernel_waiting → heavy_kaggle_running", job_id)
+                elif "[STAGE:kernel_done]" in _line:
                     _current_stage = "heavy_kaggle_downloading"
                     _update_heavy_progress(
                         db, job_id, "heavy_kaggle_downloading",
-                        "Kaggle kernel hoàn thành — đang tải kết quả về…", 45,
+                        "Kernel hoàn thành — đang tải kết quả về…", 45,
                         log_tail=_tail,
                     )
                     _log.info("[heavy/%s] Kaggle kernel done → heavy_kaggle_downloading", job_id)
                 elif "[STAGE:downloading]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
                     _update_heavy_progress(
                         db, job_id, "heavy_kaggle_downloading",
                         "Đang tải kết quả từ Kaggle về máy chủ…", 50,
                         log_tail=_tail,
                     )
                 elif "[STAGE:applying]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
                     _update_heavy_progress(
                         db, job_id, "heavy_kaggle_downloading",
-                        "Đang giải nén và áp dụng kết quả Kaggle vào bundle…", 53,
+                        "Đang áp dụng kết quả Kaggle vào bundle…", 53,
                         log_tail=_tail,
                     )
             kaggle_returncode = _kaggle_popen.wait()

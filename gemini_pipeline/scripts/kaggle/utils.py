@@ -51,6 +51,10 @@ def wait_kernel_complete(kernel_ref: str, poll_sec: int = 20) -> None:
         st = kernel_status(kernel_ref)
         log.info("%s", st)
 
+        # Heartbeat cho backend/UI: cứ mỗi vòng poll đều phát stage marker,
+        # để _do_heavy() refresh heavy_updated_at và heavy_log_tail.
+        print(f"[STAGE:kernel_waiting] {st}", flush=True)
+
         if "KernelWorkerStatus.COMPLETE" in st:
             return
 
@@ -59,12 +63,17 @@ def wait_kernel_complete(kernel_ref: str, poll_sec: int = 20) -> None:
 
         time.sleep(poll_sec)
 
-
 def push_kernel(kernel_dir: Path, kernel_ref: str) -> None:
     if not kernel_dir.exists():
         raise FileNotFoundError(f"Missing kernel_dir: {kernel_dir}")
+
+    print("[STAGE:kernel_pushing]", flush=True)
     run_cmd(["kaggle", "kernels", "push", "-p", str(kernel_dir)])
+
+    # Báo ngay là đã sang giai đoạn chờ kernel chạy
+    print("[STAGE:kernel_waiting] submitted", flush=True)
     wait_kernel_complete(kernel_ref)
+
     print("[STAGE:kernel_done]", flush=True)
 
 

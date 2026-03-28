@@ -71,7 +71,9 @@ def main():
 
     # 1) dataset version (đảm bảo code + Output mới nhất được mount trong kernel)
     if not args.skip_dataset:
+        print("[STAGE:dataset_building]", flush=True)
         build_kaggle_pack(PACK_DIR, book_stem=args.book_stem, project_root=PROJECT_ROOT, dataset_id=DATASET_ID)
+        print("[STAGE:dataset_versioning]", flush=True)
         push_dataset_version(PACK_DIR, message=f"auto upload: {args.book_stem}", dir_mode="zip")
     else:
         log.info("Skip dataset build/version.")
