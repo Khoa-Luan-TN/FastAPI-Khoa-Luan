@@ -28,7 +28,8 @@
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -maxdepth 3 -name docker-compose* -o -name Dockerfile*)",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"topic_embedding\\\\|embedding_model\\\\|vector.*index\" {})",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/app -name \"*.py\" -exec grep -l \"EMBEDDING_MODEL_NAME\\\\|get_setting\\\\|get_env\" {})",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan -type f -name *kaggle*)"
     ]
   }
 }

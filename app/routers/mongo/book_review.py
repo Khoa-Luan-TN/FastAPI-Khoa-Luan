@@ -142,9 +142,6 @@ def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
 async def create_review_job(
     request: Request,
     class_name: str = Form(...),
-    subject_name: str = Form(...),
-    subject_type: str = Form("Kết nối tri thức"),
-    model: str = Form("gemini-2.5-flash-lite"),
     file: UploadFile = File(...),
 ):
     _actor(request)
@@ -159,11 +156,8 @@ async def create_review_job(
     job = create_job(
         db,
         class_name=class_name.strip(),
-        subject_name=subject_name.strip(),
-        subject_type=subject_type.strip() or "Kết nối tri thức",
         pdf_bytes=pdf_bytes,
         original_filename=file.filename or "book.pdf",
-        model=model,
     )
     return {"ok": True, "job": _serial(job)}
 

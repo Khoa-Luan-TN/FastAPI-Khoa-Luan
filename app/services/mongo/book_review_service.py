@@ -50,14 +50,16 @@ def _col(db: Database):
     return db[COLLECTION]
 
 
+_FIXED_SUBJECT_NAME = "Tin học"
+_FIXED_SUBJECT_TYPE = "Kết nối tri thức"
+_FIXED_MODEL = "gemini-2.5-flash"
+
+
 def create_job(
     db: Database,
     class_name: str,
-    subject_name: str,
-    subject_type: str,
     pdf_bytes: bytes,
     original_filename: str,
-    model: str = "gemini-2.5-flash-lite",
 ) -> Dict[str, Any]:
     job_id = str(uuid.uuid4())
     workspace = _REVIEW_WORKSPACE / job_id
@@ -72,7 +74,7 @@ def create_job(
         "job_id": job_id,
         "source_pdf_path": str(pdf_path),
         "api_config": str(_GEMINI_CONFIG),
-        "model": model,
+        "model": _FIXED_MODEL,
     }
     (workspace / "job_config.json").write_text(
         json.dumps(job_config, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -82,8 +84,8 @@ def create_job(
     doc: Dict[str, Any] = {
         "job_id": job_id,
         "class_name": class_name,
-        "subject_name": subject_name,
-        "subject_type": subject_type,
+        "subject_name": _FIXED_SUBJECT_NAME,
+        "subject_type": _FIXED_SUBJECT_TYPE,
         "source_pdf_path": str(pdf_path),
         "book_stem": unique_stem,
         "workspace": str(workspace),
@@ -994,30 +996,129 @@ def _safe_report(report: Any) -> Any:
         return {"ok": True, "message": "Heavy stage completed"}
 
 
+def _update_heavy_progress(
+    db: Database,
+    job_id: str,
+    stage: str,
+    message: str,
+    percent: int,
+    log_tail: Optional[List[str]] = None,
+    counts: Optional[Dict[str, Any]] = None,
+) -> None:
+    update: Dict[str, Any] = {
+        "heavy_progress_stage": stage,
+        "heavy_progress_message": message,
+        "heavy_progress_percent": percent,
+        "heavy_updated_at": _utc_now(),
+    }
+    if log_tail is not None:
+        update["heavy_log_tail"] = log_tail[-50:]
+    if counts is not None:
+        update["heavy_counts_partial"] = counts
+    _col(db).update_one({"job_id": job_id}, {"$set": update})
+
+
 def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
+    import shutil
     from app.services.mongo.book_bundle_import_service import import_book_bundle
 
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return
 
+    now = _utc_now()
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {
+            "heavy_started_at": now,
+            "heavy_updated_at": now,
+            "heavy_progress_stage": "heavy_preparing",
+            "heavy_progress_message": "Đang chuẩn bị bundle…",
+            "heavy_progress_percent": 0,
+            "heavy_log_tail": [],
+            "heavy_counts_partial": {},
+            "heavy_error_stage": None,
+        }},
+    )
+
+    workspace = Path(doc.get("workspace", ""))
+    python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+
     try:
-        bundle_path = doc.get("bundle_path")
-        if not bundle_path:
+        bundle_path_str = doc.get("bundle_path")
+        if not bundle_path_str:
             raise ValueError("bundle_path not set — extraction may have failed")
 
-        workspace = Path(doc.get("workspace", ""))
-        python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+        bundle_path = Path(bundle_path_str)
+        book_stem = doc.get("book_stem", bundle_path.name)
 
-        # ── Step 1: Keyword extraction ────────────────────────────────────────
-        kw_summary_path = workspace / "keyword_summary.json"
+        # ── Stage: Prepare — copy bundle to Output/<book_stem> ───────────────
+        output_book_dir = _GEMINI_DIR / "Output" / book_stem
+        _update_heavy_progress(db, job_id, "heavy_preparing",
+                               "Sao chép bundle vào thư mục Output…", 2)
+        _log.info("[heavy/%s] Copying bundle %s -> %s", job_id, bundle_path, output_book_dir)
+        output_book_dir.parent.mkdir(parents=True, exist_ok=True)
+        if output_book_dir.exists():
+            shutil.rmtree(output_book_dir)
+        shutil.copytree(str(bundle_path), str(output_book_dir))
+
+        # ── Stage: Kaggle — build pack, push dataset, push kernel, download ──
+        _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
+                               "Đang build Kaggle pack và đẩy dataset lên Kaggle…", 8)
+        _log.info("[heavy/%s] Starting Kaggle subprocess for book_stem=%s", job_id, book_stem)
+
+        kaggle_log_path = workspace / "kaggle_subprocess.log"
+        kaggle_proc = subprocess.run(
+            [python_exec, "-m", "scripts.kaggle.cli", book_stem, "--overwrite"],
+            cwd=str(_GEMINI_DIR),
+            capture_output=True,
+            text=True,
+            timeout=7200,
+        )
+
+        kaggle_log = (kaggle_proc.stdout or "") + (kaggle_proc.stderr or "")
+        try:
+            kaggle_log_path.write_text(kaggle_log, encoding="utf-8")
+        except Exception:
+            pass
+
+        kaggle_log_lines = kaggle_log.splitlines()[-50:]
+
+        if kaggle_proc.returncode != 0:
+            _update_heavy_progress(db, job_id, "heavy_error",
+                                   f"Kaggle thất bại (exit {kaggle_proc.returncode})", 0,
+                                   log_tail=kaggle_log_lines)
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"heavy_error_stage": "heavy_kaggle_running"}},
+            )
+            raise ValueError(
+                f"Kaggle subprocess failed (exit {kaggle_proc.returncode}): "
+                f"{(kaggle_proc.stderr or '')[:1000]}"
+            )
+
+        _log.info("[heavy/%s] Kaggle done. Updating bundle_path to %s", job_id, output_book_dir)
+
+        # After Kaggle extraction, bundle is now at Output/<book_stem>
+        bundle_path = output_book_dir
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"bundle_path": str(bundle_path)}},
+        )
+        doc["bundle_path"] = str(bundle_path)
+
+        # ── Stage: Keyword extraction ─────────────────────────────────────────
+        _update_heavy_progress(db, job_id, "heavy_keyword_extracting",
+                               "Đang trích xuất từ khóa cho các chunk…", 60,
+                               log_tail=kaggle_log_lines)
         _log.info("[heavy/%s] Keyword extraction started — bundle: %s", job_id, bundle_path)
 
+        kw_summary_path = workspace / "keyword_summary.json"
         try:
             kw_proc = subprocess.run(
                 [
                     python_exec, "-m", "scripts.keyword_extract_book",
-                    "--bundle-dir", bundle_path,
+                    "--bundle-dir", str(bundle_path),
                     "--output", str(kw_summary_path),
                 ],
                 cwd=str(_GEMINI_DIR),
@@ -1025,61 +1126,74 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 text=True,
                 timeout=1800,
             )
+            kw_log = (kw_proc.stdout or "") + (kw_proc.stderr or "")
             try:
-                (workspace / "keyword_subprocess.log").write_text(
-                    (kw_proc.stdout or "") + (kw_proc.stderr or ""), encoding="utf-8"
-                )
+                (workspace / "keyword_subprocess.log").write_text(kw_log, encoding="utf-8")
             except Exception:
                 pass
 
+            kw_log_lines = kw_log.splitlines()[-50:]
+
             if kw_proc.returncode != 0:
-                stderr_tail = (kw_proc.stderr or "")[:2000]
-                raise ValueError(
-                    f"Keyword extraction subprocess exited {kw_proc.returncode}: {stderr_tail}"
+                _update_heavy_progress(db, job_id, "heavy_error",
+                                       "Keyword extraction thất bại", 0,
+                                       log_tail=kw_log_lines)
+                _col(db).update_one(
+                    {"job_id": job_id},
+                    {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
                 )
-
-            kw_summary: Dict[str, Any] = {}
-            if kw_summary_path.exists():
-                try:
-                    kw_summary = json.loads(kw_summary_path.read_text(encoding="utf-8"))
-                except Exception:
-                    pass
-
-            kw_extracted = kw_summary.get("extracted", 0)
-            kw_skipped = kw_summary.get("skipped", 0)
-            kw_failed = kw_summary.get("failed", 0)
-            _log.info(
-                "[heavy/%s] Keyword extraction done — extracted=%d skipped=%d failed=%d",
-                job_id, kw_extracted, kw_skipped, kw_failed,
-            )
-
-            if kw_failed > 0:
                 raise ValueError(
-                    f"Keyword extraction had failures — "
-                    f"extracted={kw_extracted}, skipped={kw_skipped}, failed={kw_failed}. "
-                    f"Check keyword_subprocess.log for details."
+                    f"Keyword extraction subprocess exited {kw_proc.returncode}: "
+                    f"{(kw_proc.stderr or '')[:2000]}"
                 )
-
         except subprocess.TimeoutExpired:
             raise ValueError("Keyword extraction timed out after 30 minutes")
 
-        # ── Step 2: Import bundle ─────────────────────────────────────────────
-        topic_names = _build_name_dict(doc.get("topics", [])) or None
-        lesson_names = _build_name_dict(doc.get("lessons", [])) or None
+        kw_summary: Dict[str, Any] = {}
+        if kw_summary_path.exists():
+            try:
+                kw_summary = json.loads(kw_summary_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        kw_extracted = kw_summary.get("extracted", 0)
+        kw_skipped = kw_summary.get("skipped", 0)
+        kw_failed = kw_summary.get("failed", 0)
+        _log.info(
+            "[heavy/%s] Keyword extraction done — extracted=%d skipped=%d failed=%d",
+            job_id, kw_extracted, kw_skipped, kw_failed,
+        )
+
+        if kw_failed > 0:
+            raise ValueError(
+                f"Keyword extraction had failures — "
+                f"extracted={kw_extracted}, skipped={kw_skipped}, failed={kw_failed}. "
+                f"Check keyword_subprocess.log for details."
+            )
+
+        # ── Stage: Import ─────────────────────────────────────────────────────
+        _update_heavy_progress(
+            db, job_id, "heavy_importing_mongo",
+            f"Đang import vào MongoDB (keywords={kw_extracted})…", 75,
+            counts={"kw_extracted": kw_extracted, "kw_skipped": kw_skipped},
+        )
         _log.info(
             "[heavy/%s] Keyword stage passed (extracted=%d, skipped=%d). Starting import.",
             job_id, kw_extracted, kw_skipped,
         )
+
+        topic_names = _build_name_dict(doc.get("topics", [])) or None
+        lesson_names = _build_name_dict(doc.get("lessons", [])) or None
 
         raw_source = doc.get("source_pdf_path")
         source_pdf_path = Path(raw_source) if raw_source else None
 
         report = import_book_bundle(
             db,
-            Path(bundle_path),
+            bundle_path,
             doc["class_name"],
-            doc["subject_name"],
-            subject_type=doc.get("subject_type", "Kết nối tri thức"),
+            doc.get("subject_name", _FIXED_SUBJECT_NAME),
+            subject_type=doc.get("subject_type", _FIXED_SUBJECT_TYPE),
             topic_names=topic_names,
             lesson_names=lesson_names,
             source_pdf_path=source_pdf_path,
@@ -1091,6 +1205,10 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         if isinstance(report, dict) and kw_summary:
             report["keyword_extraction_summary"] = kw_summary
 
+        _update_heavy_progress(
+            db, job_id, "heavy_done", "Hoàn tất!", 100,
+            counts={"kw_extracted": kw_extracted, "kw_skipped": kw_skipped},
+        )
         _col(db).update_one(
             {"job_id": job_id},
             {"$set": {
@@ -1105,6 +1223,9 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             {"$set": {
                 "status": "error",
                 "error": str(exc),
+                "heavy_progress_stage": "heavy_error",
+                "heavy_progress_message": str(exc)[:300],
+                "heavy_updated_at": _utc_now(),
                 "updated_at": _utc_now(),
             }},
         )

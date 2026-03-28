@@ -25,8 +25,8 @@ import {
   recutReviewChunk,
 } from "../../services/mongoAdminApi";
 
-const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
-const DEFAULT_MODEL = "gemini-2.5-flash-lite";
+const FIXED_SUBJECT_NAME = "Tin học";
+const FIXED_SUBJECT_TYPE = "Kết nối tri thức";
 const POLL_MS = 3000;
 
 const TRANSIENT_STATUSES = new Set([
@@ -53,12 +53,7 @@ const STATUS_LABEL = {
 
 export default function BookBundleImport() {
   const [phase, setPhase] = useState("upload");
-  const [form, setForm] = useState({
-    class_name: "",
-    subject_name: "",
-    subject_type: DEFAULT_SUBJECT_TYPE,
-    model: DEFAULT_MODEL,
-  });
+  const [form, setForm] = useState({ class_name: "" });
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -174,13 +169,7 @@ export default function BookBundleImport() {
     setUploading(true);
     setUploadError("");
     try {
-      const res = await createReviewJob(
-        form.class_name.trim(),
-        form.subject_name.trim(),
-        form.subject_type.trim() || DEFAULT_SUBJECT_TYPE,
-        form.model || DEFAULT_MODEL,
-        pdfFile
-      );
+      const res = await createReviewJob(form.class_name.trim(), pdfFile);
       resetEdit(res.job);
       setJob(res.job);
       setPhase("job");
@@ -570,12 +559,7 @@ export default function BookBundleImport() {
   function handleReset() {
     clearInterval(pollRef.current);
     setPhase("upload");
-    setForm({
-      class_name: "",
-      subject_name: "",
-      subject_type: DEFAULT_SUBJECT_TYPE,
-      model: DEFAULT_MODEL,
-    });
+    setForm({ class_name: "" });
     setPdfFile(null);
     setUploading(false);
     setUploadError("");
@@ -665,44 +649,20 @@ export default function BookBundleImport() {
       {phase === "upload" && (
         <form onSubmit={handleUpload}>
           <fieldset disabled={uploading} style={s.fieldset}>
-            <div style={s.row2}>
-              <Field label="Lớp *">
-                <input
-                  style={s.input}
-                  value={form.class_name}
-                  onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
-                  placeholder='VD: "10"'
-                  required
-                />
-              </Field>
-              <Field label="Môn học *">
-                <input
-                  style={s.input}
-                  value={form.subject_name}
-                  onChange={(e) => setForm((f) => ({ ...f, subject_name: e.target.value }))}
-                  placeholder='VD: "Tin học"'
-                  required
-                />
-              </Field>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              <span style={s.chip}>Môn: {FIXED_SUBJECT_NAME}</span>
+              <span style={s.chip}>Bộ sách: {FIXED_SUBJECT_TYPE}</span>
+              <span style={s.chip}>Model: gemini-2.5-flash</span>
             </div>
-            <div style={s.row2}>
-              <Field label="Bộ sách">
-                <input
-                  style={s.input}
-                  value={form.subject_type}
-                  onChange={(e) => setForm((f) => ({ ...f, subject_type: e.target.value }))}
-                  placeholder={DEFAULT_SUBJECT_TYPE}
-                />
-              </Field>
-              <Field label="Model Gemini">
-                <input
-                  style={s.input}
-                  value={form.model}
-                  onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-                  placeholder={DEFAULT_MODEL}
-                />
-              </Field>
-            </div>
+            <Field label="Lớp *">
+              <input
+                style={s.input}
+                value={form.class_name}
+                onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
+                placeholder='VD: "10"'
+                required
+              />
+            </Field>
             <Field label="File PDF sách *">
               <input
                 type="file"
@@ -794,7 +754,7 @@ export default function BookBundleImport() {
           )}
 
           {job.status === "heavy_stage_running" && (
-            <div style={s.infoBox}>Đang chạy import vào database — vui lòng chờ…</div>
+            <HeavyStageProgress job={job} />
           )}
 
           {showTopicReview && (
@@ -1552,6 +1512,130 @@ function CompactList({ title, items, fields }) {
   );
 }
 
+const HEAVY_STAGE_LABEL = {
+  heavy_preparing: "Chuẩn bị bundle",
+  heavy_kaggle_submitting: "Đẩy dataset lên Kaggle",
+  heavy_kaggle_running: "Kaggle kernel đang chạy",
+  heavy_kaggle_downloading: "Tải kết quả Kaggle",
+  heavy_keyword_extracting: "Trích xuất từ khóa",
+  heavy_importing_minio: "Upload PDF lên MinIO",
+  heavy_importing_mongo: "Import vào MongoDB",
+  heavy_syncing_pg: "Đồng bộ PostgreSQL",
+  heavy_syncing_neo: "Đồng bộ Neo4j",
+  heavy_finalizing_embeddings: "Tạo embeddings",
+  heavy_done: "Hoàn tất",
+  heavy_error: "Lỗi",
+};
+
+const HEAVY_STAGES_ORDER = [
+  "heavy_preparing",
+  "heavy_kaggle_submitting",
+  "heavy_kaggle_running",
+  "heavy_kaggle_downloading",
+  "heavy_keyword_extracting",
+  "heavy_importing_mongo",
+  "heavy_syncing_pg",
+  "heavy_syncing_neo",
+  "heavy_done",
+];
+
+function HeavyStageProgress({ job }) {
+  const stage = job.heavy_progress_stage || "heavy_preparing";
+  const message = job.heavy_progress_message || "Đang xử lý…";
+  const percent = job.heavy_progress_percent ?? 0;
+  const logLines = job.heavy_log_tail || [];
+  const counts = job.heavy_counts_partial || {};
+  const isError = stage === "heavy_error";
+
+  const currentIdx = HEAVY_STAGES_ORDER.indexOf(stage);
+
+  return (
+    <div style={{ ...s.infoBox, marginTop: 12 }}>
+      <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
+        Đang xử lý nặng
+      </div>
+
+      {/* Stage stepper */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
+        {HEAVY_STAGES_ORDER.map((st, i) => {
+          const done = currentIdx > i;
+          const active = currentIdx === i;
+          return (
+            <span
+              key={st}
+              style={{
+                padding: "2px 8px",
+                borderRadius: 12,
+                fontSize: 11,
+                fontWeight: active ? 700 : 400,
+                background: done ? "#bbf7d0" : active ? "#2563eb" : "#e5e7eb",
+                color: done ? "#15803d" : active ? "#fff" : "#9ca3af",
+                border: active ? "none" : "1px solid transparent",
+              }}
+            >
+              {done ? "✓ " : ""}{HEAVY_STAGE_LABEL[st] || st}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Current message */}
+      <div style={{ marginBottom: 8, color: isError ? "#b91c1c" : "#1d4ed8" }}>
+        {message}
+      </div>
+
+      {/* Progress bar */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+          <span>
+            {counts.kw_extracted != null ? `từ khóa: ${counts.kw_extracted} extracted, ${counts.kw_skipped ?? 0} skipped` : ""}
+          </span>
+          <span>{percent}%</span>
+        </div>
+        <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
+          <div
+            style={{
+              width: `${percent}%`,
+              background: isError ? "#ef4444" : "#2563eb",
+              height: "100%",
+              transition: "width 0.5s ease",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Log tail */}
+      {logLines.length > 0 && (
+        <div
+          style={{
+            marginTop: 10,
+            background: "#1e293b",
+            borderRadius: 4,
+            padding: "8px 10px",
+            maxHeight: 180,
+            overflowY: "auto",
+          }}
+        >
+          {logLines.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                fontFamily: "monospace",
+                fontSize: 11,
+                color: "#94a3b8",
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.5,
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExtractionProgress({ job }) {
   const msg = job.progress_message || STATUS_LABEL[job.status] || job.status;
   const cur = job.progress_current ?? null;
@@ -1721,5 +1805,14 @@ const s = {
     border: "1px solid #e5e7eb",
     borderRadius: 4,
     display: "block",
+  },
+  chip: {
+    padding: "3px 10px",
+    borderRadius: 12,
+    fontSize: 12,
+    background: "#e0f2fe",
+    color: "#0369a1",
+    border: "1px solid #bae6fd",
+    fontWeight: 500,
   },
 };
