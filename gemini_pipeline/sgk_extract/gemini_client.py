@@ -93,19 +93,43 @@ _ROTATABLE_PATTERNS = [
     "timeout",
 ]
 
+# Patterns that indicate the key itself is permanently dead (expired / revoked / invalid).
+# These are 400s but NOT payload errors — the key must be skipped for the rest of the run.
+_DEAD_KEY_PATTERNS = [
+    "api_key_invalid",
+    "api key invalid",
+    "api key expired",
+    "invalid api key",
+    "key expired",
+    "expired api key",
+    "invalidapikey",
+    "key has expired",
+]
+
+
+def _is_dead_key(e: Exception) -> bool:
+    """True when the error unambiguously means this API key is invalid or expired."""
+    msg = str(e).lower()
+    return any(p in msg for p in _DEAD_KEY_PATTERNS)
+
 
 def _is_rotatable(e: Exception) -> bool:
     """
     True if rotating to another key is worth trying.
 
     Non-rotatable:
-      400 — malformed request; the payload is the problem, not the key.
+      400 — malformed request (payload error); the payload is the problem, not the key.
+      Exception: 400s that indicate an invalid/expired key ARE rotatable (handled first).
 
     Rotatable:
-      429       — rate-limit / quota exhausted.
+      429         — rate-limit / quota exhausted.
       500/502/503 — transient server errors.
+      Dead-key 400s (API_KEY_INVALID, expired key, etc.) — key must be skipped.
       Any exception whose message matches _ROTATABLE_PATTERNS.
     """
+    # Dead-key errors are always rotatable regardless of HTTP status
+    if _is_dead_key(e):
+        return True
     if isinstance(e, ClientError):
         status = getattr(e, "status_code", None)
         if status == 400:
@@ -118,6 +142,8 @@ def _is_rotatable(e: Exception) -> bool:
 
 def _error_label(e: Exception) -> str:
     """Short category string for log messages."""
+    if _is_dead_key(e):
+        return "invalid/expired-key"
     if isinstance(e, ClientError):
         status = getattr(e, "status_code", None)
         if status in _QUOTA_STATUS:
@@ -182,6 +208,9 @@ class GeminiPool:
         self._key_locks: dict[int, threading.Lock] = {i: threading.Lock() for i in range(self._n)}
         self._last_call_time: dict[int, float] = {}
         self._cooldown_until: dict[int, float] = {}
+
+        # Keys permanently disabled for this run (invalid / expired)
+        self._dead_keys: set[int] = set()
 
         # Optional observability callback — set externally, called with human-readable message
         self._status_cb = None
@@ -258,7 +287,21 @@ class GeminiPool:
     # ── Internal helpers ──────────────────────────────────────────────────────
 
     def _in_cooldown(self, idx: int, now: float) -> bool:
-        return now < self._cooldown_until.get(idx, 0.0)
+        return idx in self._dead_keys or now < self._cooldown_until.get(idx, 0.0)
+
+    def _mark_dead(self, idx: int) -> None:
+        self._dead_keys.add(idx)
+        msg = (
+            f"[GeminiPool] Key#{idx + 1} ({_mask_key(self._keys[idx])}) "
+            f"invalid/expired — permanently skipping this key for this run"
+        )
+        print(msg, flush=True)
+        _log.warning(msg)
+        if self._status_cb:
+            try:
+                self._status_cb(f"Key #{idx + 1} invalid/expired — bỏ qua vĩnh viễn")
+            except Exception:
+                pass
 
     def _set_cooldown(self, idx: int) -> None:
         expires = time.monotonic() + self._cooldown_seconds
@@ -286,11 +329,14 @@ class GeminiPool:
         """
         Return (seconds_until_next_available_key, key_idx).
         Returns (0.0, idx) immediately if any key is already out of cooldown.
+        Dead keys are excluded entirely.
         """
         now = time.monotonic()
         best = float("inf")
         best_idx = 0
         for i in range(self._n):
+            if i in self._dead_keys:
+                continue
             remaining = self._cooldown_until.get(i, 0.0) - now
             if remaining <= 0:
                 return 0.0, i
@@ -399,7 +445,10 @@ class GeminiPool:
                                     )
                                 except Exception:
                                     pass
-                            self._set_cooldown(idx)
+                            if _is_dead_key(e):
+                                self._mark_dead(idx)
+                            else:
+                                self._set_cooldown(idx)
                             continue
                         raise
 
@@ -426,10 +475,21 @@ class GeminiPool:
                 return text
 
             # All keys tried this round
+            dead_count = len(self._dead_keys)
             if not wait_for_available_key:
                 raise RuntimeError(
-                    f"All {self._n} Gemini key(s) exhausted or in cooldown. "
+                    f"All {self._n} Gemini key(s) exhausted or unavailable "
+                    f"({dead_count} dead/invalid). "
                     f"Tried keys: {tried}. Last error: {last_err}"
+                )
+
+            # If every non-dead key is in cooldown, wait; if ALL keys are dead, fail immediately
+            live_keys = self._n - dead_count
+            if live_keys == 0:
+                raise RuntimeError(
+                    f"All {self._n} Gemini key(s) are invalid/expired — cannot continue. "
+                    f"Dead keys: {sorted(i + 1 for i in self._dead_keys)}. "
+                    f"Last error: {last_err}"
                 )
 
             elapsed = time.monotonic() - job_start
