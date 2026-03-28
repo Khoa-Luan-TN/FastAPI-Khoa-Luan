@@ -128,7 +128,9 @@ export function importExcelTracked(file, collectionName) {
 }
 
 export function getImportJobStatus(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/import-jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
+  return httpJson(`${API_BASE}/admin/mongo/import-jobs/${encodeURIComponent(jobId)}`, {
+    method: "GET",
+  });
 }
 
 // POST /admin/mongo/import/book-bundle
@@ -184,30 +186,42 @@ export function saveReviewChunks(jobId, chunks) {
 
 // POST /admin/mongo/book-review/jobs/:id/approve-topics
 export function approveTopics(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`, {
-    method: "POST",
-  });
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`,
+    {
+      method: "POST",
+    }
+  );
 }
 
 // POST /admin/mongo/book-review/jobs/:id/approve-lessons
 export function approveLessons(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`, {
-    method: "POST",
-  });
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`,
+    {
+      method: "POST",
+    }
+  );
 }
 
 // POST /admin/mongo/book-review/jobs/:id/approve-chunks
 export function approveChunks(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`, {
-    method: "POST",
-  });
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`,
+    {
+      method: "POST",
+    }
+  );
 }
 
 // POST /admin/mongo/book-review/jobs/:id/trigger-heavy
 export function triggerHeavyStage(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`, {
-    method: "POST",
-  });
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`,
+    {
+      method: "POST",
+    }
+  );
 }
 
 // ── Topic preview PDF URLs (no fetch — used directly in iframes) ──────────────
@@ -224,7 +238,7 @@ export function reviewSourcePdfUrl(jobId) {
 export function patchReviewTopic(jobId, idx, patch) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}`,
-    { method: "PATCH", body: JSON.stringify(patch) },
+    { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
 
@@ -232,7 +246,7 @@ export function patchReviewTopic(jobId, idx, patch) {
 export function recutReviewTopic(jobId, idx) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}/recut`,
-    { method: "POST" },
+    { method: "POST" }
   );
 }
 
@@ -243,14 +257,14 @@ export function reviewLessonPdfUrl(jobId, idx, key = 0) {
 export function patchReviewLesson(jobId, idx, patch) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}`,
-    { method: "PATCH", body: JSON.stringify(patch) },
+    { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
 
 export function recutReviewLesson(jobId, idx) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}/recut`,
-    { method: "POST" },
+    { method: "POST" }
   );
 }
 
@@ -263,14 +277,20 @@ export function reviewChunkPdfUrl(jobId, idx, key = 0) {
 export function setDebugTopic(jobId, enabled, topicIndex) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/debug-topic`,
-    { method: "POST", body: JSON.stringify({ enabled: !!enabled, topic_index: topicIndex ?? null }) },
+    {
+      method: "POST",
+      body: JSON.stringify({ enabled: !!enabled, topic_index: topicIndex ?? null }),
+    }
   );
 }
 
 export function patchReviewChunk(jobId, idx, patch) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,
-    { method: "PATCH", body: JSON.stringify(patch) },
+    { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
 
+export function reviewChunkLessonPdfUrl(jobId, idx, key = 0) {
+  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}/lesson?k=${key}`;
+}

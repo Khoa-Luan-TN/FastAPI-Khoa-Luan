@@ -4,6 +4,7 @@
 # Users upload a raw PDF; the backend runs sequential stage-by-stage extraction
 # and exposes topic/lesson/chunk data for review before any heavy processing.
 from __future__ import annotations
+import json
 import re
 
 from pathlib import Path
@@ -49,13 +50,58 @@ def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
     direct = chunk.get("chunk_pdf")
     if direct and Path(direct).exists():
         return Path(direct)
-    # Reconstruct: <bundle>/Chunk/<lesson_stem>/<chunk_name>/<lesson_stem>_<chunk_name>.pdf
     lesson_stem = chunk.get("lesson_stem")
     chunk_name = chunk.get("chunk")
     if lesson_stem and chunk_name:
-        p = Path(bundle_path) / "Chunk" / lesson_stem / chunk_name / f"{lesson_stem}_{chunk_name}.pdf"
+        chunk_dir = Path(bundle_path) / "Chunk" / lesson_stem / chunk_name
+        # Canonical naming
+        p = chunk_dir / f"{lesson_stem}_{chunk_name}.pdf"
         if p.exists():
             return p
+        # Fallback: read metadata JSON written by sync_bundle.py
+        meta_path = chunk_dir / f"{lesson_stem}_{chunk_name}.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                mp = meta.get("chunk_pdf")
+                if mp and Path(mp).exists():
+                    return Path(mp)
+            except Exception:
+                pass
+        # Last resort: any PDF in chunk dir
+        pdfs = sorted(chunk_dir.glob("*.pdf"))
+        if pdfs:
+            return pdfs[0]
+    return None
+
+
+def _find_lesson_pdf_for_chunk(bundle_path: str, chunk: dict) -> Path | None:
+    # 1. source_lesson_pdf stored directly on the chunk
+    slp = chunk.get("source_lesson_pdf")
+    if slp and Path(slp).exists():
+        return Path(slp)
+    lesson_stem = chunk.get("lesson_stem")
+    chunk_name = chunk.get("chunk")
+    # 2. Read from the chunk metadata JSON on disk
+    if lesson_stem and chunk_name:
+        meta_path = (
+            Path(bundle_path) / "Chunk" / lesson_stem / chunk_name / f"{lesson_stem}_{chunk_name}.json"
+        )
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                slp = meta.get("source_lesson_pdf")
+                if slp and Path(slp).exists():
+                    return Path(slp)
+            except Exception:
+                pass
+    # 3. Search Lesson dir for any PDF whose stem matches lesson_stem
+    if lesson_stem:
+        lesson_root = Path(bundle_path) / "Lesson"
+        if lesson_root.exists():
+            found = sorted(p for p in lesson_root.rglob("*.pdf") if p.stem == lesson_stem)
+            if found:
+                return found[0]
     return None
 
 
@@ -202,6 +248,24 @@ async def serve_lesson_pdf(job_id: str, idx: int):
     raise HTTPException(status_code=404, detail="Lesson PDF not found — extraction may still be running")
 
 
+@router.get("/book-review/jobs/{job_id}/pdf/chunk/{idx}/lesson", summary="Serve lesson PDF as chunk reference")
+async def serve_lesson_pdf_for_chunk(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    chunks = job.get("chunks", [])
+    if not (0 <= idx < len(chunks)):
+        raise HTTPException(status_code=404, detail="Chunk index out of range")
+    bundle_path = job.get("bundle_path")
+    if bundle_path:
+        pdf_path = _find_lesson_pdf_for_chunk(bundle_path, chunks[idx])
+        if pdf_path and pdf_path.exists():
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                headers={"Content-Disposition": "inline"},
+            )
+    raise HTTPException(status_code=404, detail="Lesson PDF for chunk not found")
+
+
 @router.get("/book-review/jobs/{job_id}/pdf/chunk/{idx}", summary="Serve chunk preview PDF")
 async def serve_chunk_pdf(job_id: str, idx: int):
     job = _get_or_404(job_id)
@@ -246,7 +310,9 @@ async def patch_topic(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     if not (0 <= idx < len(job.get("topics", []))):
         raise HTTPException(status_code=404, detail="Topic index out of range")
     from app.services.mongo.book_review_service import sync_topic_item_to_bundle
-    sync_topic_item_to_bundle(db, job_id, idx, body)
+    result = sync_topic_item_to_bundle(db, job_id, idx, body)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Topic sync failed"))
     return {"ok": True}
 
 
@@ -268,7 +334,9 @@ async def patch_lesson(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
         raise HTTPException(status_code=404, detail="Lesson index out of range")
 
     from app.services.mongo.book_review_service import sync_lesson_item_to_bundle
-    sync_lesson_item_to_bundle(db, job_id, idx, body)
+    result = sync_lesson_item_to_bundle(db, job_id, idx, body)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Lesson sync failed"))
     return {"ok": True}
 
 @router.post("/book-review/jobs/{job_id}/lessons/{idx}/recut", summary="Recut lesson preview from source PDF")
@@ -290,7 +358,9 @@ async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     if not (0 <= idx < len(job.get("chunks", []))):
         raise HTTPException(status_code=404, detail="Chunk index out of range")
     from app.services.mongo.book_review_service import sync_chunk_item_to_bundle
-    sync_chunk_item_to_bundle(db, job_id, idx, body)
+    result = sync_chunk_item_to_bundle(db, job_id, idx, body)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Chunk sync failed"))
     return {"ok": True}
 
 

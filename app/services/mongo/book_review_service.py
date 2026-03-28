@@ -559,50 +559,57 @@ def sync_chunk_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[s
     if not (0 <= idx < len(chunks)):
         return {"ok": False, "error": "Index out of range"}
 
-    # Apply patch to the target chunk
+    # Work on a copy first; do NOT persist Mongo until canonical rebuild succeeds
+    working_chunks = [dict(c) for c in chunks]
+
     for k, v in patch.items():
         if k in {"heading", "title", "start", "content_head"}:
-            chunks[idx][k] = v
+            working_chunks[idx][k] = v
 
-    lesson_stem = chunks[idx].get("lesson_stem")
+    lesson_stem = working_chunks[idx].get("lesson_stem")
     bundle_path = doc.get("bundle_path")
 
-    if bundle_path and lesson_stem and Path(bundle_path).exists():
-        lesson_chunks = [c for c in chunks if c.get("lesson_stem") == lesson_stem]
-        result = _run_sync_script("chunks", {
-            "bundle_path": bundle_path,
-            "lesson_stem": lesson_stem,
-            "chunks": [
-                {
-                    "start": c.get("start", 1),
-                    "content_head": c.get("content_head", False),
-                    "heading": c.get("heading", ""),
-                    "title": c.get("title", ""),
-                }
-                for c in lesson_chunks
-            ],
-        })
+    if not (bundle_path and lesson_stem and Path(bundle_path).exists()):
+        return {"ok": False, "error": "bundle_path or lesson_stem missing"}
 
-        if result.get("ok"):
-            # Replace chunks for this lesson_stem with the canonical recomputed list
-            new_lesson_chunks = result["chunks"]
-            rebuilt: List[Dict[str, Any]] = []
-            new_pos = 0
-            for c in chunks:
-                if c.get("lesson_stem") == lesson_stem:
-                    if new_pos < len(new_lesson_chunks):
-                        rebuilt.append(new_lesson_chunks[new_pos])
-                        new_pos += 1
-                else:
-                    rebuilt.append(c)
-            chunks = rebuilt
+    lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
+    result = _run_sync_script("chunks", {
+        "bundle_path": bundle_path,
+        "lesson_stem": lesson_stem,
+        "chunks": [
+            {
+                "start": c.get("start", 1),
+                "content_head": c.get("content_head", False),
+                "heading": c.get("heading", ""),
+                "title": c.get("title", ""),
+            }
+            for c in lesson_chunks
+        ],
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Chunk sync failed")}
+
+    new_lesson_chunks = result.get("chunks", [])
+    rebuilt: List[Dict[str, Any]] = []
+    replaced = False
+
+    for c in working_chunks:
+        if c.get("lesson_stem") == lesson_stem:
+            if not replaced:
+                rebuilt.extend(new_lesson_chunks)
+                replaced = True
+        else:
+            rebuilt.append(c)
+
+    if not replaced:
+        rebuilt.extend(new_lesson_chunks)
 
     _col(db).update_one(
         {"job_id": job_id},
-        {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
+        {"$set": {"chunks": rebuilt, "updated_at": _utc_now()}},
     )
-    return {"ok": True}
-
+    return {"ok": True, "chunks": rebuilt}
 
 _RECUT_SCRIPT = _GEMINI_DIR / "scripts" / "recut_topic_preview.py"
 _SYNC_SCRIPT = _GEMINI_DIR / "scripts" / "sync_bundle.py"

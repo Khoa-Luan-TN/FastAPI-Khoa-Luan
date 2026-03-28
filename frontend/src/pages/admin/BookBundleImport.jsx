@@ -20,6 +20,7 @@ import {
   reviewChunkPdfUrl,
   patchReviewChunk,
   setDebugTopic,
+  reviewChunkLessonPdfUrl,
 } from "../../services/mongoAdminApi";
 
 const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
@@ -519,7 +520,20 @@ export default function BookBundleImport() {
   const isPastChunks = job && PAST_CHUNKS_STATUSES.has(status);
 
   return (
-    <div style={{ ...s.page, maxWidth: (isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons || isChunkStage || isExtractingChunks) ? 1200 : 760 }}>
+    <div
+      style={{
+        ...s.page,
+        maxWidth:
+          isTopicStage ||
+          isExtractingTopics ||
+          isLessonStage ||
+          isExtractingLessons ||
+          isChunkStage ||
+          isExtractingChunks
+            ? 1200
+            : 760,
+      }}
+    >
       <h2 style={s.heading}>Import sách</h2>
       <p style={s.sub}>
         Upload PDF sách giáo khoa — hệ thống trích xuất cấu trúc Chủ đề / Bài / Phần để kiểm tra
@@ -880,9 +894,12 @@ function TopicReviewPane({
             {(() => {
               const debugEnabled = !!job.debug_single_topic_enabled;
               const isSelected = job.debug_topic_index === topicIdx;
-              const selectedTitle = debugEnabled && job.debug_topic_index != null
-                ? (editTopics[job.debug_topic_index]?.heading || "") + " " + (editTopics[job.debug_topic_index]?.title || "")
-                : null;
+              const selectedTitle =
+                debugEnabled && job.debug_topic_index != null
+                  ? (editTopics[job.debug_topic_index]?.heading || "") +
+                    " " +
+                    (editTopics[job.debug_topic_index]?.title || "")
+                  : null;
               return (
                 <div
                   style={{
@@ -895,13 +912,24 @@ function TopicReviewPane({
                     color: debugEnabled ? "#92400e" : "#6b7280",
                   }}
                 >
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none" }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={debugEnabled}
                       disabled={loading}
                       onChange={(e) =>
-                        onSetDebugTopic({ enabled: e.target.checked, topicIndex: e.target.checked ? topicIdx : null })
+                        onSetDebugTopic({
+                          enabled: e.target.checked,
+                          topicIndex: e.target.checked ? topicIdx : null,
+                        })
                       }
                     />
                     <span style={{ fontWeight: 600 }}>
@@ -923,7 +951,15 @@ function TopicReviewPane({
                     </button>
                   )}
                   {debugEnabled && isSelected && (
-                    <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "#15803d", fontWeight: 600 }}>
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 4,
+                        fontSize: 11,
+                        color: "#15803d",
+                        fontWeight: 600,
+                      }}
+                    >
                       ✓ Topic này đang được debug
                     </span>
                   )}
@@ -1172,7 +1208,7 @@ function ChunkReviewPane({
   }
 
   const cutUrl = reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey);
-  const srcUrl = reviewSourcePdfUrl(job.job_id);
+  const lessonRefUrl = reviewChunkLessonPdfUrl(job.job_id, chunkIdx, chunkPreviewKey);
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -1231,16 +1267,22 @@ function ChunkReviewPane({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={s.card}>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-              PDF gốc (tham chiếu)
+              PDF bài học (tham chiếu)
             </div>
-            <iframe src={srcUrl} title="Source PDF" style={s.pdfFrame} />
+            <iframe src={lessonRefUrl} title="Lesson PDF for chunk" style={s.pdfFrame} />
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+              Chunk dùng số trang theo bài, không phải theo cả cuốn sách.
+            </div>
           </div>
           <div style={s.card}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
               Chỉnh sửa phần {chunkIdx + 1}
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>
-              Bài: {chunk.lesson_stem || ""} · trang kết thúc (tự tính): {chunk.end ?? "—"}
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.6 }}>
+              <div>Bài: {chunk.lesson_stem || "—"}</div>
+              <div>Trang bắt đầu (trong bài): {chunk.start ?? "—"}</div>
+              <div>Trang kết thúc (tự tính): {chunk.end ?? "—"}</div>
+              <div>content_head: {chunk.content_head ? "true" : "false"}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Field label="Heading (số mục)">
@@ -1267,7 +1309,9 @@ function ChunkReviewPane({
                 />
               </Field>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <label style={{ fontSize: 13, color: "#374151", userSelect: "none", cursor: "pointer" }}>
+                <label
+                  style={{ fontSize: 13, color: "#374151", userSelect: "none", cursor: "pointer" }}
+                >
                   <input
                     type="checkbox"
                     checked={chunk.content_head ?? false}

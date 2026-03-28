@@ -40,6 +40,7 @@ import json
 import re
 import sys
 from pathlib import Path
+import shutil
 
 # Make sgk_extract importable when running from gemini_pipeline dir
 _HERE = Path(__file__).resolve().parent
@@ -88,30 +89,27 @@ def _sync_topic_lesson(data: dict, kind: str) -> None:
 
     print(json.dumps({"ok": True, "pdf": str(pdf_path), "meta": meta}, ensure_ascii=False))
 
-
 def _sync_chunks(data: dict) -> None:
     bundle_path = Path(data["bundle_path"])
     lesson_stem = data["lesson_stem"]
     input_chunks = data["chunks"]  # list of {start, content_head, heading, title}
 
-    lesson_dir = bundle_path / "Lesson" / lesson_stem
-    if not lesson_dir.exists():
-        print(json.dumps({"ok": False, "error": f"Lesson dir not found: {lesson_dir}"}))
+    lesson_root = bundle_path / "Lesson"
+    found_pdfs = sorted(p for p in lesson_root.rglob("*.pdf") if p.stem == lesson_stem)
+    if not found_pdfs:
+        print(json.dumps({
+            "ok": False,
+            "error": f"Lesson PDF not found for stem {lesson_stem!r} under {lesson_root}"
+        }))
         return
 
-    lesson_pdfs = sorted(lesson_dir.glob("*.pdf"))
-    if not lesson_pdfs:
-        print(json.dumps({"ok": False, "error": f"No lesson PDF found in {lesson_dir}"}))
-        return
-
-    lesson_pdf = str(lesson_pdfs[0])
+    lesson_pdf = str(found_pdfs[0])
 
     from pypdf import PdfReader
     total_pages = len(PdfReader(lesson_pdf).pages)
 
     from sgk_extract.chunk_pipeline import _compute_chunks_from_start_head
 
-    # Build items list: [(start, content_head, heading, title)]
     items = [
         (
             int(c.get("start", 1)),
@@ -125,12 +123,17 @@ def _sync_chunks(data: dict) -> None:
     computed = _compute_chunks_from_start_head(items, total_pages)
 
     chunk_base = bundle_path / "Chunk" / lesson_stem
+
+    # IMPORTANT: clean old canonical chunk artifacts first
+    if chunk_base.exists():
+        shutil.rmtree(chunk_base)
     chunk_base.mkdir(parents=True, exist_ok=True)
 
     result_chunks = []
     for item_dict in computed:
         if not isinstance(item_dict, dict) or len(item_dict) != 1:
             continue
+
         chunk_name, obj = next(iter(item_dict.items()))
         s = int(obj["start"])
         e = int(obj["end"])
@@ -141,11 +144,12 @@ def _sync_chunks(data: dict) -> None:
         chunk_dir = chunk_base / chunk_name
         chunk_dir.mkdir(parents=True, exist_ok=True)
 
-        # split_pdf_by_ranges(src, [(name, s, e)], out_dir, pdf_stem)
-        # → out_dir/<pdf_stem>_<name>.pdf  = chunk_dir/<lesson_stem>_<chunk_name>.pdf
         paths = split_pdf_by_ranges(lesson_pdf, [(chunk_name, s, e)], chunk_dir, lesson_stem)
         if not paths:
-            print(json.dumps({"ok": False, "error": f"Failed to split chunk {chunk_name} (pages {s}–{e})"}))
+            print(json.dumps({
+                "ok": False,
+                "error": f"Failed to split chunk {chunk_name} (pages {s}–{e})"
+            }))
             return
 
         chunk_pdf = str(paths[0])
@@ -163,8 +167,12 @@ def _sync_chunks(data: dict) -> None:
             "title": title,
             "total_pages": total_pages,
         }
+
         meta_path = chunk_dir / f"{lesson_stem}_{chunk_name}.json"
-        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        meta_path.write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
         result_chunks.append(meta)
 
