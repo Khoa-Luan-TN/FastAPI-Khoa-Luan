@@ -167,6 +167,59 @@ def _find_pdf(parent_dir: Path, pattern: str) -> Optional[Path]:
     return matches[0] if matches else None
 
 
+def _find_topic_pdf(topic_dir: Path, topic_num: str) -> Optional[Path]:
+    """
+    Multi-strategy topic PDF finder (most-specific first):
+      1. Exact suffix pattern: *_topic_{topic_num}.pdf  (original behaviour)
+      2. Any PDF inside Topic/<*topic{topic_num}*>/ subdir
+      3. Any PDF under topic_dir whose stem contains "topic_{topic_num}"
+      4. Any PDF directly under topic_dir (last resort — flat layout)
+    """
+    # Strategy 1: exact naming convention
+    result = _find_pdf(topic_dir, f"*_topic_{topic_num}.pdf")
+    if result:
+        return result
+
+    # Strategy 2: topic-specific subdirectory (e.g. Topic/Tin-hoc-10_topic_01/)
+    for sub in sorted(topic_dir.iterdir()):
+        if sub.is_dir() and f"topic_{topic_num}" in sub.name.lower():
+            pdfs = sorted(sub.rglob("*.pdf"))
+            if pdfs:
+                _log.debug("_find_topic_pdf strategy2: found %s via subdir %s", pdfs[0], sub)
+                return pdfs[0]
+
+    # Strategy 3: any PDF whose stem contains "topic_{topic_num}"
+    for pdf in sorted(topic_dir.rglob("*.pdf")):
+        if f"topic_{topic_num}" in pdf.stem.lower():
+            _log.debug("_find_topic_pdf strategy3: found %s via stem match", pdf)
+            return pdf
+
+    # Strategy 4: only safe if exactly one flat PDF exists (avoids wrong-file upload)
+    flat = sorted(p for p in topic_dir.iterdir() if p.suffix.lower() == ".pdf")
+    if len(flat) == 1:
+        _log.debug("_find_topic_pdf strategy4 (last resort, unique flat PDF): returning %s", flat[0])
+        return flat[0]
+    if len(flat) > 1:
+        _log.warning(
+            "_find_topic_pdf strategy4: %d flat PDFs found for topic_%s in %s — "
+            "cannot safely pick one; skipping upload",
+            len(flat), topic_num, topic_dir,
+        )
+
+    return None
+
+
+def _minio_prefix_has_pdf(client, bucket: str, prefix: str) -> bool:
+    """Return True if at least one .pdf object exists under *prefix* in MinIO."""
+    try:
+        for obj in client.list_objects(bucket, prefix=prefix.rstrip("/") + "/", recursive=True):
+            if obj.object_name.lower().endswith(".pdf"):
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def _minio_upload_pdf(
     client,
     bucket: str,
@@ -424,10 +477,18 @@ def import_book_bundle(
                     except Exception:
                         continue
         if _source_pdf:
-            book_pdf_uploaded = _upload_entity_pdf(
-                minio_client, bucket, ap_subj, _source_pdf,
-                actor=actor, minio_errors=minio_errors,
-            )
+            _subj_docs_prefix = ap_subj.get("documents", "")
+            if _subj_docs_prefix and _minio_prefix_has_pdf(minio_client, bucket, _subj_docs_prefix):
+                _log.info(
+                    "Subject documents prefix already has a PDF — skipping re-upload (%s)",
+                    _subj_docs_prefix,
+                )
+                book_pdf_uploaded = False
+            else:
+                book_pdf_uploaded = _upload_entity_pdf(
+                    minio_client, bucket, ap_subj, _source_pdf,
+                    actor=actor, minio_errors=minio_errors,
+                )
     if subj_op != "noop":
         _sync_entity(sync_one, "subject", subj_key, db, errors)
 
@@ -504,7 +565,9 @@ def import_book_bundle(
 
         pdf_uploaded = False
         if minio_client and ap_topic and topic_dir.exists():
-            topic_pdf = _find_pdf(topic_dir, f"*_topic_{topic_num}.pdf")
+            topic_pdf = _find_topic_pdf(topic_dir, topic_num)
+            if topic_pdf is None:
+                _log.warning("No PDF found for topic_%s in %s", topic_num, topic_dir)
             pdf_uploaded = _upload_entity_pdf(
                 minio_client, bucket, ap_topic, topic_pdf, actor=actor, minio_errors=minio_errors
             )

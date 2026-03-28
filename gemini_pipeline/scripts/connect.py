@@ -2,6 +2,7 @@
 import os
 import re
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -23,11 +24,12 @@ class KeyManager:
     all key selection, cooldown, and rotation internally.
     """
 
-    def __init__(self, keys: list[str]) -> None:
+    def __init__(self, keys: list[str], state_file: Optional[Path] = None) -> None:
         self.keys = keys
+        self.state_file: Optional[Path] = state_file
 
 
-def get_key_manager(env_path: str = "config.env") -> KeyManager:
+def get_key_manager(env_path: str = "config.env", state_file: Optional[Path] = None) -> KeyManager:
     """
     Load Gemini API keys from *env_path* and return a KeyManager.
 
@@ -60,4 +62,4 @@ def get_key_manager(env_path: str = "config.env") -> KeyManager:
             "Set GEMINI_API_KEY_1..N or GEMINI_API_KEYS=key1,key2,... in config.env"
         )
 
-    return KeyManager(keys)
+    return KeyManager(keys, state_file=state_file)

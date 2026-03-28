@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import subprocess
+import time
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -1291,42 +1293,113 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         _log.info("[heavy/%s] Stage: heavy_keyword_extracting — bundle: %s", job_id, bundle_path)
 
         kw_summary_path = workspace / "keyword_summary.json"
-        try:
-            kw_proc = subprocess.run(
-                [
-                    python_exec, "-m", "scripts.keyword_extract_book",
-                    "--bundle-dir", str(bundle_path),
-                    "--output", str(kw_summary_path),
-                ],
-                cwd=str(_GEMINI_DIR),
-                capture_output=True,
-                text=True,
-                timeout=1800,
+        kw_log_file = workspace / "keyword_subprocess.log"
+        kw_all_lines: list[str] = []
+
+        kw_env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+        kw_rotation_state = workspace / "gemini_rotation_state.json"
+        _log.info(
+            "[heavy/%s] Launching keyword extraction | rotation_state=%s (exists=%s)",
+            job_id, kw_rotation_state, kw_rotation_state.exists(),
+        )
+        kw_popen = subprocess.Popen(
+            [
+                python_exec, "-m", "scripts.keyword_extract_book",
+                "--bundle-dir", str(bundle_path),
+                "--output", str(kw_summary_path),
+                "--rotation-state", str(kw_rotation_state),
+            ],
+            cwd=str(_GEMINI_DIR),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=kw_env,
+        )
+
+        _KW_TIMEOUT_SEC = 1800  # 30 minutes hard limit
+        _KW_HEARTBEAT_LINES = 15  # also refresh every N lines
+        _KW_HEARTBEAT_SEC = 8.0  # refresh at least every N seconds
+
+        _kw_line_count = 0
+        _kw_last_heartbeat = time.monotonic()
+        _kw_start = time.monotonic()
+        _kw_timed_out = False
+
+        def _kw_make_progress_msg(line_count: int, last_line: str) -> str:
+            low = last_line.lower()
+            if "cooldown" in low or "cooling" in low:
+                return f"Đang chờ Gemini / xoay key… ({line_count} dòng log)"
+            if "key#" in low or "key #" in low:
+                m = re.search(r"key\s*#\s*(\d+)", last_line, re.IGNORECASE)
+                if m:
+                    return f"Đang trích xuất từ khóa — Key #{m.group(1)} ({line_count} dòng log)"
+            return f"Đang trích xuất từ khóa… ({line_count} dòng log)"
+
+        assert kw_popen.stdout is not None
+        for _kw_raw in kw_popen.stdout:
+            # Timeout watchdog
+            if time.monotonic() - _kw_start >= _KW_TIMEOUT_SEC:
+                _kw_timed_out = True
+                kw_popen.kill()
+                break
+
+            _kw_line = _kw_raw.rstrip()
+            kw_all_lines.append(_kw_line)
+            _log.debug("[heavy/%s][kw] %s", job_id, _kw_line)
+            _kw_line_count += 1
+
+            _now = time.monotonic()
+            _do_heartbeat = (
+                _kw_line_count % _KW_HEARTBEAT_LINES == 0
+                or (_now - _kw_last_heartbeat) >= _KW_HEARTBEAT_SEC
             )
-            kw_log = (kw_proc.stdout or "") + (kw_proc.stderr or "")
-            try:
-                (workspace / "keyword_subprocess.log").write_text(kw_log, encoding="utf-8")
-            except Exception:
-                pass
-
-            kw_log_lines = kw_log.splitlines()[-50:]
-            _log.info("[heavy/%s] Keyword extraction subprocess returned — returncode=%d",
-                      job_id, kw_proc.returncode)
-
-            if kw_proc.returncode != 0:
-                _update_heavy_progress(db, job_id, "heavy_error",
-                                       "Keyword extraction thất bại", 0,
-                                       log_tail=kw_log_lines)
-                _col(db).update_one(
-                    {"job_id": job_id},
-                    {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
+            if _do_heartbeat:
+                _kw_last_heartbeat = _now
+                _tail = kw_all_lines[-50:]
+                _msg = _kw_make_progress_msg(_kw_line_count, _kw_line)
+                _update_heavy_progress(
+                    db, job_id, "heavy_keyword_extracting", _msg, 60,
+                    log_tail=_tail,
                 )
-                raise ValueError(
-                    f"Keyword extraction subprocess exited {kw_proc.returncode}: "
-                    f"{(kw_proc.stderr or '')[:2000]}"
-                )
-        except subprocess.TimeoutExpired:
-            raise ValueError("Keyword extraction timed out after 30 minutes")
+
+        kw_returncode = kw_popen.wait()
+
+        if _kw_timed_out:
+            _tail = kw_all_lines[-50:]
+            _update_heavy_progress(db, job_id, "heavy_error",
+                                   f"Keyword extraction timed out after {_KW_TIMEOUT_SEC}s", 0,
+                                   log_tail=_tail)
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
+            )
+            raise ValueError(
+                f"Keyword extraction timed out after {_KW_TIMEOUT_SEC}s. "
+                f"Last log:\n" + "\n".join(_tail[-20:])
+            )
+
+        try:
+            kw_log_file.write_text("\n".join(kw_all_lines), encoding="utf-8")
+        except Exception:
+            pass
+
+        kw_log_lines = kw_all_lines[-50:]
+        _log.info("[heavy/%s] Keyword extraction subprocess returned — returncode=%d",
+                  job_id, kw_returncode)
+
+        if kw_returncode != 0:
+            _update_heavy_progress(db, job_id, "heavy_error",
+                                   "Keyword extraction thất bại", 0,
+                                   log_tail=kw_log_lines)
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
+            )
+            raise ValueError(
+                f"Keyword extraction subprocess exited {kw_returncode}:\n"
+                + "\n".join(kw_log_lines[-20:])
+            )
 
         kw_summary: Dict[str, Any] = {}
         if kw_summary_path.exists():

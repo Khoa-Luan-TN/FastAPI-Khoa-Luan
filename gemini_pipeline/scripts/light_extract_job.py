@@ -242,8 +242,9 @@ def _run_topics(workspace: Path, config: dict) -> None:
         progress_stage="preparing_topics",
         progress_message="Đang chuẩn bị tách chủ đề...",
     )
-    log("preparing_topics: loading key manager")
-    key_manager = get_key_manager(api_config)
+    rotation_state_path = workspace / "gemini_rotation_state.json"
+    log(f"preparing_topics: loading key manager | rotation_state={rotation_state_path}")
+    key_manager = get_key_manager(api_config, state_file=rotation_state_path)
 
     from pypdf import PdfReader
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
@@ -397,6 +398,13 @@ def _run_topics(workspace: Path, config: dict) -> None:
         encoding="utf-8",
     )
     log("all outputs saved")
+
+    if hasattr(key_manager, "_gemini_pool"):
+        rs = key_manager._gemini_pool.rotation_status()
+        log(
+            f"rotation state at topics end: next_idx={rs['next_idx']} "
+            f"({rs['next_key_label']}) call_count={rs['call_count']}"
+        )
 
     _write_progress(
         workspace,
@@ -605,9 +613,9 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     pdf_path: str = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", _DEFAULT_MODEL)
-    key_manager = get_key_manager(api_config)
-
-    log(f"book_stem={book_stem}")
+    rotation_state_path = workspace / "gemini_rotation_state.json"
+    key_manager = get_key_manager(api_config, state_file=rotation_state_path)
+    log(f"book_stem={book_stem} | rotation_state={rotation_state_path}")
 
     # ── Debug mode: restrict to lessons of a single topic ─────────────────────
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
@@ -787,6 +795,13 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         progress_total=lesson_count,
         progress_percent=100,
     )
+    if hasattr(key_manager, "_gemini_pool"):
+        rs = key_manager._gemini_pool.rotation_status()
+        log(
+            f"rotation state at chunks end: next_idx={rs['next_idx']} "
+            f"({rs['next_key_label']}) call_count={rs['call_count']}"
+        )
+
     log("reviewing_chunks: chunk extraction complete")
 
 

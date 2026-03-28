@@ -305,6 +305,8 @@ def main():
     ap.add_argument("--force", action="store_true", help="FORCE_REPROCESS keywords")
     ap.add_argument("--output", default=None,
                     help="Write JSON summary to this file path (for subprocess callers)")
+    ap.add_argument("--rotation-state", default=None,
+                    help="Path to gemini_rotation_state.json for cross-stage key continuity")
     args = ap.parse_args()
 
     if args.bundle_dir:
@@ -314,7 +316,11 @@ def main():
     else:
         ap.error("Provide book_stem positional arg or --bundle-dir <absolute_path>")
 
-    key_manager = get_key_manager(args.config)
+    rotation_state_path = Path(args.rotation_state) if args.rotation_state else None
+    key_manager = get_key_manager(args.config, state_file=rotation_state_path)
+
+    if rotation_state_path:
+        print(f"[keyword_extract] rotation_state={rotation_state_path}", flush=True)
 
     summary = extract_keywords_for_book(
         key_manager=key_manager,
@@ -322,6 +328,15 @@ def main():
         model=args.model,
         force_reprocess=args.force,
     )
+
+    if hasattr(key_manager, "_gemini_pool"):
+        rs = key_manager._gemini_pool.rotation_status()
+        print(
+            f"[keyword_extract] rotation state at end: "
+            f"next_idx={rs['next_idx']} ({rs['next_key_label']}) "
+            f"call_count={rs['call_count']}",
+            flush=True,
+        )
 
     summary_dict = summary.to_dict()
     print("\n=== KEYWORD BATCH SUMMARY ===")

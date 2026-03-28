@@ -61,7 +61,10 @@ def extract_structure_from_pdf(
         (key selected, cooldown entered, all-keys-waiting, success, etc.).
     """
     if not hasattr(key_manager, "_gemini_pool"):
-        key_manager._gemini_pool = GeminiPool(key_manager.keys)
+        key_manager._gemini_pool = GeminiPool(
+            key_manager.keys,
+            state_file=getattr(key_manager, "state_file", None),
+        )
 
     pool: GeminiPool = key_manager._gemini_pool
     pool._status_cb = status_cb

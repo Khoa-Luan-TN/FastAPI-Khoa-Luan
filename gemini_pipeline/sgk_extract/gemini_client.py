@@ -20,6 +20,8 @@ Recommended to reduce 429 bursts:
 """
 from __future__ import annotations
 
+import datetime
+import json
 import logging
 import os
 import threading
@@ -159,6 +161,7 @@ class GeminiPool:
         keys: list[str],
         cooldown_seconds: int | None = None,
         min_interval: float | None = None,
+        state_file: Path | None = None,
     ) -> None:
         if not keys:
             raise ValueError("GeminiPool requires at least one API key")
@@ -183,10 +186,74 @@ class GeminiPool:
         # Optional observability callback — set externally, called with human-readable message
         self._status_cb = None
 
+        # Persistence
+        self._state_file: Path | None = state_file
+        if state_file is not None and Path(state_file).exists():
+            self._load_state()
+        else:
+            _log.info(
+                "[GeminiPool] No rotation state file — starting from Key#1 (next_idx=0)"
+            )
+
         _log.info(
-            "[GeminiPool] Initialized %d key(s) | cooldown=%ds min_interval=%.1fs",
+            "[GeminiPool] Initialized %d key(s) | cooldown=%ds min_interval=%.1fs | "
+            "next_idx=%d (Key#%d) | state_file=%s",
             self._n, self._cooldown_seconds, self._min_interval,
+            self._next_idx, self._next_idx + 1, state_file,
         )
+
+    # ── State persistence ─────────────────────────────────────────────────────
+
+    def _load_state(self) -> None:
+        try:
+            data = json.loads(Path(self._state_file).read_text(encoding="utf-8"))
+            loaded_idx = int(data.get("next_idx", 0)) % self._n
+            loaded_count = int(data.get("call_count", 0))
+            self._next_idx = loaded_idx
+            self._call_count = loaded_count
+            msg = (
+                f"[GeminiPool] Loaded rotation state: "
+                f"next_idx={loaded_idx} (Key#{loaded_idx + 1}) "
+                f"call_count={loaded_count} "
+                f"from {self._state_file}"
+            )
+            print(msg, flush=True)
+            _log.info(msg)
+        except Exception as e:
+            _log.warning(
+                "[GeminiPool] Failed to load rotation state from %s: %s — starting from 0",
+                self._state_file, e,
+            )
+
+    def _save_state(self, next_idx: int, call_count: int) -> None:
+        if self._state_file is None:
+            return
+        try:
+            data = {
+                "next_idx": next_idx,
+                "call_count": call_count,
+                "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+            p = Path(self._state_file)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            _log.debug(
+                "[GeminiPool] Saved rotation state: next_idx=%d (Key#%d) call_count=%d",
+                next_idx, next_idx + 1, call_count,
+            )
+        except Exception as e:
+            _log.warning("[GeminiPool] Failed to save rotation state: %s", e)
+
+    def rotation_status(self) -> dict:
+        """Return safe (no raw keys) rotation metadata for logging/debug."""
+        with self._lock:
+            return {
+                "next_idx": self._next_idx,
+                "next_key_label": f"Key#{self._next_idx + 1}",
+                "call_count": self._call_count,
+                "total_keys": self._n,
+                "state_file": str(self._state_file) if self._state_file else None,
+            }
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
@@ -282,6 +349,15 @@ class GeminiPool:
 
                     self._pace(idx)
 
+                    _log.info(
+                        "[GeminiPool] → using Key#%d (%s) | next planned Key#%d",
+                        idx + 1, _mask_key(key), (idx + 1) % self._n + 1,
+                    )
+                    print(
+                        f"[GeminiPool] → using Key#{idx + 1} | "
+                        f"next planned Key#{(idx + 1) % self._n + 1}",
+                        flush=True,
+                    )
                     if self._status_cb:
                         try:
                             self._status_cb(f"Gửi yêu cầu Key #{idx + 1} ({_mask_key(key)})")
@@ -331,14 +407,20 @@ class GeminiPool:
                 with self._lock:
                     self._next_idx = (idx + 1) % self._n
                     self._call_count += 1
+                    _saved_next = self._next_idx
+                    _saved_count = self._call_count
 
                 _log.info(
-                    "[GeminiPool] ✓ Key#%d (%s) | total_calls=%d",
-                    idx + 1, _mask_key(key), self._call_count,
+                    "[GeminiPool] ✓ Key#%d (%s) | total_calls=%d | next_idx=%d (Key#%d)",
+                    idx + 1, _mask_key(key), _saved_count, _saved_next, _saved_next + 1,
                 )
+                self._save_state(_saved_next, _saved_count)
                 if self._status_cb:
                     try:
-                        self._status_cb(f"Nhận phản hồi Key #{idx + 1} (tổng {self._call_count} lần gọi)")
+                        self._status_cb(
+                            f"Nhận phản hồi Key #{idx + 1} (tổng {_saved_count} lần gọi) "
+                            f"→ tiếp theo Key #{_saved_next + 1}"
+                        )
                     except Exception:
                         pass
                 return text
