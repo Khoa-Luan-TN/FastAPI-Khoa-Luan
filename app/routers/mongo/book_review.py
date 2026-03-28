@@ -4,6 +4,7 @@
 # Users upload a raw PDF; the backend runs sequential stage-by-stage extraction
 # and exposes topic/lesson/chunk data for review before any heavy processing.
 from __future__ import annotations
+import re
 
 from pathlib import Path
 from typing import Any, Dict
@@ -43,6 +44,20 @@ def _get_or_404(job_id: str) -> Dict[str, Any]:
     return job
 
 
+def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
+    bp = Path(bundle_path)
+    name = (lesson.get("name") or "").replace("/", "_").replace("\\", "_").strip()
+    if not name:
+        return None
+    # Lessons live under Topic/<topic_name>/Lesson/<lesson_name>/
+    for topic_dir in (bp / "Topic").glob("*"):
+        lesson_dir = topic_dir / "Lesson" / name
+        if lesson_dir.exists():
+            pdfs = sorted(lesson_dir.glob("*.pdf"))
+            return pdfs[0] if pdfs else None
+    return None
+
+
 def _find_topic_pdf(bundle_path: str, topic: dict) -> Path | None:
     bp = Path(bundle_path)
     name = (topic.get("name") or "").replace("/", "_").replace("\\", "_").strip()
@@ -54,6 +69,22 @@ def _find_topic_pdf(bundle_path: str, topic: dict) -> Path | None:
         return pdfs[0] if pdfs else None
     return None
 
+def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
+    bp = Path(bundle_path)
+
+    heading = (lesson.get("heading") or "").strip()
+    name = (lesson.get("name") or "").strip()
+    m = re.search(r"\d+", heading or name)
+    if not m:
+        return None
+
+    lesson_num = f"{int(m.group()):02d}"
+    lesson_dir = bp / "Lesson"
+    if not lesson_dir.exists():
+        return None
+
+    pdfs = sorted(lesson_dir.rglob(f"*_lesson_{lesson_num}.pdf"))
+    return pdfs[0] if pdfs else None
 
 # ── Create job ──────────────────────────────────────────────────────────────
 
@@ -140,6 +171,34 @@ async def serve_topic_pdf(job_id: str, idx: int):
 
     raise HTTPException(status_code=404, detail="Topic PDF not found — extraction may still be running")
 
+@router.get("/book-review/jobs/{job_id}/pdf/lesson/{idx}", summary="Serve lesson preview PDF")
+async def serve_lesson_pdf(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    lessons = job.get("lessons", [])
+    if not (0 <= idx < len(lessons)):
+        raise HTTPException(status_code=404, detail="Lesson index out of range")
+
+    lesson = lessons[idx]
+
+    recut = lesson.get("recut_pdf")
+    if recut and Path(recut).exists():
+        return FileResponse(
+            str(recut),
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline"},
+        )
+
+    bundle_path = job.get("bundle_path")
+    if bundle_path:
+        pdf_path = _find_lesson_pdf(bundle_path, lesson)
+        if pdf_path and pdf_path.exists():
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                headers={"Content-Disposition": "inline"},
+            )
+
+    raise HTTPException(status_code=404, detail="Lesson PDF not found — extraction may still be running")
 
 # ── Per-topic edit / recut ────────────────────────────────────────────────────
 
@@ -164,6 +223,27 @@ async def recut_topic(job_id: str, idx: int):
         raise HTTPException(status_code=500, detail=result["error"])
     return {"ok": True}
 
+@router.patch("/book-review/jobs/{job_id}/lessons/{idx}", summary="Update a single lesson item")
+async def patch_lesson(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("lessons", []))):
+        raise HTTPException(status_code=404, detail="Lesson index out of range")
+
+    from app.services.mongo.book_review_service import patch_lesson_item
+    patch_lesson_item(db, job_id, idx, body)
+    return {"ok": True}
+
+@router.post("/book-review/jobs/{job_id}/lessons/{idx}/recut", summary="Recut lesson preview from source PDF")
+async def recut_lesson(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("lessons", []))):
+        raise HTTPException(status_code=404, detail="Lesson index out of range")
+
+    from app.services.mongo.book_review_service import recut_lesson_preview
+    result = recut_lesson_preview(db, job_id, idx, job)
+    if not result.get("ok"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Recut failed"))
+    return {"ok": True}
 
 # ── Update review data ────────────────────────────────────────────────────────
 

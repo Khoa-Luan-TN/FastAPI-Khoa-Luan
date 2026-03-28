@@ -453,6 +453,20 @@ def patch_topic_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any])
             {"$set": {"topics": topics, "updated_at": _utc_now()}},
         )
 
+def patch_lesson_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
+    """Update allowed fields of a single lesson item by index."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return
+    lessons = list(doc.get("lessons", []))
+    if 0 <= idx < len(lessons):
+        for k, v in patch.items():
+            if k in {"heading", "title", "start", "end", "name"}:
+                lessons[idx][k] = v
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"lessons": lessons, "updated_at": _utc_now()}},
+        )
 
 _RECUT_SCRIPT = _GEMINI_DIR / "scripts" / "recut_topic_preview.py"
 
@@ -506,6 +520,59 @@ def recut_topic_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 
+def recut_lesson_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recut a lesson PDF slice via the gemini_pipeline env subprocess.
+    Avoids importing pypdf inside the FastAPI runtime.
+    """
+    lessons = list(job.get("lessons", []))
+    if not (0 <= idx < len(lessons)):
+        return {"ok": False, "error": "Index out of range"}
+    lesson = lessons[idx]
+
+    start = lesson.get("start")
+    end = lesson.get("end")
+    if not (isinstance(start, int) and isinstance(end, int)):
+        return {"ok": False, "error": "Invalid start/end on lesson"}
+
+    workspace = Path(job["workspace"])
+    python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+
+    try:
+        proc = subprocess.run(
+            [
+                python_exec, str(_RECUT_SCRIPT),
+                "--workspace", str(workspace),
+                "--idx", str(idx),
+                "--start", str(start),
+                "--end", str(end),
+                "--kind", "lesson",
+            ],
+            cwd=str(_GEMINI_DIR),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = (proc.stdout or "").strip()
+        if not stdout:
+            return {
+                "ok": False,
+                "error": (proc.stderr or "recut script produced no output")[:500],
+            }
+
+        result = json.loads(stdout)
+        if result.get("ok"):
+            recut_pdf = result["recut_pdf"]
+            lessons[idx]["recut_pdf"] = recut_pdf
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"lessons": lessons, "updated_at": _utc_now()}},
+            )
+        return result
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Recut timed out after 60s"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 def _safe_report(report: Any) -> Any:
     try:

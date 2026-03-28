@@ -14,6 +14,9 @@ import {
   recutReviewTopic,
   reviewTopicPdfUrl,
   reviewSourcePdfUrl,
+  reviewLessonPdfUrl,
+  patchReviewLesson,
+  recutReviewLesson,
 } from "../../services/mongoAdminApi";
 
 const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
@@ -66,6 +69,10 @@ export default function BookBundleImport() {
   const [topicApprovals, setTopicApprovals] = useState([]);
   const [previewKey, setPreviewKey] = useState(0);
 
+  const [lessonIdx, setLessonIdx] = useState(0);
+  const [lessonApprovals, setLessonApprovals] = useState([]);
+  const [lessonPreviewKey, setLessonPreviewKey] = useState(0);
+
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -97,18 +104,23 @@ export default function BookBundleImport() {
     const newChunks = (j.chunks || []).map((x) => ({ ...x }));
 
     setEditTopics((prev) =>
-      newTopics.length > prev.length ? [...prev, ...newTopics.slice(prev.length)] : prev,
+      newTopics.length > prev.length ? [...prev, ...newTopics.slice(prev.length)] : prev
     );
     setEditLessons((prev) =>
-      newLessons.length > prev.length ? [...prev, ...newLessons.slice(prev.length)] : prev,
+      newLessons.length > prev.length ? [...prev, ...newLessons.slice(prev.length)] : prev
     );
     setEditChunks((prev) =>
-      newChunks.length > prev.length ? [...prev, ...newChunks.slice(prev.length)] : prev,
+      newChunks.length > prev.length ? [...prev, ...newChunks.slice(prev.length)] : prev
     );
     setTopicApprovals((prev) =>
       newTopics.length > prev.length
         ? [...prev, ...new Array(newTopics.length - prev.length).fill(false)]
-        : prev,
+        : prev
+    );
+    setLessonApprovals((prev) =>
+      newLessons.length > prev.length
+        ? [...prev, ...new Array(newLessons.length - prev.length).fill(false)]
+        : prev
     );
   }
 
@@ -121,6 +133,9 @@ export default function BookBundleImport() {
     setEditChunks(chunks);
     setTopicIdx(0);
     setTopicApprovals(topics.map(() => false));
+    setLessonIdx(0);
+    setLessonApprovals(lessons.map(() => false));
+    setLessonPreviewKey(0);
   }
 
   async function handleUpload(e) {
@@ -137,7 +152,7 @@ export default function BookBundleImport() {
         form.subject_name.trim(),
         form.subject_type.trim() || DEFAULT_SUBJECT_TYPE,
         form.model || DEFAULT_MODEL,
-        pdfFile,
+        pdfFile
       );
       resetEdit(res.job);
       setJob(res.job);
@@ -228,6 +243,64 @@ export default function BookBundleImport() {
       await approveTopics(job.job_id);
     });
 
+  function handleEditLessonItem(idx, updated) {
+    setEditLessons((prev) => prev.map((l, i) => (i === idx ? updated : l)));
+  }
+
+  function handleLessonNavigateTo(idx) {
+    const clamped = Math.max(0, Math.min(editLessons.length - 1, idx));
+    setLessonIdx(clamped);
+  }
+
+  async function handleSaveCurrentLesson() {
+    const l = editLessons[lessonIdx];
+    if (!l) return;
+    setActing(true);
+    setJobError("");
+    try {
+      await patchReviewLesson(job.job_id, lessonIdx, {
+        heading: l.heading,
+        title: l.title,
+        start: l.start,
+        end: l.end,
+      });
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleRecutCurrentLesson() {
+    const l = editLessons[lessonIdx];
+    if (!l) return;
+    setActing(true);
+    setJobError("");
+    try {
+      await patchReviewLesson(job.job_id, lessonIdx, {
+        heading: l.heading,
+        title: l.title,
+        start: l.start,
+        end: l.end,
+      });
+      await recutReviewLesson(job.job_id, lessonIdx);
+      setLessonPreviewKey((k) => k + 1);
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  function handleApproveThisLesson() {
+    setLessonApprovals((prev) => {
+      const next = prev.map((v, i) => (i === lessonIdx ? true : v));
+      const nextUnapproved = next.findIndex((v, i) => !v && i > lessonIdx);
+      if (nextUnapproved >= 0) setLessonIdx(nextUnapproved);
+      return next;
+    });
+  }
+
   async function handleApproveLessons() {
     setActing(true);
     setJobError("");
@@ -273,7 +346,6 @@ export default function BookBundleImport() {
       await approveChunks(job.job_id);
     });
 
-  const handleSaveLessons = () => act(() => saveReviewLessons(job.job_id, editLessons));
   const handleSaveChunks = () => act(() => saveReviewChunks(job.job_id, editChunks));
   const handleTriggerHeavy = () => act(() => triggerHeavyStage(job.job_id));
 
@@ -297,6 +369,9 @@ export default function BookBundleImport() {
     setTopicIdx(0);
     setTopicApprovals([]);
     setPreviewKey(0);
+    setLessonIdx(0);
+    setLessonApprovals([]);
+    setLessonPreviewKey(0);
   }
 
   const status = job?.status;
@@ -313,8 +388,9 @@ export default function BookBundleImport() {
   const showChunkReview = (isChunkStage || isExtractingChunks) && editChunks.length > 0;
 
   const allTopicsApproved = topicApprovals.length > 0 && topicApprovals.every(Boolean);
+  const allLessonsApproved = lessonApprovals.length > 0 && lessonApprovals.every(Boolean);
   const canApproveTopics = isTopicStage && allTopicsApproved;
-  const canApproveLessons = isLessonStage;
+  const canApproveLessons = isLessonStage && allLessonsApproved;
   const canApproveChunks = isChunkStage;
 
   const PAST_TOPICS_STATUSES = new Set([
@@ -338,7 +414,7 @@ export default function BookBundleImport() {
   const isPastLessons = job && PAST_LESSONS_STATUSES.has(status);
 
   return (
-    <div style={{ ...s.page, maxWidth: isTopicStage || isExtractingTopics ? 1200 : 760 }}>
+    <div style={{ ...s.page, maxWidth: (isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons) ? 1200 : 760 }}>
       <h2 style={s.heading}>Import sách</h2>
       <p style={s.sub}>
         Upload PDF sách giáo khoa — hệ thống trích xuất cấu trúc Chủ đề / Bài / Phần để kiểm tra
@@ -413,7 +489,9 @@ export default function BookBundleImport() {
       {phase === "job" && job && (
         <div>
           <div style={s.card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
+            >
               <div>
                 <div style={{ fontSize: 12, color: "#6b7280" }}>Job: {job.job_id}</div>
                 <div style={{ marginTop: 4, fontWeight: 600, color: statusColor(job.status) }}>
@@ -429,7 +507,9 @@ export default function BookBundleImport() {
             </div>
           </div>
 
-          {jobError && <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>{jobError}</div>}
+          {jobError && (
+            <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>{jobError}</div>
+          )}
 
           {job.status === "error" && job.error && (
             <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>
@@ -499,15 +579,19 @@ export default function BookBundleImport() {
           )}
 
           {showLessonReview && (
-            <ReviewSection
-              title={`Bài${isExtractingLessons ? " (đang tải…)" : ""}`}
-              items={editLessons}
-              editable
-              onChange={setEditLessons}
-              fields={["heading", "title"]}
-              onSave={handleSaveLessons}
-              onApprove={handleApproveLessons}
-              showApprove={canApproveLessons}
+            <LessonReviewPane
+              job={job}
+              editLessons={editLessons}
+              lessonIdx={lessonIdx}
+              lessonApprovals={lessonApprovals}
+              canApproveAll={canApproveLessons}
+              lessonPreviewKey={lessonPreviewKey}
+              onEditItem={handleEditLessonItem}
+              onNavigateTo={handleLessonNavigateTo}
+              onSave={handleSaveCurrentLesson}
+              onRecut={handleRecutCurrentLesson}
+              onApproveThis={handleApproveThisLesson}
+              onApproveAll={handleApproveLessons}
               loading={acting}
             />
           )}
@@ -580,7 +664,15 @@ function TopicReviewPane({
 
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <span style={{ fontWeight: 700, fontSize: 14 }}>
           Chủ đề {topicIdx + 1} / {total}
         </span>
@@ -609,7 +701,9 @@ function TopicReviewPane({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
+      >
         <div style={s.card}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
             Preview cắt — trang {topic.start}–{topic.end}
@@ -716,7 +810,190 @@ function TopicReviewPane({
   );
 }
 
-function ReviewSection({ title, items, editable, onChange, fields, onSave, onApprove, showApprove, loading }) {
+function LessonReviewPane({
+  job,
+  editLessons,
+  lessonIdx,
+  lessonApprovals,
+  canApproveAll,
+  lessonPreviewKey,
+  onEditItem,
+  onNavigateTo,
+  onSave,
+  onRecut,
+  onApproveThis,
+  onApproveAll,
+  loading,
+}) {
+  const lesson = editLessons[lessonIdx] || {};
+  const total = editLessons.length;
+
+  function set(field, value) {
+    onEditItem(lessonIdx, { ...lesson, [field]: value });
+  }
+
+  const cutUrl = reviewLessonPdfUrl(job.job_id, lessonIdx, lessonPreviewKey);
+  const srcUrl = reviewSourcePdfUrl(job.job_id);
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ fontWeight: 700, fontSize: 14 }}>
+          Bài {lessonIdx + 1} / {total}
+        </span>
+        <button
+          style={s.btnSecondary}
+          disabled={lessonIdx === 0 || loading}
+          onClick={() => onNavigateTo(lessonIdx - 1)}
+        >
+          ← Trước
+        </button>
+        <button
+          style={s.btnSecondary}
+          disabled={lessonIdx >= total - 1 || loading}
+          onClick={() => onNavigateTo(lessonIdx + 1)}
+        >
+          Sau →
+        </button>
+        {canApproveAll && (
+          <button
+            style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
+            disabled={loading}
+            onClick={onApproveAll}
+          >
+            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả bài"}
+          </button>
+        )}
+      </div>
+
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
+      >
+        <div style={s.card}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+            Preview cắt — trang {lesson.start}–{lesson.end}
+          </div>
+          <iframe
+            key={`cut-lesson-${lessonIdx}-${lessonPreviewKey}`}
+            src={cutUrl}
+            title="Lesson cut preview"
+            style={s.pdfFrame}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={s.card}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+              PDF gốc (tham chiếu)
+            </div>
+            <iframe src={srcUrl} title="Source PDF" style={s.pdfFrame} />
+          </div>
+          <div style={s.card}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
+              Chỉnh sửa bài {lessonIdx + 1}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Field label="Heading (số bài)">
+                <input
+                  style={s.input}
+                  value={lesson.heading || ""}
+                  onChange={(e) => set("heading", e.target.value)}
+                />
+              </Field>
+              <Field label="Tên bài (title)">
+                <input
+                  style={s.input}
+                  value={lesson.title || ""}
+                  onChange={(e) => set("title", e.target.value)}
+                />
+              </Field>
+              <div style={s.row2}>
+                <Field label="Trang bắt đầu">
+                  <input
+                    style={s.input}
+                    type="number"
+                    min={1}
+                    value={lesson.start ?? ""}
+                    onChange={(e) => set("start", parseInt(e.target.value, 10) || lesson.start)}
+                  />
+                </Field>
+                <Field label="Trang kết thúc">
+                  <input
+                    style={s.input}
+                    type="number"
+                    min={1}
+                    value={lesson.end ?? ""}
+                    onChange={(e) => set("end", parseInt(e.target.value, 10) || lesson.end)}
+                  />
+                </Field>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+              <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
+                Lưu
+              </button>
+              <button style={s.btnSecondary} disabled={loading} onClick={onRecut}>
+                Cắt lại preview
+              </button>
+              <button
+                style={{
+                  ...s.btnPrimary,
+                  background: lessonApprovals[lessonIdx] ? "#15803d" : "#2563eb",
+                }}
+                disabled={loading}
+                onClick={onApproveThis}
+              >
+                {lessonApprovals[lessonIdx] ? "✓ Đã duyệt" : "Duyệt bài này"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
+        {editLessons.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => onNavigateTo(i)}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              border: "none",
+              cursor: "pointer",
+              background: lessonApprovals[i] ? "#15803d" : i === lessonIdx ? "#2563eb" : "#e5e7eb",
+              color: lessonApprovals[i] || i === lessonIdx ? "#fff" : "#374151",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReviewSection({
+  title,
+  items,
+  editable,
+  onChange,
+  fields,
+  onSave,
+  onApprove,
+  showApprove,
+  loading,
+}) {
   if (!items || items.length === 0) return null;
 
   function handleChange(idx, field, value) {
@@ -725,7 +1002,14 @@ function ReviewSection({ title, items, editable, onChange, fields, onSave, onApp
 
   return (
     <div style={{ ...s.card, marginTop: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
+        }}
+      >
         <h4 style={s.cardTitle}>
           {title} ({items.length})
         </h4>
@@ -760,7 +1044,7 @@ function ReviewSection({ title, items, editable, onChange, fields, onSave, onApp
                   <span key={field} style={{ fontSize: 13, color: "#111827" }}>
                     {item[field] || <em style={{ color: "#9ca3af" }}>—</em>}
                   </span>
-                ),
+                )
               )}
             </div>
           </div>
@@ -789,7 +1073,10 @@ function CompactList({ title, items, fields }) {
               borderRadius: 12,
             }}
           >
-            {fields.map((f) => item[f]).filter(Boolean).join(" — ") || `#${i + 1}`}
+            {fields
+              .map((f) => item[f])
+              .filter(Boolean)
+              .join(" — ") || `#${i + 1}`}
           </span>
         ))}
       </div>
@@ -944,7 +1231,12 @@ const s = {
   alertBox: { padding: "12px 16px", borderRadius: 6, fontSize: 14 },
   successBox: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d" },
   errorBox: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" },
-  card: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "16px 20px" },
+  card: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: "16px 20px",
+  },
   cardTitle: { margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "#111827" },
   reviewItem: {
     display: "flex",

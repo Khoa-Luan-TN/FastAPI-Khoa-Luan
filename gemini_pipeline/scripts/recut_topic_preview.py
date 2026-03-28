@@ -36,6 +36,7 @@ def main() -> None:
     parser.add_argument("--idx",       required=True, type=int)
     parser.add_argument("--start",     required=True, type=int)
     parser.add_argument("--end",       required=True, type=int)
+    parser.add_argument("--kind",      default="topic", choices=["topic", "lesson"])
     args = parser.parse_args()
 
     workspace = Path(args.workspace)
@@ -50,7 +51,7 @@ def main() -> None:
 
     recuts_dir = workspace / "recuts"
     recuts_dir.mkdir(parents=True, exist_ok=True)
-    out_path = recuts_dir / f"topic_{args.idx:02d}_preview.pdf"
+    out_path = recuts_dir / f"{args.kind}_{args.idx:02d}_preview.pdf"
 
     reader = PdfReader(str(source_pdf))
     total = len(reader.pages)

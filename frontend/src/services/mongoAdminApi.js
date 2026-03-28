@@ -235,3 +235,22 @@ export function recutReviewTopic(jobId, idx) {
     { method: "POST" },
   );
 }
+
+export function reviewLessonPdfUrl(jobId, idx, key = 0) {
+  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/lesson/${idx}?k=${key}`;
+}
+
+export function patchReviewLesson(jobId, idx, patch) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+}
+
+export function recutReviewLesson(jobId, idx) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}/recut`,
+    { method: "POST" },
+  );
+}
+
