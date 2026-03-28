@@ -1,5 +1,5 @@
 #scripst/kaggle/kernels/debug-cutlines-auto/script.py
-import os, sys, zipfile, shutil, subprocess
+import json, os, sys, zipfile, shutil, subprocess
 from pathlib import Path
 
 # --- ENV ---
@@ -10,6 +10,53 @@ os.environ["DISABLE_PDF_UPDATE"] = "0"   # ✅ cho phép fitz update PDF
 def sh(cmd):
     print(">>>", cmd)
     subprocess.run(cmd, shell=True, check=True)
+
+# ==============
+# (A) Load run_request.json — written by local CLI before every kernel push
+# ==============
+_REQUEST_FILE_CANDIDATES = [
+    Path(__file__).parent / "run_request.json",
+    Path("/kaggle/working/run_request.json"),
+]
+run_request: dict = {}
+_request_file_used: str = "not found"
+for _rfc in _REQUEST_FILE_CANDIDATES:
+    if _rfc.exists():
+        try:
+            run_request = json.loads(_rfc.read_text(encoding="utf-8"))
+            _request_file_used = str(_rfc)
+            break
+        except Exception as _rfe:
+            print(f"[REQUEST] Failed to parse {_rfc}: {_rfe}")
+
+request_id = run_request.get("request_id", "unknown")
+expected_book_stem_from_request = run_request.get("expected_book_stem", "").strip()
+print(f"[REQUEST] request_file={_request_file_used}")
+print(f"[REQUEST] request_id={request_id!r}")
+print(f"[REQUEST] expected_book_stem={expected_book_stem_from_request!r}")
+print(f"[REQUEST] attempt={run_request.get('attempt', 'N/A')}")
+print(f"[REQUEST] requested_at={run_request.get('requested_at', 'N/A')}")
+
+# ==============
+# (B) Run status sentinel — written to /kaggle/working/ so it gets downloaded
+# ==============
+STATUS_FILE = Path("/kaggle/working/current_run_status.json")
+
+def write_status(status: str, *, failure_reason: str = "", **extra) -> None:
+    data: dict = {
+        "request_id": request_id,
+        "expected_book_stem": expected_book_stem_from_request,
+        "status": status,
+    }
+    if failure_reason:
+        data["failure_reason"] = failure_reason
+    data.update(extra)
+    try:
+        STATUS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as _se:
+        print(f"[STATUS] Failed to write status file: {_se}")
+
+write_status("started")
 
 # ==============
 # (1) Install deps
@@ -286,14 +333,50 @@ if not book_stem:
 
 print(f"[BOOK_STEM] Final: {book_stem!r}  (source: {book_stem_source})")
 
-# Validate against EXPECTED_BOOK_STEM env var if the caller injected it
-_expected_bs = os.getenv("EXPECTED_BOOK_STEM", "").strip()
+write_status(
+    "stem_resolved",
+    resolved_book_stem=book_stem,
+    book_stem_source=book_stem_source,
+    marker_src=str(marker_src),
+    marker_src_exists=marker_src.exists(),
+    marker_src_content=(marker_src.read_text(encoding="utf-8").strip() if marker_src.exists() else None),
+    marker_dst=str(marker_dst),
+    marker_dst_exists=marker_dst.exists(),
+    marker_dst_content=(marker_dst.read_text(encoding="utf-8").strip() if marker_dst.exists() else None),
+    ds_root=str(ds_root),
+    ds_base=str(ds_base),
+    output_subdirs=output_subdirs,
+)
+
+# Primary check: run_request.json expected stem (written by local CLI before each push)
+_expected_bs = expected_book_stem_from_request
+# Secondary check: env var (belt-and-suspenders, but run_request.json takes priority)
+if not _expected_bs:
+    _expected_bs = os.getenv("EXPECTED_BOOK_STEM", "").strip()
+    if _expected_bs:
+        print(f"[BOOK_STEM] expected stem from EXPECTED_BOOK_STEM env (fallback): {_expected_bs!r}")
+
 if _expected_bs:
     if book_stem != _expected_bs:
+        _mismatch_detail = {
+            "resolved_book_stem": book_stem,
+            "book_stem_source": book_stem_source,
+            "marker_src": str(marker_src),
+            "marker_src_exists": marker_src.exists(),
+            "marker_src_content": (marker_src.read_text(encoding="utf-8").strip() if marker_src.exists() else None),
+            "marker_dst": str(marker_dst),
+            "marker_dst_exists": marker_dst.exists(),
+            "marker_dst_content": (marker_dst.read_text(encoding="utf-8").strip() if marker_dst.exists() else None),
+            "ds_root": str(ds_root),
+            "ds_base": str(ds_base),
+            "output_subdirs": output_subdirs,
+        }
+        write_status("failed", failure_reason="stale_dataset_mismatch", **_mismatch_detail)
         raise RuntimeError(
             f"[BOOK_STEM] FATAL: resolved book_stem={book_stem!r} "
-            f"does not match EXPECTED_BOOK_STEM={_expected_bs!r}.\n"
+            f"does not match expected={_expected_bs!r}.\n"
             f"The kernel is running against a stale or wrong dataset version.\n"
+            f"  request_id={request_id!r}  request_file={_request_file_used}\n"
             f"  marker_src={marker_src}  exists={marker_src.exists()}\n"
             f"  marker_src content={(marker_src.read_text(encoding='utf-8').strip() if marker_src.exists() else 'N/A')!r}\n"
             f"  marker_dst={marker_dst}  exists={marker_dst.exists()}\n"
@@ -301,11 +384,11 @@ if _expected_bs:
             f"  ds_root={ds_root}\n"
             f"  ds_base={ds_base}\n"
             f"  WORK/Output subdirs={output_subdirs}\n"
-            f"Action: re-upload the dataset with the correct book_stem.txt and wait for propagation before re-running."
+            f"Action: re-upload the dataset with the correct book_stem.txt and wait for propagation."
         )
-    print(f"[BOOK_STEM] EXPECTED_BOOK_STEM={_expected_bs!r} matches resolved stem — OK")
+    print(f"[BOOK_STEM] expected={_expected_bs!r} matches resolved stem — OK")
 else:
-    print(f"[BOOK_STEM] EXPECTED_BOOK_STEM env not set — skipping expected-stem cross-check")
+    print(f"[BOOK_STEM] No expected stem available (run_request.json missing or empty, env not set) — skipping cross-check")
 
 # ==============
 # (5) Validate: marker content must match an actual Output subdir
@@ -352,6 +435,11 @@ if not chunk_root.exists():
     )
 
 print(f"[VALIDATION] chunk_root={chunk_root}")
+write_status(
+    "processing",
+    resolved_book_stem=book_stem,
+    chunk_root=str(chunk_root),
+)
 
 # Lấy tất cả meta json (trừ keywords)
 json_files = sorted([
@@ -455,4 +543,11 @@ if len(_vz_tops) != 1 or _vz_tops[0] != book_stem:
         f"This indicates the working directory had stale content from another book_stem."
     )
 print(f"[ZIP VALIDATION] OK: {out_zip.name} — top-level folder={book_stem!r}")
+write_status(
+    "completed",
+    resolved_book_stem=book_stem,
+    final_zip=str(out_zip),
+    final_zip_name=out_zip.name,
+    summary={"ok": ok, "skip": skip, "fail": fail},
+)
 print(f"\nDONE. Download this file from kernel Output: {out_zip}")

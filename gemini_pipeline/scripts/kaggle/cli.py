@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import logging
+import time
+import uuid
 from pathlib import Path
 
 from .config import (
@@ -83,59 +86,134 @@ def main():
     else:
         log.info("Skip dataset build/version.")
 
-    # 2) push kernel + wait  ← only reached after dataset versioning fully returns
-    if not args.skip_kernel:
-        # Stamp expected stem into kernel-metadata.json so the kernel can detect stale datasets
-        _meta_path = KERNEL_DIR / "kernel-metadata.json"
-        _meta = json.loads(_meta_path.read_text(encoding="utf-8"))
-        _env_vars = _meta.get("env_vars", [])
-        _patched = False
-        for _ev in _env_vars:
-            if _ev.get("key") == "EXPECTED_BOOK_STEM":
-                _ev["value"] = args.book_stem
-                _patched = True
-                break
-        if not _patched:
-            _env_vars.append({"key": "EXPECTED_BOOK_STEM", "value": args.book_stem})
-        _meta["env_vars"] = _env_vars
-        _meta_path.write_text(json.dumps(_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        log.info("Patched kernel-metadata.json: EXPECTED_BOOK_STEM=%r", args.book_stem)
-        push_kernel(KERNEL_DIR, KERNEL_REF)
-    else:
-        log.info("Skip kernel push/wait.")
-
-    # 3) clean stale artifacts then download fresh kernel output
-    log.info("Cleaning stale download artifacts for book_stem=%r in %s", args.book_stem, DL_DIR)
-    clean_dl_dir(DL_DIR, args.book_stem)
-    log.info("Download directory clean — starting fresh download")
-
-    download_kernel_output(KERNEL_REF, DL_DIR, force=True)
-
+    # 2) push kernel + wait (with stale-dataset retry) then download output
+    _MAX_KERNEL_ATTEMPTS = 3
+    _STALE_RETRY_DELAY = 40
     expected_zip = DL_DIR / f"{args.book_stem}_postprocessed.zip"
-    log.info("Expected zip: %s", expected_zip)
 
-    found_zips = sorted(DL_DIR.glob("*_postprocessed.zip"))
-    log.info(
-        "Postprocessed zips present after download (%d): %s",
-        len(found_zips),
-        [p.name for p in found_zips],
-    )
+    if not args.skip_kernel:
+        for _ka in range(1, _MAX_KERNEL_ATTEMPTS + 1):
+            log.info(
+                "[kernel attempt %d/%d] expected_book_stem=%r",
+                _ka, _MAX_KERNEL_ATTEMPTS, args.book_stem,
+            )
+            print(f"[STAGE:kernel_attempt] {_ka}/{_MAX_KERNEL_ATTEMPTS}", flush=True)
 
-    if not expected_zip.exists():
-        found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
-        raise FileNotFoundError(
-            f"Missing kernel zip output for book_stem={args.book_stem!r}\n"
-            f"  expected : {expected_zip}\n"
-            f"  found zips: {[p.name for p in found_zips]}\n"
-            f"  found stems: {found_stems}\n"
-            f"  Likely cause: Kaggle kernel produced output for a different book_stem, "
-            f"or the kernel did not run for this book."
-        )
+            # Write run_request.json into the kernel source dir so script.py reads it at startup
+            _request_id = uuid.uuid4().hex[:8]
+            _request = {
+                "expected_book_stem": args.book_stem,
+                "request_id": _request_id,
+                "requested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "attempt": _ka,
+            }
+            _req_path = KERNEL_DIR / "run_request.json"
+            _req_path.write_text(json.dumps(_request, indent=2), encoding="utf-8")
+            log.info(
+                "[attempt %d] run_request.json: request_id=%r expected_book_stem=%r",
+                _ka, _request_id, args.book_stem,
+            )
+
+            push_kernel(KERNEL_DIR, KERNEL_REF)
+
+            # Clean stale artifacts then download fresh output
+            log.info("[attempt %d] Cleaning DL_DIR and downloading kernel output", _ka)
+            clean_dl_dir(DL_DIR, args.book_stem)
+            download_kernel_output(KERNEL_REF, DL_DIR, force=True)
+
+            found_zips = sorted(DL_DIR.glob("*_postprocessed.zip"))
+            log.info(
+                "[attempt %d] Found zips after download (%d): %s",
+                _ka, len(found_zips), [p.name for p in found_zips],
+            )
+
+            if expected_zip.exists():
+                log.info("[attempt %d] Expected zip found — proceeding", _ka)
+                break
+
+            # Diagnose missing zip via run status sentinel written by the kernel
+            _status_file = DL_DIR / "current_run_status.json"
+            _status_info: dict = {}
+            if _status_file.exists():
+                try:
+                    _status_info = json.loads(_status_file.read_text(encoding="utf-8"))
+                    log.info("[attempt %d] run_status: %s", _ka, _status_info)
+                except Exception as _se:
+                    log.warning("Failed to parse current_run_status.json: %s", _se)
+            else:
+                log.warning("[attempt %d] current_run_status.json not found in DL_DIR", _ka)
+
+            _failure_reason = _status_info.get("failure_reason", "")
+            _is_stale = _failure_reason == "stale_dataset_mismatch"
+
+            if _is_stale:
+                log.warning(
+                    "[attempt %d/%d] Stale dataset mismatch — "
+                    "expected=%r  resolved=%r  marker=%r  output_subdirs=%s",
+                    _ka, _MAX_KERNEL_ATTEMPTS,
+                    _status_info.get("expected_book_stem"),
+                    _status_info.get("resolved_book_stem"),
+                    _status_info.get("marker_dst_content"),
+                    _status_info.get("output_subdirs"),
+                )
+                if _ka < _MAX_KERNEL_ATTEMPTS:
+                    log.warning(
+                        "Waiting %ds for dataset propagation before attempt %d",
+                        _STALE_RETRY_DELAY, _ka + 1,
+                    )
+                    print(
+                        f"[STAGE:kernel_stale_retry] attempt={_ka}/{_MAX_KERNEL_ATTEMPTS} "
+                        f"waiting {_STALE_RETRY_DELAY}s for dataset propagation",
+                        flush=True,
+                    )
+                    time.sleep(_STALE_RETRY_DELAY)
+                    continue
+
+            # Unrecoverable failure or retries exhausted
+            found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
+            _diag: list[str] = []
+            if _status_info:
+                _diag.append(
+                    "  run_status:\n    "
+                    + json.dumps(_status_info, indent=2).replace("\n", "\n    ")
+                )
+            for _lf in sorted(DL_DIR.glob("*.log"))[:2]:
+                try:
+                    _tail = _lf.read_text(encoding="utf-8", errors="replace").splitlines()[-30:]
+                    _diag.append(
+                        f"  {_lf.name} (last 30 lines):\n    " + "\n    ".join(_tail)
+                    )
+                except Exception:
+                    pass
+            raise FileNotFoundError(
+                f"Missing kernel zip output for book_stem={args.book_stem!r} "
+                f"after {_ka} attempt(s)\n"
+                f"  expected     : {expected_zip}\n"
+                f"  found zips   : {[p.name for p in found_zips]}\n"
+                f"  found stems  : {found_stems}\n"
+                f"  failure_reason: {_failure_reason!r}\n"
+                + "\n".join(_diag)
+            )
+    else:
+        log.info("Skip kernel push/wait — downloading current output.")
+        clean_dl_dir(DL_DIR, args.book_stem)
+        download_kernel_output(KERNEL_REF, DL_DIR, force=True)
+        found_zips = sorted(DL_DIR.glob("*_postprocessed.zip"))
+        log.info("Found zips: %s", [p.name for p in found_zips])
+        if not expected_zip.exists():
+            found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
+            raise FileNotFoundError(
+                f"Missing kernel zip output for book_stem={args.book_stem!r}\n"
+                f"  expected : {expected_zip}\n"
+                f"  found zips: {[p.name for p in found_zips]}\n"
+                f"  found stems: {found_stems}"
+            )
 
     log.info("Downloaded: %s", expected_zip)
 
     # Stem guard: refuse to apply a zip that belongs to a different book
-    with __import__("zipfile").ZipFile(expected_zip, "r") as _z:
+    import zipfile as _zf
+    with _zf.ZipFile(expected_zip, "r") as _z:
         _top = sorted({p.split("/", 1)[0] for p in _z.namelist() if p and not p.endswith("/")})
     if len(_top) != 1 or _top[0] != args.book_stem:
         raise RuntimeError(
@@ -145,7 +223,7 @@ def main():
             f"  zip path                 : {expected_zip}"
         )
 
-    # 4) apply zip into Output/
+    # 3) apply zip into Output/
     if not args.no_apply:
         print("[STAGE:applying]", flush=True)
         dst = safe_extract_zip_to_output(expected_zip, OUTPUT_ROOT, overwrite=args.overwrite)
