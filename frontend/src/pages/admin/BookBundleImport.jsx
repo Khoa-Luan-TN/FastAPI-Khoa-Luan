@@ -16,6 +16,13 @@ const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const POLL_MS = 3000;
 
+const TRANSIENT_STATUSES = new Set([
+  "uploaded",
+  "extracting_topics_lessons",
+  "extracting_chunks",
+  "heavy_stage_running",
+]);
+
 const REVIEW_STATUSES = [
   "extracted",
   "reviewing_lessons",
@@ -26,14 +33,16 @@ const REVIEW_STATUSES = [
 ];
 
 const STATUS_LABEL = {
-  uploaded:                 "Đang trích xuất…",
-  extracted:                "Trích xuất xong — kiểm tra Chủ đề",
-  reviewing_lessons:        "Kiểm tra Bài",
-  reviewing_chunks:         "Kiểm tra Phần",
-  approved_for_heavy_stage: "Sẵn sàng xử lý nặng",
-  heavy_stage_running:      "Đang xử lý nặng…",
-  heavy_stage_done:         "Hoàn tất",
-  error:                    "Lỗi",
+  uploaded:                   "Đang chuẩn bị trích xuất…",
+  extracting_topics_lessons:  "Đang tách chủ đề và bài học…",
+  extracting_chunks:          "Đang tách chunk…",
+  extracted:                  "Trích xuất xong — kiểm tra Chủ đề",
+  reviewing_lessons:          "Kiểm tra Bài",
+  reviewing_chunks:           "Kiểm tra Phần",
+  approved_for_heavy_stage:   "Sẵn sàng xử lý nặng",
+  heavy_stage_running:        "Đang xử lý nặng…",
+  heavy_stage_done:           "Hoàn tất",
+  error:                      "Lỗi",
 };
 
 export default function BookBundleImport() {
@@ -61,14 +70,13 @@ export default function BookBundleImport() {
   // ── Polling while job is in transient state ───────────────────────────────
   useEffect(() => {
     if (phase !== "job" || !job) return;
-    const transient = ["uploaded", "heavy_stage_running"];
-    if (!transient.includes(job.status)) { clearInterval(pollRef.current); return; }
+    if (!TRANSIENT_STATUSES.has(job.status)) { clearInterval(pollRef.current); return; }
 
     pollRef.current = setInterval(async () => {
       try {
         const res = await getReviewJob(job.job_id);
         setJob(res.job);
-        if (!transient.includes(res.job.status)) {
+        if (!TRANSIENT_STATUSES.has(res.job.status)) {
           clearInterval(pollRef.current);
           syncEdit(res.job);
         }
@@ -238,12 +246,12 @@ export default function BookBundleImport() {
             </div>
           )}
 
-          {(job.status === "uploaded" || job.status === "heavy_stage_running") && (
-            <div style={s.infoBox}>
-              {job.status === "uploaded"
-                ? "Đang chạy trích xuất Gemini — vui lòng chờ…"
-                : "Đang chạy import vào database — vui lòng chờ…"}
-            </div>
+          {TRANSIENT_STATUSES.has(job.status) && job.status !== "heavy_stage_running" && (
+            <ExtractionProgress job={job} />
+          )}
+
+          {job.status === "heavy_stage_running" && (
+            <div style={s.infoBox}>Đang chạy import vào database — vui lòng chờ…</div>
           )}
 
           {/* Topic review */}
@@ -377,6 +385,33 @@ function ReviewSection({ title, items, editable, onChange, fields, approved, onS
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ── Extraction progress panel ── */
+function ExtractionProgress({ job }) {
+  const msg  = job.progress_message || STATUS_LABEL[job.status] || job.status;
+  const cur  = job.progress_current ?? null;
+  const tot  = job.progress_total  ?? null;
+  const pct  = job.progress_percent != null
+    ? job.progress_percent
+    : (cur != null && tot > 0 ? Math.round((cur / tot) * 100) : null);
+
+  return (
+    <div style={s.infoBox}>
+      <div style={{ marginBottom: pct != null ? 8 : 0 }}>{msg}</div>
+      {pct != null && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#1d4ed8", marginBottom: 4 }}>
+            <span>{cur != null && tot != null ? `${cur} / ${tot} bài` : ""}</span>
+            <span>{pct}%</span>
+          </div>
+          <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, background: "#2563eb", height: "100%", transition: "width 0.4s ease" }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

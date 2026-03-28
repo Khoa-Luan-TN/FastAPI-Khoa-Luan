@@ -384,7 +384,12 @@ def run_extract_and_split_chunks_for_book(
     book_dir: str | Path,
     model: str = "gemini-2.5-flash",
     resume: bool = True,
+    progress_cb=None,
 ) -> Dict[str, Any]:
+    """
+    progress_cb: optional callable(done: int, total: int, lesson_pdf: Path)
+                 called after each lesson finishes (success or skip).
+    """
     book_dir = Path(book_dir)
     lesson_dir = book_dir / "Lesson"
     chunk_root = book_dir / "Chunk"
@@ -404,6 +409,9 @@ def run_extract_and_split_chunks_for_book(
         "chunk_meta_files": [],
         "skipped_lessons": [],
     }
+
+    _total = len(lesson_pdfs)
+    _done = 0
 
     for lesson_pdf in lesson_pdfs:
         lesson_stem = lesson_pdf.stem
@@ -514,5 +522,12 @@ def run_extract_and_split_chunks_for_book(
             summary["skipped_lessons"].append(
                 {"lesson": str(lesson_pdf), "reason": str(e)}
             )
+
+        _done += 1
+        if progress_cb is not None:
+            try:
+                progress_cb(_done, _total, lesson_pdf)
+            except Exception:
+                pass
 
     return summary

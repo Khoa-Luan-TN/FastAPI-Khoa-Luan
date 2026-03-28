@@ -1,0 +1,6 @@
+{
+  "job_id": "cff78933-036b-49fe-ab1f-783a4605e79f",
+  "source_pdf_path": "/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/gemini_pipeline/ReviewWorkspace/cff78933-036b-49fe-ab1f-783a4605e79f/Tin-hoc-10-ket-noi-tri-thuc_cff78933.pdf",
+  "api_config": "/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/gemini_pipeline/config.env",
+  "model": "gemini-2.5-flash"
+}

@@ -151,11 +151,38 @@ def _run_extraction(db: Database, job_id: str, workspace: Path) -> None:
         )
 
 
+_PROGRESS_FIELDS = (
+    "status",
+    "progress_stage",
+    "progress_message",
+    "progress_current",
+    "progress_total",
+    "progress_percent",
+)
+
+_EXTRACTION_STATUSES = {"uploaded", "extracting_topics_lessons", "extracting_chunks"}
+
+
 def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return None
     doc.pop("_id", None)
+
+    # While extraction subprocess is running, overlay live progress from progress.json
+    if doc.get("status") in _EXTRACTION_STATUSES:
+        workspace = doc.get("workspace")
+        if workspace:
+            progress_path = Path(workspace) / "progress.json"
+            if progress_path.exists():
+                try:
+                    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+                    for key in _PROGRESS_FIELDS:
+                        if key in progress:
+                            doc[key] = progress[key]
+                except Exception:
+                    pass
+
     return doc
 
 
