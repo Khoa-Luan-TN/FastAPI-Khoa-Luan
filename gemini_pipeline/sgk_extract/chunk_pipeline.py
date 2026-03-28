@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -9,6 +10,102 @@ from pypdf import PdfReader
 from .gemini_runner import extract_structure_from_pdf
 from .prompts import build_chunk_prompt_start_head
 from .pdf_output import split_pdf_by_ranges
+
+
+# ─── Post-filter constants ────────────────────────────────────────────────────
+
+# Heading must be purely numeric like "1.", "2.", "10."
+_VALID_HEADING_RE = re.compile(r"^\d+\.$")
+
+# Title prefixes that belong to exercise/task/question blocks — not real sections
+_REJECT_TITLE_KEYWORDS = (
+    "LUYỆN TẬP", "VẬN DỤNG", "BÀI TẬP", "CÂU HỎI", "NHIỆM VỤ",
+    "HƯỚNG DẪN", "HOẠT ĐỘNG", "KHỞI ĐỘNG", "VÍ DỤ", "THỰC HÀNH",
+    "TÓM TẮT", "ÔN TẬP", "TỔNG KẾT", "BƯỚC",
+)
+
+# Sub-item marker patterns (a) b) c) A. B. roman numerals)
+_SUB_ITEM_TITLE_RE = re.compile(r"^[a-zA-Z][.)]\s", re.IGNORECASE)
+_SUB_ITEM_PAGE_RE  = re.compile(r"\b[a-d][)]\s", re.IGNORECASE)
+_EXERCISE_PAGE_RE  = re.compile(
+    r"(câu hỏi|bài tập|luyện tập|vận dụng|nhiệm vụ|hoạt động)",
+    re.IGNORECASE,
+)
+
+
+# ─── Filter helpers ───────────────────────────────────────────────────────────
+
+def _is_junk_candidate(heading: str, title: str) -> Tuple[bool, str]:
+    """Return (is_junk, reason). True means reject this candidate."""
+    h = heading.strip()
+    t = title.strip()
+    t_up = t.upper()
+
+    if not _VALID_HEADING_RE.match(h):
+        return True, f"heading '{h}' is not a valid numeric section heading (e.g. '1.')"
+
+    for kw in _REJECT_TITLE_KEYWORDS:
+        if t_up == kw or t_up.startswith(kw + " ") or t_up.startswith(kw + ":") or t_up.startswith(kw + "\t"):
+            return True, f"title starts with forbidden keyword '{kw}'"
+
+    if _SUB_ITEM_TITLE_RE.match(t):
+        return True, f"title '{t[:30]}' starts with a sub-item marker (e.g. a) b) A. B.)"
+
+    return False, "ok"
+
+
+def _extract_page_text(pdf_path: str, page_1based: int) -> str:
+    """Extract text from a 1-based page number. Returns '' on failure."""
+    try:
+        reader = PdfReader(pdf_path)
+        idx = page_1based - 1
+        if 0 <= idx < len(reader.pages):
+            return reader.pages[idx].extract_text() or ""
+    except Exception:
+        pass
+    return ""
+
+
+def _heading_valid_in_page(
+    page_text: str,
+    heading: str,
+    title: str,
+) -> Tuple[bool, str]:
+    """
+    Returns (ok, reason).
+    Checks that heading appears as a real standalone heading line in page_text,
+    not embedded in a sub-item / exercise block.
+    """
+    if not page_text.strip():
+        return True, "no page text — skip validation"
+
+    heading_num = heading.rstrip(".")
+    lines = page_text.splitlines()
+
+    heading_line_pat = re.compile(
+        r"^\s*" + re.escape(heading_num) + r"\s*[.]\s*\S",
+    )
+    heading_line_idx = -1
+    for i, line in enumerate(lines):
+        if heading_line_pat.match(line):
+            heading_line_idx = i
+            break
+
+    if heading_line_idx == -1:
+        # Heading not found as standalone line; if page has sub-item markers it's a false positive
+        if _SUB_ITEM_PAGE_RE.search(page_text):
+            return False, (
+                f"heading '{heading}' not found as standalone line "
+                f"and page contains sub-item markers (a/b/c)"
+            )
+        return True, f"heading '{heading}' not found but no sub-items on page — assume ok"
+
+    # Check lines before the heading for exercise/sub-item context
+    before_text = "\n".join(lines[max(0, heading_line_idx - 5): heading_line_idx])
+    if _SUB_ITEM_PAGE_RE.search(before_text) and _EXERCISE_PAGE_RE.search(before_text):
+        return False, "heading is directly inside an exercise/sub-item block"
+
+    return True, f"heading found at line {heading_line_idx}"
 
 
 def _flatten_start_head(list_chunk: List[Dict[str, Dict[str, Any]]]) -> List[Tuple[int, bool, str, str]]:
@@ -207,6 +304,27 @@ def run_extract_and_split_chunks_for_book(
                 items = _flatten_start_head(list_chunk_raw)
 
             print("[CHUNK][FLAT]", items)
+
+            # ── Post-filter: reject junk / sub-item / exercise candidates ────
+            filtered: List[Tuple[int, bool, str, str]] = []
+            for s, ch, heading, title in items:
+                is_junk, reason = _is_junk_candidate(heading, title)
+                if is_junk:
+                    print(f"[CHUNK][REJECT] heading={heading!r} title={title!r} reason={reason}")
+                    continue
+
+                page_text = _extract_page_text(str(lesson_pdf), s)
+                pg_ok, pg_reason = _heading_valid_in_page(page_text, heading, title)
+                if not pg_ok:
+                    print(f"[CHUNK][REJECT] heading={heading!r} title={title!r} page_check={pg_reason}")
+                    continue
+
+                print(f"[CHUNK][ACCEPT] heading={heading!r} title={title!r} page={s} page_check={pg_reason}")
+                filtered.append((s, ch, heading, title))
+
+            if len(filtered) < len(items):
+                print(f"[CHUNK][FILTER] {len(items)} raw -> {len(filtered)} after filtering")
+            items = filtered
 
             list_chunk_computed = _compute_chunks_from_start_head(items, total_pages)
             print("[CHUNK][COMPUTED]", json.dumps(list_chunk_computed, ensure_ascii=False))

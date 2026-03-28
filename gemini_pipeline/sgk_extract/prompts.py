@@ -88,20 +88,31 @@ def build_chunk_prompt_start_head(total_pages: int) -> str:
 Bạn đang đọc 1 file PDF chỉ chứa DUY NHẤT 1 BÀI (LESSON) (PDF scan).
 
 MỤC TIÊU:
-Trả về list_chunk là các MỤC CHÍNH của bài theo trang PDF của CHÍNH FILE này.
+Trả về list_chunk là các MỤC CHÍNH CẤP CAO NHẤT của bài — và CHỈ những mục đó.
 
-CHỈ tạo chunk khi THẤY RÕ "TIÊU ĐỀ MỤC CHÍNH" hợp lệ.
-Nếu không chắc chắn 100% => BỎ QUA (không bịa).
+═══════════════════════════════════════════════════════════════
+ĐỊNH NGHĨA MỤC CHÍNH HỢP LỆ (PHẢI ĐỦ CẢ 2 ĐIỀU KIỆN):
+1. Heading: "<SỐ>." đứng ĐẦU DÒNG riêng (ví dụ "1.", "2.", "3." ...) — đây là MỤC CẤP CAO NHẤT của bài.
+2. Title: phần chữ ngay sau "<SỐ>." phải IN HOA TOÀN BỘ và là tên một chủ đề nội dung chính.
+═══════════════════════════════════════════════════════════════
 
-ĐỊNH NGHĨA "TIÊU ĐỀ MỤC CHÍNH" HỢP LỆ:
-- Có mẫu "<số>." ở ĐẦU DÒNG (ví dụ "1.", "2.", "3.", ...)
-- Phần chữ ngay sau "<số>." là TIÊU ĐỀ IN HOA TOÀN BỘ (không có chữ thường)
-- Không thuộc/không nằm trong các phần: "NHIỆM VỤ", "CÂU HỎI", "BÀI TẬP", "LUYỆN TẬP", "VẬN DỤNG", "HƯỚNG DẪN", "BƯỚC"...
-- Không phải câu mệnh lệnh/thao tác (NHÁY, CHỌN, MỞ, THỰC HIỆN, HÃY, EM HÃY...)
+TUYỆT ĐỐI CẤM — KHÔNG được đưa vào list_chunk:
+• a), b), c), d) — mục con chữ thường, dù có nhiều hay ít
+• A., B., C., D. khi là nhãn mục con (không phải heading số cấp 1)
+• Danh sách bullet / gạch đầu dòng
+• Câu hỏi / ôn tập: "CÂU HỎI", "BÀI TẬP", "LUYỆN TẬP", "VẬN DỤNG", "ÔN TẬP"
+• Nhiệm vụ / hoạt động: "NHIỆM VỤ", "HOẠT ĐỘNG", "KHỞI ĐỘNG", "HƯỚNG DẪN"
+• Từng bước thực hiện: "BƯỚC", "BƯỚC 1", "BƯỚC 2", ...
+• Ví dụ / thực hành: "VÍ DỤ", "THỰC HÀNH"
+• Câu lệnh thao tác: NHÁY, CHỌN, MỞ, HÃY, EM HÃY, THỰC HIỆN, ...
+• BẤT KỲ heading nào bạn tự suy ra hoặc tự đặt tên — chỉ lấy những gì IN THẬT trên trang.
 
-RẤT QUAN TRỌNG (CHỐNG BỊA):
-- Nếu KHÔNG nhìn thấy mục "1." thật sự (ở đầu dòng) => trả list_chunk rỗng [].
-- TUYỆT ĐỐI không suy ra "1." chỉ vì thấy chữ IN HOA.
+QUY TẮC NGHIÊM NGẶT:
+• Nếu không chắc chắn 100% đây là MỤC CHÍNH CẤP CAO NHẤT => BỎ QUA, không đưa vào.
+• TUYỆT ĐỐI không chuyển đổi a), b), c) thành 1., 2., 3. — đây là lỗi nghiêm trọng.
+• TUYỆT ĐỐI không bịa "<SỐ>." nếu không nhìn thấy chính xác trên trang (đầu dòng, dòng riêng).
+• Nếu KHÔNG nhìn thấy "1." thật sự (dòng riêng, đầu dòng) => trả list_chunk rỗng [].
+• Nếu bài chỉ có câu hỏi / bài tập / nhiệm vụ mà không có mục chính thật sự => trả list_chunk rỗng [].
 
 OUTPUT MỖI CHUNK (BẮT BUỘC ĐỦ 4 TRƯỜNG):
 - start: SỐ TRANG PDF (1-based) nơi tiêu đề mục chính xuất hiện lần đầu.
