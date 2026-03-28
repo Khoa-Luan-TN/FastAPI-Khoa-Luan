@@ -73,6 +73,7 @@ def _verify_chunk_start_with_gemini(
     heading: str,
     title: str,
     model: str,
+    status_cb=None,
 ) -> bool:
     """
     Check whether `heading title` appears as a real section heading on `page_no`.
@@ -85,6 +86,7 @@ def _verify_chunk_start_with_gemini(
             tmp_pdf,
             build_chunk_start_verify_prompt(heading, title),
             model=model,
+            status_cb=status_cb,
         )
         print(
             f"[CHUNK][START-VERIFY-RAW] page={page_no} heading={heading!r} "
@@ -111,6 +113,7 @@ def _verify_content_head_with_gemini(
     heading: str,
     title: str,
     model: str,
+    status_cb=None,
 ) -> bool:
     """
     Send exactly the candidate page to Gemini and ask whether there is real
@@ -124,6 +127,7 @@ def _verify_content_head_with_gemini(
             tmp_pdf,
             build_content_head_verify_prompt(heading, title),
             model=model,
+            status_cb=status_cb,
         )
         print(
             f"[CHUNK][VERIFY-RAW] page={page_no} heading={heading!r} "
@@ -149,6 +153,7 @@ def _normalize_raw_list_chunk(
     lesson_pdf: Path,
     total_pages: int,
     model: str,
+    status_cb=None,
 ) -> List[Dict[str, Dict[str, Any]]]:
     """
     1. Filter junk candidates.
@@ -187,6 +192,7 @@ def _normalize_raw_list_chunk(
             heading=heading,
             title=title,
             model=model,
+            status_cb=status_cb,
         )
         if not confirmed and s + 1 <= total_pages:
             confirmed_next = _verify_chunk_start_with_gemini(
@@ -196,6 +202,7 @@ def _normalize_raw_list_chunk(
                 heading=heading,
                 title=title,
                 model=model,
+                status_cb=status_cb,
             )
             if confirmed_next:
                 print(
@@ -228,6 +235,7 @@ def _normalize_raw_list_chunk(
                 heading=heading,
                 title=title,
                 model=model,
+                status_cb=status_cb,
             )
             print(
                 f"[CHUNK][VERIFY] page={s} heading={heading!r} "
@@ -385,10 +393,13 @@ def run_extract_and_split_chunks_for_book(
     model: str = "gemini-2.5-flash",
     resume: bool = True,
     progress_cb=None,
+    status_cb=None,
 ) -> Dict[str, Any]:
     """
     progress_cb: optional callable(done: int, total: int, lesson_pdf: Path)
                  called after each lesson finishes (success or skip).
+    status_cb:   optional callable(msg: str)
+                 forwarded to GeminiPool for key rotation / cooldown events.
     """
     book_dir = Path(book_dir)
     lesson_dir = book_dir / "Lesson"
@@ -433,6 +444,7 @@ def run_extract_and_split_chunks_for_book(
                 str(lesson_pdf),
                 prompt,
                 model=model,
+                status_cb=status_cb,
             )
 
             list_chunk_raw = raw.get("list_chunk")
@@ -448,6 +460,7 @@ def run_extract_and_split_chunks_for_book(
                     lesson_pdf=lesson_pdf,
                     total_pages=total_pages,
                     model=model,
+                    status_cb=status_cb,
                 )
 
                 print("[CHUNK][RAW-NORM]", json.dumps(list_chunk_raw, ensure_ascii=False))

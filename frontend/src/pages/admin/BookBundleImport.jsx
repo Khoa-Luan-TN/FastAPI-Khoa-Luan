@@ -17,6 +17,8 @@ import {
   reviewLessonPdfUrl,
   patchReviewLesson,
   recutReviewLesson,
+  reviewChunkPdfUrl,
+  patchReviewChunk,
 } from "../../services/mongoAdminApi";
 
 const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
@@ -73,6 +75,10 @@ export default function BookBundleImport() {
   const [lessonApprovals, setLessonApprovals] = useState([]);
   const [lessonPreviewKey, setLessonPreviewKey] = useState(0);
 
+  const [chunkIdx, setChunkIdx] = useState(0);
+  const [chunkApprovals, setChunkApprovals] = useState([]);
+  const [chunkPreviewKey, setChunkPreviewKey] = useState(0);
+
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -122,6 +128,11 @@ export default function BookBundleImport() {
         ? [...prev, ...new Array(newLessons.length - prev.length).fill(false)]
         : prev
     );
+    setChunkApprovals((prev) =>
+      newChunks.length > prev.length
+        ? [...prev, ...new Array(newChunks.length - prev.length).fill(false)]
+        : prev
+    );
   }
 
   function resetEdit(j) {
@@ -133,9 +144,13 @@ export default function BookBundleImport() {
     setEditChunks(chunks);
     setTopicIdx(0);
     setTopicApprovals(topics.map(() => false));
+    setPreviewKey(0);
     setLessonIdx(0);
     setLessonApprovals(lessons.map(() => false));
     setLessonPreviewKey(0);
+    setChunkIdx(0);
+    setChunkApprovals(chunks.map(() => false));
+    setChunkPreviewKey(0);
   }
 
   async function handleUpload(e) {
@@ -314,6 +329,18 @@ export default function BookBundleImport() {
       mergeEdit(refreshed.job);
 
       if (res?.already_advanced) return;
+
+      if (res?.retry) {
+        // DB hadn't advanced yet — retry once if still reviewing_lessons
+        if (refreshed.job?.status === "reviewing_lessons") {
+          const retryRes = await approveLessons(job.job_id);
+          const retryRefreshed = await getReviewJob(job.job_id);
+          setJob(retryRefreshed.job);
+          mergeEdit(retryRefreshed.job);
+          if (retryRes?.already_advanced) return;
+        }
+        return;
+      }
     } catch (err) {
       const msg = String(err?.message || err);
 
@@ -340,13 +367,44 @@ export default function BookBundleImport() {
     }
   }
 
-  const handleApproveChunks = () =>
+  function handleEditChunkItem(idx, updated) {
+    setEditChunks((prev) => prev.map((c, i) => (i === idx ? updated : c)));
+  }
+
+  function handleChunkNavigateTo(idx) {
+    const clamped = Math.max(0, Math.min(editChunks.length - 1, idx));
+    setChunkIdx(clamped);
+  }
+
+  async function handleSaveCurrentChunk() {
+    const c = editChunks[chunkIdx];
+    if (!c) return;
+    setActing(true);
+    setJobError("");
+    try {
+      await patchReviewChunk(job.job_id, chunkIdx, { heading: c.heading, title: c.title });
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  function handleApproveThisChunk() {
+    setChunkApprovals((prev) => {
+      const next = prev.map((v, i) => (i === chunkIdx ? true : v));
+      const nextUnapproved = next.findIndex((v, i) => !v && i > chunkIdx);
+      if (nextUnapproved >= 0) setChunkIdx(nextUnapproved);
+      return next;
+    });
+  }
+
+  const handleApproveAllChunks = () =>
     act(async () => {
       await saveReviewChunks(job.job_id, editChunks);
       await approveChunks(job.job_id);
     });
 
-  const handleSaveChunks = () => act(() => saveReviewChunks(job.job_id, editChunks));
   const handleTriggerHeavy = () => act(() => triggerHeavyStage(job.job_id));
 
   function handleReset() {
@@ -372,6 +430,9 @@ export default function BookBundleImport() {
     setLessonIdx(0);
     setLessonApprovals([]);
     setLessonPreviewKey(0);
+    setChunkIdx(0);
+    setChunkApprovals([]);
+    setChunkPreviewKey(0);
   }
 
   const status = job?.status;
@@ -389,9 +450,10 @@ export default function BookBundleImport() {
 
   const allTopicsApproved = topicApprovals.length > 0 && topicApprovals.every(Boolean);
   const allLessonsApproved = lessonApprovals.length > 0 && lessonApprovals.every(Boolean);
+  const allChunksApproved = chunkApprovals.length > 0 && chunkApprovals.every(Boolean);
   const canApproveTopics = isTopicStage && allTopicsApproved;
   const canApproveLessons = isLessonStage && allLessonsApproved;
-  const canApproveChunks = isChunkStage;
+  const canApproveChunks = isChunkStage && allChunksApproved;
 
   const PAST_TOPICS_STATUSES = new Set([
     "extracting_lessons",
@@ -414,7 +476,7 @@ export default function BookBundleImport() {
   const isPastLessons = job && PAST_LESSONS_STATUSES.has(status);
 
   return (
-    <div style={{ ...s.page, maxWidth: (isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons) ? 1200 : 760 }}>
+    <div style={{ ...s.page, maxWidth: (isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons || isChunkStage || isExtractingChunks) ? 1200 : 760 }}>
       <h2 style={s.heading}>Import sách</h2>
       <p style={s.sub}>
         Upload PDF sách giáo khoa — hệ thống trích xuất cấu trúc Chủ đề / Bài / Phần để kiểm tra
@@ -601,15 +663,18 @@ export default function BookBundleImport() {
           )}
 
           {showChunkReview && (
-            <ReviewSection
-              title={`Phần (Chunk)${isExtractingChunks ? " (đang tải…)" : ""}`}
-              items={editChunks}
-              editable
-              onChange={setEditChunks}
-              fields={["title"]}
-              onSave={handleSaveChunks}
-              onApprove={handleApproveChunks}
-              showApprove={canApproveChunks}
+            <ChunkReviewPane
+              job={job}
+              editChunks={editChunks}
+              chunkIdx={chunkIdx}
+              chunkApprovals={chunkApprovals}
+              canApproveAll={canApproveChunks}
+              chunkPreviewKey={chunkPreviewKey}
+              onEditItem={handleEditChunkItem}
+              onNavigateTo={handleChunkNavigateTo}
+              onSave={handleSaveCurrentChunk}
+              onApproveThis={handleApproveThisChunk}
+              onApproveAll={handleApproveAllChunks}
               loading={acting}
             />
           )}
@@ -983,71 +1048,152 @@ function LessonReviewPane({
   );
 }
 
-function ReviewSection({
-  title,
-  items,
-  editable,
-  onChange,
-  fields,
+function ChunkReviewPane({
+  job,
+  editChunks,
+  chunkIdx,
+  chunkApprovals,
+  canApproveAll,
+  chunkPreviewKey,
+  onEditItem,
+  onNavigateTo,
   onSave,
-  onApprove,
-  showApprove,
+  onApproveThis,
+  onApproveAll,
   loading,
 }) {
-  if (!items || items.length === 0) return null;
+  const chunk = editChunks[chunkIdx] || {};
+  const total = editChunks.length;
 
-  function handleChange(idx, field, value) {
-    onChange(items.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
+  function set(field, value) {
+    onEditItem(chunkIdx, { ...chunk, [field]: value });
   }
 
+  const cutUrl = reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey);
+  const srcUrl = reviewSourcePdfUrl(job.job_id);
+
   return (
-    <div style={{ ...s.card, marginTop: 16 }}>
+    <div style={{ marginTop: 16 }}>
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 10,
+          gap: 10,
+          marginBottom: 12,
+          flexWrap: "wrap",
         }}
       >
-        <h4 style={s.cardTitle}>
-          {title} ({items.length})
-        </h4>
-        {editable && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-              Lưu
-            </button>
-            {showApprove && (
-              <button style={s.btnPrimary} disabled={loading} onClick={onApprove}>
-                Xác nhận
-              </button>
-            )}
-          </div>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>
+          Phần {chunkIdx + 1} / {total}
+        </span>
+        <button
+          style={s.btnSecondary}
+          disabled={chunkIdx === 0 || loading}
+          onClick={() => onNavigateTo(chunkIdx - 1)}
+        >
+          ← Trước
+        </button>
+        <button
+          style={s.btnSecondary}
+          disabled={chunkIdx >= total - 1 || loading}
+          onClick={() => onNavigateTo(chunkIdx + 1)}
+        >
+          Sau →
+        </button>
+        {canApproveAll && (
+          <button
+            style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
+            disabled={loading}
+            onClick={onApproveAll}
+          >
+            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả phần"}
+          </button>
         )}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {items.map((item, idx) => (
-          <div key={idx} style={s.reviewItem}>
-            <span style={{ fontSize: 12, color: "#9ca3af", minWidth: 24 }}>{idx + 1}.</span>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
-              {fields.map((field) =>
-                editable ? (
-                  <input
-                    key={field}
-                    style={{ ...s.input, fontSize: 13, padding: "4px 8px" }}
-                    value={item[field] || ""}
-                    placeholder={field}
-                    onChange={(e) => handleChange(idx, field, e.target.value)}
-                  />
-                ) : (
-                  <span key={field} style={{ fontSize: 13, color: "#111827" }}>
-                    {item[field] || <em style={{ color: "#9ca3af" }}>—</em>}
-                  </span>
-                )
-              )}
+
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
+      >
+        <div style={s.card}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+            Preview phần — {chunk.lesson_stem || ""} / {chunk.chunk || ""}
+          </div>
+          <iframe
+            key={`cut-chunk-${chunkIdx}-${chunkPreviewKey}`}
+            src={cutUrl}
+            title="Chunk preview"
+            style={s.pdfFrame}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={s.card}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+              PDF gốc (tham chiếu)
+            </div>
+            <iframe src={srcUrl} title="Source PDF" style={s.pdfFrame} />
+          </div>
+          <div style={s.card}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
+              Chỉnh sửa phần {chunkIdx + 1}
+            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>
+              Trang {chunk.start}–{chunk.end} (trong bài {chunk.lesson_stem || ""})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Field label="Heading (số mục)">
+                <input
+                  style={s.input}
+                  value={chunk.heading || ""}
+                  onChange={(e) => set("heading", e.target.value)}
+                />
+              </Field>
+              <Field label="Tên mục (title)">
+                <input
+                  style={s.input}
+                  value={chunk.title || ""}
+                  onChange={(e) => set("title", e.target.value)}
+                />
+              </Field>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+              <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
+                Lưu
+              </button>
+              <button
+                style={{
+                  ...s.btnPrimary,
+                  background: chunkApprovals[chunkIdx] ? "#15803d" : "#2563eb",
+                }}
+                disabled={loading}
+                onClick={onApproveThis}
+              >
+                {chunkApprovals[chunkIdx] ? "✓ Đã duyệt" : "Duyệt phần này"}
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
+        {editChunks.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => onNavigateTo(i)}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              border: "none",
+              cursor: "pointer",
+              background: chunkApprovals[i] ? "#15803d" : i === chunkIdx ? "#2563eb" : "#e5e7eb",
+              color: chunkApprovals[i] || i === chunkIdx ? "#fff" : "#374151",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            {i + 1}
+          </button>
         ))}
       </div>
     </div>

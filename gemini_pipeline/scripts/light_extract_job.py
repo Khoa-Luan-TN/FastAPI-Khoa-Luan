@@ -574,6 +574,11 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     seen_chunk_files: set[str] = set()
     chunks_so_far: list = []
 
+    # Mutable containers so the Gemini callback can read the latest lesson progress
+    _active_done: list[int] = [0]
+    _active_total: list[int] = [lesson_count]
+    _active_pct: list[int] = [0]
+
     _write_progress(
         workspace,
         status="extracting_chunks",
@@ -584,8 +589,25 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         progress_percent=0,
     )
 
+    def _gemini_status_cb(msg: str) -> None:
+        is_all_cooldown = "Tất cả" in msg and "cooldown" in msg
+        stage = "waiting_gemini_key_cooldown" if is_all_cooldown else "extracting_chunks"
+        _write_progress(
+            workspace,
+            status="extracting_chunks",
+            progress_stage=stage,
+            progress_message=msg[:200],
+            progress_current=_active_done[0],
+            progress_total=_active_total[0],
+            progress_percent=_active_pct[0],
+        )
+        log(f"gemini: {msg}")
+
     def _chunk_cb(done: int, total: int, lesson_pdf: Path) -> None:
         pct = round(done * 100 / total) if total else 0
+        _active_done[0] = done
+        _active_total[0] = total
+        _active_pct[0] = pct
         _write_progress(
             workspace,
             status="extracting_chunks",
@@ -615,6 +637,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         model=model,
         resume=False,
         progress_cb=_chunk_cb,
+        status_cb=_gemini_status_cb,
     )
     log("chunk extraction pipeline finished, collecting chunk metadata")
 

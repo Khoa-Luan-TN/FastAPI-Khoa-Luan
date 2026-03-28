@@ -163,7 +163,7 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
         if result.get("ok"):
             if stage == "topics":
                 _col(db).update_one(
-                    {"job_id": job_id},
+                    {"job_id": job_id, "status": "extracting_topics"},
                     {"$set": {
                         "status": "reviewing_topics",
                         "bundle_path": result.get("bundle_path"),
@@ -181,7 +181,10 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                 }
                 if result.get("bundle_path"):
                     update["bundle_path"] = result["bundle_path"]
-                _col(db).update_one({"job_id": job_id}, {"$set": update})
+                _col(db).update_one(
+                    {"job_id": job_id, "status": "extracting_lessons"},
+                    {"$set": update},
+                )
             elif stage == "chunks":
                 update = {
                     "status": "reviewing_chunks",
@@ -191,7 +194,10 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                 }
                 if result.get("bundle_path"):
                     update["bundle_path"] = result["bundle_path"]
-                _col(db).update_one({"job_id": job_id}, {"$set": update})
+                _col(db).update_one(
+                    {"job_id": job_id, "status": "extracting_chunks"},
+                    {"$set": update},
+                )
         else:
             log_tail = _read_log_tail(workspace, stage)
             _col(db).update_one(
@@ -236,7 +242,11 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
 
 
 _PROGRESS_FIELDS = (
-    "status",
+    # "status" intentionally excluded: MongoDB is the authoritative state machine.
+    # The subprocess writes "reviewing_*" to progress.json BEFORE _run_stage_inner
+    # updates MongoDB. If we overlay status from progress.json, a fast poll can make
+    # the UI show "reviewing_lessons" while DB still has "extracting_lessons", causing
+    # approve_lessons_and_start_chunks to fail its find_one_and_update.
     "progress_stage",
     "progress_message",
     "progress_current",
@@ -467,6 +477,27 @@ def patch_lesson_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]
             {"job_id": job_id},
             {"$set": {"lessons": lessons, "updated_at": _utc_now()}},
         )
+
+def patch_chunk_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
+    """Update allowed metadata fields of a single chunk item by index.
+
+    Only heading and title are editable. start/end are page numbers within the
+    lesson PDF (not the source PDF), so editing them without re-running the chunk
+    pipeline would be inconsistent with the actual chunk_pdf on disk.
+    """
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return
+    chunks = list(doc.get("chunks", []))
+    if 0 <= idx < len(chunks):
+        for k, v in patch.items():
+            if k in {"heading", "title"}:
+                chunks[idx][k] = v
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
+        )
+
 
 _RECUT_SCRIPT = _GEMINI_DIR / "scripts" / "recut_topic_preview.py"
 

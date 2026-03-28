@@ -254,3 +254,14 @@ export function recutReviewLesson(jobId, idx) {
   );
 }
 
+export function reviewChunkPdfUrl(jobId, idx, key = 0) {
+  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}?k=${key}`;
+}
+
+export function patchReviewChunk(jobId, idx, patch) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+}
+

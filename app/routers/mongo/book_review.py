@@ -44,17 +44,18 @@ def _get_or_404(job_id: str) -> Dict[str, Any]:
     return job
 
 
-def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
-    bp = Path(bundle_path)
-    name = (lesson.get("name") or "").replace("/", "_").replace("\\", "_").strip()
-    if not name:
-        return None
-    # Lessons live under Topic/<topic_name>/Lesson/<lesson_name>/
-    for topic_dir in (bp / "Topic").glob("*"):
-        lesson_dir = topic_dir / "Lesson" / name
-        if lesson_dir.exists():
-            pdfs = sorted(lesson_dir.glob("*.pdf"))
-            return pdfs[0] if pdfs else None
+def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
+    # Prefer the absolute path already stored in the chunk metadata
+    direct = chunk.get("chunk_pdf")
+    if direct and Path(direct).exists():
+        return Path(direct)
+    # Reconstruct: <bundle>/Chunk/<lesson_stem>/<chunk_name>/<lesson_stem>_<chunk_name>.pdf
+    lesson_stem = chunk.get("lesson_stem")
+    chunk_name = chunk.get("chunk")
+    if lesson_stem and chunk_name:
+        p = Path(bundle_path) / "Chunk" / lesson_stem / chunk_name / f"{lesson_stem}_{chunk_name}.pdf"
+        if p.exists():
+            return p
     return None
 
 
@@ -200,6 +201,28 @@ async def serve_lesson_pdf(job_id: str, idx: int):
 
     raise HTTPException(status_code=404, detail="Lesson PDF not found — extraction may still be running")
 
+
+@router.get("/book-review/jobs/{job_id}/pdf/chunk/{idx}", summary="Serve chunk preview PDF")
+async def serve_chunk_pdf(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    chunks = job.get("chunks", [])
+    if not (0 <= idx < len(chunks)):
+        raise HTTPException(status_code=404, detail="Chunk index out of range")
+    chunk = chunks[idx]
+
+    bundle_path = job.get("bundle_path")
+    if bundle_path:
+        pdf_path = _find_chunk_pdf(bundle_path, chunk)
+        if pdf_path and pdf_path.exists():
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                headers={"Content-Disposition": "inline"},
+            )
+
+    raise HTTPException(status_code=404, detail="Chunk PDF not found — extraction may still be running")
+
+
 # ── Per-topic edit / recut ────────────────────────────────────────────────────
 
 @router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Update a single topic item")
@@ -244,6 +267,17 @@ async def recut_lesson(job_id: str, idx: int):
     if not result.get("ok"):
         raise HTTPException(status_code=500, detail=result.get("error", "Recut failed"))
     return {"ok": True}
+
+
+@router.patch("/book-review/jobs/{job_id}/chunks/{idx}", summary="Update a single chunk item (heading/title only)")
+async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("chunks", []))):
+        raise HTTPException(status_code=404, detail="Chunk index out of range")
+    from app.services.mongo.book_review_service import patch_chunk_item
+    patch_chunk_item(db, job_id, idx, body)
+    return {"ok": True}
+
 
 # ── Update review data ────────────────────────────────────────────────────────
 
@@ -303,11 +337,25 @@ async def approve_topics(job_id: str):
 @router.post("/book-review/jobs/{job_id}/approve-lessons", summary="Approve lessons and start chunk extraction")
 async def approve_lessons(job_id: str):
     from app.services.mongo.book_review_service import approve_lessons_and_start_chunks
-    if not approve_lessons_and_start_chunks(db, job_id):
+    import time as _time
+
+    ok = approve_lessons_and_start_chunks(db, job_id)
+    if not ok:
+        # Rare race: subprocess wrote "reviewing_lessons" to progress.json before
+        # _run_stage_inner updated MongoDB, so the UI showed "reviewing_lessons" while DB
+        # still had "extracting_lessons".  Give MongoDB a moment to catch up, then retry.
+        _time.sleep(0.4)
+        ok = approve_lessons_and_start_chunks(db, job_id)
+
+    if not ok:
         job = _get_or_404(job_id)
         current = job["status"]
         if current in _PAST_LESSONS_STATUSES:
             return {"ok": True, "already_advanced": True, "status": current}
+        # If still "reviewing_lessons" after retry, the DB write truly hasn't landed yet —
+        # return a retryable response rather than a hard 409 so the frontend can try again.
+        if current == "reviewing_lessons":
+            return {"ok": False, "retry": True, "status": current}
         raise HTTPException(
             status_code=409,
             detail=f"Job must be in 'reviewing_lessons' status (current: {current})",
@@ -315,14 +363,22 @@ async def approve_lessons(job_id: str):
     return {"ok": True}
 
 
+_PAST_CHUNKS_STATUSES = {
+    "approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done",
+}
+
+
 @router.post("/book-review/jobs/{job_id}/approve-chunks", summary="Approve chunks and mark ready for heavy stage")
 async def approve_chunks(job_id: str):
     from app.services.mongo.book_review_service import approve_chunks_final
     if not approve_chunks_final(db, job_id):
         job = _get_or_404(job_id)
+        current = job["status"]
+        if current in _PAST_CHUNKS_STATUSES:
+            return {"ok": True, "already_advanced": True, "status": current}
         raise HTTPException(
             status_code=409,
-            detail=f"Job must be in 'reviewing_chunks' status (current: {job['status']})",
+            detail=f"Job must be in 'reviewing_chunks' status (current: {current})",
         )
     return {"ok": True}
 
