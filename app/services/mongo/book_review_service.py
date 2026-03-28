@@ -330,6 +330,21 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                 except Exception:
                     pass
 
+    # For heavy stage: expose how long ago the last progress update was written
+    if status == "heavy_stage_running":
+        heavy_updated_at = doc.get("heavy_updated_at")
+        if isinstance(heavy_updated_at, datetime):
+            try:
+                now_ts = _utc_now().timestamp()
+                upd_ts = (
+                    heavy_updated_at.replace(tzinfo=timezone.utc).timestamp()
+                    if heavy_updated_at.tzinfo is None
+                    else heavy_updated_at.timestamp()
+                )
+                doc["heavy_progress_age_seconds"] = max(0, int(now_ts - upd_ts))
+            except Exception:
+                pass
+
     return doc
 
 
@@ -1114,6 +1129,9 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
     workspace = Path(doc.get("workspace", ""))
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
 
+    # Track current stage so outer except can set heavy_error_stage precisely
+    _current_stage = "heavy_preparing"
+
     try:
         bundle_path_str = doc.get("bundle_path")
         if not bundle_path_str:
@@ -1123,24 +1141,30 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         book_stem = doc.get("book_stem", bundle_path.name)
 
         # ── Stage: Prepare — copy bundle to Output/<book_stem> ───────────────
-        output_book_dir = _GEMINI_DIR / "Output" / book_stem
+        _current_stage = "heavy_preparing"
         _update_heavy_progress(db, job_id, "heavy_preparing",
                                "Sao chép bundle vào thư mục Output…", 2)
-        _log.info("[heavy/%s] Copying bundle %s -> %s", job_id, bundle_path, output_book_dir)
+        _log.info("[heavy/%s] Stage: heavy_preparing — Copying bundle %s -> Output/%s",
+                  job_id, bundle_path, book_stem)
+        output_book_dir = _GEMINI_DIR / "Output" / book_stem
         output_book_dir.parent.mkdir(parents=True, exist_ok=True)
         if output_book_dir.exists():
             shutil.rmtree(output_book_dir)
         shutil.copytree(str(bundle_path), str(output_book_dir))
+        _log.info("[heavy/%s] Bundle copy OK -> %s", job_id, output_book_dir)
 
         # ── Stage: Kaggle submitting — build pack, push dataset ──────────────
+        _current_stage = "heavy_kaggle_submitting"
         _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
                                "Đang build Kaggle pack và đẩy dataset + kernel lên Kaggle…", 8)
-        _log.info("[heavy/%s] Starting Kaggle subprocess for book_stem=%s", job_id, book_stem)
+        _log.info("[heavy/%s] Stage: heavy_kaggle_submitting — book_stem=%s", job_id, book_stem)
 
-        # Update to heavy_kaggle_running just before the blocking subprocess call
-        # (dataset push + kernel push + wait all happen inside the CLI)
+        # Update to heavy_kaggle_running just before the blocking subprocess call.
+        # The CLI handles: dataset push + kernel push + wait + download + apply.
+        _current_stage = "heavy_kaggle_running"
         _update_heavy_progress(db, job_id, "heavy_kaggle_running",
-                               "Kaggle kernel đang chạy — chờ hoàn thành…", 20)
+                               "Kaggle kernel đang chạy — chờ hoàn thành (bao gồm tải kết quả về)…", 20)
+        _log.info("[heavy/%s] Stage: heavy_kaggle_running — launching Kaggle CLI subprocess", job_id)
 
         kaggle_log_path = workspace / "kaggle_subprocess.log"
         kaggle_proc = subprocess.run(
@@ -1158,6 +1182,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             pass
 
         kaggle_log_lines = kaggle_log.splitlines()[-50:]
+        _log.info("[heavy/%s] Kaggle CLI subprocess returned — returncode=%d",
+                  job_id, kaggle_proc.returncode)
 
         if kaggle_proc.returncode != 0:
             _update_heavy_progress(db, job_id, "heavy_error",
@@ -1172,11 +1198,15 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 f"{(kaggle_proc.stderr or '')[:1000]}"
             )
 
+        _log.info("[heavy/%s] Kaggle CLI completed OK — advancing to heavy_kaggle_downloading", job_id)
+
         # ── Stage: Kaggle downloading — apply result into local Output/ ───────
+        _current_stage = "heavy_kaggle_downloading"
         _update_heavy_progress(db, job_id, "heavy_kaggle_downloading",
                                "Kaggle hoàn thành — đang áp dụng kết quả vào bundle…", 55,
                                log_tail=kaggle_log_lines)
-        _log.info("[heavy/%s] Kaggle done. Updating bundle_path to %s", job_id, output_book_dir)
+        _log.info("[heavy/%s] Stage: heavy_kaggle_downloading — Updating bundle_path to %s",
+                  job_id, output_book_dir)
 
         # After Kaggle extraction, bundle is now at Output/<book_stem>
         bundle_path = output_book_dir
@@ -1187,10 +1217,11 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         doc["bundle_path"] = str(bundle_path)
 
         # ── Stage: Keyword extraction ─────────────────────────────────────────
+        _current_stage = "heavy_keyword_extracting"
         _update_heavy_progress(db, job_id, "heavy_keyword_extracting",
                                "Đang trích xuất từ khóa cho các chunk…", 60,
                                log_tail=kaggle_log_lines)
-        _log.info("[heavy/%s] Keyword extraction started — bundle: %s", job_id, bundle_path)
+        _log.info("[heavy/%s] Stage: heavy_keyword_extracting — bundle: %s", job_id, bundle_path)
 
         kw_summary_path = workspace / "keyword_summary.json"
         try:
@@ -1212,6 +1243,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 pass
 
             kw_log_lines = kw_log.splitlines()[-50:]
+            _log.info("[heavy/%s] Keyword extraction subprocess returned — returncode=%d",
+                      job_id, kw_proc.returncode)
 
             if kw_proc.returncode != 0:
                 _update_heavy_progress(db, job_id, "heavy_error",
@@ -1244,6 +1277,11 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         )
 
         if kw_failed > 0:
+            # Explicitly record failure stage before raising so outer except sees it
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
+            )
             raise ValueError(
                 f"Keyword extraction had failures — "
                 f"extracted={kw_extracted}, skipped={kw_skipped}, failed={kw_failed}. "
@@ -1251,13 +1289,14 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             )
 
         # ── Stage: Import ─────────────────────────────────────────────────────
+        _current_stage = "heavy_importing_mongo"
         _update_heavy_progress(
             db, job_id, "heavy_importing_mongo",
             f"Đang import vào MongoDB (keywords={kw_extracted})…", 75,
             counts={"kw_extracted": kw_extracted, "kw_skipped": kw_skipped},
         )
         _log.info(
-            "[heavy/%s] Keyword stage passed (extracted=%d, skipped=%d). Starting import.",
+            "[heavy/%s] Stage: heavy_importing_mongo — starting import (kw_extracted=%d, kw_skipped=%d)",
             job_id, kw_extracted, kw_skipped,
         )
 
@@ -1284,6 +1323,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             upload_pdfs=True,
             progress_cb=_import_progress_cb,
         )
+        _log.info("[heavy/%s] import_book_bundle returned OK", job_id)
 
         if isinstance(report, dict) and kw_summary:
             report["keyword_extraction_summary"] = kw_summary
@@ -1302,6 +1342,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 "minio_uploads": int(rc.get("book_pdf_uploaded", False)),
             })
 
+        _current_stage = "heavy_done"
+        _log.info("[heavy/%s] Stage: heavy_done — finalizing.", job_id)
         _update_heavy_progress(
             db, job_id, "heavy_done", "Hoàn tất!", 100,
             counts=done_counts,
@@ -1314,15 +1356,31 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 "updated_at": _utc_now(),
             }},
         )
+        _log.info("[heavy/%s] heavy_stage_done. Job complete.", job_id)
+
     except Exception as exc:
-        _col(db).update_one(
-            {"job_id": job_id},
-            {"$set": {
-                "status": "error",
-                "error": str(exc),
-                "heavy_progress_stage": "heavy_error",
-                "heavy_progress_message": str(exc)[:300],
-                "heavy_updated_at": _utc_now(),
-                "updated_at": _utc_now(),
-            }},
-        )
+        _log.exception("[heavy/%s] Exception at stage %s: %s", job_id, _current_stage, exc)
+
+        # Gather latest subprocess log for diagnostics
+        error_tail: List[str] = []
+        for log_name in ("kaggle_subprocess.log", "keyword_subprocess.log"):
+            lf = workspace / log_name
+            if lf.exists():
+                try:
+                    lines = lf.read_text(encoding="utf-8", errors="replace").splitlines()
+                    error_tail = lines[-50:]
+                except Exception:
+                    pass
+
+        update_err: Dict[str, Any] = {
+            "status": "error",
+            "error": str(exc),
+            "heavy_progress_stage": "heavy_error",
+            "heavy_progress_message": str(exc)[:300],
+            "heavy_error_stage": _current_stage,
+            "heavy_updated_at": _utc_now(),
+            "updated_at": _utc_now(),
+        }
+        if error_tail:
+            update_err["heavy_log_tail"] = error_tail
+        _col(db).update_one({"job_id": job_id}, {"$set": update_err})

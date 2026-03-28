@@ -977,14 +977,16 @@ function HeavyStageProgress({ job }) {
   const counts = job.heavy_counts_partial || {};
   const isError = stage === "heavy_error";
   const currentIdx = HEAVY_STAGES_ORDER.indexOf(stage);
+  const ageSeconds = job.heavy_progress_age_seconds ?? null;
+  const isStale = !isError && ageSeconds !== null && ageSeconds > 300;
 
   return (
-    <div style={{ ...s.card, marginTop: 12, border: isError ? "1px solid #fecaca" : "1px solid #bfdbfe" }}>
-      <div style={{ ...s.cardHeader, background: isError ? "#fef2f2" : "#eff6ff", borderBottom: isError ? "1px solid #fecaca" : "1px solid #bfdbfe" }}>
-        <span style={{ ...s.cardTitle, color: isError ? "#b91c1c" : "#1d4ed8" }}>
-          {isError ? "Import thất bại" : "Đang import…"}
+    <div style={{ ...s.card, marginTop: 12, border: isError ? "1px solid #fecaca" : isStale ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
+      <div style={{ ...s.cardHeader, background: isError ? "#fef2f2" : isStale ? "#fffbeb" : "#eff6ff", borderBottom: isError ? "1px solid #fecaca" : isStale ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
+        <span style={{ ...s.cardTitle, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#1d4ed8" }}>
+          {isError ? "Import thất bại" : isStale ? "Đang import… (có thể bị treo)" : "Đang import…"}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: isError ? "#b91c1c" : "#1d4ed8" }}>{percent}%</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#1d4ed8" }}>{percent}%</span>
       </div>
       <div style={{ padding: "16px 20px" }}>
         {/* Stage stepper */}
@@ -1006,8 +1008,16 @@ function HeavyStageProgress({ job }) {
           })}
         </div>
 
+        {/* Stale warning */}
+        {isStale && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 6, background: "#fef3c7", border: "1px solid #fde68a", marginBottom: 10, fontSize: 12, color: "#92400e" }}>
+            <span style={{ fontSize: 15 }}>⚠️</span>
+            <span>Không có cập nhật trong <strong>{Math.floor(ageSeconds / 60)} phút</strong>. Tiến trình có thể bị treo — kiểm tra log Kaggle hoặc reload trang để xem trạng thái mới nhất.</span>
+          </div>
+        )}
+
         {/* Current message */}
-        <div style={{ fontSize: 13, color: isError ? "#b91c1c" : "#334155", marginBottom: 10, fontWeight: 500 }}>
+        <div style={{ fontSize: 13, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#334155", marginBottom: 10, fontWeight: 500 }}>
           {message}
         </div>
         {isError && job.heavy_error_stage && (
