@@ -448,58 +448,168 @@ def _build_name_dict(items: List[Dict[str, Any]]) -> Dict[str, str]:
     return names
 
 
-def patch_topic_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
-    """Update allowed fields of a single topic item by index."""
+def sync_topic_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a topic item in MongoDB and rebuild its bundle PDF + metadata JSON."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
-        return
+        return {"ok": False, "error": "Job not found"}
+
     topics = list(doc.get("topics", []))
-    if 0 <= idx < len(topics):
-        for k, v in patch.items():
-            if k in {"heading", "title", "start", "end", "name"}:
-                topics[idx][k] = v
-        _col(db).update_one(
-            {"job_id": job_id},
-            {"$set": {"topics": topics, "updated_at": _utc_now()}},
-        )
+    if not (0 <= idx < len(topics)):
+        return {"ok": False, "error": "Index out of range"}
 
-def patch_lesson_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
-    """Update allowed fields of a single lesson item by index."""
+    for k, v in patch.items():
+        if k in {"heading", "title", "start", "end", "name"}:
+            topics[idx][k] = v
+
+    bundle_path = doc.get("bundle_path")
+    source_pdf = doc.get("source_pdf_path")
+    if bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists():
+        topic = topics[idx]
+        _run_sync_script("topic", {
+            "bundle_path": bundle_path,
+            "source_pdf": source_pdf,
+            "name": topic.get("name", f"topic_{idx + 1:02d}"),
+            "start": topic.get("start", 1),
+            "end": topic.get("end", 1),
+            "heading": topic.get("heading", ""),
+            "title": topic.get("title", ""),
+        })
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"topics": topics, "updated_at": _utc_now()}},
+    )
+    return {"ok": True}
+
+
+def sync_lesson_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a lesson item in MongoDB and rebuild its bundle PDF + metadata JSON."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
-        return
+        return {"ok": False, "error": "Job not found"}
+
     lessons = list(doc.get("lessons", []))
-    if 0 <= idx < len(lessons):
-        for k, v in patch.items():
-            if k in {"heading", "title", "start", "end", "name"}:
-                lessons[idx][k] = v
-        _col(db).update_one(
-            {"job_id": job_id},
-            {"$set": {"lessons": lessons, "updated_at": _utc_now()}},
-        )
+    if not (0 <= idx < len(lessons)):
+        return {"ok": False, "error": "Index out of range"}
 
-def patch_chunk_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
-    """Update allowed metadata fields of a single chunk item by index.
+    for k, v in patch.items():
+        if k in {"heading", "title", "start", "end", "name"}:
+            lessons[idx][k] = v
 
-    Only heading and title are editable. start/end are page numbers within the
-    lesson PDF (not the source PDF), so editing them without re-running the chunk
-    pipeline would be inconsistent with the actual chunk_pdf on disk.
-    """
+    bundle_path = doc.get("bundle_path")
+    source_pdf = doc.get("source_pdf_path")
+    if bundle_path and source_pdf and Path(bundle_path).exists() and Path(source_pdf).exists():
+        lesson = lessons[idx]
+        _run_sync_script("lesson", {
+            "bundle_path": bundle_path,
+            "source_pdf": source_pdf,
+            "name": lesson.get("name", f"lesson_{idx + 1:02d}"),
+            "start": lesson.get("start", 1),
+            "end": lesson.get("end", 1),
+            "heading": lesson.get("heading", ""),
+            "title": lesson.get("title", ""),
+        })
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"lessons": lessons, "updated_at": _utc_now()}},
+    )
+    return {"ok": True}
+
+
+def sync_chunk_item_to_bundle(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a chunk item, recompute the full lesson chunk list, and rebuild all bundle artifacts."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
-        return
+        return {"ok": False, "error": "Job not found"}
+
     chunks = list(doc.get("chunks", []))
-    if 0 <= idx < len(chunks):
-        for k, v in patch.items():
-            if k in {"heading", "title"}:
-                chunks[idx][k] = v
-        _col(db).update_one(
-            {"job_id": job_id},
-            {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
-        )
+    if not (0 <= idx < len(chunks)):
+        return {"ok": False, "error": "Index out of range"}
+
+    # Apply patch to the target chunk
+    for k, v in patch.items():
+        if k in {"heading", "title", "start", "content_head"}:
+            chunks[idx][k] = v
+
+    lesson_stem = chunks[idx].get("lesson_stem")
+    bundle_path = doc.get("bundle_path")
+
+    if bundle_path and lesson_stem and Path(bundle_path).exists():
+        lesson_chunks = [c for c in chunks if c.get("lesson_stem") == lesson_stem]
+        result = _run_sync_script("chunks", {
+            "bundle_path": bundle_path,
+            "lesson_stem": lesson_stem,
+            "chunks": [
+                {
+                    "start": c.get("start", 1),
+                    "content_head": c.get("content_head", False),
+                    "heading": c.get("heading", ""),
+                    "title": c.get("title", ""),
+                }
+                for c in lesson_chunks
+            ],
+        })
+
+        if result.get("ok"):
+            # Replace chunks for this lesson_stem with the canonical recomputed list
+            new_lesson_chunks = result["chunks"]
+            rebuilt: List[Dict[str, Any]] = []
+            new_pos = 0
+            for c in chunks:
+                if c.get("lesson_stem") == lesson_stem:
+                    if new_pos < len(new_lesson_chunks):
+                        rebuilt.append(new_lesson_chunks[new_pos])
+                        new_pos += 1
+                else:
+                    rebuilt.append(c)
+            chunks = rebuilt
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
+    )
+    return {"ok": True}
 
 
 _RECUT_SCRIPT = _GEMINI_DIR / "scripts" / "recut_topic_preview.py"
+_SYNC_SCRIPT = _GEMINI_DIR / "scripts" / "sync_bundle.py"
+
+
+def _run_sync_script(kind: str, data: dict, timeout: int = 120) -> dict:
+    """Call sync_bundle.py in the gemini_pipeline venv subprocess."""
+    import tempfile
+    python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
+    input_path: Optional[str] = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(data, f, ensure_ascii=False)
+            input_path = f.name
+
+        proc = subprocess.run(
+            [python_exec, str(_SYNC_SCRIPT), "--kind", kind, "--input", input_path],
+            cwd=str(_GEMINI_DIR),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        stdout = (proc.stdout or "").strip()
+        if not stdout:
+            return {"ok": False, "error": (proc.stderr or "sync script produced no output")[:500]}
+        return json.loads(stdout)
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": f"sync script timed out after {timeout}s"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    finally:
+        if input_path:
+            try:
+                Path(input_path).unlink()
+            except Exception:
+                pass
 
 
 def recut_topic_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]) -> Dict[str, Any]:

@@ -215,6 +215,9 @@ export default function BookBundleImport() {
         start: t.start,
         end: t.end,
       });
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      setPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
     } finally {
@@ -279,6 +282,9 @@ export default function BookBundleImport() {
         start: l.start,
         end: l.end,
       });
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      setLessonPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
     } finally {
@@ -382,7 +388,23 @@ export default function BookBundleImport() {
     setActing(true);
     setJobError("");
     try {
-      await patchReviewChunk(job.job_id, chunkIdx, { heading: c.heading, title: c.title });
+      await patchReviewChunk(job.job_id, chunkIdx, {
+        heading: c.heading,
+        title: c.title,
+        start: c.start,
+        content_head: c.content_head ?? false,
+      });
+      // Hard-replace editChunks with canonical server state (ends are recomputed)
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
+      setEditChunks(canonical);
+      setChunkApprovals((prev) => {
+        const next = prev.slice(0, canonical.length);
+        while (next.length < canonical.length) next.push(false);
+        return next;
+      });
+      setChunkPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
     } finally {
@@ -840,7 +862,7 @@ function TopicReviewPane({
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-                Lưu
+                Lưu & đồng bộ
               </button>
               <button style={s.btnSecondary} disabled={loading} onClick={onRecut}>
                 Cắt lại preview
@@ -1013,7 +1035,7 @@ function LessonReviewPane({
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-                Lưu
+                Lưu & đồng bộ
               </button>
               <button style={s.btnSecondary} disabled={loading} onClick={onRecut}>
                 Cắt lại preview
@@ -1148,7 +1170,7 @@ function ChunkReviewPane({
               Chỉnh sửa phần {chunkIdx + 1}
             </div>
             <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>
-              Trang {chunk.start}–{chunk.end} (trong bài {chunk.lesson_stem || ""})
+              Bài: {chunk.lesson_stem || ""} · trang kết thúc (tự tính): {chunk.end ?? "—"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Field label="Heading (số mục)">
@@ -1165,10 +1187,30 @@ function ChunkReviewPane({
                   onChange={(e) => set("title", e.target.value)}
                 />
               </Field>
+              <Field label="Trang bắt đầu (trong bài)">
+                <input
+                  style={s.input}
+                  type="number"
+                  min={1}
+                  value={chunk.start ?? ""}
+                  onChange={(e) => set("start", parseInt(e.target.value, 10) || chunk.start)}
+                />
+              </Field>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label style={{ fontSize: 13, color: "#374151", userSelect: "none", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={chunk.content_head ?? false}
+                    onChange={(e) => set("content_head", e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Trang đầu là nội dung (content_head) — dùng trang trước làm ranh giới
+                </label>
+              </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-                Lưu
+                Lưu & cập nhật chunk
               </button>
               <button
                 style={{

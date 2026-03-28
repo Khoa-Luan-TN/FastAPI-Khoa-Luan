@@ -225,13 +225,13 @@ async def serve_chunk_pdf(job_id: str, idx: int):
 
 # ── Per-topic edit / recut ────────────────────────────────────────────────────
 
-@router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Update a single topic item")
+@router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Sync a single topic item to bundle")
 async def patch_topic(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("topics", []))):
         raise HTTPException(status_code=404, detail="Topic index out of range")
-    from app.services.mongo.book_review_service import patch_topic_item
-    patch_topic_item(db, job_id, idx, body)
+    from app.services.mongo.book_review_service import sync_topic_item_to_bundle
+    sync_topic_item_to_bundle(db, job_id, idx, body)
     return {"ok": True}
 
 
@@ -246,14 +246,14 @@ async def recut_topic(job_id: str, idx: int):
         raise HTTPException(status_code=500, detail=result["error"])
     return {"ok": True}
 
-@router.patch("/book-review/jobs/{job_id}/lessons/{idx}", summary="Update a single lesson item")
+@router.patch("/book-review/jobs/{job_id}/lessons/{idx}", summary="Sync a single lesson item to bundle")
 async def patch_lesson(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("lessons", []))):
         raise HTTPException(status_code=404, detail="Lesson index out of range")
 
-    from app.services.mongo.book_review_service import patch_lesson_item
-    patch_lesson_item(db, job_id, idx, body)
+    from app.services.mongo.book_review_service import sync_lesson_item_to_bundle
+    sync_lesson_item_to_bundle(db, job_id, idx, body)
     return {"ok": True}
 
 @router.post("/book-review/jobs/{job_id}/lessons/{idx}/recut", summary="Recut lesson preview from source PDF")
@@ -269,13 +269,13 @@ async def recut_lesson(job_id: str, idx: int):
     return {"ok": True}
 
 
-@router.patch("/book-review/jobs/{job_id}/chunks/{idx}", summary="Update a single chunk item (heading/title only)")
+@router.patch("/book-review/jobs/{job_id}/chunks/{idx}", summary="Sync a single chunk edit — recomputes and rebuilds all chunks for its lesson")
 async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("chunks", []))):
         raise HTTPException(status_code=404, detail="Chunk index out of range")
-    from app.services.mongo.book_review_service import patch_chunk_item
-    patch_chunk_item(db, job_id, idx, body)
+    from app.services.mongo.book_review_service import sync_chunk_item_to_bundle
+    sync_chunk_item_to_bundle(db, job_id, idx, body)
     return {"ok": True}
 
 
