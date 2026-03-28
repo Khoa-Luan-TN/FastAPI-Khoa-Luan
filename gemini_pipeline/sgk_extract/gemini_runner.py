@@ -39,14 +39,14 @@ def extract_structure_from_pdf(
     """
     Upload *pdf_path* to Gemini and return the parsed JSON response dict.
 
-    A GeminiPool is created once per *key_manager* instance (attached as
-    ``key_manager._gemini_pool``) so cooldown state persists across calls
-    within the same pipeline run.
+    A GeminiPool is created on first call and attached to the key_manager instance
+    as ``key_manager._gemini_pool``.  Reusing the same key_manager across a pipeline
+    run (topics → verify → chunks) ensures cooldown and rotation state are shared.
 
     Parameters
     ----------
     key_manager : KeyManager
-        Provides ``key_manager.keys`` (list of API key strings).
+        Carries ``key_manager.keys`` (list of API key strings) and the shared pool.
     pdf_path : str
         Path to the PDF file to upload.
     prompt : str

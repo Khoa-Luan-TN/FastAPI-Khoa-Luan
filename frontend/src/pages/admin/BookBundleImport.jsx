@@ -526,27 +526,19 @@ function TopicReviewPane({
         )}
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout: left = cut preview, right = source PDF + edit form */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        {/* Left: cut preview + metadata */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-              Preview cắt — trang {topic.start}–{topic.end}
-            </div>
-            <iframe
-              key={`cut-${topicIdx}-${previewKey}`}
-              src={cutUrl}
-              title="Topic cut preview"
-              style={s.pdfFrame}
-            />
+        {/* Left: cut preview */}
+        <div style={s.card}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+            Preview cắt — trang {topic.start}–{topic.end}
           </div>
-          <div style={s.card}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>
-              Metadata JSON
-            </div>
-            <pre style={s.jsonPre}>{JSON.stringify(topic, null, 2)}</pre>
-          </div>
+          <iframe
+            key={`cut-${topicIdx}-${previewKey}`}
+            src={cutUrl}
+            title="Topic cut preview"
+            style={s.pdfFrame}
+          />
         </div>
 
         {/* Right: source PDF + edit form */}
@@ -563,7 +555,7 @@ function TopicReviewPane({
           </div>
           <div style={s.card}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
-              Chỉnh sửa
+              Chỉnh sửa chủ đề {topicIdx + 1}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Field label="Heading (số chủ đề)">
@@ -815,10 +807,5 @@ const s = {
   },
   pdfFrame: {
     width: "100%", height: 500, border: "1px solid #e5e7eb", borderRadius: 4, display: "block",
-  },
-  jsonPre: {
-    fontSize: 11, color: "#374151", margin: 0, overflow: "auto", maxHeight: 180,
-    background: "#f3f4f6", padding: "8px 10px", borderRadius: 4, whiteSpace: "pre-wrap",
-    wordBreak: "break-all",
   },
 };

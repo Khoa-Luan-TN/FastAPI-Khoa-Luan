@@ -423,16 +423,18 @@ def patch_topic_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any])
         )
 
 
+_RECUT_SCRIPT = _GEMINI_DIR / "scripts" / "recut_topic_preview.py"
+
+
 def recut_topic_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]) -> Dict[str, Any]:
-    """Recut a topic PDF slice from the source PDF using the stored start/end."""
+    """
+    Recut a topic PDF slice via the gemini_pipeline env subprocess.
+    Avoids importing pypdf inside the FastAPI runtime.
+    """
     topics = list(job.get("topics", []))
     if not (0 <= idx < len(topics)):
         return {"ok": False, "error": "Index out of range"}
     topic = topics[idx]
-
-    source_pdf = job.get("source_pdf_path")
-    if not source_pdf or not Path(source_pdf).exists():
-        return {"ok": False, "error": "Source PDF not found"}
 
     start = topic.get("start")
     end = topic.get("end")
@@ -440,28 +442,36 @@ def recut_topic_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]
         return {"ok": False, "error": "Invalid start/end on topic"}
 
     workspace = Path(job["workspace"])
-    recuts_dir = workspace / "recuts"
-    recuts_dir.mkdir(parents=True, exist_ok=True)
-    out_path = recuts_dir / f"topic_{idx:02d}_preview.pdf"
+    python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
 
     try:
-        from pypdf import PdfReader, PdfWriter
-        reader = PdfReader(str(source_pdf))
-        total = len(reader.pages)
-        s = max(1, min(start, total))
-        e = max(s, min(end, total))
-        writer = PdfWriter()
-        for i in range(s - 1, e):
-            writer.add_page(reader.pages[i])
-        with open(out_path, "wb") as fh:
-            writer.write(fh)
-
-        topics[idx]["recut_pdf"] = str(out_path)
-        _col(db).update_one(
-            {"job_id": job_id},
-            {"$set": {"topics": topics, "updated_at": _utc_now()}},
+        proc = subprocess.run(
+            [
+                python_exec, str(_RECUT_SCRIPT),
+                "--workspace", str(workspace),
+                "--idx", str(idx),
+                "--start", str(start),
+                "--end", str(end),
+            ],
+            cwd=str(_GEMINI_DIR),
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
-        return {"ok": True}
+        stdout = (proc.stdout or "").strip()
+        if not stdout:
+            return {"ok": False, "error": (proc.stderr or "recut script produced no output")[:500]}
+        result = json.loads(stdout)
+        if result.get("ok"):
+            recut_pdf = result["recut_pdf"]
+            topics[idx]["recut_pdf"] = recut_pdf
+            _col(db).update_one(
+                {"job_id": job_id},
+                {"$set": {"topics": topics, "updated_at": _utc_now()}},
+            )
+        return result
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Recut timed out after 60s"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 

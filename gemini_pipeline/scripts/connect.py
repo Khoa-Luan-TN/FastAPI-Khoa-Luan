@@ -5,39 +5,26 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-STATE_FILE = Path("Output/.gemini_key_index")
-
 # Support both GEMINI_API_KEY_1..N (numbered) and GEMINI_API_KEYS=k1,k2,... (comma-separated)
 _KEY_N_RE = re.compile(r"^GEMINI_API_KEY_(\d+)$", re.IGNORECASE)
 
 
 class KeyManager:
-    def __init__(self, keys: list[str], state_file: Path = STATE_FILE):
+    """
+    Minimal carrier for Gemini API keys and the shared GeminiPool instance.
+
+    At runtime KeyManager is only used for two things:
+      - self.keys   — passed once to GeminiPool(keys) on first call
+      - self._gemini_pool — dynamically attached by gemini_runner.extract_structure_from_pdf
+        so that cooldown / rotation state is shared across all Gemini calls within one
+        pipeline run (topics → verify → chunks all reuse the same pool)
+
+    The old persistent round-robin state-file logic has been removed; GeminiPool handles
+    all key selection, cooldown, and rotation internally.
+    """
+
+    def __init__(self, keys: list[str]) -> None:
         self.keys = keys
-        self.state_file = state_file
-        Path("Output").mkdir(parents=True, exist_ok=True)
-
-    def _read_index(self) -> int:
-        if self.state_file.exists():
-            try:
-                return int(self.state_file.read_text(encoding="utf-8").strip())
-            except Exception:
-                return 0
-        return 0
-
-    def _write_index(self, idx: int) -> None:
-        self.state_file.write_text(str(idx), encoding="utf-8")
-
-    def get_start_index_and_advance(self) -> int:
-        """
-        Persistent round-robin start index across script runs.
-        Kept for backward compatibility; actual key rotation is now managed by
-        GeminiPool inside gemini_runner.extract_structure_from_pdf.
-        """
-        n = len(self.keys)
-        idx = self._read_index() % n
-        self._write_index((idx + 1) % n)
-        return idx
 
 
 def get_key_manager(env_path: str = "config.env") -> KeyManager:
