@@ -471,9 +471,15 @@ export default function BookBundleImport() {
     "heavy_stage_running",
     "heavy_stage_done",
   ]);
+  const PAST_CHUNKS_STATUSES = new Set([
+    "approved_for_heavy_stage",
+    "heavy_stage_running",
+    "heavy_stage_done",
+  ]);
 
   const isPastTopics = job && PAST_TOPICS_STATUSES.has(status);
   const isPastLessons = job && PAST_LESSONS_STATUSES.has(status);
+  const isPastChunks = job && PAST_CHUNKS_STATUSES.has(status);
 
   return (
     <div style={{ ...s.page, maxWidth: (isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons || isChunkStage || isExtractingChunks) ? 1200 : 760 }}>
@@ -677,6 +683,10 @@ export default function BookBundleImport() {
               onApproveAll={handleApproveAllChunks}
               loading={acting}
             />
+          )}
+
+          {isPastChunks && (
+            <CompactList title="✓ Phần" items={job.chunks} fields={["heading", "title"]} />
           )}
 
           {job.status === "approved_for_heavy_stage" && (
