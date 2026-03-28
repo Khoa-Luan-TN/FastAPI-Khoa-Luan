@@ -169,34 +169,17 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
     log.info("Wrote %s", meta)
     log.info("kaggle_pack build complete: book_stem=%r  pack_dir=%s", book_stem, pack_dir)
 
-def push_dataset_version(
-    pack_dir: Path,
+def _run_dataset_version_once(
+    cmd: list[str],
     *,
-    message: str,
-    dir_mode: str = "zip",
-    timeout: int = 1800,
-) -> None:
-    """
-    Khi nào cần version dataset?
-      - BẤT KỲ lúc nào bạn đổi Output/<book_stem> hoặc sgk_extract/chunk_postprocess.py
-      - Muốn kernel dùng code mới nhất => phải datasets version trước kernel push
-
-    Runs kaggle datasets version in a Popen.  A reader thread drains stdout and
-    emits [STAGE:dataset_versioning] markers for every output line.  The main
-    thread joins with a short timeout each iteration so it can emit heartbeat
-    markers while the upload is still in progress (large packs can take minutes).
-    A hard timeout kills the process and raises if it exceeds `timeout` seconds.
-    """
+    attempt: int,
+    timeout: int,
+    debug_log_path: Optional[Path],
+) -> tuple[int, list[str]]:
+    """Run `kaggle datasets version ...` once; return (returncode, collected_lines)."""
     import threading
 
-    cmd = [
-        "kaggle", "datasets", "version",
-        "-p", str(pack_dir),
-        "-m", message,
-        "--dir-mode", dir_mode,
-    ]
-    log.info(">>> %s", " ".join(map(str, cmd)))
-    collected_lines: list[str] = []
+    collected: list[str] = []
     start_ts = time.monotonic()
 
     proc = subprocess.Popen(
@@ -206,20 +189,20 @@ def push_dataset_version(
         text=True,
         bufsize=1,
     )
-    log.info("push_dataset_version pid=%d", proc.pid)
+    log.info("push_dataset_version attempt=%d pid=%d", attempt, proc.pid)
 
     def _reader() -> None:
         assert proc.stdout is not None
         for raw_line in proc.stdout:
             stripped = raw_line.rstrip()
-            collected_lines.append(stripped)
-            log.debug("dataset_version | %s", stripped)
+            collected.append(stripped)
+            log.debug("dataset_version[%d] | %s", attempt, stripped)
             print(f"[STAGE:dataset_versioning] {stripped}", flush=True)
 
     reader_thread = threading.Thread(target=_reader, daemon=True)
     reader_thread.start()
 
-    heartbeat_interval = 8  # seconds between heartbeat prints while waiting
+    heartbeat_interval = 8
     try:
         while reader_thread.is_alive():
             reader_thread.join(timeout=heartbeat_interval)
@@ -228,13 +211,13 @@ def push_dataset_version(
                 if elapsed >= timeout:
                     proc.kill()
                     reader_thread.join(timeout=10)
-                    tail = "\n".join(collected_lines[-30:])
+                    collected.append(f"[TIMEOUT after {elapsed}s]")
                     raise TimeoutError(
                         f"push_dataset_version timed out after {timeout}s "
-                        f"(pid={proc.pid}).\n{tail}"
+                        f"(attempt={attempt}, pid={proc.pid})"
                     )
                 print(
-                    f"[STAGE:dataset_versioning] waiting ({elapsed}s elapsed)",
+                    f"[STAGE:dataset_versioning] waiting ({elapsed}s elapsed, attempt={attempt})",
                     flush=True,
                 )
     except BaseException:
@@ -243,26 +226,97 @@ def push_dataset_version(
 
     returncode = proc.wait()
     elapsed_total = time.monotonic() - start_ts
-    full_output = "\n".join(collected_lines)
+    full_output = "\n".join(collected)
+
     log.info(
-        "push_dataset_version finished — pid=%d returncode=%d elapsed=%.1fs",
-        proc.pid, returncode, elapsed_total,
+        "dataset_version attempt=%d pid=%d returncode=%d elapsed=%.1fs",
+        attempt, proc.pid, returncode, elapsed_total,
     )
 
-    if returncode != 0:
-        # Log the full Kaggle CLI output so the real rejection reason is visible.
-        log.error(
-            "push_dataset_version FAILED (exit %d) after %.1fs.\n"
-            "Full Kaggle CLI output:\n%s",
-            returncode, elapsed_total, full_output,
-        )
-        # Emit the full output as a stage marker so _do_heavy captures it in heavy_log_tail.
-        for _err_line in collected_lines:
-            print(f"[STAGE:dataset_versioning_error] {_err_line}", flush=True)
-        raise subprocess.CalledProcessError(returncode, cmd, output=full_output)
+    # Always write to the debug log so failures are inspectable.
+    if debug_log_path is not None:
+        try:
+            debug_log_path.parent.mkdir(parents=True, exist_ok=True)
+            header = (
+                f"=== attempt={attempt} pid={proc.pid} "
+                f"returncode={returncode} elapsed={elapsed_total:.1f}s ===\n"
+            )
+            with debug_log_path.open("a", encoding="utf-8") as fh:
+                fh.write(header + full_output + "\n\n")
+        except Exception:
+            pass
 
-    print("[STAGE:dataset_versioned]", flush=True)
-    log.info("Dataset version OK — %.1fs", elapsed_total)
+    if returncode != 0:
+        log.error(
+            "push_dataset_version FAILED attempt=%d exit=%d after %.1fs\n"
+            "Full output:\n%s",
+            attempt, returncode, elapsed_total, full_output,
+        )
+        for _err_line in collected:
+            print(f"[STAGE:dataset_versioning_error] {_err_line}", flush=True)
+
+    return returncode, collected
+
+
+def push_dataset_version(
+    pack_dir: Path,
+    *,
+    message: str,
+    dir_mode: str = "zip",
+    timeout: int = 1800,
+    retries: int = 2,
+    retry_delay: int = 15,
+    debug_log_path: Optional[Path] = None,
+) -> None:
+    """
+    Khi nào cần version dataset?
+      - BẤT KỲ lúc nào bạn đổi Output/<book_stem> hoặc sgk_extract/chunk_postprocess.py
+      - Muốn kernel dùng code mới nhất => phải datasets version trước kernel push
+
+    Runs kaggle datasets version in a Popen with a reader thread for live
+    heartbeat markers.  Retries up to `retries` times on failure with a short
+    backoff; full CLI output is preserved on every attempt.
+    """
+    cmd = [
+        "kaggle", "datasets", "version",
+        "-p", str(pack_dir),
+        "-m", message,
+        "--dir-mode", dir_mode,
+    ]
+    log.info(">>> %s", " ".join(map(str, cmd)))
+
+    last_returncode = -1
+    last_lines: list[str] = []
+
+    for attempt in range(1, retries + 2):  # attempts: 1, 2, ..., retries+1
+        returncode, collected = _run_dataset_version_once(
+            cmd,
+            attempt=attempt,
+            timeout=timeout,
+            debug_log_path=debug_log_path,
+        )
+        last_returncode = returncode
+        last_lines = collected
+
+        if returncode == 0:
+            print("[STAGE:dataset_versioned]", flush=True)
+            log.info("Dataset version OK (attempt=%d)", attempt)
+            return
+
+        if attempt <= retries:
+            log.warning(
+                "Dataset version failed (attempt=%d/%d, exit=%d) — retrying in %ds",
+                attempt, retries + 1, returncode, retry_delay,
+            )
+            print(
+                f"[STAGE:dataset_versioning] retry {attempt}/{retries} in {retry_delay}s",
+                flush=True,
+            )
+            time.sleep(retry_delay)
+
+    # All attempts exhausted.
+    full_output = "\n".join(last_lines)
+    raise subprocess.CalledProcessError(last_returncode, cmd, output=full_output)
 
 
 # ----------------------
