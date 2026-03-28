@@ -97,16 +97,37 @@ def create_job(
     return doc
 
 
+def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
+    """Return the last n lines from the stage log file, if it exists."""
+    log_file = workspace / f"{stage}.log"
+    if not log_file.exists():
+        return []
+    try:
+        lines = log_file.read_text(encoding="utf-8", errors="replace").splitlines()
+        return lines[-n:] if len(lines) > n else lines
+    except Exception:
+        return []
+
+
 def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
     try:
-        subprocess.run(
+        proc = subprocess.run(
             [python_exec, str(_LIGHT_SCRIPT), "--workspace", str(workspace), "--stage", stage],
             cwd=str(_GEMINI_DIR),
             check=True,
             capture_output=True,
             text=True,
         )
+        # Persist stdout/stderr for debugging even on success
+        if proc.stdout or proc.stderr:
+            try:
+                (workspace / f"{stage}_subprocess.log").write_text(
+                    (proc.stdout or "") + (proc.stderr or ""), encoding="utf-8"
+                )
+            except Exception:
+                pass
+
         result_path = workspace / "result.json"
         result = json.loads(result_path.read_text(encoding="utf-8"))
 
@@ -123,49 +144,63 @@ def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
                     }},
                 )
             elif stage == "lessons":
-                _col(db).update_one(
-                    {"job_id": job_id},
-                    {"$set": {
-                        "status": "reviewing_lessons",
-                        "lessons": result.get("lessons", []),
-                        "error": None,
-                        "updated_at": _utc_now(),
-                    }},
-                )
+                update: Dict[str, Any] = {
+                    "status": "reviewing_lessons",
+                    "lessons": result.get("lessons", []),
+                    "error": None,
+                    "updated_at": _utc_now(),
+                }
+                if result.get("bundle_path"):
+                    update["bundle_path"] = result["bundle_path"]
+                _col(db).update_one({"job_id": job_id}, {"$set": update})
             elif stage == "chunks":
-                _col(db).update_one(
-                    {"job_id": job_id},
-                    {"$set": {
-                        "status": "reviewing_chunks",
-                        "chunks": result.get("chunks", []),
-                        "error": None,
-                        "updated_at": _utc_now(),
-                    }},
-                )
+                update = {
+                    "status": "reviewing_chunks",
+                    "chunks": result.get("chunks", []),
+                    "error": None,
+                    "updated_at": _utc_now(),
+                }
+                if result.get("bundle_path"):
+                    update["bundle_path"] = result["bundle_path"]
+                _col(db).update_one({"job_id": job_id}, {"$set": update})
         else:
+            log_tail = _read_log_tail(workspace, stage)
             _col(db).update_one(
                 {"job_id": job_id},
                 {"$set": {
                     "status": "error",
                     "error": result.get("error", f"{stage} extraction failed"),
+                    "error_log_tail": log_tail,
                     "updated_at": _utc_now(),
                 }},
             )
     except subprocess.CalledProcessError as exc:
+        # Preserve subprocess output to workspace for post-mortem
+        try:
+            (workspace / f"{stage}_subprocess.log").write_text(
+                (exc.stdout or "") + (exc.stderr or ""), encoding="utf-8"
+            )
+        except Exception:
+            pass
+        log_tail = _read_log_tail(workspace, stage)
+        error_text = (exc.stderr or str(exc))[:2000]
         _col(db).update_one(
             {"job_id": job_id},
             {"$set": {
                 "status": "error",
-                "error": (exc.stderr or str(exc))[:2000],
+                "error": error_text,
+                "error_log_tail": log_tail,
                 "updated_at": _utc_now(),
             }},
         )
     except Exception as exc:
+        log_tail = _read_log_tail(workspace, stage)
         _col(db).update_one(
             {"job_id": job_id},
             {"$set": {
                 "status": "error",
                 "error": str(exc),
+                "error_log_tail": log_tail,
                 "updated_at": _utc_now(),
             }},
         )
@@ -225,6 +260,27 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                             doc[partial_field] = partial_items
                     except Exception:
                         pass
+
+            # Include recent stage log for live observability
+            # Map extraction status to log file name
+            _LOG_FILE: Dict[str, str] = {
+                "extracting_topics":  "topics",
+                "extracting_lessons": "lessons",
+                "extracting_chunks":  "chunks",
+                "uploaded":           "topics",
+            }
+            log_stem = _LOG_FILE.get(status, "topics")
+            log_tail = _read_log_tail(wp, log_stem, n=50)
+            if log_tail:
+                doc["live_log_tail"] = log_tail
+
+            # Expose how long ago progress.json was last updated (stale detection)
+            if progress_path.exists():
+                try:
+                    age_s = int((datetime.now(timezone.utc).timestamp()) - progress_path.stat().st_mtime)
+                    doc["progress_age_seconds"] = age_s
+                except Exception:
+                    pass
 
     return doc
 

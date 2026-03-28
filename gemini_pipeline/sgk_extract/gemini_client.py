@@ -139,6 +139,9 @@ class GeminiPool:
         self._last_call_time: dict[int, float] = {}
         self._cooldown_until: dict[int, float] = {}
 
+        # Optional observability callback — set externally, called with human-readable message
+        self._status_cb = None
+
         _log.info(
             "[GeminiPool] Initialized %d key(s) | cooldown=%ds min_interval=%.1fs",
             self._n, cooldown_seconds, min_interval,
@@ -158,6 +161,11 @@ class GeminiPool:
         )
         print(msg)
         _log.info(msg)
+        if self._status_cb:
+            try:
+                self._status_cb(f"Key #{idx + 1} cooldown {self._cooldown_seconds}s")
+            except Exception:
+                pass
 
     def _pace(self, idx: int) -> None:
         """Sleep until min_interval has passed since last use. Caller holds _key_locks[idx]."""
@@ -239,6 +247,12 @@ class GeminiPool:
 
                     self._pace(idx)
 
+                    if self._status_cb:
+                        try:
+                            self._status_cb(f"Gửi yêu cầu Key #{idx + 1} ({_mask_key(key)})")
+                        except Exception:
+                            pass
+
                     try:
                         client = genai.Client(api_key=key)
                         uploaded = client.files.upload(file=pdf_path)
@@ -267,6 +281,13 @@ class GeminiPool:
                                 "[GeminiPool] Key#%d %s (attempt %d/%d): %s",
                                 idx + 1, label, attempt + 1, self._n, str(e)[:120],
                             )
+                            if self._status_cb:
+                                try:
+                                    self._status_cb(
+                                        f"Key #{idx + 1} lỗi ({label}) — chuyển key khác"
+                                    )
+                                except Exception:
+                                    pass
                             self._set_cooldown(idx)
                             continue
                         raise  # non-retryable — propagate immediately
@@ -279,6 +300,11 @@ class GeminiPool:
                     "[GeminiPool] ✓ Key#%d (%s) | total_calls=%d",
                     idx + 1, _mask_key(key), self._call_count,
                 )
+                if self._status_cb:
+                    try:
+                        self._status_cb(f"Nhận phản hồi Key #{idx + 1} (tổng {self._call_count} lần gọi)")
+                    except Exception:
+                        pass
                 return text
 
             # ── All keys tried this round ─────────────────────────────────────
@@ -305,4 +331,13 @@ class GeminiPool:
             )
             print(msg)
             _log.info(msg)
+            if self._status_cb:
+                try:
+                    self._status_cb(
+                        f"Tất cả {self._n} API key đang cooldown — "
+                        f"Key #{wake_idx + 1} khả dụng sau {remaining:.0f}s — "
+                        f"đang chờ {sleep_dur:.0f}s"
+                    )
+                except Exception:
+                    pass
             time.sleep(sleep_dur)

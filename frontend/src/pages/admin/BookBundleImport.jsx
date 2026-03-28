@@ -376,6 +376,18 @@ export default function BookBundleImport() {
           {job.status === "error" && job.error && (
             <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>
               <strong>Lỗi:</strong> <code style={{ fontSize: 12 }}>{job.error}</code>
+              {job.error_log_tail?.length > 0 && (
+                <div style={{
+                  marginTop: 8, background: "#1e293b", borderRadius: 4,
+                  padding: "8px 10px", maxHeight: 160, overflowY: "auto",
+                }}>
+                  {job.error_log_tail.map((line, i) => (
+                    <div key={i} style={{ fontFamily: "monospace", fontSize: 11, color: "#fca5a5", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -698,9 +710,28 @@ function ExtractionProgress({ job }) {
     ? job.progress_percent
     : (cur != null && tot > 0 ? Math.round((cur / tot) * 100) : null);
 
+  const logLines       = job.live_log_tail || [];
+  const ageS           = job.progress_age_seconds ?? null;
+  const stale          = ageS != null && ageS > 120;
+  const isCooldown     = job.progress_stage === "waiting_gemini_key_cooldown";
+
+  const boxStyle = isCooldown
+    ? { ...s.infoBox, background: "#fffbeb", border: "1px solid #fcd34d", color: "#92400e" }
+    : s.infoBox;
+
   return (
-    <div style={s.infoBox}>
+    <div style={boxStyle}>
+      {isCooldown && (
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: "#b45309" }}>
+          ⏳ API key đang cooldown
+        </div>
+      )}
       <div style={{ marginBottom: pct != null ? 8 : 0 }}>{msg}</div>
+      {stale && !isCooldown && (
+        <div style={{ fontSize: 12, color: "#b45309", marginBottom: 6 }}>
+          ⚠ Không có cập nhật trong {ageS}s — tiến trình có thể bị treo.
+        </div>
+      )}
       {pct != null && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#1d4ed8", marginBottom: 4 }}>
@@ -710,6 +741,18 @@ function ExtractionProgress({ job }) {
           <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
             <div style={{ width: `${pct}%`, background: "#2563eb", height: "100%", transition: "width 0.4s ease" }} />
           </div>
+        </div>
+      )}
+      {logLines.length > 0 && (
+        <div style={{
+          marginTop: 10, background: "#1e293b", borderRadius: 4,
+          padding: "8px 10px", maxHeight: 160, overflowY: "auto",
+        }}>
+          {logLines.map((line, i) => (
+            <div key={i} style={{ fontFamily: "monospace", fontSize: 11, color: "#94a3b8", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+              {line}
+            </div>
+          ))}
         </div>
       )}
     </div>

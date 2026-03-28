@@ -53,6 +53,8 @@ def verify_topics_and_get_offset(
     total_pages: int,
     model: str,
     probe_radius: int = 3,
+    progress_cb=None,
+    status_cb=None,
 ) -> int:
     """
     Verify topic start pages using binary Gemini calls on single-page PDFs.
@@ -65,6 +67,8 @@ def verify_topics_and_get_offset(
 
     Final offset = most common verified_offset across all topics.
     Falls back to raw_offset if no topic verifies.
+
+    progress_cb: optional callable(current: int, total: int, message: str)
     """
     try:
         raw_offset = int(raw_data.get("offset", 0))
@@ -74,13 +78,18 @@ def verify_topics_and_get_offset(
     topics = _flatten_start_printed_items(raw_data.get("list_topic", []))
     if not topics:
         print(f"[VERIFY] No topics to verify. Using raw offset={raw_offset}")
+        if progress_cb:
+            progress_cb(0, 0, f"Không có chủ đề để xác minh, dùng offset={raw_offset}")
         return raw_offset
 
-    print(f"[VERIFY] ── Topic verification ── raw_offset={raw_offset}  topics={len(topics)}")
+    n = len(topics)
+    print(f"[VERIFY] ── Topic verification ── raw_offset={raw_offset}  topics={n}")
+    if progress_cb:
+        progress_cb(0, n, f"Bắt đầu xác minh {n} chủ đề (offset gốc={raw_offset})")
 
     verified_offsets: List[int] = []
 
-    for top in topics:
+    for idx, top in enumerate(topics):
         sp: int = top["start_printed"]
         heading: str = top["heading"]
         title: str = top.get("title", "")
@@ -94,6 +103,8 @@ def verify_topics_and_get_offset(
         candidates = list(range(start, end + 1))
 
         print(f"[VERIFY]   {full_topic_label!r}: start_printed={sp}  predicted={predicted}  candidates={candidates}")
+        if progress_cb:
+            progress_cb(idx, n, f"Xác minh chủ đề {idx + 1}/{n}: {full_topic_label!r}  trang dự đoán={predicted}")
 
         matched: Optional[int] = None
         for candidate in candidates:
@@ -104,6 +115,7 @@ def verify_topics_and_get_offset(
                     tmp,
                     build_topic_verify_prompt(full_topic_label),
                     model=model,
+                    status_cb=status_cb,
                 )
                 if result.get("match") is True:
                     matched = candidate
@@ -122,19 +134,29 @@ def verify_topics_and_get_offset(
             v_off = matched - sp
             verified_offsets.append(v_off)
             print(f"[VERIFY]   {full_topic_label!r}: matched page={matched}  verified_offset={v_off}")
+            if progress_cb:
+                progress_cb(idx + 1, n, f"Chủ đề {idx + 1}/{n} {full_topic_label!r}: trang={matched}  offset={v_off}")
             if len(verified_offsets) >= 2 and verified_offsets[0] == verified_offsets[1]:
                 print(f"[VERIFY] Early stop: first 2 verified topics agreed on offset={verified_offsets[0]}")
+                if progress_cb:
+                    progress_cb(n, n, f"Dừng sớm: 2 chủ đề đồng thuận offset={verified_offsets[0]}")
                 return verified_offsets[0]
         else:
             print(f"[VERIFY]   {full_topic_label!r}: no match found in {candidates}")
+            if progress_cb:
+                progress_cb(idx + 1, n, f"Chủ đề {idx + 1}/{n} {full_topic_label!r}: không tìm thấy trang khớp")
 
     if not verified_offsets:
         print(f"[VERIFY] No topics verified. Falling back to raw offset={raw_offset}")
+        if progress_cb:
+            progress_cb(n, n, f"Không xác minh được chủ đề nào, dùng offset gốc={raw_offset}")
         return raw_offset
 
     counter = Counter(verified_offsets)
     final_offset, vote_count = counter.most_common(1)[0]
     print(f"[VERIFY] Final offset={final_offset}  (agreed by {vote_count}/{len(verified_offsets)} topics)")
+    if progress_cb:
+        progress_cb(n, n, f"Offset cuối={final_offset}  ({vote_count}/{len(verified_offsets)} chủ đề đồng thuận)")
     return final_offset
 
 

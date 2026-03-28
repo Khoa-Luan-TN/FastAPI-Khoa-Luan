@@ -34,6 +34,7 @@ def extract_structure_from_pdf(
     prompt: str,
     model: str = "gemini-2.5-flash",
     wait_for_available_key: bool = True,
+    status_cb=None,
 ) -> dict:
     """
     Upload *pdf_path* to Gemini and return the parsed JSON response dict.
@@ -55,11 +56,15 @@ def extract_structure_from_pdf(
     wait_for_available_key : bool
         If True (default), block until a key exits cooldown rather than raising
         immediately. Suitable for long-running batch jobs.
+    status_cb : callable(str) | None
+        Optional callback invoked with a human-readable message at key events
+        (key selected, cooldown entered, all-keys-waiting, success, etc.).
     """
     if not hasattr(key_manager, "_gemini_pool"):
         key_manager._gemini_pool = GeminiPool(key_manager.keys)
 
     pool: GeminiPool = key_manager._gemini_pool
+    pool._status_cb = status_cb
 
     raw = ""
     try:
@@ -74,3 +79,5 @@ def extract_structure_from_pdf(
     except json.JSONDecodeError as e:
         snippet = raw[:500] + ("..." if len(raw) > 500 else "")
         raise RuntimeError(f"Gemini returned invalid JSON. Snippet:\n{snippet}") from e
+    finally:
+        pool._status_cb = None

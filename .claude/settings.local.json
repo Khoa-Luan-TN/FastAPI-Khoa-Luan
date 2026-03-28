@@ -7,7 +7,12 @@
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/src -type f \\\\\\(-name *.jsx -o -name *.tsx -o -name *.ts -o -name *.js \\\\\\))",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f \\\\\\(-name *api* -o -name *client* -o -name *service* \\\\\\) \\\\\\(-name *.js -o -name *.ts -o -name *.jsx -o -name *.tsx \\\\\\))",
       "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend -name *mongoAdminApi* -o -name *mongo*api*)",
-      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f -name *.js -o -name *.ts -o -name *.jsx -o -name *.tsx)"
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/frontend/src -type f -name *.js -o -name *.ts -o -name *.jsx -o -name *.tsx)",
+      "Bash(python -c \"import ast, sys; ast.parse\\(open\\(''gemini_pipeline/scripts/light_extract_job.py''\\).read\\(\\)\\); print\\(''light_extract_job.py: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/mongo/book_review_service.py''\\).read\\(\\)\\); print\\(''book_review_service.py: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/mongo/book_review_service.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''gemini_pipeline/scripts/light_extract_job.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''gemini_pipeline/sgk_extract/les_top_pipeline.py''\\).read\\(\\)\\); print\\(''OK''\\)\")"
     ]
   }
 }
