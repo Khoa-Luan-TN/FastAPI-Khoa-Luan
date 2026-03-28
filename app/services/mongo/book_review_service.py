@@ -1062,10 +1062,15 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             shutil.rmtree(output_book_dir)
         shutil.copytree(str(bundle_path), str(output_book_dir))
 
-        # ── Stage: Kaggle — build pack, push dataset, push kernel, download ──
+        # ── Stage: Kaggle submitting — build pack, push dataset ──────────────
         _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
-                               "Đang build Kaggle pack và đẩy dataset lên Kaggle…", 8)
+                               "Đang build Kaggle pack và đẩy dataset + kernel lên Kaggle…", 8)
         _log.info("[heavy/%s] Starting Kaggle subprocess for book_stem=%s", job_id, book_stem)
+
+        # Update to heavy_kaggle_running just before the blocking subprocess call
+        # (dataset push + kernel push + wait all happen inside the CLI)
+        _update_heavy_progress(db, job_id, "heavy_kaggle_running",
+                               "Kaggle kernel đang chạy — chờ hoàn thành…", 20)
 
         kaggle_log_path = workspace / "kaggle_subprocess.log"
         kaggle_proc = subprocess.run(
@@ -1097,6 +1102,10 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 f"{(kaggle_proc.stderr or '')[:1000]}"
             )
 
+        # ── Stage: Kaggle downloading — apply result into local Output/ ───────
+        _update_heavy_progress(db, job_id, "heavy_kaggle_downloading",
+                               "Kaggle hoàn thành — đang áp dụng kết quả vào bundle…", 55,
+                               log_tail=kaggle_log_lines)
         _log.info("[heavy/%s] Kaggle done. Updating bundle_path to %s", job_id, output_book_dir)
 
         # After Kaggle extraction, bundle is now at Output/<book_stem>
@@ -1188,6 +1197,9 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         raw_source = doc.get("source_pdf_path")
         source_pdf_path = Path(raw_source) if raw_source else None
 
+        def _import_progress_cb(stage: str, message: str, percent: int, counts=None) -> None:
+            _update_heavy_progress(db, job_id, stage, message, percent, counts=counts)
+
         report = import_book_bundle(
             db,
             bundle_path,
@@ -1200,14 +1212,29 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             actor=actor,
             sync_one=sync_one,
             upload_pdfs=True,
+            progress_cb=_import_progress_cb,
         )
 
         if isinstance(report, dict) and kw_summary:
             report["keyword_extraction_summary"] = kw_summary
 
+        done_counts: Dict[str, Any] = {"kw_extracted": kw_extracted, "kw_skipped": kw_skipped}
+        if isinstance(report, dict):
+            rc = report.get("counts", {})
+            done_counts.update({
+                "topics_imported": rc.get("topics", {}).get("total", 0),
+                "lessons_imported": rc.get("lessons", {}).get("total", 0),
+                "chunks_imported": rc.get("chunks", {}).get("total", 0),
+                "kw_inserted": rc.get("keywords_inserted", 0),
+                "kw_reused": rc.get("keywords_reused", 0),
+                "ck_inserted": rc.get("chunk_keywords_inserted", 0),
+                "topic_bags_affected": rc.get("topic_bags_affected", 0),
+                "minio_uploads": int(rc.get("book_pdf_uploaded", False)),
+            })
+
         _update_heavy_progress(
             db, job_id, "heavy_done", "Hoàn tất!", 100,
-            counts={"kw_extracted": kw_extracted, "kw_skipped": kw_skipped},
+            counts=done_counts,
         )
         _col(db).update_one(
             {"job_id": job_id},

@@ -278,6 +278,7 @@ def import_book_bundle(
     actor: str,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
     upload_pdfs: bool = True,
+    progress_cb: Optional[Callable[..., None]] = None,
 ) -> Dict[str, Any]:
     """
     Import a processed book bundle into MongoDB and sync to PG / Neo4j.
@@ -296,7 +297,15 @@ def import_book_bundle(
     actor:           Mongo audit actor (usually admin user ID).
     sync_one:        Callable(col, doc) → dict; should call sync_doc_to_postgres.
     upload_pdfs:     Set False to skip MinIO PDF upload.
+    progress_cb:     Optional Callable(stage, message, percent, counts) for progress reporting.
     """
+
+    def _cb(stage: str, message: str, percent: int, counts: Optional[Dict[str, Any]] = None) -> None:
+        if progress_cb is not None:
+            try:
+                progress_cb(stage, message, percent, counts)
+            except Exception:
+                pass
     bundle_dir = Path(bundle_dir)
 
     def _fail(msg: str) -> Dict[str, Any]:
@@ -327,6 +336,7 @@ def import_book_bundle(
         return _fail(f"Cannot read manifest: {exc}")
 
     # ── MinIO setup ──────────────────────────────────────────────────────────
+    _cb("heavy_importing_minio", "Kết nối MinIO và chuẩn bị thư mục lưu trữ…", 77)
     bucket = (os.getenv("MINIO_BUCKET") or "").strip()
     minio_client = None
     minio_errors: List[Dict[str, Any]] = []
@@ -459,6 +469,8 @@ def import_book_bundle(
     # ─────────────────────────────────────────────────────────────────────────
     # 4. TOPICS
     # ─────────────────────────────────────────────────────────────────────────
+    _cb("heavy_importing_mongo",
+        f"Import vào MongoDB: {len(topic_list)} chủ đề, {len(lesson_list)} bài…", 80)
     topic_dir = bundle_dir / "Topic"
 
     for t in topic_list:
@@ -580,6 +592,11 @@ def import_book_bundle(
     # ─────────────────────────────────────────────────────────────────────────
     # 6. CHUNKS + KEYWORDS
     # ─────────────────────────────────────────────────────────────────────────
+    n_topics_done = len(_topics_out)
+    n_lessons_done = len(_lessons_out)
+    _cb("heavy_importing_mongo",
+        f"Import chunk và từ khóa ({n_topics_done} chủ đề, {n_lessons_done} bài đã xong)…",
+        84, {"topics_imported": n_topics_done, "lessons_imported": n_lessons_done})
     affected_topic_ids: Set[str] = set()
     kw_inserted = kw_reused = ck_inserted = 0
     kw_errors: List[Dict[str, Any]] = []
@@ -771,7 +788,51 @@ def import_book_bundle(
                     except Exception as exc:
                         kw_errors.append({"keyword": kw_name, "error": str(exc)})
 
+    # ── PG / Neo4j sync checkpoint ───────────────────────────────────────────
+    n_chunks_done = len(_chunks_out)
+    _cb(
+        "heavy_syncing_pg",
+        f"Đồng bộ PostgreSQL ({n_chunks_done} chunk, kw_inserted={kw_inserted}, kw_reused={kw_reused})…",
+        90,
+        {
+            "topics_imported": n_topics_done,
+            "lessons_imported": n_lessons_done,
+            "chunks_imported": n_chunks_done,
+            "kw_inserted": kw_inserted,
+            "kw_reused": kw_reused,
+            "ck_inserted": ck_inserted,
+        },
+    )
+
+    _cb(
+        "heavy_syncing_neo",
+        "Đồng bộ Neo4j…",
+        93,
+        {
+            "topics_imported": n_topics_done,
+            "lessons_imported": n_lessons_done,
+            "chunks_imported": n_chunks_done,
+            "kw_inserted": kw_inserted,
+            "kw_reused": kw_reused,
+            "ck_inserted": ck_inserted,
+        },
+    )
+
     # ── Finalize topic embeddings after all keywords are loaded ──────────────
+    _cb(
+        "heavy_finalizing_embeddings",
+        f"Tạo embeddings cho {len(affected_topic_ids)} chủ đề…",
+        96,
+        {
+            "topics_imported": n_topics_done,
+            "lessons_imported": n_lessons_done,
+            "chunks_imported": n_chunks_done,
+            "kw_inserted": kw_inserted,
+            "kw_reused": kw_reused,
+            "ck_inserted": ck_inserted,
+            "topic_bags_affected": len(affected_topic_ids),
+        },
+    )
     finalize_result: Dict[str, Any] = {}
     if sync_one and affected_topic_ids:
         _fe: List[Dict[str, Any]] = []

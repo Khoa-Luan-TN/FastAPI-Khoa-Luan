@@ -659,7 +659,7 @@ export default function BookBundleImport() {
                 style={s.input}
                 value={form.class_name}
                 onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
-                placeholder='VD: "10"'
+                placeholder='Lớp 10'
                 required
               />
             </Field>
@@ -1513,16 +1513,16 @@ function CompactList({ title, items, fields }) {
 }
 
 const HEAVY_STAGE_LABEL = {
-  heavy_preparing: "Chuẩn bị bundle",
-  heavy_kaggle_submitting: "Đẩy dataset lên Kaggle",
-  heavy_kaggle_running: "Kaggle kernel đang chạy",
-  heavy_kaggle_downloading: "Tải kết quả Kaggle",
+  heavy_preparing: "Chuẩn bị",
+  heavy_kaggle_submitting: "Kaggle: submit",
+  heavy_kaggle_running: "Kaggle: chạy kernel",
+  heavy_kaggle_downloading: "Kaggle: tải kết quả",
   heavy_keyword_extracting: "Trích xuất từ khóa",
-  heavy_importing_minio: "Upload PDF lên MinIO",
-  heavy_importing_mongo: "Import vào MongoDB",
+  heavy_importing_minio: "Upload MinIO",
+  heavy_importing_mongo: "Import MongoDB",
   heavy_syncing_pg: "Đồng bộ PostgreSQL",
   heavy_syncing_neo: "Đồng bộ Neo4j",
-  heavy_finalizing_embeddings: "Tạo embeddings",
+  heavy_finalizing_embeddings: "Embeddings",
   heavy_done: "Hoàn tất",
   heavy_error: "Lỗi",
 };
@@ -1533,9 +1533,11 @@ const HEAVY_STAGES_ORDER = [
   "heavy_kaggle_running",
   "heavy_kaggle_downloading",
   "heavy_keyword_extracting",
+  "heavy_importing_minio",
   "heavy_importing_mongo",
   "heavy_syncing_pg",
   "heavy_syncing_neo",
+  "heavy_finalizing_embeddings",
   "heavy_done",
 ];
 
@@ -1583,13 +1585,16 @@ function HeavyStageProgress({ job }) {
       <div style={{ marginBottom: 8, color: isError ? "#b91c1c" : "#1d4ed8" }}>
         {message}
       </div>
+      {isError && job.heavy_error_stage && (
+        <div style={{ fontSize: 12, color: "#b91c1c", marginBottom: 6 }}>
+          Thất bại tại: <strong>{HEAVY_STAGE_LABEL[job.heavy_error_stage] || job.heavy_error_stage}</strong>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-          <span>
-            {counts.kw_extracted != null ? `từ khóa: ${counts.kw_extracted} extracted, ${counts.kw_skipped ?? 0} skipped` : ""}
-          </span>
+          <span />
           <span>{percent}%</span>
         </div>
         <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
@@ -1603,6 +1608,36 @@ function HeavyStageProgress({ job }) {
           />
         </div>
       </div>
+
+      {/* Counts */}
+      {Object.keys(counts).length > 0 && (
+        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {counts.topics_imported != null && (
+            <span style={s.countChip}>chủ đề: {counts.topics_imported}</span>
+          )}
+          {counts.lessons_imported != null && (
+            <span style={s.countChip}>bài: {counts.lessons_imported}</span>
+          )}
+          {counts.chunks_imported != null && (
+            <span style={s.countChip}>chunk: {counts.chunks_imported}</span>
+          )}
+          {counts.kw_extracted != null && (
+            <span style={s.countChip}>kw mới: {counts.kw_extracted}</span>
+          )}
+          {counts.kw_inserted != null && (
+            <span style={s.countChip}>kw insert: {counts.kw_inserted}</span>
+          )}
+          {counts.kw_reused != null && (
+            <span style={s.countChip}>kw reused: {counts.kw_reused}</span>
+          )}
+          {counts.ck_inserted != null && (
+            <span style={s.countChip}>chunk_kw: {counts.ck_inserted}</span>
+          )}
+          {counts.topic_bags_affected != null && (
+            <span style={s.countChip}>topic_bag: {counts.topic_bags_affected}</span>
+          )}
+        </div>
+      )}
 
       {/* Log tail */}
       {logLines.length > 0 && (
@@ -1814,5 +1849,13 @@ const s = {
     color: "#0369a1",
     border: "1px solid #bae6fd",
     fontWeight: 500,
+  },
+  countChip: {
+    padding: "2px 8px",
+    borderRadius: 10,
+    fontSize: 11,
+    background: "#f0fdf4",
+    color: "#15803d",
+    border: "1px solid #bbf7d0",
   },
 };
