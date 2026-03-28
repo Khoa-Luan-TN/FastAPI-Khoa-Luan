@@ -84,22 +84,36 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
     Rebuild kaggle_pack/ from scratch:
       kaggle_pack/
         dataset-metadata.json
-        book_stem.txt                  ✅ để kernel đọc book cần xử lí
+        book_stem.txt                  ← kernel reads this to know which book to process
         sgk_extract/chunk_postprocess.py
         Output/<book_stem>/...
+
+    Always deletes pack_dir first so no stale content from previous books remains.
+    Verifies written artifacts before returning.
     """
+    log.info("Building kaggle_pack for book_stem=%r -> %s", book_stem, pack_dir)
+
+    # Always start clean — eliminates stale Output/<old_book> from previous runs
     if pack_dir.exists():
+        log.info("Removing stale pack_dir: %s", pack_dir)
         shutil.rmtree(pack_dir)
     pack_dir.mkdir(parents=True, exist_ok=True)
 
     (pack_dir / "sgk_extract").mkdir(parents=True, exist_ok=True)
     (pack_dir / "Output").mkdir(parents=True, exist_ok=True)
 
-    # ✅ write book_stem marker for kernel
-    (pack_dir / "book_stem.txt").write_text(book_stem, encoding="utf-8")
-    log.info("Packed book_stem marker: %s", pack_dir / "book_stem.txt")
+    # Write book_stem marker — kernel reads this to select the correct book
+    marker_path = pack_dir / "book_stem.txt"
+    marker_path.write_text(book_stem, encoding="utf-8")
+    # Verify immediately
+    written_stem = marker_path.read_text(encoding="utf-8").strip()
+    if written_stem != book_stem:
+        raise RuntimeError(
+            f"book_stem.txt write verification failed: wrote {book_stem!r}, read back {written_stem!r}"
+        )
+    log.info("Packed book_stem marker: %s  (content=%r)", marker_path, written_stem)
 
-    # copy code (đảm bảo kernel import cp là bản mới)
+    # Copy code (ensure kernel imports the latest chunk_postprocess)
     src_code = project_root / "sgk_extract" / "chunk_postprocess.py"
     if src_code.exists():
         shutil.copy2(src_code, pack_dir / "sgk_extract" / "chunk_postprocess.py")
@@ -107,15 +121,30 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
     else:
         log.warning("Missing %s (still ok if kernel doesn't need it).", src_code)
 
-    # copy book output
+    # Copy book output — exactly one book, matching book_stem
     src_book = project_root / "Output" / book_stem
     dst_book = pack_dir / "Output" / book_stem
     if not src_book.exists():
-        raise FileNotFoundError(f"Missing book output: {src_book}")
-    shutil.copytree(src_book, dst_book, dirs_exist_ok=True)
-    log.info("Packed book Output: %s", src_book)
+        raise FileNotFoundError(
+            f"Missing book output: {src_book}\n"
+            f"  book_stem={book_stem!r}\n"
+            f"  project_root/Output contents: "
+            f"{sorted(p.name for p in (project_root / 'Output').iterdir() if p.is_dir()) if (project_root / 'Output').exists() else 'N/A'}"
+        )
+    # dst_book cannot already exist because we deleted pack_dir above
+    shutil.copytree(src_book, dst_book)
+    log.info("Packed book Output: %s -> %s", src_book, dst_book)
 
-    # ✅ always write dataset-metadata.json (vì pack_dir bị recreate)
+    # Verify Output contains exactly the expected book and nothing else
+    output_books = sorted(p.name for p in (pack_dir / "Output").iterdir() if p.is_dir())
+    if output_books != [book_stem]:
+        raise RuntimeError(
+            f"Output integrity check failed: expected [{book_stem!r}], found {output_books}\n"
+            f"  pack_dir={pack_dir}"
+        )
+    log.info("Output integrity OK: Output/ contains exactly %r", book_stem)
+
+    # Write dataset-metadata.json (pack_dir is recreated each time so this is always fresh)
     meta = pack_dir / "dataset-metadata.json"
     title = dataset_id.split("/", 1)[1] if "/" in dataset_id else dataset_id
     meta.write_text(
@@ -127,6 +156,7 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
         encoding="utf-8",
     )
     log.info("Wrote %s", meta)
+    log.info("kaggle_pack build complete: book_stem=%r  pack_dir=%s", book_stem, pack_dir)
 
 def push_dataset_version(pack_dir: Path, *, message: str, dir_mode: str = "zip") -> None:
     """

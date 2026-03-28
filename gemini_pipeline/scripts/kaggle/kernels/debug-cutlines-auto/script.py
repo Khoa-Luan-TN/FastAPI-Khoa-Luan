@@ -37,7 +37,7 @@ if not hasattr(np, "sctypes"):
     }
 
 # ==============
-# (2) Find dataset root robustly (folder-mode + zip-mode)
+# (2) Find dataset root — prefer exact owner/slug match, then score fallback
 # ==============
 INPUT_ROOT = Path("/kaggle/input")
 print("INPUT_ROOT entries:", [p.name for p in INPUT_ROOT.iterdir()])
@@ -45,24 +45,31 @@ print("INPUT_ROOT entries:", [p.name for p in INPUT_ROOT.iterdir()])
 datasets_root = INPUT_ROOT / "datasets"
 print("datasets_root exists?", datasets_root.exists())
 
-# In ra vài file để bạn nhìn được mount thực tế
+# Print full input tree for diagnostics
 subprocess.run("find /kaggle/input -maxdepth 6 -type f | head -n 200", shell=True)
 
 def resolve_dataset_root(prefer_owner="dat261303", prefer_slug="kaggle-pack"):
     """
     Return (ds_root, ds_base, mode)
       - ds_root: /kaggle/input/datasets/<owner>/<slug>
-      - ds_base: ds_root hoặc ds_root/kaggle_pack (tùy mode upload)
-      - mode: "folder-mode" hoặc "zip-mode"
+      - ds_base: ds_root or ds_root/kaggle_pack (depending on upload mode)
+      - mode: "folder-mode" or "zip-mode"
+
+    Selection strategy:
+      1. Exact owner+slug match (prefer_owner / prefer_slug) — if found, use it directly
+      2. Fallback: score all candidates, pick highest
+      In both cases print full candidate list for diagnostics.
     """
     if not datasets_root.exists():
         raise FileNotFoundError(f"Missing: {datasets_root}")
 
     candidates = []
-    for owner_dir in datasets_root.iterdir():
+    exact_match = None
+
+    for owner_dir in sorted(datasets_root.iterdir()):
         if not owner_dir.is_dir():
             continue
-        for ds_dir in owner_dir.iterdir():
+        for ds_dir in sorted(owner_dir.iterdir()):
             if not ds_dir.is_dir():
                 continue
 
@@ -72,6 +79,7 @@ def resolve_dataset_root(prefer_owner="dat261303", prefer_slug="kaggle-pack"):
             has_output_zip = (base / "Output.zip").is_file()
             has_code_dir   = (base / "sgk_extract").is_dir()
             has_code_zip   = (base / "sgk_extract.zip").is_file()
+            has_marker     = (base / "book_stem.txt").is_file()
 
             if not (has_output_dir or has_output_zip or has_code_dir or has_code_zip):
                 continue
@@ -79,23 +87,65 @@ def resolve_dataset_root(prefer_owner="dat261303", prefer_slug="kaggle-pack"):
             score = 0
             score += 10 if has_output_dir else 0
             score += 10 if has_output_zip else 0
-            score += 5 if has_code_dir else 0
-            score += 5 if has_code_zip else 0
+            score += 5  if has_code_dir   else 0
+            score += 5  if has_code_zip   else 0
+            score += 3  if has_marker     else 0
             if owner_dir.name == prefer_owner:
                 score += 3
             if prefer_slug and (prefer_slug.lower() in ds_dir.name.lower()):
                 score += 3
 
-            candidates.append((score, ds_dir, base, has_output_dir, has_output_zip, has_code_dir, has_code_zip))
+            is_exact = (owner_dir.name == prefer_owner and prefer_slug.lower() in ds_dir.name.lower())
+
+            entry = {
+                "score": score,
+                "ds_root": ds_dir,
+                "ds_base": base,
+                "has_output_dir": has_output_dir,
+                "has_output_zip": has_output_zip,
+                "has_code_dir": has_code_dir,
+                "has_code_zip": has_code_zip,
+                "has_marker": has_marker,
+                "is_exact": is_exact,
+            }
+            candidates.append(entry)
+
+            if is_exact:
+                if exact_match is None or score > exact_match["score"]:
+                    exact_match = entry
+
+    print(f"\n[DATASET SELECTION] Found {len(candidates)} candidate(s):")
+    for c in sorted(candidates, key=lambda x: -x["score"]):
+        print(
+            f"  {'*** EXACT ' if c['is_exact'] else '    '}score={c['score']:3d}"
+            f"  {c['ds_root']}"
+            f"  base={c['ds_base']}"
+            f"  out_dir={c['has_output_dir']}  out_zip={c['has_output_zip']}"
+            f"  code_dir={c['has_code_dir']}  code_zip={c['has_code_zip']}"
+            f"  marker={c['has_marker']}"
+        )
 
     if not candidates:
         raise FileNotFoundError(
-            "Cannot find dataset under /kaggle/input/datasets that contains Output/Output.zip/sgk_extract.\n"
-            f"Found (first 30): {[str(p) for p in list(datasets_root.glob('*/*'))[:30]]}"
+            "Cannot find dataset under /kaggle/input/datasets that contains "
+            "Output/Output.zip/sgk_extract.\n"
+            f"Scanned: {[str(p) for p in sorted(datasets_root.glob('*/*'))[:30]]}"
         )
 
-    candidates.sort(key=lambda x: x[0], reverse=True)
-    _, ds_root, ds_base, has_output_dir, has_output_zip, has_code_dir, has_code_zip = candidates[0]
+    if exact_match is not None:
+        chosen = exact_match
+        print(f"\n[DATASET SELECTION] Using EXACT match: {chosen['ds_root']}")
+    else:
+        chosen = sorted(candidates, key=lambda x: -x["score"])[0]
+        print(
+            f"\n[DATASET SELECTION] No exact match for owner={prefer_owner!r} slug={prefer_slug!r}. "
+            f"Using highest-score candidate: {chosen['ds_root']} (score={chosen['score']})"
+        )
+
+    ds_root = chosen["ds_root"]
+    ds_base = chosen["ds_base"]
+    has_output_dir = chosen["has_output_dir"]
+    has_output_zip = chosen["has_output_zip"]
 
     if has_output_dir:
         mode = "folder-mode"
@@ -104,15 +154,12 @@ def resolve_dataset_root(prefer_owner="dat261303", prefer_slug="kaggle-pack"):
     else:
         mode = "folder-mode"
 
-    print("DATASET ROOT:", ds_root)
-    print("DATASET BASE:", ds_base)
-    print("Using", mode, "dataset:", ds_base)
-    print("Detected flags:", {
-        "has_output_dir": has_output_dir,
-        "has_output_zip": has_output_zip,
-        "has_code_dir": has_code_dir,
-        "has_code_zip": has_code_zip,
-    })
+    print(f"[DATASET SELECTION] ds_root={ds_root}")
+    print(f"[DATASET SELECTION] ds_base={ds_base}")
+    print(f"[DATASET SELECTION] mode={mode}")
+    print(f"[DATASET SELECTION] flags: has_output_dir={has_output_dir} has_output_zip={has_output_zip}"
+          f" has_code_dir={chosen['has_code_dir']} has_code_zip={chosen['has_code_zip']}"
+          f" has_marker={chosen['has_marker']}")
 
     return ds_root, ds_base, mode
 
@@ -135,24 +182,39 @@ if mode == "folder-mode":
 else:
     out_zip = ds_base / "Output.zip"
     code_zip = ds_base / "sgk_extract.zip"
-    assert out_zip.exists() and code_zip.exists(), f"Expected Output.zip & sgk_extract.zip under {ds_base}"
+    assert out_zip.exists() and code_zip.exists(), \
+        f"Expected Output.zip & sgk_extract.zip under {ds_base}"
     unzip(out_zip, WORK)
     unzip(code_zip, WORK)
 
-# ✅ copy marker book_stem.txt into WORK (zip-mode thường bị thiếu)
+# Copy marker book_stem.txt into WORK (zip-mode may miss it)
 marker_src = ds_base / "book_stem.txt"
 marker_dst = WORK / "book_stem.txt"
+
+print(f"\n[MARKER] marker_src={marker_src}  exists={marker_src.exists()}")
 if marker_src.exists():
     shutil.copy2(marker_src, marker_dst)
-    print("Copied book_stem.txt:", marker_src, "->", marker_dst)
+    print(f"[MARKER] Copied: {marker_src} -> {marker_dst}")
+    print(f"[MARKER] marker_src content: {marker_src.read_text(encoding='utf-8').strip()!r}")
 else:
-    print("[WARN] Missing book_stem.txt at:", marker_src)
+    print(f"[MARKER] WARNING: book_stem.txt not found at: {marker_src}")
+    print(f"[MARKER] ds_base contents: {sorted(p.name for p in ds_base.iterdir()) if ds_base.exists() else 'N/A'}")
 
-print("WORK tree (top):")
+print(f"[MARKER] marker_dst={marker_dst}  exists={marker_dst.exists()}")
+if marker_dst.exists():
+    print(f"[MARKER] marker_dst content: {marker_dst.read_text(encoding='utf-8').strip()!r}")
+
+print("\n[WORK TREE]")
 subprocess.run(f"find '{WORK}' -maxdepth 3 -type d | head -n 80", shell=True)
 
+# Print Output subdirs for diagnostics
+work_output = WORK / "Output"
+output_subdirs = sorted(d.name for d in work_output.iterdir() if d.is_dir()) if work_output.exists() else []
+print(f"[OUTPUT] WORK/Output exists={work_output.exists()}")
+print(f"[OUTPUT] WORK/Output subdirs: {output_subdirs}")
+
 # ==============
-# (4) Run postprocess (PER-CHUNK DEBUG DIR)
+# (4) Resolve book_stem — marker is authoritative; no silent fallback
 # ==============
 sys.path.append(str(WORK / "sgk_extract"))
 import importlib
@@ -160,55 +222,114 @@ import chunk_postprocess as cp
 importlib.reload(cp)
 
 print("cp loaded from:", cp.__file__)
-# ✅ mặc định KHÔNG reprocess toàn bộ (chỉ xử lí cái chưa xử lí)
 cp.FORCE_REPROCESS = os.getenv("FORCE_REPROCESS", "0") == "1"
 print("FORCE_REPROCESS =", cp.FORCE_REPROCESS)
 
-# ✅ book_stem lấy từ dataset marker nếu có (support cả nested kaggle_pack/)
-# ✅ book_stem: ưu tiên marker, fallback auto-detect từ WORK/Output
 book_stem = None
+book_stem_source = None
 
-# 1) ưu tiên marker ở WORK (đã copy ở bước (3))
-p = WORK / "book_stem.txt"
-if p.exists():
-    book_stem = p.read_text(encoding="utf-8").strip()
-    print("BOOK_STEM loaded from:", p)
+# 1) Marker at WORK/book_stem.txt (written by build_kaggle_pack, copied above)
+if marker_dst.exists():
+    candidate = marker_dst.read_text(encoding="utf-8").strip()
+    if candidate:
+        book_stem = candidate
+        book_stem_source = f"marker:{marker_dst}"
+        print(f"[BOOK_STEM] Loaded from marker: {book_stem!r}")
+    else:
+        print(f"[BOOK_STEM] WARNING: marker_dst exists but is empty: {marker_dst}")
+else:
+    print(f"[BOOK_STEM] No marker at: {marker_dst}")
 
-# 2) fallback: auto-detect nếu Output chỉ có 1 folder book
+# 2) Env var BOOK_STEM (explicit override — only if marker absent or empty)
 if not book_stem:
-    out_dir = WORK / "Output"
-    if out_dir.exists():
-        cands = [d.name for d in out_dir.iterdir() if d.is_dir()]
-        if len(cands) == 1:
-            book_stem = cands[0]
-            print("BOOK_STEM auto-detected =", book_stem)
-        elif len(cands) > 1:
-            # nhiều book => lấy theo env nếu có, không thì lấy first (có warn)
-            env_bs = os.getenv("BOOK_STEM", "").strip()
-            if env_bs and (out_dir / env_bs).is_dir():
-                book_stem = env_bs
-                print("BOOK_STEM from env =", book_stem)
-            else:
-                book_stem = sorted(cands)[0]
-                print("[WARN] Multiple books found, pick first:", book_stem, "cands=", cands)
+    env_bs = os.getenv("BOOK_STEM", "").strip()
+    if env_bs:
+        book_stem = env_bs
+        book_stem_source = "env:BOOK_STEM"
+        print(f"[BOOK_STEM] Loaded from BOOK_STEM env: {book_stem!r}")
+    else:
+        print(f"[BOOK_STEM] BOOK_STEM env not set.")
 
-# 3) fallback cuối cùng (giữ tương thích)
+# 3) Auto-detect ONLY if Output contains exactly one book dir (no ambiguity)
 if not book_stem:
-    book_stem = os.getenv("BOOK_STEM", "").strip() or "Tin-hoc-10-ket-noi-tri-thuc"
-    print("[WARN] BOOK_STEM fallback =", book_stem)
+    if len(output_subdirs) == 1:
+        book_stem = output_subdirs[0]
+        book_stem_source = f"auto-detect:single-dir"
+        print(f"[BOOK_STEM] Auto-detected (single Output dir): {book_stem!r}")
+    elif len(output_subdirs) > 1:
+        # Multiple books — cannot auto-detect safely
+        raise RuntimeError(
+            f"[BOOK_STEM] FATAL: marker missing AND multiple books in WORK/Output — "
+            f"cannot determine which book to process.\n"
+            f"  ds_root={ds_root}\n"
+            f"  ds_base={ds_base}\n"
+            f"  mode={mode}\n"
+            f"  marker_src={marker_src}  exists={marker_src.exists()}\n"
+            f"  marker_dst={marker_dst}  exists={marker_dst.exists()}\n"
+            f"  Output subdirs={output_subdirs}\n"
+            f"Set BOOK_STEM env or ensure book_stem.txt is present in the dataset."
+        )
+    else:
+        raise RuntimeError(
+            f"[BOOK_STEM] FATAL: marker missing AND WORK/Output is empty or missing.\n"
+            f"  ds_root={ds_root}\n"
+            f"  ds_base={ds_base}\n"
+            f"  mode={mode}\n"
+            f"  marker_src={marker_src}  exists={marker_src.exists()}\n"
+            f"  marker_dst={marker_dst}  exists={marker_dst.exists()}\n"
+            f"  WORK/Output exists={work_output.exists()}\n"
+            f"  Output subdirs={output_subdirs}"
+        )
 
-print("BOOK_STEM =", book_stem)
+print(f"[BOOK_STEM] Final: {book_stem!r}  (source: {book_stem_source})")
 
+# ==============
+# (5) Validate: marker content must match an actual Output subdir
+# ==============
 book_dir = WORK / "Output" / book_stem
+
+if not book_dir.exists():
+    raise RuntimeError(
+        f"[VALIDATION] FATAL: WORK/Output/{book_stem} does not exist!\n"
+        f"  book_stem={book_stem!r}  (from {book_stem_source})\n"
+        f"  ds_root={ds_root}\n"
+        f"  ds_base={ds_base}\n"
+        f"  mode={mode}\n"
+        f"  marker_src={marker_src}  exists={marker_src.exists()}\n"
+        f"  marker_src content={marker_src.read_text(encoding='utf-8').strip()!r if marker_src.exists() else 'N/A'}\n"
+        f"  marker_dst={marker_dst}  exists={marker_dst.exists()}\n"
+        f"  marker_dst content={marker_dst.read_text(encoding='utf-8').strip()!r if marker_dst.exists() else 'N/A'}\n"
+        f"  WORK/Output subdirs={output_subdirs}\n"
+        f"The dataset was uploaded with book_stem={book_stem!r} but WORK/Output contains: {output_subdirs}.\n"
+        f"This means the dataset was not rebuilt before uploading, or the wrong dataset version was selected."
+    )
+
+print(f"[VALIDATION] OK: WORK/Output/{book_stem} exists.")
+
+# Check for stale other books alongside the expected one
+stale_dirs = [d for d in output_subdirs if d != book_stem]
+if stale_dirs:
+    print(
+        f"[VALIDATION] WARNING: WORK/Output contains extra book dirs besides {book_stem!r}: {stale_dirs}\n"
+        f"  These will be ignored. Consider rebuilding the dataset to remove stale content."
+    )
+
 chunk_root = book_dir / "Chunk"
-assert chunk_root.exists(), f"Missing chunk_root: {chunk_root}"
+if not chunk_root.exists():
+    raise RuntimeError(
+        f"[VALIDATION] FATAL: Missing chunk_root: {chunk_root}\n"
+        f"  book_dir={book_dir}\n"
+        f"  book_dir contents: {sorted(p.name for p in book_dir.iterdir()) if book_dir.exists() else 'N/A'}"
+    )
+
+print(f"[VALIDATION] chunk_root={chunk_root}")
 
 # Lấy tất cả meta json (trừ keywords)
 json_files = sorted([
     p for p in chunk_root.rglob("*.json")
     if (not p.name.endswith(".keywords.json"))
-    and ("DebugCutlines" not in p.parts)         # ✅ bỏ debug folder
-    and (not p.stem.endswith("_cutline"))        # ✅ bỏ *_cutline.json
+    and ("DebugCutlines" not in p.parts)         # bỏ debug folder
+    and (not p.stem.endswith("_cutline"))        # bỏ *_cutline.json
 ])
 print("ChunkRoot:", chunk_root)
 print("Total meta json:", len(json_files))
@@ -252,7 +373,7 @@ for jp in json_files:
 
     try:
         out_dir = jp.parent / "DebugCutlines"
-        shutil.rmtree(out_dir, ignore_errors=True)   # ✅ xoá debug cũ của chunk này
+        shutil.rmtree(out_dir, ignore_errors=True)   # xoá debug cũ của chunk này
         out_dir.mkdir(parents=True, exist_ok=True)
         last_debug_dir = out_dir
 
@@ -279,7 +400,7 @@ print("FAIL:", fail)
 print("debug_example:", str(last_debug_dir) if last_debug_dir else None)
 
 # ==============
-# (5) Zip result for download
+# (6) Zip result for download
 # ==============
 out_zip = Path("/kaggle/working") / f"{book_stem}_postprocessed.zip"
 print("Zipping result to:", out_zip)
