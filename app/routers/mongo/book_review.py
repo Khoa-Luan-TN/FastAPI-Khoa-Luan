@@ -1,13 +1,15 @@
 # app/routers/mongo/book_review.py
 #
 # Review-first book ingestion endpoints.
-# Users upload a raw PDF; the backend runs light Gemini extraction
+# Users upload a raw PDF; the backend runs sequential stage-by-stage extraction
 # and exposes topic/lesson/chunk data for review before any heavy processing.
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 
 from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.sync.sync_service import sync_doc_to_postgres
@@ -41,11 +43,23 @@ def _get_or_404(job_id: str) -> Dict[str, Any]:
     return job
 
 
+def _find_topic_pdf(bundle_path: str, topic: dict) -> Path | None:
+    bp = Path(bundle_path)
+    name = (topic.get("name") or "").replace("/", "_").replace("\\", "_").strip()
+    if not name:
+        return None
+    topic_dir = bp / "Topic" / name
+    if topic_dir.exists():
+        pdfs = sorted(topic_dir.glob("*.pdf"))
+        return pdfs[0] if pdfs else None
+    return None
+
+
 # ── Create job ──────────────────────────────────────────────────────────────
 
 @router.post(
     "/book-review/jobs",
-    summary="Upload raw PDF and start light Gemini extraction",
+    summary="Upload raw PDF and start topics-only extraction",
 )
 async def create_review_job(
     request: Request,
@@ -83,9 +97,67 @@ async def get_review_job(job_id: str):
     return {"ok": True, "job": _serial(_get_or_404(job_id))}
 
 
+# ── PDF preview serving ───────────────────────────────────────────────────────
+
+@router.get("/book-review/jobs/{job_id}/pdf/source", summary="Serve source PDF for admin preview")
+async def serve_source_pdf(job_id: str):
+    job = _get_or_404(job_id)
+    src = job.get("source_pdf_path")
+    if not src or not Path(src).exists():
+        raise HTTPException(status_code=404, detail="Source PDF not found")
+    return FileResponse(str(src), media_type="application/pdf", filename=Path(src).name)
+
+
+@router.get("/book-review/jobs/{job_id}/pdf/topic/{idx}", summary="Serve topic preview PDF")
+async def serve_topic_pdf(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    topics = job.get("topics", [])
+    if not (0 <= idx < len(topics)):
+        raise HTTPException(status_code=404, detail="Topic index out of range")
+    topic = topics[idx]
+
+    # Prefer recut PDF if available
+    recut = topic.get("recut_pdf")
+    if recut and Path(recut).exists():
+        return FileResponse(str(recut), media_type="application/pdf")
+
+    # Fall back to original bundle PDF
+    bundle_path = job.get("bundle_path")
+    if bundle_path:
+        pdf_path = _find_topic_pdf(bundle_path, topic)
+        if pdf_path and pdf_path.exists():
+            return FileResponse(str(pdf_path), media_type="application/pdf")
+
+    raise HTTPException(status_code=404, detail="Topic PDF not found — extraction may still be running")
+
+
+# ── Per-topic edit / recut ────────────────────────────────────────────────────
+
+@router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Update a single topic item")
+async def patch_topic(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("topics", []))):
+        raise HTTPException(status_code=404, detail="Topic index out of range")
+    from app.services.mongo.book_review_service import patch_topic_item
+    patch_topic_item(db, job_id, idx, body)
+    return {"ok": True}
+
+
+@router.post("/book-review/jobs/{job_id}/topics/{idx}/recut", summary="Recut topic preview from source PDF")
+async def recut_topic(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("topics", []))):
+        raise HTTPException(status_code=404, detail="Topic index out of range")
+    from app.services.mongo.book_review_service import recut_topic_preview
+    result = recut_topic_preview(db, job_id, idx, job)
+    if not result["ok"]:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return {"ok": True}
+
+
 # ── Update review data ────────────────────────────────────────────────────────
 
-@router.put("/book-review/jobs/{job_id}/topics", summary="Save reviewed topics")
+@router.put("/book-review/jobs/{job_id}/topics", summary="Save reviewed topics (bulk)")
 async def update_topics(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
     from app.services.mongo.book_review_service import update_topics
@@ -111,22 +183,22 @@ async def update_chunks(job_id: str, body: Dict[str, Any] = Body(...)):
 
 # ── Approve stages ────────────────────────────────────────────────────────────
 
-@router.post("/book-review/jobs/{job_id}/approve-topics", summary="Approve topics and advance to lesson review")
+@router.post("/book-review/jobs/{job_id}/approve-topics", summary="Approve topics and start lesson extraction")
 async def approve_topics(job_id: str):
-    from app.services.mongo.book_review_service import advance_status
-    if not advance_status(db, job_id, "extracted", "reviewing_lessons"):
+    from app.services.mongo.book_review_service import approve_topics_and_start_lessons
+    if not approve_topics_and_start_lessons(db, job_id):
         job = _get_or_404(job_id)
         raise HTTPException(
             status_code=409,
-            detail=f"Job must be in 'extracted' status to approve topics (current: {job['status']})",
+            detail=f"Job must be in 'reviewing_topics' status to approve topics (current: {job['status']})",
         )
     return {"ok": True}
 
 
-@router.post("/book-review/jobs/{job_id}/approve-lessons", summary="Approve lessons and advance to chunk review")
+@router.post("/book-review/jobs/{job_id}/approve-lessons", summary="Approve lessons and start chunk extraction")
 async def approve_lessons(job_id: str):
-    from app.services.mongo.book_review_service import advance_status
-    if not advance_status(db, job_id, "reviewing_lessons", "reviewing_chunks"):
+    from app.services.mongo.book_review_service import approve_lessons_and_start_chunks
+    if not approve_lessons_and_start_chunks(db, job_id):
         job = _get_or_404(job_id)
         raise HTTPException(
             status_code=409,
@@ -137,8 +209,8 @@ async def approve_lessons(job_id: str):
 
 @router.post("/book-review/jobs/{job_id}/approve-chunks", summary="Approve chunks and mark ready for heavy stage")
 async def approve_chunks(job_id: str):
-    from app.services.mongo.book_review_service import advance_status
-    if not advance_status(db, job_id, "reviewing_chunks", "approved_for_heavy_stage"):
+    from app.services.mongo.book_review_service import approve_chunks_final
+    if not approve_chunks_final(db, job_id):
         job = _get_or_404(job_id)
         raise HTTPException(
             status_code=409,

@@ -3,9 +3,11 @@
 # Manages raw-PDF review jobs for the review-first book ingestion pipeline.
 #
 # Status flow:
-#   uploaded → (background light extraction) → extracted | error
-#   extracted → (approve topics) → reviewing_lessons
-#   reviewing_lessons → (approve lessons) → reviewing_chunks
+#   uploaded → (topics extraction) → reviewing_topics
+#   reviewing_topics → (approve topics) → extracting_lessons
+#   extracting_lessons → (lessons extraction) → reviewing_lessons
+#   reviewing_lessons → (approve lessons) → extracting_chunks
+#   extracting_chunks → (chunks extraction) → reviewing_chunks
 #   reviewing_chunks → (approve chunks) → approved_for_heavy_stage
 #   approved_for_heavy_stage → (trigger heavy) → heavy_stage_running → heavy_stage_done | error
 from __future__ import annotations
@@ -52,7 +54,6 @@ def create_job(
     workspace = _REVIEW_WORKSPACE / job_id
     workspace.mkdir(parents=True, exist_ok=True)
 
-    # Use job_id suffix to avoid output-dir collisions across jobs
     base_stem = Path(original_filename).stem
     unique_stem = f"{base_stem}_{job_id[:8]}"
     pdf_path = workspace / f"{unique_stem}.pdf"
@@ -90,17 +91,17 @@ def create_job(
     doc.pop("_id", None)
 
     threading.Thread(
-        target=_run_extraction, args=(db, job_id, workspace), daemon=True
+        target=_run_stage, args=(db, job_id, workspace, "topics"), daemon=True
     ).start()
 
     return doc
 
 
-def _run_extraction(db: Database, job_id: str, workspace: Path) -> None:
+def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
     try:
         subprocess.run(
-            [python_exec, str(_LIGHT_SCRIPT), "--workspace", str(workspace)],
+            [python_exec, str(_LIGHT_SCRIPT), "--workspace", str(workspace), "--stage", stage],
             cwd=str(_GEMINI_DIR),
             check=True,
             capture_output=True,
@@ -110,24 +111,43 @@ def _run_extraction(db: Database, job_id: str, workspace: Path) -> None:
         result = json.loads(result_path.read_text(encoding="utf-8"))
 
         if result.get("ok"):
-            _col(db).update_one(
-                {"job_id": job_id},
-                {"$set": {
-                    "status": "extracted",
-                    "bundle_path": result.get("bundle_path"),
-                    "topics": result.get("topics", []),
-                    "lessons": result.get("lessons", []),
-                    "chunks": result.get("chunks", []),
-                    "error": None,
-                    "updated_at": _utc_now(),
-                }},
-            )
+            if stage == "topics":
+                _col(db).update_one(
+                    {"job_id": job_id},
+                    {"$set": {
+                        "status": "reviewing_topics",
+                        "bundle_path": result.get("bundle_path"),
+                        "topics": result.get("topics", []),
+                        "error": None,
+                        "updated_at": _utc_now(),
+                    }},
+                )
+            elif stage == "lessons":
+                _col(db).update_one(
+                    {"job_id": job_id},
+                    {"$set": {
+                        "status": "reviewing_lessons",
+                        "lessons": result.get("lessons", []),
+                        "error": None,
+                        "updated_at": _utc_now(),
+                    }},
+                )
+            elif stage == "chunks":
+                _col(db).update_one(
+                    {"job_id": job_id},
+                    {"$set": {
+                        "status": "reviewing_chunks",
+                        "chunks": result.get("chunks", []),
+                        "error": None,
+                        "updated_at": _utc_now(),
+                    }},
+                )
         else:
             _col(db).update_one(
                 {"job_id": job_id},
                 {"$set": {
                     "status": "error",
-                    "error": result.get("error", "Extraction failed"),
+                    "error": result.get("error", f"{stage} extraction failed"),
                     "updated_at": _utc_now(),
                 }},
             )
@@ -160,7 +180,7 @@ _PROGRESS_FIELDS = (
     "progress_percent",
 )
 
-_EXTRACTION_STATUSES = {"uploaded", "extracting_topics_lessons", "extracting_chunks"}
+_EXTRACTION_STATUSES = {"uploaded", "extracting_topics", "extracting_lessons", "extracting_chunks"}
 
 
 def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
@@ -207,10 +227,43 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> None:
     )
 
 
-def advance_status(db: Database, job_id: str, from_status: str, to_status: str) -> bool:
+def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
+    """Advance from reviewing_topics → extracting_lessons, then trigger lessons extraction."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc or doc.get("status") != "reviewing_topics":
+        return False
+    workspace = Path(doc["workspace"])
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"status": "extracting_lessons", "updated_at": _utc_now()}},
+    )
+    threading.Thread(
+        target=_run_stage, args=(db, job_id, workspace, "lessons"), daemon=True
+    ).start()
+    return True
+
+
+def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
+    """Advance from reviewing_lessons → extracting_chunks, then trigger chunks extraction."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc or doc.get("status") != "reviewing_lessons":
+        return False
+    workspace = Path(doc["workspace"])
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"status": "extracting_chunks", "updated_at": _utc_now()}},
+    )
+    threading.Thread(
+        target=_run_stage, args=(db, job_id, workspace, "chunks"), daemon=True
+    ).start()
+    return True
+
+
+def approve_chunks_final(db: Database, job_id: str) -> bool:
+    """Advance from reviewing_chunks → approved_for_heavy_stage."""
     result = _col(db).update_one(
-        {"job_id": job_id, "status": from_status},
-        {"$set": {"status": to_status, "updated_at": _utc_now()}},
+        {"job_id": job_id, "status": "reviewing_chunks"},
+        {"$set": {"status": "approved_for_heavy_stage", "updated_at": _utc_now()}},
     )
     return result.modified_count > 0
 
@@ -239,6 +292,65 @@ def _build_name_dict(items: List[Dict[str, Any]]) -> Dict[str, str]:
         if num:
             names[num] = f"{heading} {title}".strip() if title else heading
     return names
+
+
+def patch_topic_item(db: Database, job_id: str, idx: int, patch: Dict[str, Any]) -> None:
+    """Update allowed fields of a single topic item by index."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return
+    topics = list(doc.get("topics", []))
+    if 0 <= idx < len(topics):
+        for k, v in patch.items():
+            if k in {"heading", "title", "start", "end", "name"}:
+                topics[idx][k] = v
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"topics": topics, "updated_at": _utc_now()}},
+        )
+
+
+def recut_topic_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any]) -> Dict[str, Any]:
+    """Recut a topic PDF slice from the source PDF using the stored start/end."""
+    topics = list(job.get("topics", []))
+    if not (0 <= idx < len(topics)):
+        return {"ok": False, "error": "Index out of range"}
+    topic = topics[idx]
+
+    source_pdf = job.get("source_pdf_path")
+    if not source_pdf or not Path(source_pdf).exists():
+        return {"ok": False, "error": "Source PDF not found"}
+
+    start = topic.get("start")
+    end = topic.get("end")
+    if not (isinstance(start, int) and isinstance(end, int)):
+        return {"ok": False, "error": "Invalid start/end on topic"}
+
+    workspace = Path(job["workspace"])
+    recuts_dir = workspace / "recuts"
+    recuts_dir.mkdir(parents=True, exist_ok=True)
+    out_path = recuts_dir / f"topic_{idx:02d}_preview.pdf"
+
+    try:
+        from pypdf import PdfReader, PdfWriter
+        reader = PdfReader(str(source_pdf))
+        total = len(reader.pages)
+        s = max(1, min(start, total))
+        e = max(s, min(end, total))
+        writer = PdfWriter()
+        for i in range(s - 1, e):
+            writer.add_page(reader.pages[i])
+        with open(out_path, "wb") as fh:
+            writer.write(fh)
+
+        topics[idx]["recut_pdf"] = str(out_path)
+        _col(db).update_one(
+            {"job_id": job_id},
+            {"$set": {"topics": topics, "updated_at": _utc_now()}},
+        )
+        return {"ok": True}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 def _safe_report(report: Any) -> Any:

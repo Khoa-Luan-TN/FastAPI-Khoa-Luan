@@ -209,3 +209,29 @@ export function triggerHeavyStage(jobId) {
     method: "POST",
   });
 }
+
+// ── Topic preview PDF URLs (no fetch — used directly in iframes) ──────────────
+
+export function reviewTopicPdfUrl(jobId, idx, key = 0) {
+  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/topic/${idx}?k=${key}`;
+}
+
+export function reviewSourcePdfUrl(jobId) {
+  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/source`;
+}
+
+// PATCH /admin/mongo/book-review/jobs/:id/topics/:idx
+export function patchReviewTopic(jobId, idx, patch) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+}
+
+// POST /admin/mongo/book-review/jobs/:id/topics/:idx/recut
+export function recutReviewTopic(jobId, idx) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}/recut`,
+    { method: "POST" },
+  );
+}

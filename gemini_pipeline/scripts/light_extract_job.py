@@ -1,12 +1,14 @@
 """
-Light extraction job script — called by FastAPI as a background subprocess.
+Light extraction job script — stage-aware sequential pipeline.
 
 Usage (from gemini_pipeline/ directory):
-    python scripts/light_extract_job.py --workspace <abs_path>
+    python scripts/light_extract_job.py --workspace <abs_path> --stage topics|lessons|chunks
 
 Reads:  <workspace>/job_config.json
-Writes: <workspace>/progress.json  (updated incrementally)
-        <workspace>/result.json    (written on success)
+        <workspace>/extraction_state.json  (lessons/chunks stages)
+Writes: <workspace>/progress.json          (incremental)
+        <workspace>/result.json            (on completion)
+        <workspace>/extraction_state.json  (after topics, for later stages)
 """
 from __future__ import annotations
 
@@ -17,7 +19,6 @@ import traceback
 from pathlib import Path
 from typing import Any, Optional
 
-# Ensure sgk_extract and scripts are importable from gemini_pipeline root
 _GEMINI_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_GEMINI_ROOT))
 
@@ -73,24 +74,21 @@ def _flatten(items: Any) -> list:
     return out
 
 
-def main(workspace: Path) -> None:
-    config = json.loads((workspace / "job_config.json").read_text(encoding="utf-8"))
-
+def _run_topics(workspace: Path, config: dict) -> None:
     pdf_path = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", "gemini-2.5-flash")
     job_id = config.get("job_id") or workspace.name
     pdf_stem = Path(pdf_path).stem
     unique_output_root = _GEMINI_ROOT / "Output" / f"{pdf_stem}_{job_id[:8]}"
-    print(f"[light_extract] output_root={unique_output_root}")
+    print(f"[light_extract] stage=topics output_root={unique_output_root}")
 
     key_manager = get_key_manager(api_config)
 
-    # ── Stage 1: topic / lesson extraction ───────────────────────────────────
     _write_progress(
         workspace,
-        status="extracting_topics_lessons",
-        progress_stage="extracting_topics_lessons",
+        status="extracting_topics",
+        progress_stage="extracting_topics",
         progress_message="Đang tách chủ đề và bài học...",
     )
 
@@ -99,11 +97,91 @@ def main(workspace: Path) -> None:
     )
     book_dir = Path(json_path).parent
 
-    # Count lesson PDFs to set total for chunk stage
+    topics = _flatten(data.get("list_topic", []))
+    lessons = _flatten(data.get("list_lesson", []))
+
+    # Persist full extraction data for use in later stages (no re-extraction needed)
+    state = {
+        "bundle_path": str(book_dir),
+        "book_stem": pdf_stem,
+        "topics": topics,
+        "lessons": lessons,
+    }
+    (workspace / "extraction_state.json").write_text(
+        json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    result = {
+        "ok": True,
+        "bundle_path": str(book_dir),
+        "topics": topics,
+    }
+    (workspace / "result.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    _write_progress(
+        workspace,
+        status="reviewing_topics",
+        progress_stage="reviewing_topics",
+        progress_message="Trích xuất chủ đề xong. Chờ duyệt.",
+        progress_percent=100,
+    )
+
+
+def _run_lessons(workspace: Path, config: dict) -> None:
+    state_path = workspace / "extraction_state.json"
+    if not state_path.exists():
+        raise FileNotFoundError("extraction_state.json not found — topics stage must run first")
+
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    lessons = state.get("lessons", [])
+    bundle_path = state.get("bundle_path")
+
+    _write_progress(
+        workspace,
+        status="extracting_lessons",
+        progress_stage="extracting_lessons",
+        progress_message="Đang chuẩn bị danh sách bài học...",
+        progress_percent=50,
+    )
+
+    result = {
+        "ok": True,
+        "bundle_path": bundle_path,
+        "lessons": lessons,
+    }
+    (workspace / "result.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    _write_progress(
+        workspace,
+        status="reviewing_lessons",
+        progress_stage="reviewing_lessons",
+        progress_message="Trích xuất bài học xong. Chờ duyệt.",
+        progress_percent=100,
+    )
+
+
+def _run_chunks(workspace: Path, config: dict) -> None:
+    state_path = workspace / "extraction_state.json"
+    if not state_path.exists():
+        raise FileNotFoundError("extraction_state.json not found — topics stage must run first")
+
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    bundle_path = state.get("bundle_path")
+    if not bundle_path:
+        raise ValueError("bundle_path not found in extraction state")
+
+    book_dir = Path(bundle_path)
+    api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
+    model = config.get("model", "gemini-2.5-flash")
+    key_manager = get_key_manager(api_config)
+
     lesson_dir = book_dir / "Lesson"
     lesson_count = len(sorted(lesson_dir.rglob("*.pdf"))) if lesson_dir.exists() else 0
 
-    # ── Stage 2: chunk extraction ─────────────────────────────────────────────
     _write_progress(
         workspace,
         status="extracting_chunks",
@@ -130,7 +208,6 @@ def main(workspace: Path) -> None:
         key_manager, book_dir, model=model, resume=False, progress_cb=_chunk_cb
     )
 
-    # ── Collect chunk metadata ────────────────────────────────────────────────
     chunks = []
     for meta_file in chunk_summary.get("chunk_meta_files", []):
         try:
@@ -139,38 +216,46 @@ def main(workspace: Path) -> None:
         except Exception:
             pass
 
-    # ── Write result.json ─────────────────────────────────────────────────────
     result = {
         "ok": True,
-        "bundle_path": str(book_dir),
-        "book_stem": pdf_stem,
-        "topics": _flatten(data.get("list_topic", [])),
-        "lessons": _flatten(data.get("list_lesson", [])),
+        "bundle_path": bundle_path,
         "chunks": chunks,
     }
     (workspace / "result.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # ── Final progress ────────────────────────────────────────────────────────
     _write_progress(
         workspace,
-        status="extracted",
-        progress_stage="extracted",
-        progress_message="Đã trích xuất xong. Chờ duyệt.",
+        status="reviewing_chunks",
+        progress_stage="reviewing_chunks",
+        progress_message="Trích xuất chunk xong. Chờ duyệt.",
         progress_current=lesson_count,
         progress_total=lesson_count,
         progress_percent=100,
     )
 
 
+def main(workspace: Path, stage: str) -> None:
+    config = json.loads((workspace / "job_config.json").read_text(encoding="utf-8"))
+    if stage == "topics":
+        _run_topics(workspace, config)
+    elif stage == "lessons":
+        _run_lessons(workspace, config)
+    elif stage == "chunks":
+        _run_chunks(workspace, config)
+    else:
+        raise ValueError(f"Unknown stage: {stage!r}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--workspace", required=True)
+    parser.add_argument("--stage", required=True, choices=["topics", "lessons", "chunks"])
     args = parser.parse_args()
     ws = Path(args.workspace)
     try:
-        main(ws)
+        main(ws, args.stage)
     except Exception as exc:
         _write_progress(
             ws,
