@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 from pathlib import Path
 
@@ -84,6 +85,21 @@ def main():
 
     # 2) push kernel + wait  ← only reached after dataset versioning fully returns
     if not args.skip_kernel:
+        # Stamp expected stem into kernel-metadata.json so the kernel can detect stale datasets
+        _meta_path = KERNEL_DIR / "kernel-metadata.json"
+        _meta = json.loads(_meta_path.read_text(encoding="utf-8"))
+        _env_vars = _meta.get("env_vars", [])
+        _patched = False
+        for _ev in _env_vars:
+            if _ev.get("key") == "EXPECTED_BOOK_STEM":
+                _ev["value"] = args.book_stem
+                _patched = True
+                break
+        if not _patched:
+            _env_vars.append({"key": "EXPECTED_BOOK_STEM", "value": args.book_stem})
+        _meta["env_vars"] = _env_vars
+        _meta_path.write_text(json.dumps(_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        log.info("Patched kernel-metadata.json: EXPECTED_BOOK_STEM=%r", args.book_stem)
         push_kernel(KERNEL_DIR, KERNEL_REF)
     else:
         log.info("Skip kernel push/wait.")

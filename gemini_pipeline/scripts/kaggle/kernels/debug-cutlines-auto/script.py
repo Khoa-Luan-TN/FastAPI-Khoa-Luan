@@ -136,10 +136,13 @@ def resolve_dataset_root(prefer_owner="dat261303", prefer_slug="kaggle-pack"):
         chosen = exact_match
         print(f"\n[DATASET SELECTION] Using EXACT match: {chosen['ds_root']}")
     else:
-        chosen = sorted(candidates, key=lambda x: -x["score"])[0]
-        print(
-            f"\n[DATASET SELECTION] No exact match for owner={prefer_owner!r} slug={prefer_slug!r}. "
-            f"Using highest-score candidate: {chosen['ds_root']} (score={chosen['score']})"
+        raise RuntimeError(
+            f"[DATASET SELECTION] FATAL: no dataset found matching "
+            f"owner={prefer_owner!r} slug={prefer_slug!r}.\n"
+            f"Refusing to use a fallback dataset — this would silently process the wrong book.\n"
+            f"  datasets_root={datasets_root}\n"
+            f"  candidates scanned: {[str(c['ds_root']) for c in candidates]}\n"
+            f"Action: ensure the dataset '{prefer_owner}/{prefer_slug}' exists and is attached to the kernel."
         )
 
     ds_root = chosen["ds_root"]
@@ -283,6 +286,27 @@ if not book_stem:
 
 print(f"[BOOK_STEM] Final: {book_stem!r}  (source: {book_stem_source})")
 
+# Validate against EXPECTED_BOOK_STEM env var if the caller injected it
+_expected_bs = os.getenv("EXPECTED_BOOK_STEM", "").strip()
+if _expected_bs:
+    if book_stem != _expected_bs:
+        raise RuntimeError(
+            f"[BOOK_STEM] FATAL: resolved book_stem={book_stem!r} "
+            f"does not match EXPECTED_BOOK_STEM={_expected_bs!r}.\n"
+            f"The kernel is running against a stale or wrong dataset version.\n"
+            f"  marker_src={marker_src}  exists={marker_src.exists()}\n"
+            f"  marker_src content={(marker_src.read_text(encoding='utf-8').strip() if marker_src.exists() else 'N/A')!r}\n"
+            f"  marker_dst={marker_dst}  exists={marker_dst.exists()}\n"
+            f"  marker_dst content={(marker_dst.read_text(encoding='utf-8').strip() if marker_dst.exists() else 'N/A')!r}\n"
+            f"  ds_root={ds_root}\n"
+            f"  ds_base={ds_base}\n"
+            f"  WORK/Output subdirs={output_subdirs}\n"
+            f"Action: re-upload the dataset with the correct book_stem.txt and wait for propagation before re-running."
+        )
+    print(f"[BOOK_STEM] EXPECTED_BOOK_STEM={_expected_bs!r} matches resolved stem — OK")
+else:
+    print(f"[BOOK_STEM] EXPECTED_BOOK_STEM env not set — skipping expected-stem cross-check")
+
 # ==============
 # (5) Validate: marker content must match an actual Output subdir
 # ==============
@@ -306,13 +330,18 @@ if not book_dir.exists():
 
 print(f"[VALIDATION] OK: WORK/Output/{book_stem} exists.")
 
-# Check for stale other books alongside the expected one
+# Remove stale other books from WORK/Output — only the current book should remain
 stale_dirs = [d for d in output_subdirs if d != book_stem]
 if stale_dirs:
     print(
-        f"[VALIDATION] WARNING: WORK/Output contains extra book dirs besides {book_stem!r}: {stale_dirs}\n"
-        f"  These will be ignored. Consider rebuilding the dataset to remove stale content."
+        f"[CLEAN] Removing stale working output for other book(s): {stale_dirs}"
     )
+    for _stale in stale_dirs:
+        _stale_path = work_output / _stale
+        if _stale_path.exists():
+            shutil.rmtree(_stale_path)
+            print(f"[CLEAN] Removed: {_stale_path}")
+    print(f"[CLEAN] Working output now contains only {book_stem!r}")
 
 chunk_root = book_dir / "Chunk"
 if not chunk_root.exists():
@@ -403,6 +432,27 @@ print("debug_example:", str(last_debug_dir) if last_debug_dir else None)
 # (6) Zip result for download
 # ==============
 out_zip = Path("/kaggle/working") / f"{book_stem}_postprocessed.zip"
-print("Zipping result to:", out_zip)
+print(f"\n[ZIP] book_stem={book_stem!r}")
+print(f"[ZIP] source dir : {WORK / 'Output' / book_stem}")
+print(f"[ZIP] output zip : {out_zip}")
 sh(f"cd '{WORK / 'Output'}' && zip -qr '{out_zip}' '{book_stem}'")
-print("DONE. Download this file from kernel Output:", out_zip)
+
+# Validate: zip must exist and top-level folder must match book_stem
+if not out_zip.exists():
+    raise RuntimeError(
+        f"[ZIP VALIDATION] FATAL: zip was not created: {out_zip}\n"
+        f"  book_stem={book_stem!r}\n"
+        f"  source dir exists: {(WORK / 'Output' / book_stem).exists()}"
+    )
+with zipfile.ZipFile(out_zip, "r") as _vz:
+    _vz_tops = sorted({p.split("/", 1)[0] for p in _vz.namelist() if p and not p.endswith("/")})
+if len(_vz_tops) != 1 or _vz_tops[0] != book_stem:
+    raise RuntimeError(
+        f"[ZIP VALIDATION] FATAL: zip top-level folder mismatch.\n"
+        f"  zip path             : {out_zip}\n"
+        f"  expected top-level   : {book_stem!r}\n"
+        f"  zip actually contains: {_vz_tops}\n"
+        f"This indicates the working directory had stale content from another book_stem."
+    )
+print(f"[ZIP VALIDATION] OK: {out_zip.name} — top-level folder={book_stem!r}")
+print(f"\nDONE. Download this file from kernel Output: {out_zip}")
