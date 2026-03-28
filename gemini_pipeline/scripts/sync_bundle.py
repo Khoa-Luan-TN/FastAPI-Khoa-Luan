@@ -219,7 +219,7 @@ def _normalize_manual_chunks(input_chunks: list[dict], total_pages: int) -> list
         })
 
     normalized.sort(key=lambda x: (x["start"], x["end"], x["heading"], x["title"]))
-
+        
     out: list[dict] = []
     for idx, item in enumerate(normalized):
         chunk_name = f"chunk_{idx + 1:02d}"
@@ -331,7 +331,7 @@ def _sync_chunks(data: dict) -> None:
         result_chunks.append(meta)
 
     print(json.dumps({"ok": True, "chunks": result_chunks}, ensure_ascii=False))
-    
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync bundle artifacts after admin edit")
     parser.add_argument("--kind", required=True, choices=["topic", "lesson", "chunks"])

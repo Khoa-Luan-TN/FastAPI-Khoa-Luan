@@ -385,10 +385,27 @@ async def update_lessons(job_id: str, body: Dict[str, Any] = Body(...)):
 @router.put("/book-review/jobs/{job_id}/chunks", summary="Save reviewed chunks")
 async def update_chunks(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    from app.services.mongo.book_review_service import update_chunks
-    update_chunks(db, job_id, body.get("chunks", []))
+    from app.services.mongo.book_review_service import update_chunks as update_chunks_service
+
+    result = update_chunks_service(db, job_id, body.get("chunks", []))
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Chunk sync failed"))
     return {"ok": True}
 
+@router.post(
+    "/book-review/jobs/{job_id}/chunks/{idx}/recut",
+    summary="Recut chunk preview by rebuilding all chunks for its lesson from current metadata",
+)
+async def recut_chunk(job_id: str, idx: int):
+    job = _get_or_404(job_id)
+    if not (0 <= idx < len(job.get("chunks", []))):
+        raise HTTPException(status_code=404, detail="Chunk index out of range")
+
+    from app.services.mongo.book_review_service import recut_chunk_preview
+    result = recut_chunk_preview(db, job_id, idx)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Chunk recut failed"))
+    return {"ok": True}
 
 # ── Approve stages ────────────────────────────────────────────────────────────
 

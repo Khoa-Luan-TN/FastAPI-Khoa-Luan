@@ -341,11 +341,80 @@ def update_lessons(db: Database, job_id: str, lessons: List[Any]) -> None:
     )
 
 
-def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> None:
+def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> Dict[str, Any]:
+    """
+    Save reviewed chunks AND sync canonical chunk bundle artifacts lesson-by-lesson
+    before updating MongoDB.
+    """
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return {"ok": False, "error": "Job not found"}
+
+    bundle_path = doc.get("bundle_path")
+    if not (bundle_path and Path(bundle_path).exists()):
+        return {"ok": False, "error": "bundle_path missing or does not exist"}
+
+    working_chunks = [dict(c) for c in (chunks or [])]
+
+    # preserve lesson order as it appears in current payload
+    lesson_order: List[str] = []
+    seen_lessons = set()
+    for c in working_chunks:
+        lesson_stem = c.get("lesson_stem")
+        if lesson_stem and lesson_stem not in seen_lessons:
+            seen_lessons.add(lesson_stem)
+            lesson_order.append(lesson_stem)
+
+    canonical_by_lesson: Dict[str, List[Dict[str, Any]]] = {}
+
+    for lesson_stem in lesson_order:
+        lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
+
+        result = _run_sync_script("chunks", {
+            "bundle_path": bundle_path,
+            "lesson_stem": lesson_stem,
+            "chunks": [
+                {
+                    "start": c.get("start", 1),
+                    "end": c.get("end", c.get("start", 1)),
+                    "content_head": c.get("content_head", False),
+                    "heading": c.get("heading", ""),
+                    "title": c.get("title", ""),
+                }
+                for c in lesson_chunks
+            ],
+        })
+
+        if not result.get("ok"):
+            return {
+                "ok": False,
+                "error": result.get("error", f"Chunk sync failed for lesson {lesson_stem}")
+            }
+
+        canonical_by_lesson[lesson_stem] = result.get("chunks", [])
+
+    rebuilt: List[Dict[str, Any]] = []
+    replaced_lessons = set()
+
+    for c in working_chunks:
+        lesson_stem = c.get("lesson_stem")
+        if lesson_stem in canonical_by_lesson:
+            if lesson_stem not in replaced_lessons:
+                rebuilt.extend(canonical_by_lesson[lesson_stem])
+                replaced_lessons.add(lesson_stem)
+        else:
+            rebuilt.append(c)
+
+    # defensive: if a lesson was in canonical_by_lesson but not encountered above
+    for lesson_stem in lesson_order:
+        if lesson_stem not in replaced_lessons:
+            rebuilt.extend(canonical_by_lesson.get(lesson_stem, []))
+
     _col(db).update_one(
         {"job_id": job_id},
-        {"$set": {"chunks": chunks, "updated_at": _utc_now()}},
+        {"$set": {"chunks": rebuilt, "updated_at": _utc_now()}},
     )
+    return {"ok": True, "chunks": rebuilt}
 
 
 def set_debug_topic(db: Database, job_id: str, enabled: bool, topic_index: Optional[int]) -> Dict[str, Any]:
@@ -762,6 +831,66 @@ def recut_lesson_preview(db: Database, job_id: str, idx: int, job: Dict[str, Any
         return {"ok": False, "error": "Recut timed out after 60s"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
+
+def recut_chunk_preview(db: Database, job_id: str, idx: int) -> Dict[str, Any]:
+    """
+    Rebuild chunk PDFs/JSONs for the chunk's lesson using the CURRENT stored chunk metadata.
+    This is the chunk equivalent of topic/lesson recut.
+    """
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return {"ok": False, "error": "Job not found"}
+
+    chunks = list(doc.get("chunks", []))
+    if not (0 <= idx < len(chunks)):
+        return {"ok": False, "error": "Index out of range"}
+
+    lesson_stem = chunks[idx].get("lesson_stem")
+    bundle_path = doc.get("bundle_path")
+
+    if not (bundle_path and lesson_stem and Path(bundle_path).exists()):
+        return {"ok": False, "error": "bundle_path or lesson_stem missing"}
+
+    lesson_chunks = [dict(c) for c in chunks if c.get("lesson_stem") == lesson_stem]
+
+    result = _run_sync_script("chunks", {
+        "bundle_path": bundle_path,
+        "lesson_stem": lesson_stem,
+        "chunks": [
+            {
+                "start": c.get("start", 1),
+                "end": c.get("end", c.get("start", 1)),
+                "content_head": c.get("content_head", False),
+                "heading": c.get("heading", ""),
+                "title": c.get("title", ""),
+            }
+            for c in lesson_chunks
+        ],
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Chunk recut failed")}
+
+    new_lesson_chunks = result.get("chunks", [])
+    rebuilt: List[Dict[str, Any]] = []
+    replaced = False
+
+    for c in chunks:
+        if c.get("lesson_stem") == lesson_stem:
+            if not replaced:
+                rebuilt.extend(new_lesson_chunks)
+                replaced = True
+        else:
+            rebuilt.append(c)
+
+    if not replaced:
+        rebuilt.extend(new_lesson_chunks)
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"chunks": rebuilt, "updated_at": _utc_now()}},
+    )
+    return {"ok": True, "chunks": rebuilt}
 
 def _safe_report(report: Any) -> Any:
     try:

@@ -294,3 +294,10 @@ export function patchReviewChunk(jobId, idx, patch) {
 export function reviewChunkLessonPdfUrl(jobId, idx, key = 0) {
   return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}/lesson?k=${key}`;
 }
+
+export function recutReviewChunk(jobId, idx) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}/recut`,
+    { method: "POST" }
+  );
+}

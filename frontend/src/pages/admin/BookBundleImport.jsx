@@ -21,6 +21,7 @@ import {
   patchReviewChunk,
   setDebugTopic,
   reviewChunkLessonPdfUrl,
+  recutReviewChunk,
 } from "../../services/mongoAdminApi";
 
 const DEFAULT_SUBJECT_TYPE = "Kết nối tri thức";
@@ -420,15 +421,47 @@ export default function BookBundleImport() {
         end: c.end,
         content_head: c.content_head ?? false,
       });
-      // Hard-replace editChunks with canonical server state after manual start/end sync      const res = await getReviewJob(job.job_id);
+
+      // Hard-replace editChunks with canonical server state after manual start/end sync
+      const res = await getReviewJob(job.job_id);
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
-      setChunkApprovals((prev) => {
-        const next = prev.slice(0, canonical.length);
-        while (next.length < canonical.length) next.push(false);
-        return next;
+      setChunkApprovals(canonical.map(() => false));
+      setChunkIdx(0);
+      setChunkPreviewKey((k) => k + 1);
+    } catch (err) {
+      setJobError(String(err?.message || err));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleRecutCurrentChunk() {
+    if (job?.status !== "reviewing_chunks") return;
+    const c = editChunks[chunkIdx];
+    if (!c) return;
+    setActing(true);
+    setJobError("");
+    try {
+      // Keep chunk UX aligned with topic/lesson:
+      // first sync current edits, then run explicit recut on current stored state.
+      await patchReviewChunk(job.job_id, chunkIdx, {
+        heading: c.heading,
+        title: c.title,
+        start: c.start,
+        end: c.end,
+        content_head: c.content_head ?? false,
       });
+
+      await recutReviewChunk(job.job_id, chunkIdx);
+
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
+      setEditChunks(canonical);
+      setChunkApprovals(canonical.map(() => false));
+      setChunkIdx(0);
       setChunkPreviewKey((k) => k + 1);
     } catch (err) {
       setJobError(String(err?.message || err));
@@ -450,7 +483,17 @@ export default function BookBundleImport() {
   const handleApproveAllChunks = () =>
     act(async () => {
       if (job?.status !== "reviewing_chunks") return;
+
       await saveReviewChunks(job.job_id, editChunks);
+
+      // Refresh canonical server state after disk sync, before final approve
+      const synced = await getReviewJob(job.job_id);
+      setJob(synced.job);
+      const canonical = (synced.job.chunks || []).map((x) => ({ ...x }));
+      setEditChunks(canonical);
+      setChunkApprovals(canonical.map(() => false));
+      setChunkIdx(0);
+
       await approveChunks(job.job_id);
     });
 
@@ -742,6 +785,7 @@ export default function BookBundleImport() {
               onEditItem={handleEditChunkItem}
               onNavigateTo={handleChunkNavigateTo}
               onSave={handleSaveCurrentChunk}
+              onRecut={handleRecutCurrentChunk}
               onApproveThis={handleApproveThisChunk}
               onApproveAll={handleApproveAllChunks}
               loading={acting}
@@ -1207,6 +1251,7 @@ function ChunkReviewPane({
   onEditItem,
   onNavigateTo,
   onSave,
+  onRecut,
   onApproveThis,
   onApproveAll,
   loading,
@@ -1352,6 +1397,13 @@ function ChunkReviewPane({
                 onClick={onSave}
               >
                 Lưu & cập nhật chunk
+              </button>
+              <button
+                style={s.btnSecondary}
+                disabled={loading || job.status !== "reviewing_chunks"}
+                onClick={onRecut}
+              >
+                Cắt lại chunk
               </button>
               <button
                 style={{
