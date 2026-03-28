@@ -1016,7 +1016,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         try:
             kw_proc = subprocess.run(
                 [
-                    python_exec, str(_KEYWORD_SCRIPT),
+                    python_exec, "-m", "scripts.keyword_extract_book",
                     "--bundle-dir", bundle_path,
                     "--output", str(kw_summary_path),
                 ],

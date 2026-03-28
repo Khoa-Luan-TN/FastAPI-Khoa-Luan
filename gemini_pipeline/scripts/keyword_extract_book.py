@@ -1,10 +1,16 @@
 # scripts/keyword_extract_book.py
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import re
+
+# Ensure gemini_pipeline root is on sys.path when executed directly (not via -m)
+_pkg_root = Path(__file__).resolve().parents[1]
+if str(_pkg_root) not in sys.path:
+    sys.path.insert(0, str(_pkg_root))
 
 from scripts.connect import get_key_manager
 from scripts.keyword_extract_one import extract_keywords_from_chunk_pdf
