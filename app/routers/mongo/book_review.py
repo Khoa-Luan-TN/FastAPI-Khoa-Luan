@@ -413,6 +413,24 @@ async def recut_chunk(job_id: str, idx: int):
         raise HTTPException(status_code=400, detail=result.get("error", "Chunk recut failed"))
     return {"ok": True}
 
+
+@router.post(
+    "/book-review/jobs/{job_id}/chunks",
+    summary="Add a new chunk to a lesson and rebuild its chunk bundle",
+)
+async def add_chunk(job_id: str, body: Dict[str, Any] = Body(...)):
+    job = _get_or_404(job_id)
+    if job.get("status") != "reviewing_chunks":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Job must be in 'reviewing_chunks' status to add a chunk (current: {job.get('status')})",
+        )
+    from app.services.mongo.book_review_service import add_chunk_to_lesson
+    result = add_chunk_to_lesson(db, job_id, body)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Add chunk failed"))
+    return {"ok": True, "chunks": result.get("chunks", [])}
+
 # ── Approve stages ────────────────────────────────────────────────────────────
 
 _PAST_TOPICS_STATUSES = {

@@ -989,6 +989,76 @@ def recut_chunk_preview(db: Database, job_id: str, idx: int) -> Dict[str, Any]:
     )
     return {"ok": True, "chunks": rebuilt}
 
+def add_chunk_to_lesson(db: Database, job_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Append a new chunk candidate to a lesson and rebuild the full lesson chunk bundle."""
+    doc = _col(db).find_one({"job_id": job_id})
+    if not doc:
+        return {"ok": False, "error": "Job not found"}
+
+    lesson_stem = (payload.get("lesson_stem") or "").strip()
+    if not lesson_stem:
+        return {"ok": False, "error": "lesson_stem is required"}
+
+    bundle_path = doc.get("bundle_path")
+    if not (bundle_path and Path(bundle_path).exists()):
+        return {"ok": False, "error": "bundle_path missing or does not exist"}
+
+    new_chunk = {
+        "start": int(payload.get("start", 1)),
+        "end": int(payload.get("end", payload.get("start", 1))),
+        "content_head": bool(payload.get("content_head", False)),
+        "heading": (payload.get("heading") or "").strip(),
+        "title": (payload.get("title") or "").strip(),
+    }
+
+    chunks = list(doc.get("chunks", []))
+    working_chunks = [dict(c) for c in chunks]
+
+    # Collect existing chunks for this lesson + append new one
+    lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
+    lesson_chunks_for_sync = [
+        {
+            "start": c.get("start", 1),
+            "end": c.get("end", c.get("start", 1)),
+            "content_head": c.get("content_head", False),
+            "heading": c.get("heading", ""),
+            "title": c.get("title", ""),
+        }
+        for c in lesson_chunks
+    ]
+    lesson_chunks_for_sync.append(new_chunk)
+
+    result = _run_sync_script("chunks", {
+        "bundle_path": bundle_path,
+        "lesson_stem": lesson_stem,
+        "chunks": lesson_chunks_for_sync,
+    })
+
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "Chunk sync failed after add")}
+
+    new_lesson_chunks = result.get("chunks", [])
+    rebuilt: List[Dict[str, Any]] = []
+    replaced = False
+
+    for c in working_chunks:
+        if c.get("lesson_stem") == lesson_stem:
+            if not replaced:
+                rebuilt.extend(new_lesson_chunks)
+                replaced = True
+        else:
+            rebuilt.append(c)
+
+    if not replaced:
+        rebuilt.extend(new_lesson_chunks)
+
+    _col(db).update_one(
+        {"job_id": job_id},
+        {"$set": {"chunks": rebuilt, "updated_at": _utc_now()}},
+    )
+    return {"ok": True, "chunks": rebuilt}
+
+
 def _safe_report(report: Any) -> Any:
     try:
         return json.loads(json.dumps(report, default=str))

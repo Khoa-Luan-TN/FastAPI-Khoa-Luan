@@ -20,6 +20,7 @@ import {
   reviewChunkPdfUrl,
   patchReviewChunk,
   deleteReviewChunk,
+  addReviewChunk,
   setDebugTopic,
   reviewChunkLessonPdfUrl,
   recutReviewChunk,
@@ -38,18 +39,51 @@ const TRANSIENT_STATUSES = new Set([
 ]);
 
 const STATUS_LABEL = {
-  uploaded: "Đang chuẩn bị trích xuất…",
-  extracting_topics: "Đang tách chủ đề…",
-  reviewing_topics: "Kiểm tra Chủ đề",
-  extracting_lessons: "Đang tách bài học…",
-  reviewing_lessons: "Kiểm tra Bài",
-  extracting_chunks: "Đang tách chunk…",
-  reviewing_chunks: "Kiểm tra Phần",
-  approved_for_heavy_stage: "Sẵn sàng xử lý nặng",
-  heavy_stage_running: "Đang xử lý nặng…",
+  uploaded: "Đang chuẩn bị…",
+  extracting_topics: "Tách chủ đề",
+  reviewing_topics: "Kiểm tra chủ đề",
+  extracting_lessons: "Tách bài học",
+  reviewing_lessons: "Kiểm tra bài",
+  extracting_chunks: "Tách chunk",
+  reviewing_chunks: "Kiểm tra phần",
+  approved_for_heavy_stage: "Sẵn sàng import",
+  heavy_stage_running: "Đang import…",
   heavy_stage_done: "Hoàn tất",
   error: "Lỗi",
 };
+
+const STATUS_BADGE_COLOR = {
+  uploaded: { bg: "#ede9fe", color: "#6d28d9" },
+  extracting_topics: { bg: "#ede9fe", color: "#6d28d9" },
+  reviewing_topics: { bg: "#fef3c7", color: "#b45309" },
+  extracting_lessons: { bg: "#ede9fe", color: "#6d28d9" },
+  reviewing_lessons: { bg: "#fef3c7", color: "#b45309" },
+  extracting_chunks: { bg: "#ede9fe", color: "#6d28d9" },
+  reviewing_chunks: { bg: "#fef3c7", color: "#b45309" },
+  approved_for_heavy_stage: { bg: "#dbeafe", color: "#1d4ed8" },
+  heavy_stage_running: { bg: "#dbeafe", color: "#1d4ed8" },
+  heavy_stage_done: { bg: "#dcfce7", color: "#15803d" },
+  error: { bg: "#fee2e2", color: "#b91c1c" },
+};
+
+const WORKFLOW_STEPS = [
+  { key: "upload", label: "Upload" },
+  { key: "topics", label: "Chủ đề" },
+  { key: "lessons", label: "Bài học" },
+  { key: "chunks", label: "Phần" },
+  { key: "import", label: "Import" },
+];
+
+function getWorkflowStepKey(status, phase) {
+  if (phase === "upload") return "upload";
+  if (!status) return "upload";
+  if (status === "uploaded" || status === "extracting_topics" || status === "reviewing_topics") return "topics";
+  if (status === "extracting_lessons" || status === "reviewing_lessons") return "lessons";
+  if (status === "extracting_chunks" || status === "reviewing_chunks" || status === "approved_for_heavy_stage") return "chunks";
+  if (status === "heavy_stage_running" || status === "heavy_stage_done") return "import";
+  if (status === "error") return "import";
+  return "upload";
+}
 
 export default function BookBundleImport() {
   const [phase, setPhase] = useState("upload");
@@ -116,25 +150,19 @@ export default function BookBundleImport() {
     const newTopics = (j.topics || []).map((x) => ({ ...x }));
     const newLessons = (j.lessons || []).map((x) => ({ ...x }));
     const newChunks = (j.chunks || []).map((x) => ({ ...x }));
-
     setEditTopics((prev) => newTopics.map((item, i) => ({ ...(prev[i] || {}), ...item })));
-
     setEditLessons((prev) => newLessons.map((item, i) => ({ ...(prev[i] || {}), ...item })));
-
     setEditChunks((prev) => newChunks.map((item, i) => ({ ...(prev[i] || {}), ...item })));
-
     setTopicApprovals((prev) => {
       const next = prev.slice(0, newTopics.length);
       while (next.length < newTopics.length) next.push(false);
       return next;
     });
-
     setLessonApprovals((prev) => {
       const next = prev.slice(0, newLessons.length);
       while (next.length < newLessons.length) next.push(false);
       return next;
     });
-
     setChunkApprovals((prev) => {
       const next = prev.slice(0, newChunks.length);
       while (next.length < newChunks.length) next.push(false);
@@ -162,10 +190,7 @@ export default function BookBundleImport() {
 
   async function handleUpload(e) {
     e.preventDefault();
-    if (!pdfFile) {
-      setUploadError("Vui lòng chọn file PDF.");
-      return;
-    }
+    if (!pdfFile) { setUploadError("Vui lòng chọn file PDF."); return; }
     setUploading(true);
     setUploadError("");
     try {
@@ -198,53 +223,33 @@ export default function BookBundleImport() {
   function handleEditTopicItem(idx, updated) {
     setEditTopics((prev) => prev.map((t, i) => (i === idx ? updated : t)));
   }
-
   function handleTopicNavigateTo(idx) {
-    const clamped = Math.max(0, Math.min(editTopics.length - 1, idx));
-    setTopicIdx(clamped);
+    setTopicIdx(Math.max(0, Math.min(editTopics.length - 1, idx)));
   }
 
   async function handleSaveCurrentTopic() {
     const t = editTopics[topicIdx];
     if (!t) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     try {
-      await patchReviewTopic(job.job_id, topicIdx, {
-        heading: t.heading,
-        title: t.title,
-        start: t.start,
-        end: t.end,
-      });
+      await patchReviewTopic(job.job_id, topicIdx, { heading: t.heading, title: t.title, start: t.start, end: t.end });
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
       setPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   async function handleRecutCurrentTopic() {
     const t = editTopics[topicIdx];
     if (!t) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     try {
-      await patchReviewTopic(job.job_id, topicIdx, {
-        heading: t.heading,
-        title: t.title,
-        start: t.start,
-        end: t.end,
-      });
+      await patchReviewTopic(job.job_id, topicIdx, { heading: t.heading, title: t.title, start: t.start, end: t.end });
       await recutReviewTopic(job.job_id, topicIdx);
       setPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   function handleApproveThisTopic() {
@@ -257,17 +262,13 @@ export default function BookBundleImport() {
   }
 
   async function handleSetDebugTopic({ enabled, topicIndex }) {
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     try {
       await setDebugTopic(job.job_id, enabled, enabled ? topicIndex : null);
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   const handleApproveAllTopics = () =>
@@ -279,53 +280,33 @@ export default function BookBundleImport() {
   function handleEditLessonItem(idx, updated) {
     setEditLessons((prev) => prev.map((l, i) => (i === idx ? updated : l)));
   }
-
   function handleLessonNavigateTo(idx) {
-    const clamped = Math.max(0, Math.min(editLessons.length - 1, idx));
-    setLessonIdx(clamped);
+    setLessonIdx(Math.max(0, Math.min(editLessons.length - 1, idx)));
   }
 
   async function handleSaveCurrentLesson() {
     const l = editLessons[lessonIdx];
     if (!l) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     try {
-      await patchReviewLesson(job.job_id, lessonIdx, {
-        heading: l.heading,
-        title: l.title,
-        start: l.start,
-        end: l.end,
-      });
+      await patchReviewLesson(job.job_id, lessonIdx, { heading: l.heading, title: l.title, start: l.start, end: l.end });
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
       setLessonPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   async function handleRecutCurrentLesson() {
     const l = editLessons[lessonIdx];
     if (!l) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     try {
-      await patchReviewLesson(job.job_id, lessonIdx, {
-        heading: l.heading,
-        title: l.title,
-        start: l.start,
-        end: l.end,
-      });
+      await patchReviewLesson(job.job_id, lessonIdx, { heading: l.heading, title: l.title, start: l.start, end: l.end });
       await recutReviewLesson(job.job_id, lessonIdx);
       setLessonPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   function handleApproveThisLesson() {
@@ -338,21 +319,15 @@ export default function BookBundleImport() {
   }
 
   async function handleApproveLessons() {
-    setActing(true);
-    setJobError("");
-
+    setActing(true); setJobError("");
     try {
       await saveReviewLessons(job.job_id, editLessons);
       const res = await approveLessons(job.job_id);
-
       const refreshed = await getReviewJob(job.job_id);
       setJob(refreshed.job);
       mergeEdit(refreshed.job);
-
       if (res?.already_advanced) return;
-
       if (res?.retry) {
-        // DB hadn't advanced yet — retry once if still reviewing_lessons
         if (refreshed.job?.status === "reviewing_lessons") {
           const retryRes = await approveLessons(job.job_id);
           const retryRefreshed = await getReviewJob(job.job_id);
@@ -364,75 +339,41 @@ export default function BookBundleImport() {
       }
     } catch (err) {
       const msg = String(err?.message || err);
-
-      if (
-        msg.includes("extracting_chunks") ||
-        msg.includes("reviewing_chunks") ||
-        msg.includes("approved_for_heavy_stage") ||
-        msg.includes("heavy_stage_running") ||
-        msg.includes("heavy_stage_done")
-      ) {
-        try {
-          const refreshed = await getReviewJob(job.job_id);
-          setJob(refreshed.job);
-          mergeEdit(refreshed.job);
-          return;
-        } catch (_) {
-          // fall through
-        }
+      if (msg.includes("extracting_chunks") || msg.includes("reviewing_chunks") || msg.includes("approved_for_heavy_stage") || msg.includes("heavy_stage_running") || msg.includes("heavy_stage_done")) {
+        try { const refreshed = await getReviewJob(job.job_id); setJob(refreshed.job); mergeEdit(refreshed.job); return; } catch (_) {}
       }
-
       setJobError(msg);
-    } finally {
-      setActing(false);
-    }
+    } finally { setActing(false); }
   }
 
   function handleEditChunkItem(idx, updated) {
     setEditChunks((prev) => prev.map((c, i) => (i === idx ? updated : c)));
   }
-
   function handleChunkNavigateTo(idx) {
-    const clamped = Math.max(0, Math.min(editChunks.length - 1, idx));
-    setChunkIdx(clamped);
+    setChunkIdx(Math.max(0, Math.min(editChunks.length - 1, idx)));
   }
 
-  // After a lesson-level rebuild, find the best new index to land on.
-  // anchorChunk: the chunk the user was viewing before the operation.
-  // isDelete: if true, the anchor chunk itself was removed.
   function _bestChunkIdxAfterRebuild(newChunks, anchorChunk, isDelete = false) {
     if (!anchorChunk || !newChunks.length) return 0;
     const ls = anchorChunk.lesson_stem;
     const start = anchorChunk.start;
-
     if (!isDelete) {
-      // Prefer same lesson + same start (user only edited metadata, not boundaries)
-      const exact = newChunks.findIndex(
-        (c) => c.lesson_stem === ls && c.start === start
-      );
+      const exact = newChunks.findIndex((c) => c.lesson_stem === ls && c.start === start);
       if (exact >= 0) return exact;
     }
-
-    // For delete or start not found: find first chunk in same lesson at or after anchor start
-    const lessonEntries = newChunks
-      .map((c, i) => ({ c, i }))
-      .filter(({ c }) => c.lesson_stem === ls);
+    const lessonEntries = newChunks.map((c, i) => ({ c, i })).filter(({ c }) => c.lesson_stem === ls);
     if (lessonEntries.length > 0) {
       const after = lessonEntries.find(({ c }) => c.start >= start);
       if (after) return after.i;
       return lessonEntries[lessonEntries.length - 1].i;
     }
-
     return Math.max(0, Math.min(newChunks.length - 1, chunkIdx));
   }
 
-  // Rebuild approvals for newChunks, preserving approvals for chunks outside affectedLessonStem.
   function _rebuildApprovals(oldChunks, oldApprovals, newChunks, affectedLessonStem) {
     const lookup = new Map();
     oldChunks.forEach((c, i) => {
-      if (c.lesson_stem !== affectedLessonStem) {
-        lookup.set(`${c.lesson_stem}||${c.start}`, oldApprovals[i] ?? false);
-      }
+      if (c.lesson_stem !== affectedLessonStem) lookup.set(`${c.lesson_stem}||${c.start}`, oldApprovals[i] ?? false);
     });
     return newChunks.map((c) => {
       if (c.lesson_stem === affectedLessonStem) return false;
@@ -444,17 +385,10 @@ export default function BookBundleImport() {
     if (job?.status !== "reviewing_chunks") return;
     const c = editChunks[chunkIdx];
     if (!c) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     const prevChunks = editChunks;
     try {
-      await patchReviewChunk(job.job_id, chunkIdx, {
-        heading: c.heading,
-        title: c.title,
-        start: c.start,
-        end: c.end,
-        content_head: c.content_head ?? false,
-      });
+      await patchReviewChunk(job.job_id, chunkIdx, { heading: c.heading, title: c.title, start: c.start, end: c.end, content_head: c.content_head ?? false });
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
@@ -462,28 +396,18 @@ export default function BookBundleImport() {
       setChunkIdx(_bestChunkIdxAfterRebuild(canonical, c));
       setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
       setChunkPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   async function handleRecutCurrentChunk() {
     if (job?.status !== "reviewing_chunks") return;
     const c = editChunks[chunkIdx];
     if (!c) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     const prevChunks = editChunks;
     try {
-      await patchReviewChunk(job.job_id, chunkIdx, {
-        heading: c.heading,
-        title: c.title,
-        start: c.start,
-        end: c.end,
-        content_head: c.content_head ?? false,
-      });
+      await patchReviewChunk(job.job_id, chunkIdx, { heading: c.heading, title: c.title, start: c.start, end: c.end, content_head: c.content_head ?? false });
       await recutReviewChunk(job.job_id, chunkIdx);
       const res = await getReviewJob(job.job_id);
       setJob(res.job);
@@ -492,11 +416,8 @@ export default function BookBundleImport() {
       setChunkIdx(_bestChunkIdxAfterRebuild(canonical, c));
       setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
       setChunkPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   async function handleDeleteCurrentChunk() {
@@ -505,8 +426,7 @@ export default function BookBundleImport() {
     if (!c) return;
     const label = [c.heading, c.title].filter(Boolean).join(" ").trim() || `chunk ${chunkIdx + 1}`;
     if (!window.confirm(`Xóa phần "${label}" (${c.lesson_stem}, trang ${c.start}–${c.end ?? "?"})?\n\nHành động này sẽ rebuild lại chunk bundle của bài.`)) return;
-    setActing(true);
-    setJobError("");
+    setActing(true); setJobError("");
     const prevChunks = editChunks;
     try {
       await deleteReviewChunk(job.job_id, chunkIdx);
@@ -514,17 +434,12 @@ export default function BookBundleImport() {
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
-      const newIdx = canonical.length > 0
-        ? Math.min(_bestChunkIdxAfterRebuild(canonical, c, true), canonical.length - 1)
-        : 0;
+      const newIdx = canonical.length > 0 ? Math.min(_bestChunkIdxAfterRebuild(canonical, c, true), canonical.length - 1) : 0;
       setChunkIdx(newIdx);
       setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
       setChunkPreviewKey((k) => k + 1);
-    } catch (err) {
-      setJobError(String(err?.message || err));
-    } finally {
-      setActing(false);
-    }
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
   }
 
   function handleApproveThisChunk() {
@@ -537,20 +452,38 @@ export default function BookBundleImport() {
     });
   }
 
+  async function handleAddChunk(lessonStem, newChunk) {
+    if (job?.status !== "reviewing_chunks") return;
+    setActing(true); setJobError("");
+    const prevChunks = editChunks;
+    try {
+      await addReviewChunk(job.job_id, { lesson_stem: lessonStem, ...newChunk });
+      const res = await getReviewJob(job.job_id);
+      setJob(res.job);
+      const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
+      setEditChunks(canonical);
+      // Find the first new chunk for this lesson that didn't exist before
+      const prevStems = prevChunks.filter((c) => c.lesson_stem === lessonStem).map((c) => c.start);
+      const newIdx = canonical.findIndex(
+        (c) => c.lesson_stem === lessonStem && !prevStems.includes(c.start)
+      );
+      setChunkIdx(newIdx >= 0 ? newIdx : Math.max(0, canonical.findIndex((c) => c.lesson_stem === lessonStem)));
+      setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, lessonStem));
+      setChunkPreviewKey((k) => k + 1);
+    } catch (err) { setJobError(String(err?.message || err)); }
+    finally { setActing(false); }
+  }
+
   const handleApproveAllChunks = () =>
     act(async () => {
       if (job?.status !== "reviewing_chunks") return;
-
       await saveReviewChunks(job.job_id, editChunks);
-
-      // Refresh canonical server state after disk sync, before final approve
       const synced = await getReviewJob(job.job_id);
       setJob(synced.job);
       const canonical = (synced.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
       setChunkApprovals(canonical.map(() => false));
       setChunkIdx(0);
-
       await approveChunks(job.job_id);
     });
 
@@ -565,22 +498,13 @@ export default function BookBundleImport() {
     setUploadError("");
     setJob(null);
     setJobError("");
-    setEditTopics([]);
-    setEditLessons([]);
-    setEditChunks([]);
-    setTopicIdx(0);
-    setTopicApprovals([]);
-    setPreviewKey(0);
-    setLessonIdx(0);
-    setLessonApprovals([]);
-    setLessonPreviewKey(0);
-    setChunkIdx(0);
-    setChunkApprovals([]);
-    setChunkPreviewKey(0);
+    setEditTopics([]); setEditLessons([]); setEditChunks([]);
+    setTopicIdx(0); setTopicApprovals([]); setPreviewKey(0);
+    setLessonIdx(0); setLessonApprovals([]); setLessonPreviewKey(0);
+    setChunkIdx(0); setChunkApprovals([]); setChunkPreviewKey(0);
   }
 
   const status = job?.status;
-
   const isExtractingTopics = status === "extracting_topics";
   const isTopicStage = status === "reviewing_topics";
   const isExtractingLessons = status === "extracting_lessons";
@@ -599,164 +523,140 @@ export default function BookBundleImport() {
   const canApproveLessons = isLessonStage && allLessonsApproved;
   const canApproveChunks = isChunkStage && allChunksApproved;
 
-  const PAST_TOPICS_STATUSES = new Set([
-    "extracting_lessons",
-    "reviewing_lessons",
-    "extracting_chunks",
-    "reviewing_chunks",
-    "approved_for_heavy_stage",
-    "heavy_stage_running",
-    "heavy_stage_done",
-  ]);
-  const PAST_LESSONS_STATUSES = new Set([
-    "extracting_chunks",
-    "reviewing_chunks",
-    "approved_for_heavy_stage",
-    "heavy_stage_running",
-    "heavy_stage_done",
-  ]);
-  const PAST_CHUNKS_STATUSES = new Set([
-    "approved_for_heavy_stage",
-    "heavy_stage_running",
-    "heavy_stage_done",
-  ]);
+  const PAST_TOPICS_STATUSES = new Set(["extracting_lessons","reviewing_lessons","extracting_chunks","reviewing_chunks","approved_for_heavy_stage","heavy_stage_running","heavy_stage_done"]);
+  const PAST_LESSONS_STATUSES = new Set(["extracting_chunks","reviewing_chunks","approved_for_heavy_stage","heavy_stage_running","heavy_stage_done"]);
+  const PAST_CHUNKS_STATUSES = new Set(["approved_for_heavy_stage","heavy_stage_running","heavy_stage_done"]);
 
   const isPastTopics = job && PAST_TOPICS_STATUSES.has(status);
   const isPastLessons = job && PAST_LESSONS_STATUSES.has(status);
   const isPastChunks = job && PAST_CHUNKS_STATUSES.has(status);
 
-  return (
-    <div
-      style={{
-        ...s.page,
-        maxWidth:
-          isTopicStage ||
-          isExtractingTopics ||
-          isLessonStage ||
-          isExtractingLessons ||
-          isChunkStage ||
-          isExtractingChunks
-            ? 1200
-            : 760,
-      }}
-    >
-      <h2 style={s.heading}>Import sách</h2>
-      <p style={s.sub}>
-        Upload PDF sách giáo khoa — hệ thống trích xuất cấu trúc Chủ đề / Bài / Phần để kiểm tra
-        trước khi import.
-      </p>
+  const isWideLayout = isTopicStage || isExtractingTopics || isLessonStage || isExtractingLessons || isChunkStage || isExtractingChunks;
+  const activeStep = getWorkflowStepKey(status, phase);
 
+  return (
+    <div style={{ ...s.page, maxWidth: isWideLayout ? 1280 : 800 }}>
+      {/* ── Page header ── */}
+      <div style={s.pageHeader}>
+        <div>
+          <h1 style={s.pageTitle}>Import Sách Giáo Khoa</h1>
+          <p style={s.pageSub}>Tải lên PDF — trích xuất cấu trúc, kiểm tra, rồi import vào hệ thống.</p>
+        </div>
+        {phase === "job" && job && (
+          <button style={s.btnOutline} onClick={handleReset}>
+            + Upload mới
+          </button>
+        )}
+      </div>
+
+      {/* ── Workflow stepper ── */}
+      <WorkflowStepper steps={WORKFLOW_STEPS} activeKey={activeStep} />
+
+      {/* ── Upload phase ── */}
       {phase === "upload" && (
-        <form onSubmit={handleUpload}>
-          <fieldset disabled={uploading} style={s.fieldset}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-              <span style={s.chip}>Môn: {FIXED_SUBJECT_NAME}</span>
-              <span style={s.chip}>Bộ sách: {FIXED_SUBJECT_TYPE}</span>
-              <span style={s.chip}>Model: gemini-2.5-flash</span>
+        <div style={s.card}>
+          <div style={s.cardHeader}>
+            <span style={s.cardTitle}>Thông tin sách</span>
+          </div>
+          <div style={{ padding: "20px 24px" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+              <MetaChip icon="📚" label={FIXED_SUBJECT_NAME} />
+              <MetaChip icon="📖" label={FIXED_SUBJECT_TYPE} />
+              <MetaChip icon="🤖" label="gemini-2.5-flash" />
             </div>
-            <Field label="Lớp *">
-              <input
-                style={s.input}
-                value={form.class_name}
-                onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
-                placeholder='Lớp 10'
-                required
-              />
-            </Field>
-            <Field label="File PDF sách *">
-              <input
-                type="file"
-                accept=".pdf"
-                required
-                onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-                style={{ ...s.input, paddingTop: 6 }}
-              />
-              {pdfFile && (
-                <span style={s.hint}>
-                  {pdfFile.name} — {(pdfFile.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-              )}
-            </Field>
-            {uploadError && <div style={{ ...s.alertBox, ...s.errorBox }}>{uploadError}</div>}
-            <div style={s.actions}>
-              <button type="submit" style={s.btnPrimary} disabled={uploading}>
-                {uploading ? "Đang upload…" : "Upload & trích xuất"}
-              </button>
-            </div>
-          </fieldset>
-        </form>
+            <form onSubmit={handleUpload}>
+              <fieldset disabled={uploading} style={{ border: "none", padding: 0, margin: 0 }}>
+                <FormField label="Lớp học *">
+                  <input
+                    style={s.input}
+                    value={form.class_name}
+                    onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
+                    placeholder="Ví dụ: 10"
+                    required
+                  />
+                </FormField>
+                <FormField label="File PDF sách *">
+                  <label style={s.fileLabel}>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      required
+                      onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                      style={{ display: "none" }}
+                    />
+                    <span style={s.fileLabelInner}>
+                      {pdfFile ? (
+                        <>
+                          <span style={{ color: "#0f172a", fontWeight: 500 }}>{pdfFile.name}</span>
+                          <span style={{ color: "#64748b", marginLeft: 8 }}>
+                            {(pdfFile.size / 1024 / 1024).toFixed(1)} MB
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ color: "#94a3b8" }}>Chọn file PDF…</span>
+                      )}
+                    </span>
+                    <span style={s.fileLabelBtn}>Duyệt</span>
+                  </label>
+                </FormField>
+                {uploadError && <AlertBox type="error" message={uploadError} />}
+                <div style={{ marginTop: 20 }}>
+                  <button type="submit" style={s.btnPrimary} disabled={uploading}>
+                    {uploading ? "Đang tải lên…" : "Upload & bắt đầu trích xuất"}
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+        </div>
       )}
 
+      {/* ── Job phase ── */}
       {phase === "job" && job && (
         <div>
-          <div style={s.card}>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
-            >
-              <div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>Job: {job.job_id}</div>
-                <div style={{ marginTop: 4, fontWeight: 600, color: statusColor(job.status) }}>
-                  {STATUS_LABEL[job.status] || job.status}
-                </div>
-                <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>
-                  Lớp {job.class_name} · {job.subject_name} · {job.subject_type}
-                </div>
-              </div>
-              <button style={s.btnSecondary} onClick={handleReset}>
-                Upload mới
-              </button>
-            </div>
-          </div>
+          {/* Job status card */}
+          <JobStatusCard job={job} />
 
           {jobError && (
-            <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>{jobError}</div>
+            <AlertBox type="error" message={jobError} style={{ marginTop: 12 }} />
           )}
 
           {job.status === "error" && job.error && (
-            <div style={{ ...s.alertBox, ...s.errorBox, marginTop: 12 }}>
-              <strong>Lỗi:</strong> <code style={{ fontSize: 12 }}>{job.error}</code>
-              {job.error_log_tail?.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    background: "#1e293b",
-                    borderRadius: 4,
-                    padding: "8px 10px",
-                    maxHeight: 160,
-                    overflowY: "auto",
-                  }}
-                >
-                  {job.error_log_tail.map((line, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 11,
-                        color: "#fca5a5",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {line}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div style={{ ...s.card, marginTop: 12, border: "1px solid #fecaca" }}>
+              <div style={s.cardHeader}>
+                <span style={{ ...s.cardTitle, color: "#b91c1c" }}>Thông tin lỗi</span>
+              </div>
+              <div style={{ padding: "12px 20px" }}>
+                <code style={{ fontSize: 12, color: "#b91c1c", wordBreak: "break-all" }}>{job.error}</code>
+                {job.error_log_tail?.length > 0 && (
+                  <LogPanel lines={job.error_log_tail} lineColor="#fca5a5" style={{ marginTop: 10 }} />
+                )}
+              </div>
             </div>
           )}
 
+          {/* Extraction progress */}
           {TRANSIENT_STATUSES.has(job.status) && job.status !== "heavy_stage_running" && (
             <ExtractionProgress job={job} />
           )}
 
-          {job.status === "extracting_chunks" && (
-            <div style={{ ...s.infoBox, marginTop: 12 }}>Đã duyệt bài. Đang tách chunk...</div>
-          )}
-
+          {/* Heavy stage progress */}
           {job.status === "heavy_stage_running" && (
             <HeavyStageProgress job={job} />
           )}
 
+          {/* Approved summaries */}
+          {isPastTopics && (
+            <ApprovedSummary label="Chủ đề" items={job.topics} />
+          )}
+          {isPastLessons && (
+            <ApprovedSummary label="Bài học" items={job.lessons} />
+          )}
+          {isPastChunks && (
+            <ApprovedSummary label="Phần" items={job.chunks} />
+          )}
+
+          {/* Review panes */}
           {showTopicReview && (
             <TopicReviewPane
               job={job}
@@ -774,10 +674,6 @@ export default function BookBundleImport() {
               onSetDebugTopic={handleSetDebugTopic}
               loading={acting}
             />
-          )}
-
-          {isPastTopics && (
-            <CompactList title="✓ Chủ đề" items={job.topics} fields={["heading", "title"]} />
           )}
 
           {showLessonReview && (
@@ -798,10 +694,6 @@ export default function BookBundleImport() {
             />
           )}
 
-          {isPastLessons && (
-            <CompactList title="✓ Bài" items={job.lessons} fields={["heading", "title"]} />
-          )}
-
           {showChunkReview && (
             <ChunkReviewPane
               job={job}
@@ -817,29 +709,40 @@ export default function BookBundleImport() {
               onDelete={handleDeleteCurrentChunk}
               onApproveThis={handleApproveThisChunk}
               onApproveAll={handleApproveAllChunks}
+              onAdd={handleAddChunk}
               loading={acting}
             />
           )}
 
-          {isPastChunks && (
-            <CompactList title="✓ Phần" items={job.chunks} fields={["heading", "title"]} />
-          )}
-
+          {/* Approved for heavy stage */}
           {job.status === "approved_for_heavy_stage" && (
             <div style={{ ...s.card, marginTop: 16 }}>
-              <h4 style={s.cardTitle}>Xử lý nặng</h4>
-              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 12px" }}>
-                Cấu trúc đã được duyệt. Nhấn để chạy import vào MongoDB / PostgreSQL / Neo4j.
-              </p>
-              <button style={s.btnPrimary} disabled={acting} onClick={handleTriggerHeavy}>
-                {acting ? "Đang gửi…" : "Chạy xử lý nặng"}
-              </button>
+              <div style={s.cardHeader}>
+                <span style={s.cardTitle}>Sẵn sàng import</span>
+              </div>
+              <div style={{ padding: "20px 24px" }}>
+                <p style={{ margin: "0 0 16px", fontSize: 14, color: "#475569", lineHeight: 1.6 }}>
+                  Cấu trúc đã được duyệt đầy đủ. Bước tiếp theo sẽ chạy Kaggle để xử lý OCR, trích xuất từ khóa, rồi import vào MongoDB / PostgreSQL / Neo4j.
+                </p>
+                <button style={s.btnPrimary} disabled={acting} onClick={handleTriggerHeavy}>
+                  {acting ? "Đang khởi động…" : "Bắt đầu import"}
+                </button>
+              </div>
             </div>
           )}
 
+          {/* Done */}
           {job.status === "heavy_stage_done" && (
-            <div style={{ ...s.alertBox, ...s.successBox, marginTop: 16 }}>
-              Import hoàn tất.{job.heavy_report?.message ? ` ${job.heavy_report.message}` : ""}
+            <div style={{ ...s.card, marginTop: 16, border: "1px solid #bbf7d0" }}>
+              <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 24 }}>✅</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#15803d" }}>Import hoàn tất!</div>
+                  {job.heavy_report?.message && (
+                    <div style={{ fontSize: 13, color: "#475569", marginTop: 2 }}>{job.heavy_report.message}</div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -848,665 +751,181 @@ export default function BookBundleImport() {
   );
 }
 
-function TopicReviewPane({
-  job,
-  editTopics,
-  topicIdx,
-  topicApprovals,
-  canApproveAll,
-  previewKey,
-  onEditItem,
-  onNavigateTo,
-  onSave,
-  onRecut,
-  onApproveThis,
-  onApproveAll,
-  onSetDebugTopic,
-  loading,
-}) {
-  const topic = editTopics[topicIdx] || {};
-  const total = editTopics.length;
+// ─── Shared small components ────────────────────────────────────────────────
 
-  function set(field, value) {
-    onEditItem(topicIdx, { ...topic, [field]: value });
-  }
-
-  const cutUrl = reviewTopicPdfUrl(job.job_id, topicIdx, previewKey);
-  const srcUrl = reviewSourcePdfUrl(job.job_id);
-
+function WorkflowStepper({ steps, activeKey }) {
+  const activeIdx = steps.findIndex((s) => s.key === activeKey);
   return (
-    <div style={{ marginTop: 16 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ fontWeight: 700, fontSize: 14 }}>
-          Chủ đề {topicIdx + 1} / {total}
-        </span>
-        <button
-          style={s.btnSecondary}
-          disabled={topicIdx === 0 || loading}
-          onClick={() => onNavigateTo(topicIdx - 1)}
-        >
-          ← Trước
-        </button>
-        <button
-          style={s.btnSecondary}
-          disabled={topicIdx >= total - 1 || loading}
-          onClick={() => onNavigateTo(topicIdx + 1)}
-        >
-          Sau →
-        </button>
-        {canApproveAll && (
-          <button
-            style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
-            disabled={loading}
-            onClick={onApproveAll}
-          >
-            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả chủ đề"}
-          </button>
-        )}
-      </div>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
-      >
-        <div style={s.card}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-            Preview cắt — trang {topic.start}–{topic.end}
-          </div>
-          <iframe
-            key={`cut-${topicIdx}-${previewKey}`}
-            src={cutUrl}
-            title="Topic cut preview"
-            style={s.pdfFrame}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-              PDF gốc (tham chiếu)
-            </div>
-            <iframe src={srcUrl} title="Source PDF" style={s.pdfFrame} />
-          </div>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
-              Chỉnh sửa chủ đề {topicIdx + 1}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Field label="Heading (số chủ đề)">
-                <input
-                  style={s.input}
-                  value={topic.heading || ""}
-                  onChange={(e) => set("heading", e.target.value)}
-                />
-              </Field>
-              <Field label="Tên chủ đề (title)">
-                <input
-                  style={s.input}
-                  value={topic.title || ""}
-                  onChange={(e) => set("title", e.target.value)}
-                />
-              </Field>
-              <div style={s.row2}>
-                <Field label="Trang bắt đầu">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={topic.start ?? ""}
-                    onChange={(e) => set("start", parseInt(e.target.value, 10) || topic.start)}
-                  />
-                </Field>
-                <Field label="Trang kết thúc">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={topic.end ?? ""}
-                    onChange={(e) => set("end", parseInt(e.target.value, 10) || topic.end)}
-                  />
-                </Field>
+    <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 20px", boxShadow: s.shadow }}>
+      {steps.map((step, i) => {
+        const done = i < activeIdx;
+        const active = i === activeIdx;
+        return (
+          <div key={step.key} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700, flexShrink: 0,
+                background: done ? "#10b981" : active ? "#3b82f6" : "#e2e8f0",
+                color: done || active ? "#fff" : "#94a3b8",
+              }}>
+                {done ? "✓" : i + 1}
               </div>
+              <span style={{ fontSize: 12, fontWeight: active ? 700 : done ? 500 : 400, color: active ? "#0f172a" : done ? "#374151" : "#94a3b8", whiteSpace: "nowrap" }}>
+                {step.label}
+              </span>
             </div>
-            {(() => {
-              const debugEnabled = !!job.debug_single_topic_enabled;
-              const isSelected = job.debug_topic_index === topicIdx;
-              const selectedTitle =
-                debugEnabled && job.debug_topic_index != null
-                  ? (editTopics[job.debug_topic_index]?.heading || "") +
-                    " " +
-                    (editTopics[job.debug_topic_index]?.title || "")
-                  : null;
-              return (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: debugEnabled ? "#fef3c7" : "#f9fafb",
-                    border: `1px solid ${debugEnabled ? "#fbbf24" : "#e5e7eb"}`,
-                    fontSize: 12,
-                    color: debugEnabled ? "#92400e" : "#6b7280",
-                  }}
-                >
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={debugEnabled}
-                      disabled={loading}
-                      onChange={(e) =>
-                        onSetDebugTopic({
-                          enabled: e.target.checked,
-                          topicIndex: e.target.checked ? topicIdx : null,
-                        })
-                      }
-                    />
-                    <span style={{ fontWeight: 600 }}>
-                      {debugEnabled ? "🐛 Debug mode ON" : "Debug mode OFF (full book)"}
-                    </span>
-                    {debugEnabled && selectedTitle && (
-                      <span style={{ marginLeft: 4, color: "#78350f" }}>
-                        — topic {job.debug_topic_index + 1}: {selectedTitle.trim()}
-                      </span>
-                    )}
-                  </label>
-                  {debugEnabled && !isSelected && (
-                    <button
-                      style={{ ...s.btnSecondary, fontSize: 11, padding: "2px 8px", marginTop: 6 }}
-                      disabled={loading}
-                      onClick={() => onSetDebugTopic({ enabled: true, topicIndex: topicIdx })}
-                    >
-                      Chọn topic {topicIdx + 1} để debug
-                    </button>
-                  )}
-                  {debugEnabled && isSelected && (
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: 4,
-                        fontSize: 11,
-                        color: "#15803d",
-                        fontWeight: 600,
-                      }}
-                    >
-                      ✓ Topic này đang được debug
-                    </span>
-                  )}
-                </div>
-              );
-            })()}
-            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-              <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-                Lưu & đồng bộ
-              </button>
-              <button style={s.btnSecondary} disabled={loading} onClick={onRecut}>
-                Cắt lại preview
-              </button>
-              <button
-                style={{
-                  ...s.btnPrimary,
-                  background: topicApprovals[topicIdx] ? "#15803d" : "#2563eb",
-                }}
-                disabled={loading}
-                onClick={onApproveThis}
-              >
-                {topicApprovals[topicIdx] ? "✓ Đã duyệt" : "Duyệt chủ đề này"}
-              </button>
-            </div>
+            {i < steps.length - 1 && (
+              <div style={{ flex: 1, height: 1, background: done ? "#10b981" : "#e2e8f0", margin: "0 10px", minWidth: 20 }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MetaChip({ icon, label }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: "#f1f5f9", border: "1px solid #e2e8f0", fontSize: 12, color: "#475569", fontWeight: 500 }}>
+      <span>{icon}</span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function AlertBox({ type, message, style: extra = {} }) {
+  const styles = {
+    error: { bg: "#fef2f2", border: "#fecaca", color: "#b91c1c" },
+    warning: { bg: "#fffbeb", border: "#fde68a", color: "#92400e" },
+    info: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
+  };
+  const t = styles[type] || styles.info;
+  return (
+    <div style={{ padding: "10px 14px", borderRadius: 8, background: t.bg, border: `1px solid ${t.border}`, color: t.color, fontSize: 13, ...extra }}>
+      {message}
+    </div>
+  );
+}
+
+function LogPanel({ lines, lineColor = "#94a3b8", maxHeight = 160, style: extra = {} }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [lines]);
+  return (
+    <div ref={ref} style={{ background: "#0f172a", borderRadius: 6, padding: "10px 12px", maxHeight, overflowY: "auto", fontFamily: "monospace", ...extra }}>
+      {lines.map((line, i) => (
+        <div key={i} style={{ fontSize: 11, color: lineColor, whiteSpace: "pre-wrap", lineHeight: 1.55 }}>
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function JobStatusCard({ job }) {
+  const badge = STATUS_BADGE_COLOR[job.status] || { bg: "#f1f5f9", color: "#475569" };
+  return (
+    <div style={{ ...s.card, padding: "16px 20px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: badge.bg, color: badge.color }}>
+              {STATUS_LABEL[job.status] || job.status}
+            </span>
+            <span style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace" }}>
+              {job.job_id.slice(0, 8)}…
+            </span>
+          </div>
+          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <InfoPair label="Lớp" value={job.class_name} />
+            <InfoPair label="Môn" value={job.subject_name} />
+            <InfoPair label="Bộ sách" value={job.subject_type} />
           </div>
         </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
-        {editTopics.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => onNavigateTo(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              cursor: "pointer",
-              background: topicApprovals[i] ? "#15803d" : i === topicIdx ? "#2563eb" : "#e5e7eb",
-              color: topicApprovals[i] || i === topicIdx ? "#fff" : "#374151",
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          >
-            {i + 1}
-          </button>
-        ))}
       </div>
     </div>
   );
 }
 
-function LessonReviewPane({
-  job,
-  editLessons,
-  lessonIdx,
-  lessonApprovals,
-  canApproveAll,
-  lessonPreviewKey,
-  onEditItem,
-  onNavigateTo,
-  onSave,
-  onRecut,
-  onApproveThis,
-  onApproveAll,
-  loading,
-}) {
-  const lesson = editLessons[lessonIdx] || {};
-  const total = editLessons.length;
-
-  function set(field, value) {
-    onEditItem(lessonIdx, { ...lesson, [field]: value });
-  }
-
-  const cutUrl = reviewLessonPdfUrl(job.job_id, lessonIdx, lessonPreviewKey);
-  const srcUrl = reviewSourcePdfUrl(job.job_id);
-
+function InfoPair({ label, value }) {
   return (
-    <div style={{ marginTop: 16 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ fontWeight: 700, fontSize: 14 }}>
-          Bài {lessonIdx + 1} / {total}
-        </span>
-        <button
-          style={s.btnSecondary}
-          disabled={lessonIdx === 0 || loading}
-          onClick={() => onNavigateTo(lessonIdx - 1)}
-        >
-          ← Trước
-        </button>
-        <button
-          style={s.btnSecondary}
-          disabled={lessonIdx >= total - 1 || loading}
-          onClick={() => onNavigateTo(lessonIdx + 1)}
-        >
-          Sau →
-        </button>
-        {canApproveAll && (
-          <button
-            style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
-            disabled={loading}
-            onClick={onApproveAll}
-          >
-            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả bài"}
-          </button>
-        )}
-      </div>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
-      >
-        <div style={s.card}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-            Preview cắt — trang {lesson.start}–{lesson.end}
-          </div>
-          <iframe
-            key={`cut-lesson-${lessonIdx}-${lessonPreviewKey}`}
-            src={cutUrl}
-            title="Lesson cut preview"
-            style={s.pdfFrame}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-              PDF gốc (tham chiếu)
-            </div>
-            <iframe src={srcUrl} title="Source PDF" style={s.pdfFrame} />
-          </div>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
-              Chỉnh sửa bài {lessonIdx + 1}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Field label="Heading (số bài)">
-                <input
-                  style={s.input}
-                  value={lesson.heading || ""}
-                  onChange={(e) => set("heading", e.target.value)}
-                />
-              </Field>
-              <Field label="Tên bài (title)">
-                <input
-                  style={s.input}
-                  value={lesson.title || ""}
-                  onChange={(e) => set("title", e.target.value)}
-                />
-              </Field>
-              <div style={s.row2}>
-                <Field label="Trang bắt đầu">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={lesson.start ?? ""}
-                    onChange={(e) => set("start", parseInt(e.target.value, 10) || lesson.start)}
-                  />
-                </Field>
-                <Field label="Trang kết thúc">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={lesson.end ?? ""}
-                    onChange={(e) => set("end", parseInt(e.target.value, 10) || lesson.end)}
-                  />
-                </Field>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-              <button style={s.btnSecondary} disabled={loading} onClick={onSave}>
-                Lưu & đồng bộ
-              </button>
-              <button style={s.btnSecondary} disabled={loading} onClick={onRecut}>
-                Cắt lại preview
-              </button>
-              <button
-                style={{
-                  ...s.btnPrimary,
-                  background: lessonApprovals[lessonIdx] ? "#15803d" : "#2563eb",
-                }}
-                disabled={loading}
-                onClick={onApproveThis}
-              >
-                {lessonApprovals[lessonIdx] ? "✓ Đã duyệt" : "Duyệt bài này"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
-        {editLessons.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => onNavigateTo(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              cursor: "pointer",
-              background: lessonApprovals[i] ? "#15803d" : i === lessonIdx ? "#2563eb" : "#e5e7eb",
-              color: lessonApprovals[i] || i === lessonIdx ? "#fff" : "#374151",
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
-    </div>
+    <span style={{ fontSize: 13, color: "#475569" }}>
+      <span style={{ color: "#94a3b8", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginRight: 4 }}>{label}</span>
+      <span style={{ fontWeight: 500, color: "#0f172a" }}>{value}</span>
+    </span>
   );
 }
 
-function ChunkReviewPane({
-  job,
-  editChunks,
-  chunkIdx,
-  chunkApprovals,
-  canApproveAll,
-  chunkPreviewKey,
-  onEditItem,
-  onNavigateTo,
-  onSave,
-  onRecut,
-  onDelete,
-  onApproveThis,
-  onApproveAll,
-  loading,
-}) {
-  const chunk = editChunks[chunkIdx] || {};
-  const total = editChunks.length;
-
-  function set(field, value) {
-    onEditItem(chunkIdx, { ...chunk, [field]: value });
-  }
-
-  const cutUrl = reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey);
-  const lessonRefUrl = reviewChunkLessonPdfUrl(job.job_id, chunkIdx, chunkPreviewKey);
-
-  return (
-    <div style={{ marginTop: 16 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ fontWeight: 700, fontSize: 14 }}>
-          Phần {chunkIdx + 1} / {total}
-        </span>
-        <button
-          style={s.btnSecondary}
-          disabled={chunkIdx === 0 || loading || job.status !== "reviewing_chunks"}
-          onClick={() => onNavigateTo(chunkIdx - 1)}
-        >
-          ← Trước
-        </button>
-        <button
-          style={s.btnSecondary}
-          disabled={chunkIdx >= total - 1 || loading || job.status !== "reviewing_chunks"}
-          onClick={() => onNavigateTo(chunkIdx + 1)}
-        >
-          Sau →
-        </button>
-        {canApproveAll && (
-          <button
-            style={{ ...s.btnPrimary, marginLeft: "auto", background: "#15803d" }}
-            disabled={loading || job.status !== "reviewing_chunks"}
-            onClick={onApproveAll}
-          >
-            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả phần"}
-          </button>
-        )}
-      </div>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}
-      >
-        <div style={s.card}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-            Preview phần — {chunk.lesson_stem || ""} / {chunk.chunk || ""}
-          </div>
-          <iframe
-            key={`cut-chunk-${chunkIdx}-${chunkPreviewKey}`}
-            src={cutUrl}
-            title="Chunk preview"
-            style={s.pdfFrame}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-              PDF bài học (tham chiếu)
-            </div>
-            <iframe src={lessonRefUrl} title="Lesson PDF for chunk" style={s.pdfFrame} />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-              Chunk dùng số trang theo bài, không phải theo cả cuốn sách.
-            </div>
-          </div>
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>
-              Chỉnh sửa phần {chunkIdx + 1}
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.6 }}>
-              <div>Bài: {chunk.lesson_stem || "—"}</div>
-              <div>Trang bắt đầu (trong bài): {chunk.start ?? "—"}</div>
-              <div>Trang kết thúc (trong bài): {chunk.end ?? "—"}</div>
-              <div>content_head: {chunk.content_head ? "true" : "false"}</div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Field label="Heading (số mục)">
-                <input
-                  style={s.input}
-                  value={chunk.heading || ""}
-                  onChange={(e) => set("heading", e.target.value)}
-                />
-              </Field>
-              <Field label="Tên mục (title)">
-                <input
-                  style={s.input}
-                  value={chunk.title || ""}
-                  onChange={(e) => set("title", e.target.value)}
-                />
-              </Field>
-              <div style={s.row2}>
-                <Field label="Trang bắt đầu (trong bài)">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={chunk.start ?? ""}
-                    onChange={(e) => set("start", parseInt(e.target.value, 10) || chunk.start)}
-                  />
-                </Field>
-                <Field label="Trang kết thúc (trong bài)">
-                  <input
-                    style={s.input}
-                    type="number"
-                    min={1}
-                    value={chunk.end ?? ""}
-                    onChange={(e) => set("end", parseInt(e.target.value, 10) || chunk.end)}
-                  />
-                </Field>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <label
-                  style={{ fontSize: 13, color: "#374151", userSelect: "none", cursor: "pointer" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={chunk.content_head ?? false}
-                    onChange={(e) => set("content_head", e.target.checked)}
-                    style={{ marginRight: 6 }}
-                  />
-                  Trang đầu là nội dung (content_head) — cờ metadata để debug{" "}
-                </label>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-              <button
-                style={s.btnSecondary}
-                disabled={loading || job.status !== "reviewing_chunks"}
-                onClick={onSave}
-              >
-                Lưu & cập nhật chunk
-              </button>
-              <button
-                style={s.btnSecondary}
-                disabled={loading || job.status !== "reviewing_chunks"}
-                onClick={onRecut}
-              >
-                Cắt lại chunk
-              </button>
-              <button
-                style={{ ...s.btnSecondary, color: "#dc2626", borderColor: "#dc2626" }}
-                disabled={loading || job.status !== "reviewing_chunks"}
-                onClick={onDelete}
-              >
-                Xóa phần này
-              </button>
-              <button
-                style={{
-                  ...s.btnPrimary,
-                  background: chunkApprovals[chunkIdx] ? "#15803d" : "#2563eb",
-                }}
-                disabled={loading || job.status !== "reviewing_chunks"}
-                onClick={onApproveThis}
-              >
-                {chunkApprovals[chunkIdx] ? "✓ Đã duyệt" : "Duyệt phần này"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
-        {editChunks.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => onNavigateTo(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              cursor: "pointer",
-              background: chunkApprovals[i] ? "#15803d" : i === chunkIdx ? "#2563eb" : "#e5e7eb",
-              color: chunkApprovals[i] || i === chunkIdx ? "#fff" : "#374151",
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CompactList({ title, items, fields }) {
+function ApprovedSummary({ label, items }) {
   if (!items || items.length === 0) return null;
   return (
-    <div style={{ ...s.card, marginTop: 16, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#15803d", marginBottom: 6 }}>
-        {title} ({items.length})
+    <div style={{ ...s.card, marginTop: 12, border: "1px solid #d1fae5" }}>
+      <div style={{ ...s.cardHeader, background: "#f0fdf4", borderBottom: "1px solid #d1fae5" }}>
+        <span style={{ ...s.cardTitle, color: "#15803d" }}>
+          ✓ {label} <span style={{ fontWeight: 400, color: "#6ee7b7", marginLeft: 4 }}>({items.length})</span>
+        </span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {items.map((item, i) => (
-          <span
-            key={i}
-            style={{
-              fontSize: 12,
-              background: "#dcfce7",
-              color: "#166534",
-              padding: "2px 8px",
-              borderRadius: 12,
-            }}
-          >
-            {fields
-              .map((f) => item[f])
-              .filter(Boolean)
-              .join(" — ") || `#${i + 1}`}
+      <div style={{ padding: "12px 20px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {items.map((item, i) => {
+          const text = [item.heading, item.title].filter(Boolean).join(" — ") || `#${i + 1}`;
+          return (
+            <span key={i} style={{ fontSize: 12, padding: "3px 9px", borderRadius: 14, background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }}>
+              {text}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Extraction + Heavy progress ─────────────────────────────────────────────
+
+function ExtractionProgress({ job }) {
+  const msg = job.progress_message || STATUS_LABEL[job.status] || job.status;
+  const cur = job.progress_current ?? null;
+  const tot = job.progress_total ?? null;
+  const pct = job.progress_percent != null ? job.progress_percent : (cur != null && tot > 0 ? Math.round((cur / tot) * 100) : null);
+  const logLines = job.live_log_tail || [];
+  const ageS = job.progress_age_seconds ?? null;
+  const stale = ageS != null && ageS > 120;
+  const isCooldown = job.progress_stage === "waiting_gemini_key_cooldown";
+
+  return (
+    <div style={{ ...s.card, marginTop: 12, border: isCooldown ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
+      <div style={{ ...s.cardHeader, background: isCooldown ? "#fffbeb" : "#eff6ff", borderBottom: isCooldown ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
+        <span style={{ ...s.cardTitle, color: isCooldown ? "#92400e" : "#1d4ed8" }}>
+          {isCooldown ? "⏳ API key cooldown" : "Đang trích xuất…"}
+        </span>
+        {stale && !isCooldown && (
+          <span style={{ fontSize: 11, color: "#b45309", fontWeight: 500 }}>
+            ⚠ Không có cập nhật trong {ageS}s
           </span>
-        ))}
+        )}
+      </div>
+      <div style={{ padding: "14px 20px" }}>
+        <div style={{ fontSize: 14, color: isCooldown ? "#92400e" : "#1e40af", marginBottom: pct != null ? 10 : 0 }}>{msg}</div>
+        {pct != null && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginBottom: 5 }}>
+              <span>{cur != null && tot != null ? `${cur} / ${tot}` : ""}</span>
+              <span style={{ fontWeight: 600 }}>{pct}%</span>
+            </div>
+            <ProgressBar pct={pct} color="#3b82f6" />
+          </div>
+        )}
+        {logLines.length > 0 && <LogPanel lines={logLines} style={{ marginTop: 12 }} />}
       </div>
     </div>
   );
@@ -1515,13 +934,13 @@ function CompactList({ title, items, fields }) {
 const HEAVY_STAGE_LABEL = {
   heavy_preparing: "Chuẩn bị",
   heavy_kaggle_submitting: "Kaggle: submit",
-  heavy_kaggle_running: "Kaggle: chạy kernel",
-  heavy_kaggle_downloading: "Kaggle: tải kết quả",
-  heavy_keyword_extracting: "Trích xuất từ khóa",
-  heavy_importing_minio: "Upload MinIO",
-  heavy_importing_mongo: "Import MongoDB",
-  heavy_syncing_pg: "Đồng bộ PostgreSQL",
-  heavy_syncing_neo: "Đồng bộ Neo4j",
+  heavy_kaggle_running: "Kaggle: kernel",
+  heavy_kaggle_downloading: "Kaggle: kết quả",
+  heavy_keyword_extracting: "Từ khóa",
+  heavy_importing_minio: "MinIO",
+  heavy_importing_mongo: "MongoDB",
+  heavy_syncing_pg: "PostgreSQL",
+  heavy_syncing_neo: "Neo4j",
   heavy_finalizing_embeddings: "Embeddings",
   heavy_done: "Hoàn tất",
   heavy_error: "Lỗi",
@@ -1541,6 +960,17 @@ const HEAVY_STAGES_ORDER = [
   "heavy_done",
 ];
 
+const HEAVY_COUNT_LABELS = {
+  topics_imported: "Chủ đề",
+  lessons_imported: "Bài",
+  chunks_imported: "Chunk",
+  kw_extracted: "KW mới",
+  kw_inserted: "KW insert",
+  kw_reused: "KW reused",
+  ck_inserted: "Chunk-KW",
+  topic_bags_affected: "Topic bag",
+};
+
 function HeavyStageProgress({ job }) {
   const stage = job.heavy_progress_stage || "heavy_preparing";
   const message = job.heavy_progress_message || "Đang xử lý…";
@@ -1548,314 +978,581 @@ function HeavyStageProgress({ job }) {
   const logLines = job.heavy_log_tail || [];
   const counts = job.heavy_counts_partial || {};
   const isError = stage === "heavy_error";
-
   const currentIdx = HEAVY_STAGES_ORDER.indexOf(stage);
 
   return (
-    <div style={{ ...s.infoBox, marginTop: 12 }}>
-      <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
-        Đang xử lý nặng
+    <div style={{ ...s.card, marginTop: 12, border: isError ? "1px solid #fecaca" : "1px solid #bfdbfe" }}>
+      <div style={{ ...s.cardHeader, background: isError ? "#fef2f2" : "#eff6ff", borderBottom: isError ? "1px solid #fecaca" : "1px solid #bfdbfe" }}>
+        <span style={{ ...s.cardTitle, color: isError ? "#b91c1c" : "#1d4ed8" }}>
+          {isError ? "Import thất bại" : "Đang import…"}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: isError ? "#b91c1c" : "#1d4ed8" }}>{percent}%</span>
       </div>
+      <div style={{ padding: "16px 20px" }}>
+        {/* Stage stepper */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
+          {HEAVY_STAGES_ORDER.map((st, i) => {
+            const done = currentIdx > i;
+            const active = currentIdx === i;
+            const errored = isError && active;
+            return (
+              <span key={st} style={{
+                padding: "2px 9px", borderRadius: 14, fontSize: 11, fontWeight: active ? 700 : 400,
+                background: errored ? "#fee2e2" : done ? "#dcfce7" : active ? "#3b82f6" : "#f1f5f9",
+                color: errored ? "#b91c1c" : done ? "#15803d" : active ? "#fff" : "#94a3b8",
+                border: done ? "1px solid #bbf7d0" : errored ? "1px solid #fecaca" : active ? "none" : "1px solid #e2e8f0",
+              }}>
+                {done ? "✓ " : ""}{HEAVY_STAGE_LABEL[st] || st}
+              </span>
+            );
+          })}
+        </div>
 
-      {/* Stage stepper */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
-        {HEAVY_STAGES_ORDER.map((st, i) => {
-          const done = currentIdx > i;
-          const active = currentIdx === i;
-          return (
-            <span
-              key={st}
-              style={{
-                padding: "2px 8px",
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: active ? 700 : 400,
-                background: done ? "#bbf7d0" : active ? "#2563eb" : "#e5e7eb",
-                color: done ? "#15803d" : active ? "#fff" : "#9ca3af",
-                border: active ? "none" : "1px solid transparent",
-              }}
-            >
-              {done ? "✓ " : ""}{HEAVY_STAGE_LABEL[st] || st}
+        {/* Current message */}
+        <div style={{ fontSize: 13, color: isError ? "#b91c1c" : "#334155", marginBottom: 10, fontWeight: 500 }}>
+          {message}
+        </div>
+        {isError && job.heavy_error_stage && (
+          <div style={{ fontSize: 12, color: "#b91c1c", marginBottom: 10 }}>
+            Thất bại tại: <strong>{HEAVY_STAGE_LABEL[job.heavy_error_stage] || job.heavy_error_stage}</strong>
+          </div>
+        )}
+
+        {/* Progress bar */}
+        <ProgressBar pct={percent} color={isError ? "#ef4444" : "#3b82f6"} style={{ marginBottom: 12 }} />
+
+        {/* Counts */}
+        {Object.keys(counts).length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+            {Object.entries(HEAVY_COUNT_LABELS).map(([key, label]) =>
+              counts[key] != null ? (
+                <span key={key} style={{ padding: "2px 9px", borderRadius: 14, fontSize: 11, background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }}>
+                  {label}: <strong>{counts[key]}</strong>
+                </span>
+              ) : null
+            )}
+          </div>
+        )}
+
+        {/* Log tail */}
+        {logLines.length > 0 && <LogPanel lines={logLines} maxHeight={180} />}
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({ pct, color = "#3b82f6", style: extra = {} }) {
+  return (
+    <div style={{ background: "#e2e8f0", borderRadius: 4, height: 6, overflow: "hidden", ...extra }}>
+      <div style={{ width: `${pct}%`, background: color, height: "100%", borderRadius: 4, transition: "width 0.5s ease" }} />
+    </div>
+  );
+}
+
+// ─── Review panes ─────────────────────────────────────────────────────────────
+
+function ReviewNavHeader({ label, current, total, idx, approvals, loading, canApproveAll, onPrev, onNext, onApproveAll }) {
+  const nApproved = approvals.filter(Boolean).length;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{label}</span>
+        <span style={{ padding: "1px 8px", borderRadius: 12, background: "#f1f5f9", fontSize: 12, color: "#475569", fontWeight: 600 }}>
+          {current} / {total}
+        </span>
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button style={{ ...s.btnSmall, opacity: idx === 0 || loading ? 0.4 : 1 }} disabled={idx === 0 || loading} onClick={onPrev}>← Trước</button>
+        <button style={{ ...s.btnSmall, opacity: idx >= total - 1 || loading ? 0.4 : 1 }} disabled={idx >= total - 1 || loading} onClick={onNext}>Sau →</button>
+      </div>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 11, color: nApproved === total && total > 0 ? "#15803d" : "#94a3b8" }}>
+          {nApproved}/{total} đã duyệt
+        </span>
+        {canApproveAll && (
+          <button style={{ ...s.btnSuccess }} disabled={loading} onClick={onApproveAll}>
+            {loading ? "Đang xử lý…" : "✓ Xác nhận tất cả"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ItemDotNav({ items, currentIdx, approvals, onNavigateTo }) {
+  return (
+    <div style={{ display: "flex", gap: 5, marginTop: 14, flexWrap: "wrap" }}>
+      {items.map((_, i) => {
+        const approved = approvals[i];
+        const active = i === currentIdx;
+        return (
+          <button key={i} onClick={() => onNavigateTo(i)} title={`#${i + 1}`} style={{
+            width: 26, height: 26, borderRadius: "50%", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 700,
+            background: approved ? "#10b981" : active ? "#3b82f6" : "#e2e8f0",
+            color: approved || active ? "#fff" : "#64748b",
+            boxShadow: active ? "0 0 0 2px #bfdbfe" : "none",
+            transition: "background 0.15s",
+          }}>
+            {i + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApproveAll, previewKey, onEditItem, onNavigateTo, onSave, onRecut, onApproveThis, onApproveAll, onSetDebugTopic, loading }) {
+  const topic = editTopics[topicIdx] || {};
+  const total = editTopics.length;
+  function set(field, value) { onEditItem(topicIdx, { ...topic, [field]: value }); }
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <SectionLabel>Kiểm tra Chủ đề</SectionLabel>
+      <ReviewNavHeader
+        label="Chủ đề" current={topicIdx + 1} total={total} idx={topicIdx} approvals={topicApprovals}
+        loading={loading} canApproveAll={canApproveAll}
+        onPrev={() => onNavigateTo(topicIdx - 1)} onNext={() => onNavigateTo(topicIdx + 1)} onApproveAll={onApproveAll}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 16, alignItems: "start" }}>
+        {/* Primary: cut preview */}
+        <div style={s.card}>
+          <div style={s.cardHeader}>
+            <span style={s.cardTitle}>Preview — trang {topic.start}–{topic.end}</span>
+          </div>
+          <div style={{ padding: "8px" }}>
+            <iframe key={`cut-${topicIdx}-${previewKey}`} src={reviewTopicPdfUrl(job.job_id, topicIdx, previewKey)} title="Topic cut" style={s.pdfFrame} />
+          </div>
+        </div>
+
+        {/* Secondary: reference + edit */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>PDF gốc</span>
+            </div>
+            <div style={{ padding: "8px" }}>
+              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Source" style={{ ...s.pdfFrame, height: 280 }} />
+            </div>
+          </div>
+
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={s.cardTitle}>Chỉnh sửa chủ đề {topicIdx + 1}</span>
+              <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 10, background: topicApprovals[topicIdx] ? "#dcfce7" : "#f1f5f9", color: topicApprovals[topicIdx] ? "#15803d" : "#94a3b8" }}>
+                {topicApprovals[topicIdx] ? "✓ Đã duyệt" : "Chưa duyệt"}
+              </span>
+            </div>
+            <div style={{ padding: "14px 16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                <FormField label="Heading">
+                  <input style={s.input} value={topic.heading || ""} onChange={(e) => set("heading", e.target.value)} />
+                </FormField>
+                <FormField label="Tên chủ đề">
+                  <input style={s.input} value={topic.title || ""} onChange={(e) => set("title", e.target.value)} />
+                </FormField>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <FormField label="Trang bắt đầu">
+                    <input style={s.input} type="number" min={1} value={topic.start ?? ""} onChange={(e) => set("start", parseInt(e.target.value, 10) || topic.start)} />
+                  </FormField>
+                  <FormField label="Trang kết thúc">
+                    <input style={s.input} type="number" min={1} value={topic.end ?? ""} onChange={(e) => set("end", parseInt(e.target.value, 10) || topic.end)} />
+                  </FormField>
+                </div>
+              </div>
+
+              {/* Debug panel */}
+              <DebugTopicPanel job={job} editTopics={editTopics} topicIdx={topicIdx} loading={loading} onSetDebugTopic={onSetDebugTopic} />
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 14, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+                <button style={s.btnSmall} disabled={loading} onClick={onSave}>Lưu</button>
+                <button style={s.btnSmall} disabled={loading} onClick={onRecut}>Cắt lại</button>
+                <button style={{ ...s.btnSmall, marginLeft: "auto", ...(topicApprovals[topicIdx] ? { background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" } : { background: "#dbeafe", color: "#1d4ed8", borderColor: "#bfdbfe" }) }} disabled={loading} onClick={onApproveThis}>
+                  {topicApprovals[topicIdx] ? "✓ Đã duyệt" : "Duyệt"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ItemDotNav items={editTopics} currentIdx={topicIdx} approvals={topicApprovals} onNavigateTo={onNavigateTo} />
+    </div>
+  );
+}
+
+function DebugTopicPanel({ job, editTopics, topicIdx, loading, onSetDebugTopic }) {
+  const debugEnabled = !!job.debug_single_topic_enabled;
+  const isSelected = job.debug_topic_index === topicIdx;
+  const selectedTitle = debugEnabled && job.debug_topic_index != null
+    ? [(editTopics[job.debug_topic_index]?.heading || ""), (editTopics[job.debug_topic_index]?.title || "")].filter(Boolean).join(" ")
+    : null;
+
+  return (
+    <div style={{
+      padding: "8px 10px", borderRadius: 6, fontSize: 12,
+      background: debugEnabled ? "#fffbeb" : "#f8fafc",
+      border: `1px solid ${debugEnabled ? "#fde68a" : "#e2e8f0"}`,
+      color: debugEnabled ? "#92400e" : "#94a3b8",
+    }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none" }}>
+        <input type="checkbox" checked={debugEnabled} disabled={loading}
+          onChange={(e) => onSetDebugTopic({ enabled: e.target.checked, topicIndex: e.target.checked ? topicIdx : null })}
+        />
+        <span style={{ fontWeight: 600 }}>
+          {debugEnabled ? "🐛 Debug mode ON" : "Debug mode"}
+        </span>
+        {debugEnabled && selectedTitle && (
+          <span style={{ color: "#92400e" }}>— {selectedTitle.trim().slice(0, 30)}</span>
+        )}
+      </label>
+      {debugEnabled && !isSelected && (
+        <button style={{ ...s.btnSmall, fontSize: 10, padding: "1px 7px", marginTop: 5 }} disabled={loading} onClick={() => onSetDebugTopic({ enabled: true, topicIndex: topicIdx })}>
+          Debug topic {topicIdx + 1}
+        </button>
+      )}
+      {debugEnabled && isSelected && (
+        <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#15803d", fontWeight: 600 }}>✓ Đang debug topic này</span>
+      )}
+    </div>
+  );
+}
+
+function LessonReviewPane({ job, editLessons, lessonIdx, lessonApprovals, canApproveAll, lessonPreviewKey, onEditItem, onNavigateTo, onSave, onRecut, onApproveThis, onApproveAll, loading }) {
+  const lesson = editLessons[lessonIdx] || {};
+  const total = editLessons.length;
+  function set(field, value) { onEditItem(lessonIdx, { ...lesson, [field]: value }); }
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <SectionLabel>Kiểm tra Bài học</SectionLabel>
+      <ReviewNavHeader
+        label="Bài" current={lessonIdx + 1} total={total} idx={lessonIdx} approvals={lessonApprovals}
+        loading={loading} canApproveAll={canApproveAll}
+        onPrev={() => onNavigateTo(lessonIdx - 1)} onNext={() => onNavigateTo(lessonIdx + 1)} onApproveAll={onApproveAll}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 16, alignItems: "start" }}>
+        <div style={s.card}>
+          <div style={s.cardHeader}>
+            <span style={s.cardTitle}>Preview — trang {lesson.start}–{lesson.end}</span>
+          </div>
+          <div style={{ padding: "8px" }}>
+            <iframe key={`cut-lesson-${lessonIdx}-${lessonPreviewKey}`} src={reviewLessonPdfUrl(job.job_id, lessonIdx, lessonPreviewKey)} title="Lesson cut" style={s.pdfFrame} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>PDF gốc</span>
+            </div>
+            <div style={{ padding: "8px" }}>
+              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Source" style={{ ...s.pdfFrame, height: 280 }} />
+            </div>
+          </div>
+
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={s.cardTitle}>Chỉnh sửa bài {lessonIdx + 1}</span>
+              <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 10, background: lessonApprovals[lessonIdx] ? "#dcfce7" : "#f1f5f9", color: lessonApprovals[lessonIdx] ? "#15803d" : "#94a3b8" }}>
+                {lessonApprovals[lessonIdx] ? "✓ Đã duyệt" : "Chưa duyệt"}
+              </span>
+            </div>
+            <div style={{ padding: "14px 16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                <FormField label="Heading">
+                  <input style={s.input} value={lesson.heading || ""} onChange={(e) => set("heading", e.target.value)} />
+                </FormField>
+                <FormField label="Tên bài">
+                  <input style={s.input} value={lesson.title || ""} onChange={(e) => set("title", e.target.value)} />
+                </FormField>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <FormField label="Trang bắt đầu">
+                    <input style={s.input} type="number" min={1} value={lesson.start ?? ""} onChange={(e) => set("start", parseInt(e.target.value, 10) || lesson.start)} />
+                  </FormField>
+                  <FormField label="Trang kết thúc">
+                    <input style={s.input} type="number" min={1} value={lesson.end ?? ""} onChange={(e) => set("end", parseInt(e.target.value, 10) || lesson.end)} />
+                  </FormField>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+                <button style={s.btnSmall} disabled={loading} onClick={onSave}>Lưu</button>
+                <button style={s.btnSmall} disabled={loading} onClick={onRecut}>Cắt lại</button>
+                <button style={{ ...s.btnSmall, marginLeft: "auto", ...(lessonApprovals[lessonIdx] ? { background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" } : { background: "#dbeafe", color: "#1d4ed8", borderColor: "#bfdbfe" }) }} disabled={loading} onClick={onApproveThis}>
+                  {lessonApprovals[lessonIdx] ? "✓ Đã duyệt" : "Duyệt"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ItemDotNav items={editLessons} currentIdx={lessonIdx} approvals={lessonApprovals} onNavigateTo={onNavigateTo} />
+    </div>
+  );
+}
+
+function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApproveAll, chunkPreviewKey, onEditItem, onNavigateTo, onSave, onRecut, onDelete, onApproveThis, onApproveAll, onAdd, loading }) {
+  const chunk = editChunks[chunkIdx] || {};
+  const total = editChunks.length;
+  const isReviewing = job.status === "reviewing_chunks";
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({ heading: "", title: "", start: "", end: "", content_head: false });
+
+  function set(field, value) { onEditItem(chunkIdx, { ...chunk, [field]: value }); }
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    const lessonStem = chunk.lesson_stem;
+    if (!lessonStem) return;
+    await onAdd(lessonStem, {
+      heading: addForm.heading.trim(),
+      title: addForm.title.trim(),
+      start: parseInt(addForm.start, 10) || 1,
+      end: parseInt(addForm.end, 10) || parseInt(addForm.start, 10) || 1,
+      content_head: addForm.content_head,
+    });
+    setShowAddForm(false);
+    setAddForm({ heading: "", title: "", start: "", end: "", content_head: false });
+  }
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <SectionLabel>Kiểm tra Phần (Chunk)</SectionLabel>
+      <ReviewNavHeader
+        label="Phần" current={chunkIdx + 1} total={total} idx={chunkIdx} approvals={chunkApprovals}
+        loading={loading || !isReviewing} canApproveAll={canApproveAll && isReviewing}
+        onPrev={() => onNavigateTo(chunkIdx - 1)} onNext={() => onNavigateTo(chunkIdx + 1)} onApproveAll={onApproveAll}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 16, alignItems: "start" }}>
+        {/* Primary: chunk preview */}
+        <div style={s.card}>
+          <div style={s.cardHeader}>
+            <span style={s.cardTitle}>
+              {chunk.lesson_stem || "—"} / {chunk.chunk || ""}
             </span>
-          );
-        })}
-      </div>
-
-      {/* Current message */}
-      <div style={{ marginBottom: 8, color: isError ? "#b91c1c" : "#1d4ed8" }}>
-        {message}
-      </div>
-      {isError && job.heavy_error_stage && (
-        <div style={{ fontSize: 12, color: "#b91c1c", marginBottom: 6 }}>
-          Thất bại tại: <strong>{HEAVY_STAGE_LABEL[job.heavy_error_stage] || job.heavy_error_stage}</strong>
+          </div>
+          <div style={{ padding: "8px" }}>
+            <iframe key={`cut-chunk-${chunkIdx}-${chunkPreviewKey}`} src={reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Chunk preview" style={s.pdfFrame} />
+          </div>
         </div>
-      )}
 
-      {/* Progress bar */}
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-          <span />
-          <span>{percent}%</span>
-        </div>
-        <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
-          <div
-            style={{
-              width: `${percent}%`,
-              background: isError ? "#ef4444" : "#2563eb",
-              height: "100%",
-              transition: "width 0.5s ease",
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Counts */}
-      {Object.keys(counts).length > 0 && (
-        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {counts.topics_imported != null && (
-            <span style={s.countChip}>chủ đề: {counts.topics_imported}</span>
-          )}
-          {counts.lessons_imported != null && (
-            <span style={s.countChip}>bài: {counts.lessons_imported}</span>
-          )}
-          {counts.chunks_imported != null && (
-            <span style={s.countChip}>chunk: {counts.chunks_imported}</span>
-          )}
-          {counts.kw_extracted != null && (
-            <span style={s.countChip}>kw mới: {counts.kw_extracted}</span>
-          )}
-          {counts.kw_inserted != null && (
-            <span style={s.countChip}>kw insert: {counts.kw_inserted}</span>
-          )}
-          {counts.kw_reused != null && (
-            <span style={s.countChip}>kw reused: {counts.kw_reused}</span>
-          )}
-          {counts.ck_inserted != null && (
-            <span style={s.countChip}>chunk_kw: {counts.ck_inserted}</span>
-          )}
-          {counts.topic_bags_affected != null && (
-            <span style={s.countChip}>topic_bag: {counts.topic_bags_affected}</span>
-          )}
-        </div>
-      )}
-
-      {/* Log tail */}
-      {logLines.length > 0 && (
-        <div
-          style={{
-            marginTop: 10,
-            background: "#1e293b",
-            borderRadius: 4,
-            padding: "8px 10px",
-            maxHeight: 180,
-            overflowY: "auto",
-          }}
-        >
-          {logLines.map((line, i) => (
-            <div
-              key={i}
-              style={{
-                fontFamily: "monospace",
-                fontSize: 11,
-                color: "#94a3b8",
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.5,
-              }}
-            >
-              {line}
+        {/* Secondary: lesson reference + edit */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Bài học (tham chiếu)</span>
             </div>
-          ))}
+            <div style={{ padding: "8px" }}>
+              <iframe src={reviewChunkLessonPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Lesson ref" style={{ ...s.pdfFrame, height: 260 }} />
+            </div>
+            <div style={{ padding: "4px 12px 8px", fontSize: 11, color: "#94a3b8" }}>
+              Số trang là tương đối trong bài, không phải cả cuốn.
+            </div>
+          </div>
+
+          <div style={s.card}>
+            <div style={s.cardHeader}>
+              <span style={s.cardTitle}>Chỉnh sửa phần {chunkIdx + 1}</span>
+              <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 10, background: chunkApprovals[chunkIdx] ? "#dcfce7" : "#f1f5f9", color: chunkApprovals[chunkIdx] ? "#15803d" : "#94a3b8" }}>
+                {chunkApprovals[chunkIdx] ? "✓ Đã duyệt" : "Chưa duyệt"}
+              </span>
+            </div>
+            <div style={{ padding: "14px 16px" }}>
+              {/* Metadata strip */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, padding: "8px 10px", background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Trang: <strong style={{ color: "#0f172a" }}>{chunk.start}–{chunk.end ?? "?"}</strong></span>
+                <span style={{ fontSize: 11, color: "#64748b" }}>content_head: <strong style={{ color: "#0f172a" }}>{chunk.content_head ? "true" : "false"}</strong></span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                <FormField label="Heading">
+                  <input style={s.input} value={chunk.heading || ""} onChange={(e) => set("heading", e.target.value)} />
+                </FormField>
+                <FormField label="Tên mục">
+                  <input style={s.input} value={chunk.title || ""} onChange={(e) => set("title", e.target.value)} />
+                </FormField>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <FormField label="Trang bắt đầu">
+                    <input style={s.input} type="number" min={1} value={chunk.start ?? ""} onChange={(e) => set("start", parseInt(e.target.value, 10) || chunk.start)} />
+                  </FormField>
+                  <FormField label="Trang kết thúc">
+                    <input style={s.input} type="number" min={1} value={chunk.end ?? ""} onChange={(e) => set("end", parseInt(e.target.value, 10) || chunk.end)} />
+                  </FormField>
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+                  <input type="checkbox" checked={chunk.content_head ?? false} onChange={(e) => set("content_head", e.target.checked)} />
+                  content_head
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+                <button style={s.btnSmall} disabled={loading || !isReviewing} onClick={onSave}>Lưu</button>
+                <button style={s.btnSmall} disabled={loading || !isReviewing} onClick={onRecut}>Cắt lại</button>
+                <button style={{ ...s.btnSmall, color: "#dc2626", borderColor: "#fecaca" }} disabled={loading || !isReviewing} onClick={onDelete}>Xóa</button>
+                <button
+                  style={{ ...s.btnSmall, color: "#0369a1", borderColor: "#bae6fd", background: showAddForm ? "#e0f2fe" : "#fff" }}
+                  disabled={loading || !isReviewing}
+                  onClick={() => setShowAddForm((v) => !v)}
+                >
+                  {showAddForm ? "✕ Hủy" : "+ Thêm chunk"}
+                </button>
+                <button style={{ ...s.btnSmall, marginLeft: "auto", ...(chunkApprovals[chunkIdx] ? { background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" } : { background: "#dbeafe", color: "#1d4ed8", borderColor: "#bfdbfe" }) }} disabled={loading || !isReviewing} onClick={onApproveThis}>
+                  {chunkApprovals[chunkIdx] ? "✓ Đã duyệt" : "Duyệt"}
+                </button>
+              </div>
+
+              {/* Add chunk inline form */}
+              {showAddForm && isReviewing && (
+                <form onSubmit={handleAdd} style={{ marginTop: 12, padding: "12px", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 7 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0369a1", marginBottom: 10 }}>
+                    Thêm chunk mới — bài: <code style={{ fontSize: 11 }}>{chunk.lesson_stem}</code>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <FormField label="Trang bắt đầu *">
+                        <input style={s.input} type="number" min={1} required value={addForm.start} onChange={(e) => setAddForm((f) => ({ ...f, start: e.target.value }))} />
+                      </FormField>
+                      <FormField label="Trang kết thúc *">
+                        <input style={s.input} type="number" min={1} required value={addForm.end} onChange={(e) => setAddForm((f) => ({ ...f, end: e.target.value }))} />
+                      </FormField>
+                    </div>
+                    <FormField label="Heading">
+                      <input style={s.input} value={addForm.heading} onChange={(e) => setAddForm((f) => ({ ...f, heading: e.target.value }))} placeholder="Ví dụ: 3." />
+                    </FormField>
+                    <FormField label="Tên mục">
+                      <input style={s.input} value={addForm.title} onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))} placeholder="Tiêu đề phần" />
+                    </FormField>
+                    <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#475569", cursor: "pointer" }}>
+                      <input type="checkbox" checked={addForm.content_head} onChange={(e) => setAddForm((f) => ({ ...f, content_head: e.target.checked }))} />
+                      content_head
+                    </label>
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 7 }}>
+                    <button type="submit" style={{ ...s.btnSmall, background: "#0ea5e9", color: "#fff", border: "none" }} disabled={loading}>
+                      {loading ? "Đang thêm…" : "Thêm chunk"}
+                    </button>
+                    <button type="button" style={s.btnSmall} onClick={() => setShowAddForm(false)}>Hủy</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+      <ItemDotNav items={editChunks} currentIdx={chunkIdx} approvals={chunkApprovals} onNavigateTo={onNavigateTo} />
     </div>
   );
 }
 
-function ExtractionProgress({ job }) {
-  const msg = job.progress_message || STATUS_LABEL[job.status] || job.status;
-  const cur = job.progress_current ?? null;
-  const tot = job.progress_total ?? null;
-  const pct =
-    job.progress_percent != null
-      ? job.progress_percent
-      : cur != null && tot > 0
-        ? Math.round((cur / tot) * 100)
-        : null;
-
-  const logLines = job.live_log_tail || [];
-  const ageS = job.progress_age_seconds ?? null;
-  const stale = ageS != null && ageS > 120;
-  const isCooldown = job.progress_stage === "waiting_gemini_key_cooldown";
-
-  const boxStyle = isCooldown
-    ? { ...s.infoBox, background: "#fffbeb", border: "1px solid #fcd34d", color: "#92400e" }
-    : s.infoBox;
-
+function SectionLabel({ children }) {
   return (
-    <div style={boxStyle}>
-      {isCooldown && (
-        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: "#b45309" }}>
-          ⏳ API key đang cooldown
-        </div>
-      )}
-      <div style={{ marginBottom: pct != null ? 8 : 0 }}>{msg}</div>
-      {stale && !isCooldown && (
-        <div style={{ fontSize: 12, color: "#b45309", marginBottom: 6 }}>
-          ⚠ Không có cập nhật trong {ageS}s — tiến trình có thể bị treo.
-        </div>
-      )}
-      {pct != null && (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 11,
-              color: "#1d4ed8",
-              marginBottom: 4,
-            }}
-          >
-            <span>{cur != null && tot != null ? `${cur} / ${tot} bài` : ""}</span>
-            <span>{pct}%</span>
-          </div>
-          <div style={{ background: "#bfdbfe", borderRadius: 4, height: 6, overflow: "hidden" }}>
-            <div
-              style={{
-                width: `${pct}%`,
-                background: "#2563eb",
-                height: "100%",
-                transition: "width 0.4s ease",
-              }}
-            />
-          </div>
-        </div>
-      )}
-      {logLines.length > 0 && (
-        <div
-          style={{
-            marginTop: 10,
-            background: "#1e293b",
-            borderRadius: 4,
-            padding: "8px 10px",
-            maxHeight: 160,
-            overflowY: "auto",
-          }}
-        >
-          {logLines.map((line, i) => (
-            <div
-              key={i}
-              style={{
-                fontFamily: "monospace",
-                fontSize: 11,
-                color: "#94a3b8",
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.5,
-              }}
-            >
-              {line}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <div style={s.group}>
-      <label style={s.label}>{label}</label>
+    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #f1f5f9" }}>
       {children}
     </div>
   );
 }
 
-function statusColor(st) {
-  if (st === "error") return "#b91c1c";
-  if (st === "heavy_stage_done") return "#15803d";
-  return "#1d4ed8";
-}
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const shadow = "0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)";
 
 const s = {
-  page: { margin: "0 auto", padding: "24px 16px" },
-  heading: { margin: "0 0 4px", fontSize: 20, fontWeight: 700 },
-  sub: { margin: "0 0 24px", color: "#6b7280", fontSize: 13 },
-  fieldset: { border: "none", padding: 0, margin: 0 },
-  group: { display: "flex", flexDirection: "column", marginBottom: 12 },
-  row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
-  label: { fontSize: 13, fontWeight: 600, marginBottom: 5, color: "#374151" },
-  input: { padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 },
-  hint: { fontSize: 11, color: "#6b7280", marginTop: 4 },
-  actions: { display: "flex", gap: 12, marginTop: 8 },
+  shadow,
+  page: { margin: "0 auto", padding: "28px 20px", background: "#f8fafc", minHeight: "100vh" },
+  pageHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 },
+  pageTitle: { margin: "0 0 4px", fontSize: 22, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" },
+  pageSub: { margin: 0, color: "#64748b", fontSize: 13 },
+
+  card: {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: 10,
+    boxShadow: shadow,
+    overflow: "hidden",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "10px 16px",
+    background: "#f8fafc",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  cardTitle: { fontSize: 13, fontWeight: 700, color: "#0f172a" },
+
+  input: {
+    width: "100%",
+    padding: "8px 10px",
+    border: "1px solid #d1d5db",
+    borderRadius: 6,
+    fontSize: 13,
+    color: "#0f172a",
+    background: "#fff",
+    boxSizing: "border-box",
+    outline: "none",
+  },
+
+  fileLabel: {
+    display: "flex",
+    alignItems: "center",
+    border: "1px solid #d1d5db",
+    borderRadius: 6,
+    overflow: "hidden",
+    cursor: "pointer",
+    background: "#fff",
+  },
+  fileLabelInner: { flex: 1, padding: "8px 10px", fontSize: 13 },
+  fileLabelBtn: { padding: "8px 14px", background: "#f1f5f9", borderLeft: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, color: "#374151", whiteSpace: "nowrap" },
+
   btnPrimary: {
-    padding: "8px 18px",
-    background: "#2563eb",
+    padding: "9px 20px",
+    background: "#3b82f6",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 1px 2px rgba(59,130,246,0.25)",
+  },
+  btnSuccess: {
+    padding: "6px 14px",
+    background: "#10b981",
     color: "#fff",
     border: "none",
     borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  btnOutline: {
+    padding: "7px 14px",
+    background: "#fff",
+    color: "#374151",
+    border: "1px solid #d1d5db",
+    borderRadius: 7,
     fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
   },
-  btnSecondary: {
-    padding: "8px 18px",
-    background: "#f3f4f6",
+  btnSmall: {
+    padding: "5px 12px",
+    background: "#fff",
     color: "#374151",
-    border: "1px solid #d1d5db",
+    border: "1px solid #e2e8f0",
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: 500,
     cursor: "pointer",
   },
-  infoBox: {
-    marginTop: 12,
-    padding: "12px 16px",
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
-    borderRadius: 6,
-    color: "#1d4ed8",
-    fontSize: 14,
-  },
-  alertBox: { padding: "12px 16px", borderRadius: 6, fontSize: 14 },
-  successBox: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d" },
-  errorBox: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" },
-  card: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    padding: "16px 20px",
-  },
-  cardTitle: { margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "#111827" },
-  reviewItem: {
-    display: "flex",
-    gap: 8,
-    alignItems: "flex-start",
-    padding: "6px 8px",
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 5,
-  },
+
   pdfFrame: {
     width: "100%",
     height: 500,
-    border: "1px solid #e5e7eb",
+    border: "none",
     borderRadius: 4,
     display: "block",
-  },
-  chip: {
-    padding: "3px 10px",
-    borderRadius: 12,
-    fontSize: 12,
-    background: "#e0f2fe",
-    color: "#0369a1",
-    border: "1px solid #bae6fd",
-    fontWeight: 500,
-  },
-  countChip: {
-    padding: "2px 8px",
-    borderRadius: 10,
-    fontSize: 11,
-    background: "#f0fdf4",
-    color: "#15803d",
-    border: "1px solid #bbf7d0",
+    background: "#f1f5f9",
   },
 };

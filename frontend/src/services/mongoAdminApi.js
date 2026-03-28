@@ -305,3 +305,12 @@ export function deleteReviewChunk(jobId, idx) {
     { method: "DELETE" },
   );
 }
+
+// POST /admin/mongo/book-review/jobs/:id/chunks
+// payload: { lesson_stem, heading, title, start, end, content_head }
+export function addReviewChunk(jobId, payload) {
+  return httpJson(
+    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`,
+    { method: "POST", body: JSON.stringify(payload) },
+  );
+}
