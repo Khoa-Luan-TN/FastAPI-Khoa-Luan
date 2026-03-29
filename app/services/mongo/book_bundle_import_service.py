@@ -663,6 +663,7 @@ def import_book_bundle(
     affected_topic_ids: Set[str] = set()
     kw_inserted = kw_reused = ck_inserted = 0
     kw_errors: List[Dict[str, Any]] = []
+    new_keywords: Dict[str, str] = {}  # keyword_id → keyword_name (inserted only)
 
     if chunk_root.exists():
         for lesson_chunk_dir in sorted(chunk_root.iterdir()):
@@ -804,6 +805,8 @@ def import_book_bundle(
                         kw_id, kw_op = _find_or_create_keyword(db, kw_name, actor)
                         if kw_op == "insert":
                             kw_inserted += 1
+                            if kw_id not in new_keywords:
+                                new_keywords[kw_id] = kw_name
                         else:
                             kw_reused += 1
 
@@ -902,6 +905,52 @@ def import_book_bundle(
         finalize_result = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, _fe)
         errors.extend(_fe)
 
+    # ── Batch alias generation for newly inserted keywords ───────────────────
+    alias_batch_result: Dict[str, Any] = {
+        "total_keywords": 0,
+        "screened_true": 0,
+        "screened_false": 0,
+        "alias_processed": 0,
+        "alias_inserted": 0,
+        "processed_keywords": 0,
+        "inserted_aliases": 0,
+        "stopped_due_to_quota": False,
+        "remaining_keywords": [],
+    }
+    if new_keywords:
+        _log.info(
+            "[book_bundle_import] generating aliases for %d newly inserted keyword(s)",
+            len(new_keywords),
+        )
+        _cb(
+            "heavy_finalizing_embeddings",
+            f"Tạo alias từ khóa cho {len(new_keywords)} từ khóa mới…",
+            97,
+        )
+        try:
+            from app.services.keyword.keyword_alias_service import refresh_keyword_aliases_batch
+            alias_batch_result = refresh_keyword_aliases_batch(
+                db=db,
+                keyword_id_name_pairs=list(new_keywords.items()),
+                actor=actor,
+                batch_size=5,
+                screen_batch_size=25,
+                batch_sleep=6.0,
+                max_wait_seconds=3600,
+                progress_callback=None,
+                progress_state=None,
+                phase2_total_slots=len(new_keywords),
+            )
+            _log.info(
+                "[book_bundle_import] alias batch done: processed=%d inserted=%d stopped=%s",
+                alias_batch_result["processed_keywords"],
+                alias_batch_result["inserted_aliases"],
+                alias_batch_result["stopped_due_to_quota"],
+            )
+        except Exception as _alias_e:
+            _log.warning("[book_bundle_import] alias batch failed: %s", _alias_e)
+            kw_errors.append({"alias_batch": str(_alias_e)})
+
     # ── Build UI-friendly response ────────────────────────────────────────────
     def _ops(lst: List[Dict[str, Any]], op: str) -> int:
         return sum(1 for x in lst if x.get("op") == op)
@@ -945,12 +994,20 @@ def import_book_bundle(
                 "updated":  _ops(_chunks_out,  "update"),
                 "noop":     _ops(_chunks_out,  "noop"),
             },
-            "keywords_inserted":       kw_inserted,
-            "keywords_reused":         kw_reused,
-            "chunk_keywords_inserted": ck_inserted,
-            "topic_bags_affected":     len(affected_topic_ids),
-            "topic_embeddings_synced": finalize_result.get("finalized_topics", 0),
-            "minio_error_count":       len(minio_errors),
+            "keywords_inserted":           kw_inserted,
+            "keywords_reused":             kw_reused,
+            "chunk_keywords_inserted":     ck_inserted,
+            "topic_bags_affected":         len(affected_topic_ids),
+            "topic_embeddings_synced":     finalize_result.get("finalized_topics", 0),
+            "minio_error_count":           len(minio_errors),
+            "new_keywords_for_alias":      len(new_keywords),
+            "alias_screened_true":         alias_batch_result["screened_true"],
+            "alias_screened_false":        alias_batch_result["screened_false"],
+            "alias_processed":             alias_batch_result["alias_processed"],
+            "alias_inserted":              alias_batch_result["alias_inserted"],
+            "alias_stopped_due_to_quota":  alias_batch_result["stopped_due_to_quota"],
+            "alias_remaining_keywords_count": len(alias_batch_result["remaining_keywords"]),
+            "alias_error_count":           sum(1 for e in kw_errors if "alias_batch" in e),
         },
         "sync_errors": (errors + kw_errors)[:30] + minio_errors[:20],
     }
