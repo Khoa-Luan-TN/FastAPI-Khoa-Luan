@@ -62,6 +62,7 @@ def create_job(
     class_name: str,
     pdf_bytes: bytes,
     original_filename: str,
+    subject_name: str | None = None,
 ) -> Dict[str, Any]:
     job_id = str(uuid.uuid4())
     workspace = _REVIEW_WORKSPACE / job_id
@@ -86,7 +87,7 @@ def create_job(
     doc: Dict[str, Any] = {
         "job_id": job_id,
         "class_name": class_name,
-        "subject_name": _FIXED_SUBJECT_NAME,
+        "subject_name": subject_name.strip() if subject_name and subject_name.strip() else _FIXED_SUBJECT_NAME,
         "subject_type": _FIXED_SUBJECT_TYPE,
         "source_pdf_path": str(pdf_path),
         "book_stem": unique_stem,

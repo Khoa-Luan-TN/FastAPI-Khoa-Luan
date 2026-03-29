@@ -145,9 +145,10 @@ export function importBookBundle(payload) {
 // ── Review-first book ingestion ───────────────────────────────────────────────
 
 // POST /admin/mongo/book-review/jobs  (multipart)
-export function createReviewJob(classN, pdfFile) {
+export function createReviewJob(classN, pdfFile, subjectName = "Tin học") {
   const fd = new FormData();
   fd.append("class_name", classN);
+  fd.append("subject_name", subjectName);
   fd.append("file", pdfFile);
   return httpUpload(`${API_BASE}/admin/mongo/book-review/jobs`, fd);
 }

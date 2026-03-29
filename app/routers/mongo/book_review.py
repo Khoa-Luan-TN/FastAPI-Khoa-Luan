@@ -142,6 +142,7 @@ def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
 async def create_review_job(
     request: Request,
     class_name: str = Form(...),
+    subject_name: str = Form("Tin học"),
     file: UploadFile = File(...),
 ):
     _actor(request)
@@ -158,6 +159,7 @@ async def create_review_job(
         class_name=class_name.strip(),
         pdf_bytes=pdf_bytes,
         original_filename=file.filename or "book.pdf",
+        subject_name=subject_name,
     )
     return {"ok": True, "job": _serial(job)}
 

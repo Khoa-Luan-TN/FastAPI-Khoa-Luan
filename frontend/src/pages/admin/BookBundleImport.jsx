@@ -26,7 +26,7 @@ import {
   recutReviewChunk,
 } from "../../services/mongoAdminApi";
 
-const FIXED_SUBJECT_NAME = "Tin học";
+const SUBJECT_NAME_OPTIONS = ["Tin học", "Tin học ứng dụng", "Tin học máy tính"];
 const FIXED_SUBJECT_TYPE = "Kết nối tri thức";
 const POLL_MS = 3000;
 
@@ -87,7 +87,7 @@ function getWorkflowStepKey(status, phase) {
 
 export default function BookBundleImport() {
   const [phase, setPhase] = useState("upload");
-  const [form, setForm] = useState({ class_name: "" });
+  const [form, setForm] = useState({ class_name: "", subject_name: "Tin học" });
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -194,7 +194,7 @@ export default function BookBundleImport() {
     setUploading(true);
     setUploadError("");
     try {
-      const res = await createReviewJob(form.class_name.trim(), pdfFile);
+      const res = await createReviewJob(form.class_name.trim(), pdfFile, form.subject_name);
       resetEdit(res.job);
       setJob(res.job);
       setPhase("job");
@@ -492,7 +492,7 @@ export default function BookBundleImport() {
   function handleReset() {
     clearInterval(pollRef.current);
     setPhase("upload");
-    setForm({ class_name: "" });
+    setForm({ class_name: "", subject_name: "Tin học" });
     setPdfFile(null);
     setUploading(false);
     setUploadError("");
@@ -558,12 +558,24 @@ export default function BookBundleImport() {
           </div>
           <div style={{ padding: "20px 24px" }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-              <MetaChip icon="📚" label={FIXED_SUBJECT_NAME} />
+              <MetaChip icon="📚" label={form.subject_name} />
               <MetaChip icon="📖" label={FIXED_SUBJECT_TYPE} />
               <MetaChip icon="🤖" label="gemini-2.5-flash" />
             </div>
             <form onSubmit={handleUpload}>
               <fieldset disabled={uploading} style={{ border: "none", padding: 0, margin: 0 }}>
+                <FormField label="Môn học *">
+                  <select
+                    style={s.input}
+                    value={form.subject_name}
+                    onChange={(e) => setForm((f) => ({ ...f, subject_name: e.target.value }))}
+                    required
+                  >
+                    {SUBJECT_NAME_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </FormField>
                 <FormField label="Lớp học *">
                   <input
                     style={s.input}
