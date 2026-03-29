@@ -38,9 +38,12 @@ print(f"[REQUEST] attempt={run_request.get('attempt', 'N/A')}")
 print(f"[REQUEST] requested_at={run_request.get('requested_at', 'N/A')}")
 
 # ==============
-# (B) Run status sentinel — written to /kaggle/working/ so it gets downloaded
+# (B) Run status sentinels — written to /kaggle/working/ so they get downloaded
 # ==============
+# Generic alias kept for debug / backward-compat
 STATUS_FILE = Path("/kaggle/working/current_run_status.json")
+# Request-specific file — local CLI uses this as the authoritative source of truth
+STATUS_FILE_SPECIFIC = Path("/kaggle/working") / f"current_run_status_{request_id}.json"
 
 def write_status(status: str, *, failure_reason: str = "", **extra) -> None:
     data: dict = {
@@ -51,10 +54,17 @@ def write_status(status: str, *, failure_reason: str = "", **extra) -> None:
     if failure_reason:
         data["failure_reason"] = failure_reason
     data.update(extra)
+    payload = json.dumps(data, indent=2, ensure_ascii=False)
+    # Request-specific file first (local CLI validates against this)
     try:
-        STATUS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        STATUS_FILE_SPECIFIC.write_text(payload, encoding="utf-8")
     except Exception as _se:
-        print(f"[STATUS] Failed to write status file: {_se}")
+        print(f"[STATUS] Failed to write specific status file ({STATUS_FILE_SPECIFIC.name}): {_se}")
+    # Generic alias for debug / backward-compat
+    try:
+        STATUS_FILE.write_text(payload, encoding="utf-8")
+    except Exception as _se:
+        print(f"[STATUS] Failed to write generic status file: {_se}")
 
 write_status("started")
 
@@ -536,8 +546,9 @@ print("debug_example:", str(last_debug_dir) if last_debug_dir else None)
 # ==============
 # (6) Zip result for download
 # ==============
-out_zip = Path("/kaggle/working") / f"{book_stem}_postprocessed.zip"
+out_zip = Path("/kaggle/working") / f"{book_stem}_{request_id}_postprocessed.zip"
 print(f"\n[ZIP] book_stem={book_stem!r}")
+print(f"[ZIP] request_id={request_id!r}")
 print(f"[ZIP] source dir : {WORK / 'Output' / book_stem}")
 print(f"[ZIP] output zip : {out_zip}")
 sh(f"cd '{WORK / 'Output'}' && zip -qr '{out_zip}' '{book_stem}'")

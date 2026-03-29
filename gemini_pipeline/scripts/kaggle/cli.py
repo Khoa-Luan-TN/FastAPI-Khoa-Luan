@@ -89,6 +89,7 @@ def main():
     # 2) push kernel + wait (with stale-dataset retry) then download output
     _MAX_KERNEL_ATTEMPTS = 3
     _STALE_RETRY_DELAY = 40
+    # Default generic name for --skip-kernel path; overridden to request-specific inside the loop
     expected_zip = DL_DIR / f"{args.book_stem}_postprocessed.zip"
 
     if not args.skip_kernel:
@@ -114,6 +115,22 @@ def main():
                 _ka, _request_id, args.book_stem,
             )
 
+            # Request-specific artifact names — kernel writes these so stale cached output
+            # from a previous run is unambiguously different from the current run's artifacts.
+            expected_zip = DL_DIR / f"{args.book_stem}_{_request_id}_postprocessed.zip"
+            _status_file_specific = DL_DIR / f"current_run_status_{_request_id}.json"
+            _status_file_generic  = DL_DIR / "current_run_status.json"
+            log.info(
+                "[attempt %d] expected artifacts: zip=%r  status=%r",
+                _ka, expected_zip.name, _status_file_specific.name,
+            )
+            print(
+                f"[STAGE:kernel_attempt_artifacts] attempt={_ka} "
+                f"zip={expected_zip.name} "
+                f"status={_status_file_specific.name}",
+                flush=True,
+            )
+
             push_kernel(KERNEL_DIR, KERNEL_REF)
 
             # Clean stale artifacts then download fresh output
@@ -128,29 +145,43 @@ def main():
             )
 
             if expected_zip.exists():
-                log.info("[attempt %d] Expected zip found — proceeding", _ka)
+                log.info("[attempt %d] Request-specific zip found — proceeding", _ka)
                 break
 
-            # Diagnose missing zip via run status sentinel written by the kernel
-            _status_file = DL_DIR / "current_run_status.json"
+            # Diagnose missing zip via run status sentinels written by the kernel.
+            # Prefer the request-specific file; fall back to generic for stale detection.
             _status_info: dict = {}
-            if _status_file.exists():
+            _status_file_used = "none"
+            if _status_file_specific.exists():
                 try:
-                    _status_info = json.loads(_status_file.read_text(encoding="utf-8"))
-                    log.info("[attempt %d] run_status: %s", _ka, _status_info)
+                    _status_info = json.loads(_status_file_specific.read_text(encoding="utf-8"))
+                    _status_file_used = _status_file_specific.name
+                    log.info("[attempt %d] request-specific run_status (%s): %s",
+                             _ka, _status_file_specific.name, _status_info)
+                except Exception as _se:
+                    log.warning("Failed to parse %s: %s", _status_file_specific.name, _se)
+            elif _status_file_generic.exists():
+                try:
+                    _status_info = json.loads(_status_file_generic.read_text(encoding="utf-8"))
+                    _status_file_used = _status_file_generic.name
+                    log.info("[attempt %d] generic run_status fallback (%s): %s",
+                             _ka, _status_file_generic.name, _status_info)
                 except Exception as _se:
                     log.warning("Failed to parse current_run_status.json: %s", _se)
             else:
-                log.warning("[attempt %d] current_run_status.json not found in DL_DIR", _ka)
+                log.warning(
+                    "[attempt %d] no status file found — tried %s and current_run_status.json",
+                    _ka, _status_file_specific.name,
+                )
 
-            # Verify the status file actually belongs to THIS attempt's request_id
+            # Verify the status belongs to THIS attempt's request_id
             _status_request_id = _status_info.get("request_id", "")
             _request_id_matches = bool(_status_request_id) and (_status_request_id == _request_id)
             if _status_info and not _request_id_matches:
                 log.warning(
-                    "[attempt %d] current_run_status.json belongs to a different request "
+                    "[attempt %d] status file '%s' belongs to a different request "
                     "(status_request_id=%r, current_request_id=%r) — treating as stale artifact",
-                    _ka, _status_request_id, _request_id,
+                    _ka, _status_file_used, _status_request_id, _request_id,
                 )
 
             _failure_reason = _status_info.get("failure_reason", "") if _request_id_matches else ""
@@ -192,7 +223,11 @@ def main():
 
             # Unrecoverable failure or retries exhausted
             found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
-            _diag: list[str] = []
+            _diag: list[str] = [
+                f"  status_file_used : {_status_file_used}",
+                f"  expected_zip     : {expected_zip.name}",
+                f"  expected_status  : {_status_file_specific.name}",
+            ]
             if _status_info:
                 _diag.append(
                     "  run_status:\n    "
@@ -246,9 +281,8 @@ def main():
             f"  zip path                 : {expected_zip}"
         )
 
-    # 3) apply zip into Output/
+    # 3) apply zip into Output/  ([STAGE:applying] is emitted inside safe_extract_zip_to_output)
     if not args.no_apply:
-        print("[STAGE:applying]", flush=True)
         dst = safe_extract_zip_to_output(expected_zip, OUTPUT_ROOT, overwrite=args.overwrite)
         log.info("✅ Applied to: %s", dst)
     else:

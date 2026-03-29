@@ -1237,11 +1237,57 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                         "Đang tải kết quả từ Kaggle về máy chủ…", 50,
                         log_tail=_tail,
                     )
-                elif "[STAGE:applying]" in _line:
+                elif "[STAGE:dl_file]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _file_info = _line.split("[STAGE:dl_file]", 1)[-1].strip()
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        f"Đang tải file: {_file_info}", 51,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:dl_done]" in _line:
                     _current_stage = "heavy_kaggle_downloading"
                     _update_heavy_progress(
                         db, job_id, "heavy_kaggle_downloading",
-                        "Đang áp dụng kết quả Kaggle vào bundle…", 53,
+                        "Tải xong — đang giải nén…", 52,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:extracting]" in _line and "start " in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _extract_info = _line.split("[STAGE:extracting]", 1)[-1].strip()
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        f"Đang giải nén: {_extract_info}", 53,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:extracting_file]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _entry_info = _line.split("[STAGE:extracting_file]", 1)[-1].strip()
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        f"Giải nén: {_entry_info}", 54,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:extracting_done]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        "Giải nén xong — đang áp dụng vào bundle…", 55,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:applying]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _dst_info = _line.split("dst=", 1)[-1].strip() if "dst=" in _line else ""
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        f"Đang áp dụng kết quả vào Output/{_dst_info.rsplit('/', 1)[-1] if _dst_info else '…'}", 56,
+                        log_tail=_tail,
+                    )
+                elif "[STAGE:apply_done]" in _line:
+                    _current_stage = "heavy_kaggle_downloading"
+                    _update_heavy_progress(
+                        db, job_id, "heavy_kaggle_downloading",
+                        "Áp dụng xong — đang xác nhận bundle…", 57,
                         log_tail=_tail,
                     )
             kaggle_returncode = _kaggle_popen.wait()

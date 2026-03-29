@@ -133,8 +133,35 @@ def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -
         cmd.append("--force")
 
     print("[STAGE:downloading]", flush=True)
-    # ✅ stream để thấy tiến trình
-    run_cmd(cmd, stream=True)
+    log.info("[download] Starting kernel output download: %s → %s", kernel_ref, dl_dir)
+
+    dl_file_count = 0
+    proc = subprocess.Popen(
+        list(map(str, cmd)),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert proc.stdout is not None
+    for raw_line in proc.stdout:
+        line = raw_line.rstrip()
+        if not line:
+            continue
+        log.info("[download] %s", line)
+        # Kaggle CLI emits: "Downloading <filename> to <path>"
+        if "Downloading" in line and " to " in line:
+            try:
+                fname = line.split("Downloading", 1)[1].split(" to ")[0].strip()
+            except Exception:
+                fname = line
+            dl_file_count += 1
+            print(f"[STAGE:dl_file] #{dl_file_count} {fname}", flush=True)
+    returncode = proc.wait()
+    if returncode != 0:
+        raise subprocess.CalledProcessError(returncode, cmd)
+    log.info("[download] Done. %d file(s) seen.", dl_file_count)
+    print(f"[STAGE:dl_done] files={dl_file_count}", flush=True)
 
 # ----------------------
 # Dataset packaging + version
@@ -395,6 +422,27 @@ def safe_extract_zip_to_output(zip_path: Path, output_root: Path, *, overwrite: 
             shutil.rmtree(dst)
 
         output_root.mkdir(parents=True, exist_ok=True)
-        z.extractall(output_root)
-        log.info("Applied zip -> %s", dst)
+
+        # Extract with per-file progress so callers can observe live progress
+        all_members = z.infolist()
+        total = len(all_members)
+        log.info("[extract] start zip=%s entries=%d dst=%s", zip_path.name, total, dst)
+        print(f"[STAGE:extracting] start zip={zip_path.name} entries={total}", flush=True)
+
+        _PROGRESS_INTERVAL = max(1, total // 20)  # emit at most ~20 progress lines
+        for idx, member in enumerate(all_members, start=1):
+            z.extract(member, output_root)
+            if idx == 1 or idx % _PROGRESS_INTERVAL == 0 or idx == total:
+                log.info("[extract] %d/%d %s", idx, total, member.filename)
+                print(f"[STAGE:extracting_file] {idx}/{total} {member.filename}", flush=True)
+
+        log.info("[extract] done entries=%d", total)
+        print(f"[STAGE:extracting_done] entries={total}", flush=True)
+
+        log.info("[apply] applying to dst=%s", dst)
+        print(f"[STAGE:applying] dst={dst}", flush=True)
+
+        log.info("[apply] done dst=%s", dst)
+        print(f"[STAGE:apply_done] dst={dst}", flush=True)
+
         return dst
