@@ -26,7 +26,8 @@ import {
   recutReviewChunk,
 } from "../../services/mongoAdminApi";
 
-const SUBJECT_NAME_OPTIONS = ["Tin học", "Tin học ứng dụng", "Tin học máy tính"];
+const SUBJECT_NAME_OPTIONS = ["Tin học"];
+const CLASS_NAME_OPTIONS = ["Lớp 10", "Lớp 11", "Lớp 12"];
 const FIXED_SUBJECT_TYPE = "Kết nối tri thức";
 const POLL_MS = 3000;
 
@@ -87,7 +88,7 @@ function getWorkflowStepKey(status, phase) {
 
 export default function BookBundleImport() {
   const [phase, setPhase] = useState("upload");
-  const [form, setForm] = useState({ class_name: "", subject_name: "Tin học" });
+  const [form, setForm] = useState({ class_name: "Lớp 10", subject_name: "Tin học" });
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -492,7 +493,7 @@ export default function BookBundleImport() {
   function handleReset() {
     clearInterval(pollRef.current);
     setPhase("upload");
-    setForm({ class_name: "", subject_name: "Tin học" });
+    setForm({ class_name: "Lớp 10", subject_name: "Tin học" });
     setPdfFile(null);
     setUploading(false);
     setUploadError("");
@@ -559,6 +560,7 @@ export default function BookBundleImport() {
           <div style={{ padding: "20px 24px" }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
               <MetaChip icon="📚" label={form.subject_name} />
+              <MetaChip icon="🏫" label={form.class_name} />
               <MetaChip icon="📖" label={FIXED_SUBJECT_TYPE} />
               <MetaChip icon="🤖" label="gemini-2.5-flash" />
             </div>
@@ -577,13 +579,16 @@ export default function BookBundleImport() {
                   </select>
                 </FormField>
                 <FormField label="Lớp học *">
-                  <input
+                  <select
                     style={s.input}
                     value={form.class_name}
                     onChange={(e) => setForm((f) => ({ ...f, class_name: e.target.value }))}
-                    placeholder="Ví dụ: 10"
                     required
-                  />
+                  >
+                    {CLASS_NAME_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </FormField>
                 <FormField label="File PDF sách *">
                   <label style={s.fileLabel}>

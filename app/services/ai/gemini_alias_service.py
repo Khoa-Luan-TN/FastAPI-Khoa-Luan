@@ -169,6 +169,15 @@ _TERM_CANONICAL: dict[str, frozenset[str]] = {
     "kb": frozenset({"ki-lo-byte"}),
     "mb": frozenset({"me-ga-byte"}),
     "gb": frozenset({"gi-ga-byte"}),
+    # DBA
+    "dba": frozenset({"nha quan tri csdl", "quan tri vien csdl", "database administrator", "dba"}),
+    "database administrator": frozenset({"nha quan tri csdl", "quan tri vien csdl", "database administrator", "dba"}),
+    # DBMS
+    "dbms": frozenset({"he qtcsdl", "he quan tri co so du lieu", "database management system", "dbms"}),
+    "database management system": frozenset({"he qtcsdl", "he quan tri co so du lieu", "database management system", "dbms"}),
+    # SQL
+    "sql": frozenset({"ngon ngu truy van sql", "structured query language", "sql"}),
+    "structured query language": frozenset({"ngon ngu truy van sql", "structured query language", "sql"}),
 }
 
 # Normalized alias phrases that are descriptive paraphrases, never valid aliases.
@@ -336,6 +345,10 @@ Prefer [] over any weak or uncertain output.
 - "Bộ xử lý trung tâm" → ["CPU"] ✔
 - "Bộ nhớ truy cập ngẫu nhiên" → ["RAM"] ✔
 - "Ki-lô-byte" → ["KB"] ✔
+- "Nhà quản trị CSDL" → ["DBA"] ✔
+- "Hệ QTCSDL" → ["DBMS"] ✔
+- "Hệ quản trị cơ sở dữ liệu" → ["DBMS"] ✔
+- "Ngôn ngữ truy vấn SQL" → ["SQL"] ✔
 - "Internet of Things" → ["IoT"] ✔
 - "Internet of Things (IoT)" → ["IoT"] ✔
 - "Mạng máy tính" → [] ✘ (no standard abbreviation exists for this)
@@ -401,6 +414,11 @@ All input keywords must appear as keys. No extra keys. No markdown. No explanati
 {{
   "Hệ điều hành": ["OS"],
   "Mạng cục bộ": ["LAN"],
+  "Trí tuệ nhân tạo": ["AI"],
+  "Nhà quản trị CSDL": ["DBA"],
+  "Hệ QTCSDL": ["DBMS"],
+  "Hệ quản trị cơ sở dữ liệu": ["DBMS"],
+  "Ngôn ngữ truy vấn SQL": ["SQL"],
   "Internet of Things": ["IoT"],
   "Tin học": [],
   "Internet": []
