@@ -143,10 +143,23 @@ def main():
             else:
                 log.warning("[attempt %d] current_run_status.json not found in DL_DIR", _ka)
 
-            _failure_reason = _status_info.get("failure_reason", "")
-            _is_stale = _failure_reason == "stale_dataset_mismatch"
+            # Verify the status file actually belongs to THIS attempt's request_id
+            _status_request_id = _status_info.get("request_id", "")
+            _request_id_matches = bool(_status_request_id) and (_status_request_id == _request_id)
+            if _status_info and not _request_id_matches:
+                log.warning(
+                    "[attempt %d] current_run_status.json belongs to a different request "
+                    "(status_request_id=%r, current_request_id=%r) — treating as stale artifact",
+                    _ka, _status_request_id, _request_id,
+                )
 
-            if _is_stale:
+            _failure_reason = _status_info.get("failure_reason", "") if _request_id_matches else ""
+            _is_stale_dataset = _failure_reason == "stale_dataset_mismatch"
+            # Also retry if the status file is from a different run (stale output artifact)
+            _is_stale_artifact = bool(_status_info) and not _request_id_matches
+            _should_retry = _is_stale_dataset or _is_stale_artifact
+
+            if _is_stale_dataset:
                 log.warning(
                     "[attempt %d/%d] Stale dataset mismatch — "
                     "expected=%r  resolved=%r  marker=%r  output_subdirs=%s",
@@ -156,18 +169,26 @@ def main():
                     _status_info.get("marker_dst_content"),
                     _status_info.get("output_subdirs"),
                 )
-                if _ka < _MAX_KERNEL_ATTEMPTS:
-                    log.warning(
-                        "Waiting %ds for dataset propagation before attempt %d",
-                        _STALE_RETRY_DELAY, _ka + 1,
-                    )
-                    print(
-                        f"[STAGE:kernel_stale_retry] attempt={_ka}/{_MAX_KERNEL_ATTEMPTS} "
-                        f"waiting {_STALE_RETRY_DELAY}s for dataset propagation",
-                        flush=True,
-                    )
-                    time.sleep(_STALE_RETRY_DELAY)
-                    continue
+            elif _is_stale_artifact:
+                log.warning(
+                    "[attempt %d/%d] Downloaded status belongs to a previous run "
+                    "(request_id=%r) — Kaggle may have served cached output",
+                    _ka, _MAX_KERNEL_ATTEMPTS, _status_request_id,
+                )
+
+            if _should_retry and _ka < _MAX_KERNEL_ATTEMPTS:
+                _reason_label = "stale_dataset_mismatch" if _is_stale_dataset else "stale_artifact"
+                log.warning(
+                    "Retryable condition (%s) — waiting %ds before attempt %d",
+                    _reason_label, _STALE_RETRY_DELAY, _ka + 1,
+                )
+                print(
+                    f"[STAGE:kernel_stale_retry] attempt={_ka}/{_MAX_KERNEL_ATTEMPTS} "
+                    f"reason={_reason_label} waiting {_STALE_RETRY_DELAY}s",
+                    flush=True,
+                )
+                time.sleep(_STALE_RETRY_DELAY)
+                continue
 
             # Unrecoverable failure or retries exhausted
             found_stems = [p.stem.replace("_postprocessed", "") for p in found_zips]
@@ -188,10 +209,12 @@ def main():
             raise FileNotFoundError(
                 f"Missing kernel zip output for book_stem={args.book_stem!r} "
                 f"after {_ka} attempt(s)\n"
-                f"  expected     : {expected_zip}\n"
-                f"  found zips   : {[p.name for p in found_zips]}\n"
-                f"  found stems  : {found_stems}\n"
-                f"  failure_reason: {_failure_reason!r}\n"
+                f"  expected       : {expected_zip}\n"
+                f"  found zips     : {[p.name for p in found_zips]}\n"
+                f"  found stems    : {found_stems}\n"
+                f"  failure_reason : {_failure_reason!r}\n"
+                f"  request_id_ok  : {_request_id_matches} "
+                f"(sent={_request_id!r} got={_status_request_id!r})\n"
                 + "\n".join(_diag)
             )
     else:

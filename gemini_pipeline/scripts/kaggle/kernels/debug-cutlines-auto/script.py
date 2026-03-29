@@ -396,6 +396,16 @@ else:
 book_dir = WORK / "Output" / book_stem
 
 if not book_dir.exists():
+    write_status(
+        "failed",
+        failure_reason="book_dir_missing",
+        resolved_book_stem=book_stem,
+        book_stem_source=book_stem_source,
+        marker_dst_content=(marker_dst.read_text(encoding="utf-8").strip() if marker_dst.exists() else None),
+        output_subdirs=output_subdirs,
+        ds_root=str(ds_root),
+        ds_base=str(ds_base),
+    )
     raise RuntimeError(
         f"[VALIDATION] FATAL: WORK/Output/{book_stem} does not exist!\n"
         f"  book_stem={book_stem!r}  (from {book_stem_source})\n"
@@ -428,6 +438,13 @@ if stale_dirs:
 
 chunk_root = book_dir / "Chunk"
 if not chunk_root.exists():
+    write_status(
+        "failed",
+        failure_reason="chunk_root_missing",
+        resolved_book_stem=book_stem,
+        chunk_root=str(chunk_root),
+        book_dir_contents=sorted(p.name for p in book_dir.iterdir()) if book_dir.exists() else [],
+    )
     raise RuntimeError(
         f"[VALIDATION] FATAL: Missing chunk_root: {chunk_root}\n"
         f"  book_dir={book_dir}\n"
@@ -527,6 +544,13 @@ sh(f"cd '{WORK / 'Output'}' && zip -qr '{out_zip}' '{book_stem}'")
 
 # Validate: zip must exist and top-level folder must match book_stem
 if not out_zip.exists():
+    write_status(
+        "failed",
+        failure_reason="zip_creation_failed",
+        resolved_book_stem=book_stem,
+        expected_zip=str(out_zip),
+        source_dir_exists=(WORK / "Output" / book_stem).exists(),
+    )
     raise RuntimeError(
         f"[ZIP VALIDATION] FATAL: zip was not created: {out_zip}\n"
         f"  book_stem={book_stem!r}\n"
@@ -535,6 +559,14 @@ if not out_zip.exists():
 with zipfile.ZipFile(out_zip, "r") as _vz:
     _vz_tops = sorted({p.split("/", 1)[0] for p in _vz.namelist() if p and not p.endswith("/")})
 if len(_vz_tops) != 1 or _vz_tops[0] != book_stem:
+    write_status(
+        "failed",
+        failure_reason="zip_content_mismatch",
+        resolved_book_stem=book_stem,
+        expected_top_level=book_stem,
+        zip_top_levels=_vz_tops,
+        zip_path=str(out_zip),
+    )
     raise RuntimeError(
         f"[ZIP VALIDATION] FATAL: zip top-level folder mismatch.\n"
         f"  zip path             : {out_zip}\n"
