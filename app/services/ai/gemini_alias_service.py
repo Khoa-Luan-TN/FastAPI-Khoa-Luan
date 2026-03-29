@@ -609,6 +609,7 @@ def generate_aliases_batch(
     wait_for_available_key: bool = False,
     max_wait_seconds: int = 3600,
     _raw_collector: dict | None = None,
+    status_callback: Callable[[dict], None] | None = None,
 ) -> dict[str, list[str] | None]:
     """Generate filtered aliases for multiple keywords using batched Gemini requests.
 
@@ -658,6 +659,7 @@ def generate_aliases_batch(
                     model=model,
                     wait_for_available_key=wait_for_available_key,
                     max_wait_seconds=max_wait_seconds,
+                    status_callback=status_callback,
                 )
                 candidate = extract_json(raw_response)
                 if not isinstance(candidate, dict):
@@ -715,6 +717,7 @@ def screen_keywords_for_alias_potential(
     batch_size: int = 25,
     wait_for_available_key: bool = False,
     max_wait_seconds: int = 3600,
+    status_callback: Callable[[dict], None] | None = None,
 ) -> dict[str, dict]:
     """Stage 1: screen keywords for alias potential using Gemini.
 
@@ -748,6 +751,7 @@ def screen_keywords_for_alias_potential(
                     model=model,
                     wait_for_available_key=wait_for_available_key,
                     max_wait_seconds=max_wait_seconds,
+                    status_callback=status_callback,
                 )
                 candidate = extract_json(raw_response)
                 if not isinstance(candidate, dict):

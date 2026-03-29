@@ -952,6 +952,7 @@ const HEAVY_STAGE_LABEL = {
   heavy_syncing_pg: "PostgreSQL",
   heavy_syncing_neo: "Neo4j",
   heavy_finalizing_embeddings: "Embeddings",
+  heavy_generating_aliases: "Alias từ khóa",
   heavy_done: "Hoàn tất",
   heavy_error: "Lỗi",
 };
@@ -967,6 +968,7 @@ const HEAVY_STAGES_ORDER = [
   "heavy_syncing_pg",
   "heavy_syncing_neo",
   "heavy_finalizing_embeddings",
+  "heavy_generating_aliases",
   "heavy_done",
 ];
 

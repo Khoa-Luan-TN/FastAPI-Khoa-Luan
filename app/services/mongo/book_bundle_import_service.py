@@ -919,14 +919,20 @@ def import_book_bundle(
     }
     if new_keywords:
         _log.info(
-            "[book_bundle_import] generating aliases for %d newly inserted keyword(s)",
+            "[book_bundle_import] alias phase start: %d newly inserted keyword(s) entering alias generation",
             len(new_keywords),
         )
-        _cb(
-            "heavy_finalizing_embeddings",
-            f"Tạo alias từ khóa cho {len(new_keywords)} từ khóa mới…",
-            97,
-        )
+        _cb("heavy_generating_aliases", f"Bắt đầu tạo alias cho {len(new_keywords)} từ khóa mới…", 97)
+
+        _alias_progress_state: Dict[str, Any] = {
+            "processed_rows": 0,
+            "total_rows": max(1, len(new_keywords)),
+        }
+
+        def _alias_progress_cb(update: Dict[str, Any]) -> None:
+            msg = update.get("message") or "Đang tạo alias từ khóa…"
+            _cb("heavy_generating_aliases", msg, 98)
+
         try:
             from app.services.keyword.keyword_alias_service import refresh_keyword_aliases_batch
             alias_batch_result = refresh_keyword_aliases_batch(
@@ -937,19 +943,35 @@ def import_book_bundle(
                 screen_batch_size=25,
                 batch_sleep=6.0,
                 max_wait_seconds=3600,
-                progress_callback=None,
-                progress_state=None,
+                progress_callback=_alias_progress_cb,
+                progress_state=_alias_progress_state,
                 phase2_total_slots=len(new_keywords),
             )
             _log.info(
-                "[book_bundle_import] alias batch done: processed=%d inserted=%d stopped=%s",
+                "[book_bundle_import] alias phase done: processed=%d inserted=%d "
+                "screened_true=%d screened_false=%d stopped=%s",
                 alias_batch_result["processed_keywords"],
                 alias_batch_result["inserted_aliases"],
+                alias_batch_result.get("screened_true", 0),
+                alias_batch_result.get("screened_false", 0),
                 alias_batch_result["stopped_due_to_quota"],
             )
+            if alias_batch_result["stopped_due_to_quota"]:
+                _cb(
+                    "heavy_generating_aliases",
+                    f"Alias tạm dừng do quota: đã xử lý {alias_batch_result['processed_keywords']}/{len(new_keywords)} keyword.",
+                    98,
+                )
+            else:
+                _cb(
+                    "heavy_generating_aliases",
+                    f"Alias hoàn tất: {alias_batch_result['inserted_aliases']} alias cho {alias_batch_result['processed_keywords']} keyword.",
+                    99,
+                )
         except Exception as _alias_e:
             _log.warning("[book_bundle_import] alias batch failed: %s", _alias_e)
             kw_errors.append({"alias_batch": str(_alias_e)})
+            _cb("heavy_generating_aliases", f"Alias generation lỗi: {str(_alias_e)[:120]}", 98)
 
     # ── Build UI-friendly response ────────────────────────────────────────────
     def _ops(lst: List[Dict[str, Any]], op: str) -> int:

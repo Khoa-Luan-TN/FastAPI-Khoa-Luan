@@ -110,6 +110,12 @@ def _mask_key(key: str) -> str:
     return key[:8] + "***" + key[-3:]
 
 
+def _key_num_from_label(label: str) -> int:
+    """Extract the numeric index from a label like GEMINI_API_KEY_12 → 12."""
+    m = _KEY_N_RE.match(label)
+    return int(m.group(1)) if m else 0
+
+
 def _is_key_in_cooldown(idx: int, now: float) -> bool:
     return now < _key_cooldown_until.get(idx, 0.0)
 
@@ -190,6 +196,7 @@ def generate_text(
     model: str = "gemini-2.5-flash",
     wait_for_available_key: bool = False,
     max_wait_seconds: int = 3600,
+    status_callback: Callable[[dict], None] | None = None,
 ) -> str:
     """Call Gemini REST API with round-robin key rotation, per-key pacing, and cooldown.
 
@@ -240,6 +247,12 @@ def generate_text(
 
                 _pace_key(idx)
 
+                if status_callback is not None:
+                    try:
+                        status_callback({"event": "key_selected", "key_num": _key_num_from_label(label)})
+                    except Exception:
+                        pass
+
                 try:
                     text = _call_gemini_http(prompt, key, model)
                     _last_call_time[idx] = time.monotonic()
@@ -252,6 +265,11 @@ def generate_text(
                             label, attempt + 1, n, str(e)[:120],
                         )
                         _set_key_cooldown(idx)
+                        if status_callback is not None:
+                            try:
+                                status_callback({"event": "key_cooldown", "key_num": _key_num_from_label(label)})
+                            except Exception:
+                                pass
                         continue
                     raise
 
@@ -289,6 +307,15 @@ def generate_text(
             "[gemini_client] all keys in cooldown | wait_round=%d earliest=%s in %.1fs | sleeping %.1fs | elapsed=%.1fs/%.0fs",
             wait_round, min_label, min_remaining, sleep_dur, elapsed, max_wait_seconds,
         )
+        if status_callback is not None:
+            try:
+                status_callback({
+                    "event": "all_keys_waiting",
+                    "earliest_key_num": _key_num_from_label(min_label),
+                    "wait_seconds": round(sleep_dur),
+                })
+            except Exception:
+                pass
         time.sleep(sleep_dur)
 
 

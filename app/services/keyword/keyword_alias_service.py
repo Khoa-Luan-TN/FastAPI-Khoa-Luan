@@ -285,6 +285,25 @@ def refresh_keyword_aliases_batch(
 
     _STOP_PATTERNS = ("exhausted", "cooldown", "all keys", "max wait")
 
+    # ── Gemini key-status callback (safe: no raw keys, only numbered index) ──
+    _alias_phase = {"label": "sàng lọc alias"}
+
+    def _key_status_cb(event: dict) -> None:
+        ev = event.get("event", "")
+        key_num = event.get("key_num", 0)
+        phase = _alias_phase["label"]
+        if ev == "key_selected":
+            _emit(f"Đang dùng API key #{key_num} để {phase}…")
+            _log.info("[keyword_alias] key_selected key=#%d phase=%s", key_num, phase)
+        elif ev == "key_cooldown":
+            _emit(f"API key #{key_num} đang cooldown, thử key tiếp theo…")
+            _log.info("[keyword_alias] key_cooldown key=#%d", key_num)
+        elif ev == "all_keys_waiting":
+            wait_s = event.get("wait_seconds", 0)
+            earliest = event.get("earliest_key_num", 0)
+            _emit(f"Tất cả API key đang cooldown, chờ key #{earliest} (≈{wait_s}s)…")
+            _log.info("[keyword_alias] all_keys_waiting earliest=#%d wait=%ds", earliest, wait_s)
+
     empty_result = {
         "total_keywords": 0,
         "screened_true": 0,
@@ -323,7 +342,8 @@ def refresh_keyword_aliases_batch(
     )
 
     screen_results: dict[str, dict] = {}
-    _emit("Đang sàng lọc keyword có khả năng có alias...")
+    _alias_phase["label"] = "sàng lọc alias"
+    _emit(f"Đang sàng lọc {len(all_names)} keyword có khả năng có alias…")
     try:
         screen_budget = max(1, int(max_wait_seconds - (time.monotonic() - job_start)))
         screen_results = screen_keywords_for_alias_potential(
@@ -332,6 +352,7 @@ def refresh_keyword_aliases_batch(
             batch_size=screen_batch_size,
             wait_for_available_key=True,
             max_wait_seconds=screen_budget,
+            status_callback=_key_status_cb,
         )
     except RuntimeError as e:
         if any(p in str(e).lower() for p in _STOP_PATTERNS):
@@ -353,7 +374,7 @@ def refresh_keyword_aliases_batch(
         "[keyword_alias] stage1_done | total=%d candidates=%d skipped=%d",
         len(all_names), screened_true, screened_false,
     )
-    _emit("Sàng lọc hoàn tất.", advance=stage1_slots)
+    _emit(f"Sàng lọc xong: {screened_true}/{len(all_names)} keyword cần tạo alias.", advance=stage1_slots)
 
     # Write debug files
     if debug_output_dir:
@@ -395,6 +416,8 @@ def refresh_keyword_aliases_batch(
         "[keyword_alias] stage2_generate | candidates=%d alias_batch_size=%d",
         len(candidates), batch_size,
     )
+    batches_preview = [candidates[i : i + batch_size] for i in range(0, len(candidates), batch_size)]
+    _emit(f"Bắt đầu tạo alias cho {len(candidates)} keyword ({len(batches_preview)} batch)…")
 
     # Generation debug: track per-keyword details for all keywords
     generation_debug: list[dict] = []
@@ -444,6 +467,8 @@ def refresh_keyword_aliases_batch(
             "[alias_generate] batch_start %d/%d | keywords=%d | budget_remaining=%.0fs",
             batch_idx + 1, len(batches), len(batch), remaining_budget,
         )
+        _alias_phase["label"] = f"tạo alias batch {batch_idx + 1}/{len(batches)}"
+        _emit(f"Đang tạo alias batch {batch_idx + 1}/{len(batches)} ({len(batch)} keyword)…")
 
         try:
             alias_map = generate_aliases_batch(
@@ -455,6 +480,7 @@ def refresh_keyword_aliases_batch(
                 wait_for_available_key=True,
                 max_wait_seconds=max(1, int(remaining_budget)),
                 _raw_collector=raw_alias_collector,
+                status_callback=_key_status_cb,
             )
         except RuntimeError as e:
             if any(p in str(e).lower() for p in _STOP_PATTERNS):
