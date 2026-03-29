@@ -1,0 +1,4260 @@
+[{
+  "_id": {
+    "$oid": "69c9663351bdda1a32d0deba"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de44"
+  },
+  "topic_name": "Máy tính và xã hội tri thức",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663351bdda1a32d0deb8"
+      },
+      "keyword_name": "Thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0debb"
+      },
+      "keyword_name": "Dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0debd"
+      },
+      "keyword_name": "Quá trình xử lí thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0debf"
+      },
+      "keyword_name": "Máy tính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dec1"
+      },
+      "keyword_name": "Phân biệt dữ liệu và thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dec3"
+      },
+      "keyword_name": "Đơn vị lưu trữ dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dec5"
+      },
+      "keyword_name": "Byte"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dec7"
+      },
+      "keyword_name": "Bit"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dec9"
+      },
+      "keyword_name": "Quy đổi đơn vị"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0decb"
+      },
+      "keyword_name": "Dung lượng lưu trữ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0decd"
+      },
+      "keyword_name": "Thiết bị số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0decf"
+      },
+      "keyword_name": "Lưu trữ thông tin số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded1"
+      },
+      "keyword_name": "Xử lí thông tin số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded3"
+      },
+      "keyword_name": "Truyền thông số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded5"
+      },
+      "keyword_name": "Ưu điểm thiết bị số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded7"
+      },
+      "keyword_name": "Thiết bị thông minh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded9"
+      },
+      "keyword_name": "Internet of Things (IoT)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dedb"
+      },
+      "keyword_name": "Cách mạng công nghiệp 4.0"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dedd"
+      },
+      "keyword_name": "Trí tuệ nhân tạo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dedf"
+      },
+      "keyword_name": "Dữ liệu lớn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee1"
+      },
+      "keyword_name": "Tin học"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee3"
+      },
+      "keyword_name": "Ứng dụng tin học"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee5"
+      },
+      "keyword_name": "Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee7"
+      },
+      "keyword_name": "Tự động hoá"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee9"
+      },
+      "keyword_name": "Hệ điều hành"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0deec"
+      },
+      "keyword_name": "Phân loại dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0deee"
+      },
+      "keyword_name": "Biểu diễn thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def0"
+      },
+      "keyword_name": "Kiểu dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def2"
+      },
+      "keyword_name": "Xử lí thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def4"
+      },
+      "keyword_name": "Bảng mã ASCII"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def6"
+      },
+      "keyword_name": "Unicode"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def8"
+      },
+      "keyword_name": "Mã hóa ký tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0defa"
+      },
+      "keyword_name": "UTF-8"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0defc"
+      },
+      "keyword_name": "Biểu diễn dữ liệu văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0defe"
+      },
+      "keyword_name": "Hệ nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df00"
+      },
+      "keyword_name": "Biểu diễn số nguyên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df02"
+      },
+      "keyword_name": "Hệ thập phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df04"
+      },
+      "keyword_name": "Số nguyên có dấu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df06"
+      },
+      "keyword_name": "Mã bù 2"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df09"
+      },
+      "keyword_name": "Phép cộng nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df0b"
+      },
+      "keyword_name": "Phép nhân nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df0d"
+      },
+      "keyword_name": "Bảng cộng và nhân nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df0f"
+      },
+      "keyword_name": "Phép tính số học"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df11"
+      },
+      "keyword_name": "Lôgic mệnh đề"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df13"
+      },
+      "keyword_name": "Mệnh đề"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df15"
+      },
+      "keyword_name": "Giá trị chân lí"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df17"
+      },
+      "keyword_name": "Phép toán lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df19"
+      },
+      "keyword_name": "Biểu thức lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df1b"
+      },
+      "keyword_name": "Biểu diễn dữ liệu lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df1d"
+      },
+      "keyword_name": "Dữ liệu lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df20"
+      },
+      "keyword_name": "Trạng thái đối lập"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df22"
+      },
+      "keyword_name": "Ngôn ngữ lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df24"
+      },
+      "keyword_name": "Số hoá âm thanh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df26"
+      },
+      "keyword_name": "Lấy mẫu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df28"
+      },
+      "keyword_name": "Biểu diễn giá trị mẫu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df2a"
+      },
+      "keyword_name": "Tín hiệu âm thanh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df2c"
+      },
+      "keyword_name": "Định dạng âm thanh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df2e"
+      },
+      "keyword_name": "Hệ màu RGB"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df30"
+      },
+      "keyword_name": "Điểm ảnh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df32"
+      },
+      "keyword_name": "Ảnh bitmap"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df34"
+      },
+      "keyword_name": "Độ sâu màu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df36"
+      },
+      "keyword_name": "Định dạng tệp hình ảnh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df38"
+      },
+      "keyword_name": "Trợ thủ số cá nhân (PDA)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df3b"
+      },
+      "keyword_name": "Chức năng hữu ích"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df3d"
+      },
+      "keyword_name": "Kết nối mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df3f"
+      },
+      "keyword_name": "Điện thoại thông minh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df42"
+      },
+      "keyword_name": "Ứng dụng điện thoại"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df44"
+      },
+      "keyword_name": "Màn hình chính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df46"
+      },
+      "keyword_name": "Quản lí tệp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df48"
+      },
+      "keyword_name": "Nút bấm và điều hướng"
+    }
+  ],
+  "total_keywords": 70,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:39.972Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:42.932Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9663651bdda1a32d0df4c"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de45"
+  },
+  "topic_name": "Mạng máy tính và Internet",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df4a"
+      },
+      "keyword_name": "Mạng LAN"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee5"
+      },
+      "keyword_name": "Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df4e"
+      },
+      "keyword_name": "Router"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df50"
+      },
+      "keyword_name": "Mạng diện rộng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df52"
+      },
+      "keyword_name": "Kết nối Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df55"
+      },
+      "keyword_name": "Vai trò của Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df57"
+      },
+      "keyword_name": "Giao tiếp cộng đồng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df59"
+      },
+      "keyword_name": "Giáo dục trực tuyến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df5b"
+      },
+      "keyword_name": "Nguồn thông tin khổng lồ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df5d"
+      },
+      "keyword_name": "Điện toán đám mây"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df5f"
+      },
+      "keyword_name": "SaaS (Software as a Service)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df61"
+      },
+      "keyword_name": "PaaS (Platform as a Service)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df63"
+      },
+      "keyword_name": "IaaS (Infrastructure as a Service)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df65"
+      },
+      "keyword_name": "Lợi ích của dịch vụ đám mây"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df67"
+      },
+      "keyword_name": "Kết nối vạn vật (IoT)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0ded7"
+      },
+      "keyword_name": "Thiết bị thông minh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df6a"
+      },
+      "keyword_name": "Nhà thông minh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df6c"
+      },
+      "keyword_name": "Thu thập dữ liệu tự động"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df6e"
+      },
+      "keyword_name": "Công tơ điện tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df70"
+      },
+      "keyword_name": "Lừa đảo trên mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df72"
+      },
+      "keyword_name": "Lộ thông tin cá nhân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df74"
+      },
+      "keyword_name": "Bắt nạt trên không gian mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df76"
+      },
+      "keyword_name": "Tin giả và tin phản văn hoá"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df78"
+      },
+      "keyword_name": "Nghiện mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df7a"
+      },
+      "keyword_name": "Phần mềm độc hại"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df7c"
+      },
+      "keyword_name": "Virus"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df7e"
+      },
+      "keyword_name": "Worm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df80"
+      },
+      "keyword_name": "Trojan"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df82"
+      },
+      "keyword_name": "Phòng chống phần mềm độc hại"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df85"
+      },
+      "keyword_name": "Khai thác tài nguyên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df87"
+      },
+      "keyword_name": "Học tập"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df89"
+      },
+      "keyword_name": "Phần mềm dịch"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df8b"
+      },
+      "keyword_name": "Kho học liệu mở"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df8d"
+      },
+      "keyword_name": "Google Translate"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df8f"
+      },
+      "keyword_name": "Học ngoại ngữ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df91"
+      },
+      "keyword_name": "Ngôn ngữ nguồn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df93"
+      },
+      "keyword_name": "Ngôn ngữ đích"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df95"
+      },
+      "keyword_name": "Nhập văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df97"
+      },
+      "keyword_name": "Nhập bằng giọng nói"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df99"
+      },
+      "keyword_name": "Kết quả dịch"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df9b"
+      },
+      "keyword_name": "Học trực tuyến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df9d"
+      },
+      "keyword_name": "Bài giảng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0df9f"
+      },
+      "keyword_name": "igiaoduc.vn"
+    }
+  ],
+  "total_keywords": 43,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:42.970Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:44.432Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9663851bdda1a32d0dfa3"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de46"
+  },
+  "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfa1"
+      },
+      "keyword_name": "Hành vi vi phạm trên mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfa4"
+      },
+      "keyword_name": "Đạo đức trên mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfa6"
+      },
+      "keyword_name": "Pháp luật trên mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfa8"
+      },
+      "keyword_name": "Văn hóa ứng xử trên mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfaa"
+      },
+      "keyword_name": "Ảnh hưởng của Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfac"
+      },
+      "keyword_name": "Quy định pháp luật mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfae"
+      },
+      "keyword_name": "Thông tin sai sự thật"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfb0"
+      },
+      "keyword_name": "Luật An ninh mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfb2"
+      },
+      "keyword_name": "Vi phạm trên không gian mạng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfb4"
+      },
+      "keyword_name": "Bộ quy tắc ứng xử trên mạng xã hội"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfb6"
+      },
+      "keyword_name": "Quyền tác giả"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfb8"
+      },
+      "keyword_name": "Bản quyền"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfba"
+      },
+      "keyword_name": "Vi phạm bản quyền"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfbc"
+      },
+      "keyword_name": "Sản phẩm tin học"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfbe"
+      },
+      "keyword_name": "Quyền tài sản"
+    }
+  ],
+  "total_keywords": 15,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:44.464Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:44.931Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9663851bdda1a32d0dfc2"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de47"
+  },
+  "topic_name": "Ứng dụng tin học",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfc0"
+      },
+      "keyword_name": "Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfc3"
+      },
+      "keyword_name": "Đồ hoạ điểm ảnh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfc5"
+      },
+      "keyword_name": "Đồ hoạ vectơ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfc7"
+      },
+      "keyword_name": "Pixel"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfc9"
+      },
+      "keyword_name": "Ứng dụng đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfcb"
+      },
+      "keyword_name": "Phần mềm đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfcd"
+      },
+      "keyword_name": "Inkscape"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfcf"
+      },
+      "keyword_name": "Đồ hoạ vector"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfd1"
+      },
+      "keyword_name": "Thiết kế logo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfd3"
+      },
+      "keyword_name": "Giao diện Inkscape"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfd5"
+      },
+      "keyword_name": "Đối tượng đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfd8"
+      },
+      "keyword_name": "Thứ tự lớp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfda"
+      },
+      "keyword_name": "Hộp công cụ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfdc"
+      },
+      "keyword_name": "Chọn đối tượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfdf"
+      },
+      "keyword_name": "Đối tượng hình khối"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfe1"
+      },
+      "keyword_name": "Thuộc tính đối tượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfe3"
+      },
+      "keyword_name": "Công cụ vẽ có sẵn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfe5"
+      },
+      "keyword_name": "Chỉnh sửa hình khối"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfe7"
+      },
+      "keyword_name": "Màu tô và màu vẽ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfe9"
+      },
+      "keyword_name": "Hộp thoại Fill and Stroke"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfeb"
+      },
+      "keyword_name": "Thiết lập màu đối tượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfed"
+      },
+      "keyword_name": "Gradient (Màu chuyển)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfef"
+      },
+      "keyword_name": "Kiểu nét vẽ (Stroke style)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dff1"
+      },
+      "keyword_name": "Phép ghép đối tượng đồ họa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dff4"
+      },
+      "keyword_name": "Phép hợp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dff6"
+      },
+      "keyword_name": "Phép hiệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dff8"
+      },
+      "keyword_name": "Phép giao"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dffa"
+      },
+      "keyword_name": "Đối tượng dạng đường"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0dffc"
+      },
+      "keyword_name": "Điểm điều khiển"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0dffe"
+      },
+      "keyword_name": "Đoạn cong"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e000"
+      },
+      "keyword_name": "Hình khối"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e002"
+      },
+      "keyword_name": "Công cụ Pen"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e004"
+      },
+      "keyword_name": "Điểm neo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e006"
+      },
+      "keyword_name": "Điểm chỉ hướng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e008"
+      },
+      "keyword_name": "Công cụ tinh chỉnh đường"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e00a"
+      },
+      "keyword_name": "Điểm neo trơn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e00c"
+      },
+      "keyword_name": "Điểm neo góc"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e00e"
+      },
+      "keyword_name": "Đối tượng văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e011"
+      },
+      "keyword_name": "Điều chỉnh phông chữ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e013"
+      },
+      "keyword_name": "Khoảng cách văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e015"
+      },
+      "keyword_name": "Văn bản theo đường"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e017"
+      },
+      "keyword_name": "Thiết kế đồ họa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e019"
+      },
+      "keyword_name": "Hình ảnh đồ họa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e01b"
+      },
+      "keyword_name": "Tờ rơi"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e01e"
+      },
+      "keyword_name": "Banner"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e020"
+      },
+      "keyword_name": "Sản phẩm số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e022"
+      },
+      "keyword_name": "Vẽ đối tượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e024"
+      },
+      "keyword_name": "Văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e026"
+      },
+      "keyword_name": "Màu sắc"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e028"
+      },
+      "keyword_name": "Sắp xếp đối tượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e02a"
+      },
+      "keyword_name": "Xuất sản phẩm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663a51bdda1a32d0e02c"
+      },
+      "keyword_name": "Định dạng đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e02e"
+      },
+      "keyword_name": "PNG"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e030"
+      },
+      "keyword_name": "Hội chợ sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e032"
+      },
+      "keyword_name": "Kích thước ảnh"
+    }
+  ],
+  "total_keywords": 55,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:44.972Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:47.105Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9663b51bdda1a32d0e036"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de48"
+  },
+  "topic_name": "Giải quyết vấn đề với sự trợ giúp của máy tính",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e034"
+      },
+      "keyword_name": "Ngôn ngữ lập trình bậc cao"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e037"
+      },
+      "keyword_name": "Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e039"
+      },
+      "keyword_name": "Chương trình dịch"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e03b"
+      },
+      "keyword_name": "Ngôn ngữ máy"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e03d"
+      },
+      "keyword_name": "Lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e03f"
+      },
+      "keyword_name": "Môi trường lập trình Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e041"
+      },
+      "keyword_name": "Chế độ gõ lệnh trực tiếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e043"
+      },
+      "keyword_name": "Chế độ soạn thảo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e045"
+      },
+      "keyword_name": "Lệnh Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e047"
+      },
+      "keyword_name": "Dấu nhắc >>>"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e049"
+      },
+      "keyword_name": "Câu lệnh Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e04b"
+      },
+      "keyword_name": "Kiểu dữ liệu Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e04d"
+      },
+      "keyword_name": "Lệnh print()"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e04f"
+      },
+      "keyword_name": "Phép toán Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e052"
+      },
+      "keyword_name": "Biến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e054"
+      },
+      "keyword_name": "Lệnh gán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def0"
+      },
+      "keyword_name": "Kiểu dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e057"
+      },
+      "keyword_name": "Cú pháp lệnh gán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e059"
+      },
+      "keyword_name": "Quy tắc đặt tên biến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e05b"
+      },
+      "keyword_name": "Phép toán trên dữ liệu kiểu số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e05d"
+      },
+      "keyword_name": "Phép toán trên dữ liệu kiểu xâu kí tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e05f"
+      },
+      "keyword_name": "Thứ tự ưu tiên phép toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e061"
+      },
+      "keyword_name": "Phép chia nguyên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e063"
+      },
+      "keyword_name": "Phép lấy số dư"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e065"
+      },
+      "keyword_name": "Từ khoá"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df22"
+      },
+      "keyword_name": "Ngôn ngữ lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e06a"
+      },
+      "keyword_name": "SyntaxError"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e06c"
+      },
+      "keyword_name": "Lệnh input"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e06e"
+      },
+      "keyword_name": "Lệnh print"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e070"
+      },
+      "keyword_name": "Lệnh vào ra đơn giản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e073"
+      },
+      "keyword_name": "Nhập xuất dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e075"
+      },
+      "keyword_name": "Kiểu dữ liệu cơ bản Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e077"
+      },
+      "keyword_name": "Lệnh type"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e079"
+      },
+      "keyword_name": "Chuyển đổi kiểu dữ liệu Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e07b"
+      },
+      "keyword_name": "Lệnh int"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e07d"
+      },
+      "keyword_name": "Lệnh float"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df19"
+      },
+      "keyword_name": "Biểu thức lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df17"
+      },
+      "keyword_name": "Phép toán lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e081"
+      },
+      "keyword_name": "Phép so sánh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e083"
+      },
+      "keyword_name": "Kiểu dữ liệu Boolean"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e086"
+      },
+      "keyword_name": "Lệnh if Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e088"
+      },
+      "keyword_name": "Cấu trúc rẽ nhánh Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e08a"
+      },
+      "keyword_name": "Khối lệnh Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e08c"
+      },
+      "keyword_name": "Thụt lề Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e08e"
+      },
+      "keyword_name": "Lệnh if-else Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e090"
+      },
+      "keyword_name": "Lệnh lặp for"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e092"
+      },
+      "keyword_name": "Hàm range()"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e094"
+      },
+      "keyword_name": "Vùng giá trị"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e096"
+      },
+      "keyword_name": "Cú pháp lệnh lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e098"
+      },
+      "keyword_name": "Khối lệnh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e09a"
+      },
+      "keyword_name": "Lệnh range"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e09d"
+      },
+      "keyword_name": "Cú pháp range"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e09f"
+      },
+      "keyword_name": "Số nguyên liên tiếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0a1"
+      },
+      "keyword_name": "Vòng lặp for"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0a3"
+      },
+      "keyword_name": "Lệnh while"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0a5"
+      },
+      "keyword_name": "Điều kiện lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0a8"
+      },
+      "keyword_name": "Lặp vô hạn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0aa"
+      },
+      "keyword_name": "Lệnh break"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0ac"
+      },
+      "keyword_name": "Cấu trúc lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0ae"
+      },
+      "keyword_name": "Cấu trúc lập trình cơ bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663d51bdda1a32d0e0b0"
+      },
+      "keyword_name": "Cấu trúc tuần tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0b3"
+      },
+      "keyword_name": "Cấu trúc lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0b5"
+      },
+      "keyword_name": "Kiểu dữ liệu danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0b7"
+      },
+      "keyword_name": "Khởi tạo danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0b9"
+      },
+      "keyword_name": "Truy cập phần tử danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0bb"
+      },
+      "keyword_name": "Chỉ số danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0bd"
+      },
+      "keyword_name": "Thao tác danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0bf"
+      },
+      "keyword_name": "Duyệt danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0c1"
+      },
+      "keyword_name": "Lệnh for"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0c3"
+      },
+      "keyword_name": "Hàm range"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0c5"
+      },
+      "keyword_name": "Phần tử danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0c7"
+      },
+      "keyword_name": "Vòng lặp for Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0c9"
+      },
+      "keyword_name": "Thêm phần tử vào danh sách Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0cb"
+      },
+      "keyword_name": "Phương thức append"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0cd"
+      },
+      "keyword_name": "Danh sách Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0cf"
+      },
+      "keyword_name": "Phương thức trong Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0d1"
+      },
+      "keyword_name": "Thao tác với danh sách Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0d3"
+      },
+      "keyword_name": "Toán tử in"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0d6"
+      },
+      "keyword_name": "Kiểm tra sự tồn tại phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0d8"
+      },
+      "keyword_name": "Danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0dc"
+      },
+      "keyword_name": "Lệnh clear"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0de"
+      },
+      "keyword_name": "Lệnh remove"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e0"
+      },
+      "keyword_name": "Lệnh insert"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e2"
+      },
+      "keyword_name": "Lệnh append"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e4"
+      },
+      "keyword_name": "Xâu kí tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e6"
+      },
+      "keyword_name": "Truy cập kí tự theo chỉ số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e8"
+      },
+      "keyword_name": "Độ dài xâu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0ea"
+      },
+      "keyword_name": "Tính bất biến của xâu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0ed"
+      },
+      "keyword_name": "Lệnh duyệt kí tự của xâu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0f1"
+      },
+      "keyword_name": "Duyệt theo chỉ số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0f3"
+      },
+      "keyword_name": "Duyệt theo phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0f5"
+      },
+      "keyword_name": "Xâu con"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0f7"
+      },
+      "keyword_name": "Lệnh find"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0fa"
+      },
+      "keyword_name": "Tìm vị trí xâu con"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0fe"
+      },
+      "keyword_name": "Lệnh split"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e100"
+      },
+      "keyword_name": "Lệnh join"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e103"
+      },
+      "keyword_name": "Kí tự tách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e105"
+      },
+      "keyword_name": "Hàm dựng sẵn Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e107"
+      },
+      "keyword_name": "Tham số hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e109"
+      },
+      "keyword_name": "Cú pháp gọi hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e10b"
+      },
+      "keyword_name": "Chương trình con"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e10e"
+      },
+      "keyword_name": "Hàm tự định nghĩa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e110"
+      },
+      "keyword_name": "Từ khóa def"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e112"
+      },
+      "keyword_name": "Từ khóa return"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e114"
+      },
+      "keyword_name": "Hàm có trả lại giá trị"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e116"
+      },
+      "keyword_name": "Hàm không trả lại giá trị"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e118"
+      },
+      "keyword_name": "Tham số và Đối số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e11a"
+      },
+      "keyword_name": "Hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e11c"
+      },
+      "keyword_name": "Khai báo hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e11e"
+      },
+      "keyword_name": "Gọi hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e120"
+      },
+      "keyword_name": "Truyền dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e124"
+      },
+      "keyword_name": "Số nguyên tố"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e126"
+      },
+      "keyword_name": "Cấu trúc chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e128"
+      },
+      "keyword_name": "Phân chia bài toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e12a"
+      },
+      "keyword_name": "Phạm vi biến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e12c"
+      },
+      "keyword_name": "Biến cục bộ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e12e"
+      },
+      "keyword_name": "Biến toàn cục"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e130"
+      },
+      "keyword_name": "Hàm trong Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e132"
+      },
+      "keyword_name": "Lỗi NameError"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e136"
+      },
+      "keyword_name": "Từ khóa global"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e139"
+      },
+      "keyword_name": "Truy cập biến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e13b"
+      },
+      "keyword_name": "Lỗi chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e13d"
+      },
+      "keyword_name": "Lỗi cú pháp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e13f"
+      },
+      "keyword_name": "Lỗi ngoại lệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e141"
+      },
+      "keyword_name": "Lỗi logic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e143"
+      },
+      "keyword_name": "Gỡ lỗi chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e145"
+      },
+      "keyword_name": "Lỗi ngoại lệ Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e147"
+      },
+      "keyword_name": "Xử lí lỗi Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e149"
+      },
+      "keyword_name": "ZeroDivisionError"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e14b"
+      },
+      "keyword_name": "TypeError"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e14e"
+      },
+      "keyword_name": "Kiểm thử chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e150"
+      },
+      "keyword_name": "Lỗi Runtime và ngoại lệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e152"
+      },
+      "keyword_name": "Bộ dữ liệu test"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e154"
+      },
+      "keyword_name": "Điểm dừng (Break Point)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e156"
+      },
+      "keyword_name": "Biến trung gian"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e158"
+      },
+      "keyword_name": "ƯCLN (Ước số chung lớn nhất)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e15a"
+      },
+      "keyword_name": "Thuật toán Euclid"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e15c"
+      },
+      "keyword_name": "Vòng lặp While"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e15f"
+      },
+      "keyword_name": "Điểm dừng (Breakpoint)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e162"
+      },
+      "keyword_name": "Chương trình đơn giản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e165"
+      },
+      "keyword_name": "Debug"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e168"
+      },
+      "keyword_name": "Phân tích thừa số nguyên tố"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e16a"
+      },
+      "keyword_name": "Phương trình bậc hai"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e16c"
+      },
+      "keyword_name": "Nghiệm phương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e16f"
+      },
+      "keyword_name": "Lệnh rẽ nhánh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e171"
+      },
+      "keyword_name": "Vòng lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e173"
+      },
+      "keyword_name": "Số tự nhiên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e175"
+      },
+      "keyword_name": "Số thực"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e177"
+      },
+      "keyword_name": "Năm nhuận"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e179"
+      },
+      "keyword_name": "UCLN"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e17b"
+      },
+      "keyword_name": "Lập trình Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e17d"
+      },
+      "keyword_name": "Chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e17f"
+      },
+      "keyword_name": "Họ đệm tên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e181"
+      },
+      "keyword_name": "Xâu ký tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e183"
+      },
+      "keyword_name": "Hàm split"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e187"
+      },
+      "keyword_name": "Trọng lượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e189"
+      },
+      "keyword_name": "Hành tinh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e18b"
+      },
+      "keyword_name": "Newton"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e18d"
+      },
+      "keyword_name": "Khối lượng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e18f"
+      },
+      "keyword_name": "Ngày tháng năm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e192"
+      },
+      "keyword_name": "Dữ liệu hợp lệ"
+    }
+  ],
+  "total_keywords": 161,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:47.143Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:54.636Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9664251bdda1a32d0e196"
+  },
+  "topic_id": {
+    "$oid": "69c9663051bdda1a32d0de49"
+  },
+  "topic_name": "Hướng nghiệp với tin học",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663851bdda1a32d0dfc0"
+      },
+      "keyword_name": "Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e197"
+      },
+      "keyword_name": "Thông điệp truyền thông"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e199"
+      },
+      "keyword_name": "Sản phẩm đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e19b"
+      },
+      "keyword_name": "Bố cục và màu sắc"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e19d"
+      },
+      "keyword_name": "Lợi ích thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663951bdda1a32d0dfcb"
+      },
+      "keyword_name": "Phần mềm đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e1a1"
+      },
+      "keyword_name": "Kiến thức công nghệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e1a3"
+      },
+      "keyword_name": "Khả năng sáng tạo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1a5"
+      },
+      "keyword_name": "Kĩ năng học hỏi và tư duy phản biện"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1a7"
+      },
+      "keyword_name": "Ngành Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1a9"
+      },
+      "keyword_name": "Đào tạo Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1ab"
+      },
+      "keyword_name": "Cơ hội việc làm Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1ad"
+      },
+      "keyword_name": "Hướng nghiệp Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1af"
+      },
+      "keyword_name": "Thị trường lao động Thiết kế đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1b1"
+      },
+      "keyword_name": "Phát triển phần mềm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1b3"
+      },
+      "keyword_name": "Điều tra khảo sát"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1b5"
+      },
+      "keyword_name": "Thiết kế hệ thống"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e03d"
+      },
+      "keyword_name": "Lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1b8"
+      },
+      "keyword_name": "Quản trị dự án phần mềm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1bb"
+      },
+      "keyword_name": "Lập trình viên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1bd"
+      },
+      "keyword_name": "Kĩ sư phần mềm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1c0"
+      },
+      "keyword_name": "Kiến thức và kĩ năng phát triển phần mềm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1c3"
+      },
+      "keyword_name": "Cơ hội nghề nghiệp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1c5"
+      },
+      "keyword_name": "Nhu cầu nhân lực"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1c7"
+      },
+      "keyword_name": "Lập trình ứng dụng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664351bdda1a32d0e1c9"
+      },
+      "keyword_name": "Công nghệ thông tin"
+    }
+  ],
+  "total_keywords": 26,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:54.697Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:55.794Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964547"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce44964546"
+  },
+  "topic_name": "Máy tính và xã hội tri thức",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee9"
+      },
+      "keyword_name": "Hệ điều hành"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9851f9d3ad7ce44964599"
+      },
+      "keyword_name": "Plug & Play"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9851f9d3ad7ce4496459b"
+      },
+      "keyword_name": "Giao diện đồ hoạ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9851f9d3ad7ce4496459d"
+      },
+      "keyword_name": "Giao diện dòng lệnh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce4496459f"
+      },
+      "keyword_name": "Mã nguồn mở"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645a3"
+      },
+      "keyword_name": "Hệ điều hành di động"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645a5"
+      },
+      "keyword_name": "Thiết bị di động"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645a7"
+      },
+      "keyword_name": "Kết nối mạng di động"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645a9"
+      },
+      "keyword_name": "Giao diện thân thiện"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645ab"
+      },
+      "keyword_name": "iOS"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645b0"
+      },
+      "keyword_name": "Phần cứng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645b2"
+      },
+      "keyword_name": "Phần mềm ứng dụng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645b4"
+      },
+      "keyword_name": "Điều phối tài nguyên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645b6"
+      },
+      "keyword_name": "Dịch vụ điều khiển"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645bb"
+      },
+      "keyword_name": "Giao diện người dùng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645bd"
+      },
+      "keyword_name": "Quản lí tệp và thư mục"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645bf"
+      },
+      "keyword_name": "Tiện ích hệ điều hành"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645c1"
+      },
+      "keyword_name": "File Explorer"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645c3"
+      },
+      "keyword_name": "Thao tác chuột"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985209d3ad7ce449645c5"
+      },
+      "keyword_name": "Phân mảnh đĩa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645c7"
+      },
+      "keyword_name": "Kiểm tra đĩa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645c9"
+      },
+      "keyword_name": "Hợp mảnh đĩa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645ce"
+      },
+      "keyword_name": "Phần mềm nguồn mở"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645d0"
+      },
+      "keyword_name": "Giấy phép phần mềm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645d2"
+      },
+      "keyword_name": "Phần mềm thương mại"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645d4"
+      },
+      "keyword_name": "Mã nguồn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645d6"
+      },
+      "keyword_name": "GNU GPL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645dc"
+      },
+      "keyword_name": "Phần mềm đặt hàng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645de"
+      },
+      "keyword_name": "Phần mềm đóng gói"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645e3"
+      },
+      "keyword_name": "Phần mềm trực tuyến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645e5"
+      },
+      "keyword_name": "Không cần cài đặt"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df52"
+      },
+      "keyword_name": "Kết nối Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645e8"
+      },
+      "keyword_name": "Lưu trữ đám mây"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645ea"
+      },
+      "keyword_name": "Tài khoản Google"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645ee"
+      },
+      "keyword_name": "Bộ xử lí trung tâm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645f0"
+      },
+      "keyword_name": "RAM"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645f2"
+      },
+      "keyword_name": "ROM"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645f4"
+      },
+      "keyword_name": "Bảng mạch chính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce449645f6"
+      },
+      "keyword_name": "Bộ nhớ ngoài"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce449645fa"
+      },
+      "keyword_name": "Mạch lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663651bdda1a32d0df17"
+      },
+      "keyword_name": "Phép toán lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0defe"
+      },
+      "keyword_name": "Hệ nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce449645fe"
+      },
+      "keyword_name": "Cổng lôgic"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0df09"
+      },
+      "keyword_name": "Phép cộng nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce44964603"
+      },
+      "keyword_name": "Thiết bị vào – ra"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce44964605"
+      },
+      "keyword_name": "Độ phân giải"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce44964607"
+      },
+      "keyword_name": "Màn hình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce44964609"
+      },
+      "keyword_name": "Máy in"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce4496460b"
+      },
+      "keyword_name": "Trình điều khiển"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985229d3ad7ce4496460f"
+      },
+      "keyword_name": "Cổng kết nối"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964611"
+      },
+      "keyword_name": "USB"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964613"
+      },
+      "keyword_name": "Bluetooth"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964616"
+      },
+      "keyword_name": "Ghép đôi"
+    }
+  ],
+  "total_keywords": 53,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.327Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:39.172Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce4496454a"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce44964549"
+  },
+  "topic_name": "Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496461a"
+      },
+      "keyword_name": "Ổ đĩa trực tuyến"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985219d3ad7ce449645e8"
+      },
+      "keyword_name": "Lưu trữ đám mây"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496461d"
+      },
+      "keyword_name": "Chia sẻ tệp tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496461f"
+      },
+      "keyword_name": "Quản lí thư mục"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964621"
+      },
+      "keyword_name": "Tải tệp lên"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964626"
+      },
+      "keyword_name": "Lưu trữ tệp tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496462a"
+      },
+      "keyword_name": "Phân quyền chia sẻ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496462e"
+      },
+      "keyword_name": "Tìm kiếm thông tin Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964630"
+      },
+      "keyword_name": "Máy tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663c51bdda1a32d0e065"
+      },
+      "keyword_name": "Từ khoá"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964633"
+      },
+      "keyword_name": "Hiệu quả tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964635"
+      },
+      "keyword_name": "Trình duyệt Internet"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964637"
+      },
+      "keyword_name": "Tìm kiếm bằng tiếng nói"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce44964639"
+      },
+      "keyword_name": "Tiêu chí tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985239d3ad7ce4496463b"
+      },
+      "keyword_name": "Dạng tệp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496463d"
+      },
+      "keyword_name": "Dấu nháy kép"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496463f"
+      },
+      "keyword_name": "Thủ thuật tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964643"
+      },
+      "keyword_name": "Gmail"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964645"
+      },
+      "keyword_name": "Nhãn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964647"
+      },
+      "keyword_name": "Dấu quan trọng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964649"
+      },
+      "keyword_name": "Đánh dấu thư"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496464b"
+      },
+      "keyword_name": "Phân loại thư"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496464f"
+      },
+      "keyword_name": "Mạng xã hội"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964651"
+      },
+      "keyword_name": "Fanpage"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964653"
+      },
+      "keyword_name": "Quyền riêng tư"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964655"
+      },
+      "keyword_name": "Trang cá nhân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964657"
+      },
+      "keyword_name": "Gắn thẻ"
+    }
+  ],
+  "total_keywords": 27,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.452Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:40.547Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce4496454d"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce4496454c"
+  },
+  "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496465b"
+      },
+      "keyword_name": "Lừa đảo trên không gian số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496465d"
+      },
+      "keyword_name": "Nguyên tắc phòng tránh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496465f"
+      },
+      "keyword_name": "Website giả mạo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964661"
+      },
+      "keyword_name": "Thông tin cá nhân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964663"
+      },
+      "keyword_name": "Phần mềm bảo mật"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964667"
+      },
+      "keyword_name": "Môi trường số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce44964669"
+      },
+      "keyword_name": "Quy tắc ứng xử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496466b"
+      },
+      "keyword_name": "Công dân số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985249d3ad7ce4496466d"
+      },
+      "keyword_name": "Bảo mật thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496466f"
+      },
+      "keyword_name": "Lừa đảo trực tuyến"
+    }
+  ],
+  "total_keywords": 10,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.526Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:41.032Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964550"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce4496454f"
+  },
+  "topic_name": "Giới thiệu các hệ cơ sở dữ liệu",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964673"
+      },
+      "keyword_name": "Cập nhật dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964675"
+      },
+      "keyword_name": "Lưu trữ dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964677"
+      },
+      "keyword_name": "Xoá dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964679"
+      },
+      "keyword_name": "Sửa dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496467b"
+      },
+      "keyword_name": "Thêm dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496467f"
+      },
+      "keyword_name": "Truy xuất dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964681"
+      },
+      "keyword_name": "Khai thác thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964683"
+      },
+      "keyword_name": "Khoa học dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663751bdda1a32d0df6c"
+      },
+      "keyword_name": "Thu thập dữ liệu tự động"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496468a"
+      },
+      "keyword_name": "Hệ thống kết nối vạn vật (IoT)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496468c"
+      },
+      "keyword_name": "Mã vạch"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663451bdda1a32d0dedb"
+      },
+      "keyword_name": "Cách mạng Công nghiệp 4.0"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def2"
+      },
+      "keyword_name": "Xử lí thông tin"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964692"
+      },
+      "keyword_name": "Tổ chức lưu trữ dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964694"
+      },
+      "keyword_name": "Dư thừa dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964696"
+      },
+      "keyword_name": "Nhất quán dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce44964698"
+      },
+      "keyword_name": "Phụ thuộc phần mềm và dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985259d3ad7ce4496469a"
+      },
+      "keyword_name": "Cơ sở dữ liệu (CSDL)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce4496469e"
+      },
+      "keyword_name": "Cơ sở dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646a0"
+      },
+      "keyword_name": "Độc lập dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646a2"
+      },
+      "keyword_name": "Tính không dư thừa"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646a4"
+      },
+      "keyword_name": "Tính toàn vẹn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646a6"
+      },
+      "keyword_name": "Tính nhất quán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646aa"
+      },
+      "keyword_name": "Hệ quản trị cơ sở dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646ad"
+      },
+      "keyword_name": "Định nghĩa dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646b3"
+      },
+      "keyword_name": "Hệ cơ sở dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646b5"
+      },
+      "keyword_name": "Hệ QTCSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646b7"
+      },
+      "keyword_name": "Phần mềm ứng dụng CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646b9"
+      },
+      "keyword_name": "Mô hình hai thành phần"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646bb"
+      },
+      "keyword_name": "Phần mềm khách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646bf"
+      },
+      "keyword_name": "Hệ CSDL tập trung"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646c1"
+      },
+      "keyword_name": "Hệ CSDL phân tán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646c3"
+      },
+      "keyword_name": "CSDL cục bộ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646c5"
+      },
+      "keyword_name": "Mạng máy tính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646c7"
+      },
+      "keyword_name": "Ứng dụng phân tán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646cb"
+      },
+      "keyword_name": "Cơ sở dữ liệu quan hệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646cd"
+      },
+      "keyword_name": "Bảng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646cf"
+      },
+      "keyword_name": "Thuộc tính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646d1"
+      },
+      "keyword_name": "Mã định danh"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646d3"
+      },
+      "keyword_name": "Quan hệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646d7"
+      },
+      "keyword_name": "CSDL quan hệ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646d9"
+      },
+      "keyword_name": "Bản ghi"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646db"
+      },
+      "keyword_name": "Trường"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646dd"
+      },
+      "keyword_name": "Khoá chính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646df"
+      },
+      "keyword_name": "Khoá ngoài"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646e3"
+      },
+      "keyword_name": "Ngôn ngữ truy vấn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646e5"
+      },
+      "keyword_name": "SQL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646ec"
+      },
+      "keyword_name": "CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646ee"
+      },
+      "keyword_name": "DDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0def0"
+      },
+      "keyword_name": "Kiểu dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985279d3ad7ce449646f2"
+      },
+      "keyword_name": "CREATE TABLE"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce449646f6"
+      },
+      "keyword_name": "SQL DML"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce449646f8"
+      },
+      "keyword_name": "Câu truy vấn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce449646fa"
+      },
+      "keyword_name": "SELECT"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce449646fc"
+      },
+      "keyword_name": "INSERT INTO"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce449646fe"
+      },
+      "keyword_name": "INNER JOIN"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964702"
+      },
+      "keyword_name": "Kiểm soát quyền truy cập"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964704"
+      },
+      "keyword_name": "DCL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964706"
+      },
+      "keyword_name": "GRANT"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964708"
+      },
+      "keyword_name": "REVOKE"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496470d"
+      },
+      "keyword_name": "Bảo mật CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496470f"
+      },
+      "keyword_name": "Phân quyền truy cập"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964711"
+      },
+      "keyword_name": "Chính sách bảo mật CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964713"
+      },
+      "keyword_name": "Tài khoản truy xuất CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964715"
+      },
+      "keyword_name": "Giám sát hoạt động hệ thống"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964719"
+      },
+      "keyword_name": "Bảo đảm an toàn dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496471b"
+      },
+      "keyword_name": "Sự cố nguồn điện"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496471d"
+      },
+      "keyword_name": "Sự cố hư hỏng thiết bị lưu trữ"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496471f"
+      },
+      "keyword_name": "Sao lưu dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce44964721"
+      },
+      "keyword_name": "Chính sách an toàn dữ liệu"
+    }
+  ],
+  "total_keywords": 70,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.594Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:45.015Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964553"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce44964552"
+  },
+  "topic_name": "Hướng nghiệp với tin học",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964725"
+      },
+      "keyword_name": "Quản trị CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964727"
+      },
+      "keyword_name": "Nhà quản trị CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985269d3ad7ce449646b5"
+      },
+      "keyword_name": "Hệ QTCSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce4496472a"
+      },
+      "keyword_name": "An toàn, bảo mật dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985289d3ad7ce4496471f"
+      },
+      "keyword_name": "Sao lưu dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964731"
+      },
+      "keyword_name": "Thiết kế CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964733"
+      },
+      "keyword_name": "Ngôn ngữ truy vấn SQL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964735"
+      },
+      "keyword_name": "Mô hình CSDL"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce4496473a"
+      },
+      "keyword_name": "Tuyển dụng nhân lực"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce4496473c"
+      },
+      "keyword_name": "Chuyển đổi số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663551bdda1a32d0dee3"
+      },
+      "keyword_name": "Ứng dụng tin học"
+    }
+  ],
+  "total_keywords": 11,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.671Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:45.793Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964556"
+  },
+  "topic_id": {
+    "$oid": "69c9851c9d3ad7ce44964555"
+  },
+  "topic_name": "Kĩ thuật lập trình",
+  "keyword_refs": [
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964742"
+      },
+      "keyword_name": "Cấu trúc dữ liệu mảng một chiều"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985299d3ad7ce44964744"
+      },
+      "keyword_name": "Python list"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964746"
+      },
+      "keyword_name": "Truy cập chỉ số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964748"
+      },
+      "keyword_name": "Duyệt mảng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0bd"
+      },
+      "keyword_name": "Thao tác danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce4496474d"
+      },
+      "keyword_name": "Cấu trúc dữ liệu mảng hai chiều"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce4496474f"
+      },
+      "keyword_name": "List trong list"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e037"
+      },
+      "keyword_name": "Python"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964752"
+      },
+      "keyword_name": "Truy cập phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964754"
+      },
+      "keyword_name": "Duyệt phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964758"
+      },
+      "keyword_name": "Mảng một chiều"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce4496475a"
+      },
+      "keyword_name": "Mảng hai chiều"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce4496475c"
+      },
+      "keyword_name": "Kiểu dữ liệu list"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e03d"
+      },
+      "keyword_name": "Lập trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664251bdda1a32d0e17d"
+      },
+      "keyword_name": "Chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964760"
+      },
+      "keyword_name": "Nhập dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852a9d3ad7ce44964762"
+      },
+      "keyword_name": "Thống kê dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e171"
+      },
+      "keyword_name": "Vòng lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964766"
+      },
+      "keyword_name": "Ma trận"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496476a"
+      },
+      "keyword_name": "Bài toán tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496476c"
+      },
+      "keyword_name": "Miền dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496476e"
+      },
+      "keyword_name": "Thuật toán tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964770"
+      },
+      "keyword_name": "Cấu trúc dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964772"
+      },
+      "keyword_name": "Nghiệm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964776"
+      },
+      "keyword_name": "Tìm kiếm tuần tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964778"
+      },
+      "keyword_name": "Thuật toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496477a"
+      },
+      "keyword_name": "Dãy số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496477c"
+      },
+      "keyword_name": "Duyệt"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce4496477e"
+      },
+      "keyword_name": "Chỉ số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964782"
+      },
+      "keyword_name": "Tìm kiếm nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964784"
+      },
+      "keyword_name": "Dãy số sắp xếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852b9d3ad7ce44964786"
+      },
+      "keyword_name": "Phạm vi tìm kiếm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce4496478d"
+      },
+      "keyword_name": "Đọc ghi tệp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce44964790"
+      },
+      "keyword_name": "Tệp văn bản"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce44964792"
+      },
+      "keyword_name": "Lệnh open()"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce44964794"
+      },
+      "keyword_name": "Thuật toán tìm kiếm nhị phân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce44964796"
+      },
+      "keyword_name": "Danh sách (list)"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663b51bdda1a32d0e04d"
+      },
+      "keyword_name": "Lệnh print()"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce44964799"
+      },
+      "keyword_name": "Đọc dòng tệp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce4496479b"
+      },
+      "keyword_name": "Tham số encoding"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce4496479f"
+      },
+      "keyword_name": "Thuật toán sắp xếp chèn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce449647a1"
+      },
+      "keyword_name": "Sơ đồ mô phỏng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce449647a3"
+      },
+      "keyword_name": "Chèn phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852c9d3ad7ce449647a6"
+      },
+      "keyword_name": "Dãy con đã sắp xếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647aa"
+      },
+      "keyword_name": "Thuật toán sắp xếp chọn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647ad"
+      },
+      "keyword_name": "Đổi chỗ phần tử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647af"
+      },
+      "keyword_name": "Phần tử nhỏ nhất"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647b4"
+      },
+      "keyword_name": "Thuật toán sắp xếp nổi bọt"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647b7"
+      },
+      "keyword_name": "Vòng lặp lồng nhau"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647b9"
+      },
+      "keyword_name": "Sắp xếp dãy số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647bb"
+      },
+      "keyword_name": "Phần tử liền kề"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647bf"
+      },
+      "keyword_name": "Thuật toán sắp xếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647c1"
+      },
+      "keyword_name": "Sắp xếp chèn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647c3"
+      },
+      "keyword_name": "Sắp xếp chọn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647c5"
+      },
+      "keyword_name": "Sắp xếp nổi bọt"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663e51bdda1a32d0e0d8"
+      },
+      "keyword_name": "Danh sách"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e11a"
+      },
+      "keyword_name": "Hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647cb"
+      },
+      "keyword_name": "Điều kiện"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852d9d3ad7ce449647cd"
+      },
+      "keyword_name": "Sắp xếp tăng dần"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664151bdda1a32d0e14e"
+      },
+      "keyword_name": "Kiểm thử chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647d2"
+      },
+      "keyword_name": "Bộ dữ liệu kiểm thử"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9664051bdda1a32d0e13b"
+      },
+      "keyword_name": "Lỗi chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647d5"
+      },
+      "keyword_name": "Tính đúng của chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647d7"
+      },
+      "keyword_name": "Độ tin cậy"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647db"
+      },
+      "keyword_name": "Kiểm tra tính đúng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647de"
+      },
+      "keyword_name": "Bất biến vòng lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647e0"
+      },
+      "keyword_name": "Lập luận toán học"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647e5"
+      },
+      "keyword_name": "Độ phức tạp tính toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647e7"
+      },
+      "keyword_name": "Độ phức tạp thời gian"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647e9"
+      },
+      "keyword_name": "Độ phức tạp không gian"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647ef"
+      },
+      "keyword_name": "Đánh giá thời gian thực hiện chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647f1"
+      },
+      "keyword_name": "Đơn vị thời gian"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647f3"
+      },
+      "keyword_name": "Phép toán tích cực"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852e9d3ad7ce449647f6"
+      },
+      "keyword_name": "Lệnh đơn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce449647fb"
+      },
+      "keyword_name": "Kí hiệu O-lớn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce449647fd"
+      },
+      "keyword_name": "Phân loại thuật toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce449647ff"
+      },
+      "keyword_name": "Hàm thời gian"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964801"
+      },
+      "keyword_name": "Bậc của hàm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964806"
+      },
+      "keyword_name": "Kí hiệu O lớn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964808"
+      },
+      "keyword_name": "Quy tắc cộng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce4496480a"
+      },
+      "keyword_name": "Quy tắc nhân"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce4496480f"
+      },
+      "keyword_name": "Độ phức tạp thuật toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964811"
+      },
+      "keyword_name": "O-lớn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964816"
+      },
+      "keyword_name": "Thời gian thực hiện"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce44964818"
+      },
+      "keyword_name": "Kích thước mảng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce4496481a"
+      },
+      "keyword_name": "Độ phức tạp tuyến tính"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9852f9d3ad7ce4496481c"
+      },
+      "keyword_name": "Độ phức tạp bình phương"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce44964821"
+      },
+      "keyword_name": "Phương pháp làm mịn dần"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce44964824"
+      },
+      "keyword_name": "Thiết kế chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce4496482c"
+      },
+      "keyword_name": "Cặp phần tử nghịch đảo"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce4496482e"
+      },
+      "keyword_name": "Lược đồ thuật toán"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce44964835"
+      },
+      "keyword_name": "Kiểm tra hoán vị"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e10b"
+      },
+      "keyword_name": "Chương trình con"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce4496483a"
+      },
+      "keyword_name": "Đếm số lần lặp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c9663f51bdda1a32d0e0e4"
+      },
+      "keyword_name": "Xâu kí tự"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce4496483d"
+      },
+      "keyword_name": "Xâu đối xứng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce4496483f"
+      },
+      "keyword_name": "Phân tích thiết kế"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985309d3ad7ce44964843"
+      },
+      "keyword_name": "Thiết kế mô đun"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964845"
+      },
+      "keyword_name": "Mô đun con"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964848"
+      },
+      "keyword_name": "Xử lí dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496484a"
+      },
+      "keyword_name": "Xuất dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496484e"
+      },
+      "keyword_name": "Thiết kế theo mô đun"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964850"
+      },
+      "keyword_name": "Nâng cấp chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964853"
+      },
+      "keyword_name": "Tái sử dụng mô đun"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964855"
+      },
+      "keyword_name": "Làm việc nhóm"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964859"
+      },
+      "keyword_name": "Thiết kế chương trình theo mô đun"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496485f"
+      },
+      "keyword_name": "Ghi dữ liệu"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964864"
+      },
+      "keyword_name": "Sắp xếp"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964868"
+      },
+      "keyword_name": "Thư viện chương trình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496486a"
+      },
+      "keyword_name": "Lệnh import"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496486c"
+      },
+      "keyword_name": "Thư viện math"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce4496486e"
+      },
+      "keyword_name": "Hàm chuẩn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985319d3ad7ce44964870"
+      },
+      "keyword_name": "InsertionSort"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964874"
+      },
+      "keyword_name": "Danh sách liên kết"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964876"
+      },
+      "keyword_name": "Node"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964878"
+      },
+      "keyword_name": "Con trỏ next"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce4496487a"
+      },
+      "keyword_name": "Head"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964881"
+      },
+      "keyword_name": "Tệp mã nguồn"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964883"
+      },
+      "keyword_name": "Cấu trúc LinkedList"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964885"
+      },
+      "keyword_name": "Mảng"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964887"
+      },
+      "keyword_name": "Hằng số"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce44964889"
+      },
+      "keyword_name": "Điện trở tương đương"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce4496488b"
+      },
+      "keyword_name": "Nguyên tử khối trung bình"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce4496488d"
+      },
+      "keyword_name": "Phương trình bậc 2"
+    },
+    {
+      "keyword_id": {
+        "$oid": "69c985329d3ad7ce4496488f"
+      },
+      "keyword_name": "Kiểm tra dữ liệu"
+    }
+  ],
+  "total_keywords": 125,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.767Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:54.652Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+}]

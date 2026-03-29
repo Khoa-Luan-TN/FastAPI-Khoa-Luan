@@ -1,0 +1,20 @@
+[{
+  "_id": {
+    "$oid": "69c965ed51bdda1a32d0de40"
+  },
+  "username": "dat",
+  "password": "1234",
+  "user_role": "admin",
+  "is_active": true,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:48:29.898Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:48:29.898Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "user_id": "user_01"
+}]

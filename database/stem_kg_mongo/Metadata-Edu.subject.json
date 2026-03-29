@@ -1,0 +1,49 @@
+[{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "subject_name": "Tin học",
+  "subject_type": "Kết nối tri thức",
+  "bucket_name": "data-edu",
+  "class_id": {
+    "$oid": "69c9663051bdda1a32d0de42"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/subject"
+  },
+  "import_key": "s_l10_tinhoc_kntt",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.489Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.489Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "subject_name": "Tin học",
+  "subject_type": "Kết nối tri thức",
+  "class_id": {
+    "$oid": "69c9851c9d3ad7ce44964543"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/subject"
+  },
+  "import_key": "subj/lop-11/tin-hoc",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.144Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.144Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+}]

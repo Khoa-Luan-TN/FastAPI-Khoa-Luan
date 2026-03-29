@@ -1,0 +1,324 @@
+[{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de44"
+  },
+  "topic_num": 1,
+  "topic_name": "Máy tính và xã hội tri thức",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_01",
+    "images": "images/lop-10/tin-hoc/topic/topic_01",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_01"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.526Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.526Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Thông tin | Dữ liệu | Quá trình xử lí thông tin | Máy tính | Phân biệt dữ liệu và thông tin | Đơn vị lưu trữ dữ liệu | Byte | Bit | Quy đổi đơn vị | Dung lượng lưu trữ | Thiết bị số | Lưu trữ thông tin số | Xử lí thông tin số | Truyền thông số | Ưu điểm thiết bị số | Thiết bị thông minh | Internet of Things (IoT) | Cách mạng công nghiệp 4.0 | Trí tuệ nhân tạo | Dữ liệu lớn | Tin học | Ứng dụng tin học | Internet | Tự động hoá | Hệ điều hành | Phân loại dữ liệu | Biểu diễn thông tin | Kiểu dữ liệu | Xử lí thông tin | Bảng mã ASCII | Unicode | Mã hóa ký tự | UTF-8 | Biểu diễn dữ liệu văn bản | Hệ nhị phân | Biểu diễn số nguyên | Hệ thập phân | Số nguyên có dấu | Mã bù 2 | Phép cộng nhị phân | Phép nhân nhị phân | Bảng cộng và nhân nhị phân | Phép tính số học | Lôgic mệnh đề | Mệnh đề | Giá trị chân lí | Phép toán lôgic | Biểu thức lôgic | Biểu diễn dữ liệu lôgic | Dữ liệu lôgic | Trạng thái đối lập | Ngôn ngữ lập trình | Số hoá âm thanh | Lấy mẫu | Biểu diễn giá trị mẫu | Tín hiệu âm thanh | Định dạng âm thanh | Hệ màu RGB | Điểm ảnh | Ảnh bitmap | Độ sâu màu | Định dạng tệp hình ảnh | Trợ thủ số cá nhân (PDA) | Chức năng hữu ích | Kết nối mạng | Điện thoại thông minh | Ứng dụng điện thoại | Màn hình chính | Quản lí tệp | Nút bấm và điều hướng"
+},
+{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de45"
+  },
+  "topic_num": 2,
+  "topic_name": "Mạng máy tính và Internet",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_02",
+    "images": "images/lop-10/tin-hoc/topic/topic_02",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_02"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.592Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.592Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Mạng LAN | Internet | Router | Mạng diện rộng | Kết nối Internet | Vai trò của Internet | Giao tiếp cộng đồng | Giáo dục trực tuyến | Nguồn thông tin khổng lồ | Điện toán đám mây | SaaS (Software as a Service) | PaaS (Platform as a Service) | IaaS (Infrastructure as a Service) | Lợi ích của dịch vụ đám mây | Kết nối vạn vật (IoT) | Thiết bị thông minh | Nhà thông minh | Thu thập dữ liệu tự động | Công tơ điện tử | Lừa đảo trên mạng | Lộ thông tin cá nhân | Bắt nạt trên không gian mạng | Tin giả và tin phản văn hoá | Nghiện mạng | Phần mềm độc hại | Virus | Worm | Trojan | Phòng chống phần mềm độc hại | Khai thác tài nguyên | Học tập | Phần mềm dịch | Kho học liệu mở | Google Translate | Học ngoại ngữ | Ngôn ngữ nguồn | Ngôn ngữ đích | Nhập văn bản | Nhập bằng giọng nói | Kết quả dịch | Học trực tuyến | Bài giảng | igiaoduc.vn"
+},
+{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de46"
+  },
+  "topic_num": 3,
+  "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_03",
+    "images": "images/lop-10/tin-hoc/topic/topic_03",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_03"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.623Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.623Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Hành vi vi phạm trên mạng | Đạo đức trên mạng | Pháp luật trên mạng | Văn hóa ứng xử trên mạng | Ảnh hưởng của Internet | Quy định pháp luật mạng | Thông tin sai sự thật | Luật An ninh mạng | Vi phạm trên không gian mạng | Bộ quy tắc ứng xử trên mạng xã hội | Quyền tác giả | Bản quyền | Vi phạm bản quyền | Sản phẩm tin học | Quyền tài sản"
+},
+{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de47"
+  },
+  "topic_num": 4,
+  "topic_name": "Ứng dụng tin học",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_04",
+    "images": "images/lop-10/tin-hoc/topic/topic_04",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_04"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.649Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.649Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Thiết kế đồ hoạ | Đồ hoạ điểm ảnh | Đồ hoạ vectơ | Pixel | Ứng dụng đồ hoạ | Phần mềm đồ hoạ | Inkscape | Đồ hoạ vector | Thiết kế logo | Giao diện Inkscape | Đối tượng đồ hoạ | Thứ tự lớp | Hộp công cụ | Chọn đối tượng | Đối tượng hình khối | Thuộc tính đối tượng | Công cụ vẽ có sẵn | Chỉnh sửa hình khối | Màu tô và màu vẽ | Hộp thoại Fill and Stroke | Thiết lập màu đối tượng | Gradient (Màu chuyển) | Kiểu nét vẽ (Stroke style) | Phép ghép đối tượng đồ họa | Phép hợp | Phép hiệu | Phép giao | Đối tượng dạng đường | Điểm điều khiển | Đoạn cong | Hình khối | Công cụ Pen | Điểm neo | Điểm chỉ hướng | Công cụ tinh chỉnh đường | Điểm neo trơn | Điểm neo góc | Đối tượng văn bản | Điều chỉnh phông chữ | Khoảng cách văn bản | Văn bản theo đường | Hình ảnh đồ họa | Tờ rơi | Banner | Sản phẩm số | Vẽ đối tượng | Văn bản | Màu sắc | Sắp xếp đối tượng | Xuất sản phẩm | Định dạng đồ hoạ | PNG | Hội chợ sách | Kích thước ảnh"
+},
+{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de48"
+  },
+  "topic_num": 5,
+  "topic_name": "Giải quyết vấn đề với sự trợ giúp của máy tính",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_05",
+    "images": "images/lop-10/tin-hoc/topic/topic_05",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_05"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.681Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.681Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Ngôn ngữ lập trình bậc cao | Python | Chương trình dịch | Ngôn ngữ máy | Lập trình | Môi trường lập trình Python | Chế độ gõ lệnh trực tiếp | Chế độ soạn thảo | Lệnh Python | Dấu nhắc >>> | Câu lệnh Python | Kiểu dữ liệu Python | Lệnh print() | Phép toán Python | Biến | Lệnh gán | Kiểu dữ liệu | Cú pháp lệnh gán | Quy tắc đặt tên biến | Phép toán trên dữ liệu kiểu số | Phép toán trên dữ liệu kiểu xâu kí tự | Thứ tự ưu tiên phép toán | Phép chia nguyên | Phép lấy số dư | Từ khoá | Ngôn ngữ lập trình | SyntaxError | Lệnh input | Lệnh print | Lệnh vào ra đơn giản | Nhập xuất dữ liệu | Kiểu dữ liệu cơ bản Python | Lệnh type | Chuyển đổi kiểu dữ liệu Python | Lệnh int | Lệnh float | Biểu thức lôgic | Phép toán lôgic | Phép so sánh | Kiểu dữ liệu Boolean | Lệnh if Python | Cấu trúc rẽ nhánh Python | Khối lệnh Python | Thụt lề Python | Lệnh if-else Python | Lệnh lặp for | Hàm range() | Vùng giá trị | Cú pháp lệnh lặp | Khối lệnh | Lệnh range | Cú pháp range | Số nguyên liên tiếp | Vòng lặp for | Lệnh while | Điều kiện lặp | Lặp vô hạn | Lệnh break | Cấu trúc lập trình | Cấu trúc lập trình cơ bản | Cấu trúc tuần tự | Cấu trúc lặp | Kiểu dữ liệu danh sách | Khởi tạo danh sách | Truy cập phần tử danh sách | Chỉ số danh sách | Thao tác danh sách | Duyệt danh sách | Lệnh for | Hàm range | Phần tử danh sách | Vòng lặp for Python | Thêm phần tử vào danh sách Python | Phương thức append | Danh sách Python | Phương thức trong Python | Thao tác với danh sách Python | Toán tử in | Kiểm tra sự tồn tại phần tử | Danh sách | Lệnh clear | Lệnh remove | Lệnh insert | Lệnh append | Xâu kí tự | Truy cập kí tự theo chỉ số | Độ dài xâu | Tính bất biến của xâu | Lệnh duyệt kí tự của xâu | Duyệt theo chỉ số | Duyệt theo phần tử | Xâu con | Lệnh find | Tìm vị trí xâu con | Lệnh split | Lệnh join | Kí tự tách | Hàm dựng sẵn Python | Tham số hàm | Cú pháp gọi hàm | Chương trình con | Hàm tự định nghĩa | Từ khóa def | Từ khóa return | Hàm có trả lại giá trị | Hàm không trả lại giá trị | Tham số và Đối số | Hàm | Khai báo hàm | Gọi hàm | Truyền dữ liệu | Số nguyên tố | Cấu trúc chương trình | Phân chia bài toán | Phạm vi biến | Biến cục bộ | Biến toàn cục | Hàm trong Python | Lỗi NameError | Từ khóa global | Truy cập biến | Lỗi chương trình | Lỗi cú pháp | Lỗi ngoại lệ | Lỗi logic | Gỡ lỗi chương trình | Lỗi ngoại lệ Python | Xử lí lỗi Python | ZeroDivisionError | TypeError | Kiểm thử chương trình | Lỗi Runtime và ngoại lệ | Bộ dữ liệu test | Điểm dừng (Break Point) | Biến trung gian | ƯCLN (Ước số chung lớn nhất) | Thuật toán Euclid | Vòng lặp While | Điểm dừng (Breakpoint) | Chương trình đơn giản | Debug | Phân tích thừa số nguyên tố | Phương trình bậc hai | Nghiệm phương trình | Lệnh rẽ nhánh | Vòng lặp | Số tự nhiên | Số thực | Năm nhuận | UCLN | Lập trình Python | Chương trình | Họ đệm tên | Xâu ký tự | Hàm split | Trọng lượng | Hành tinh | Newton | Khối lượng | Ngày tháng năm | Dữ liệu hợp lệ"
+},
+{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de49"
+  },
+  "topic_num": 6,
+  "topic_name": "Hướng nghiệp với tin học",
+  "subject_id": {
+    "$oid": "69c9663051bdda1a32d0de43"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/tin-hoc/topic/topic_06",
+    "images": "images/lop-10/tin-hoc/topic/topic_06",
+    "videos": "videos/lop-10/tin-hoc/topic/topic_06"
+  },
+  "import_key": "tp_l10_tinhoc_kntt_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.718Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:49:36.718Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Thiết kế đồ hoạ | Thông điệp truyền thông | Sản phẩm đồ hoạ | Bố cục và màu sắc | Lợi ích thiết kế đồ hoạ | Phần mềm đồ hoạ | Kiến thức công nghệ | Khả năng sáng tạo | Kĩ năng học hỏi và tư duy phản biện | Ngành Thiết kế đồ hoạ | Đào tạo Thiết kế đồ hoạ | Cơ hội việc làm Thiết kế đồ hoạ | Hướng nghiệp Thiết kế đồ hoạ | Thị trường lao động Thiết kế đồ hoạ | Phát triển phần mềm | Điều tra khảo sát | Thiết kế hệ thống | Lập trình | Quản trị dự án phần mềm | Lập trình viên | Kĩ sư phần mềm | Kiến thức và kĩ năng phát triển phần mềm | Cơ hội nghề nghiệp | Nhu cầu nhân lực | Lập trình ứng dụng | Công nghệ thông tin"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964546"
+  },
+  "topic_name": "Máy tính và xã hội tri thức",
+  "topic_num": 1,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_01",
+    "images": "images/lop-11/tin-hoc/topic/topic_01",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_01"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.326Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.326Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Hệ điều hành | Plug & Play | Giao diện đồ hoạ | Giao diện dòng lệnh | Mã nguồn mở | Hệ điều hành di động | Thiết bị di động | Kết nối mạng di động | Giao diện thân thiện | iOS | Phần cứng | Phần mềm ứng dụng | Điều phối tài nguyên | Dịch vụ điều khiển | Giao diện người dùng | Quản lí tệp và thư mục | Tiện ích hệ điều hành | File Explorer | Thao tác chuột | Phân mảnh đĩa | Kiểm tra đĩa | Hợp mảnh đĩa | Phần mềm nguồn mở | Giấy phép phần mềm | Phần mềm thương mại | Mã nguồn | GNU GPL | Phần mềm đặt hàng | Phần mềm đóng gói | Phần mềm trực tuyến | Không cần cài đặt | Kết nối Internet | Lưu trữ đám mây | Tài khoản Google | Bộ xử lí trung tâm | RAM | ROM | Bảng mạch chính | Bộ nhớ ngoài | Mạch lôgic | Phép toán lôgic | Hệ nhị phân | Cổng lôgic | Phép cộng nhị phân | Thiết bị vào – ra | Độ phân giải | Màn hình | Máy in | Trình điều khiển | Cổng kết nối | USB | Bluetooth | Ghép đôi"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964549"
+  },
+  "topic_name": "Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+  "topic_num": 2,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_02",
+    "images": "images/lop-11/tin-hoc/topic/topic_02",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_02"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.451Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.451Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Ổ đĩa trực tuyến | Lưu trữ đám mây | Chia sẻ tệp tin | Quản lí thư mục | Tải tệp lên | Lưu trữ tệp tin | Phân quyền chia sẻ | Tìm kiếm thông tin Internet | Máy tìm kiếm | Từ khoá | Hiệu quả tìm kiếm | Trình duyệt Internet | Tìm kiếm bằng tiếng nói | Tiêu chí tìm kiếm | Dạng tệp | Dấu nháy kép | Thủ thuật tìm kiếm | Gmail | Nhãn | Dấu quan trọng | Đánh dấu thư | Phân loại thư | Mạng xã hội | Fanpage | Quyền riêng tư | Trang cá nhân | Gắn thẻ"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce4496454c"
+  },
+  "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "topic_num": 3,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_03",
+    "images": "images/lop-11/tin-hoc/topic/topic_03",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_03"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.525Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.525Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Lừa đảo trên không gian số | Nguyên tắc phòng tránh | Website giả mạo | Thông tin cá nhân | Phần mềm bảo mật | Môi trường số | Quy tắc ứng xử | Công dân số | Bảo mật thông tin | Lừa đảo trực tuyến"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce4496454f"
+  },
+  "topic_name": "Giới thiệu các hệ cơ sở dữ liệu",
+  "topic_num": 4,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_04",
+    "images": "images/lop-11/tin-hoc/topic/topic_04",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_04"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.593Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.593Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Cập nhật dữ liệu | Lưu trữ dữ liệu | Xoá dữ liệu | Sửa dữ liệu | Thêm dữ liệu | Truy xuất dữ liệu | Khai thác thông tin | Khoa học dữ liệu | Thu thập dữ liệu tự động | Hệ thống kết nối vạn vật (IoT) | Mã vạch | Cách mạng Công nghiệp 4.0 | Xử lí thông tin | Tổ chức lưu trữ dữ liệu | Dư thừa dữ liệu | Nhất quán dữ liệu | Phụ thuộc phần mềm và dữ liệu | Cơ sở dữ liệu (CSDL) | Cơ sở dữ liệu | Độc lập dữ liệu | Tính không dư thừa | Tính toàn vẹn | Tính nhất quán | Hệ quản trị cơ sở dữ liệu | Định nghĩa dữ liệu | Hệ cơ sở dữ liệu | Hệ QTCSDL | Phần mềm ứng dụng CSDL | Mô hình hai thành phần | Phần mềm khách | Hệ CSDL tập trung | Hệ CSDL phân tán | CSDL cục bộ | Mạng máy tính | Ứng dụng phân tán | Cơ sở dữ liệu quan hệ | Bảng | Thuộc tính | Mã định danh | Quan hệ | CSDL quan hệ | Bản ghi | Trường | Khoá chính | Khoá ngoài | Ngôn ngữ truy vấn | SQL | CSDL | DDL | Kiểu dữ liệu | CREATE TABLE | SQL DML | Câu truy vấn | SELECT | INSERT INTO | INNER JOIN | Kiểm soát quyền truy cập | DCL | GRANT | REVOKE | Bảo mật CSDL | Phân quyền truy cập | Chính sách bảo mật CSDL | Tài khoản truy xuất CSDL | Giám sát hoạt động hệ thống | Bảo đảm an toàn dữ liệu | Sự cố nguồn điện | Sự cố hư hỏng thiết bị lưu trữ | Sao lưu dữ liệu | Chính sách an toàn dữ liệu"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964552"
+  },
+  "topic_name": "Hướng nghiệp với tin học",
+  "topic_num": 5,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_05",
+    "images": "images/lop-11/tin-hoc/topic/topic_05",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_05"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.670Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.670Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Quản trị CSDL | Nhà quản trị CSDL | Hệ QTCSDL | An toàn, bảo mật dữ liệu | Sao lưu dữ liệu | Thiết kế CSDL | Ngôn ngữ truy vấn SQL | Mô hình CSDL | Tuyển dụng nhân lực | Chuyển đổi số | Ứng dụng tin học"
+},
+{
+  "_id": {
+    "$oid": "69c9851c9d3ad7ce44964555"
+  },
+  "topic_name": "Kĩ thuật lập trình",
+  "topic_num": 6,
+  "subject_id": {
+    "$oid": "69c9851c9d3ad7ce44964544"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_06",
+    "images": "images/lop-11/tin-hoc/topic/topic_06",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_06"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-03-29T20:01:32.766Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T20:01:32.766Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01",
+  "keyword_embedding_text": "Cấu trúc dữ liệu mảng một chiều | Python list | Truy cập chỉ số | Duyệt mảng | Thao tác danh sách | Cấu trúc dữ liệu mảng hai chiều | List trong list | Python | Truy cập phần tử | Duyệt phần tử | Mảng một chiều | Mảng hai chiều | Kiểu dữ liệu list | Lập trình | Chương trình | Nhập dữ liệu | Thống kê dữ liệu | Vòng lặp | Ma trận | Bài toán tìm kiếm | Miền dữ liệu | Thuật toán tìm kiếm | Cấu trúc dữ liệu | Nghiệm | Tìm kiếm tuần tự | Thuật toán | Dãy số | Duyệt | Chỉ số | Tìm kiếm nhị phân | Dãy số sắp xếp | Phạm vi tìm kiếm | Đọc ghi tệp | Tệp văn bản | Lệnh open() | Thuật toán tìm kiếm nhị phân | Danh sách (list) | Lệnh print() | Đọc dòng tệp | Tham số encoding | Thuật toán sắp xếp chèn | Sơ đồ mô phỏng | Chèn phần tử | Dãy con đã sắp xếp | Thuật toán sắp xếp chọn | Đổi chỗ phần tử | Phần tử nhỏ nhất | Thuật toán sắp xếp nổi bọt | Vòng lặp lồng nhau | Sắp xếp dãy số | Phần tử liền kề | Thuật toán sắp xếp | Sắp xếp chèn | Sắp xếp chọn | Sắp xếp nổi bọt | Danh sách | Hàm | Điều kiện | Sắp xếp tăng dần | Kiểm thử chương trình | Bộ dữ liệu kiểm thử | Lỗi chương trình | Tính đúng của chương trình | Độ tin cậy | Kiểm tra tính đúng | Bất biến vòng lặp | Lập luận toán học | Độ phức tạp tính toán | Độ phức tạp thời gian | Độ phức tạp không gian | Đánh giá thời gian thực hiện chương trình | Đơn vị thời gian | Phép toán tích cực | Lệnh đơn | Kí hiệu O-lớn | Phân loại thuật toán | Hàm thời gian | Bậc của hàm | Kí hiệu O lớn | Quy tắc cộng | Quy tắc nhân | Độ phức tạp thuật toán | O-lớn | Thời gian thực hiện | Kích thước mảng | Độ phức tạp tuyến tính | Độ phức tạp bình phương | Phương pháp làm mịn dần | Thiết kế chương trình | Cặp phần tử nghịch đảo | Lược đồ thuật toán | Kiểm tra hoán vị | Chương trình con | Đếm số lần lặp | Xâu kí tự | Xâu đối xứng | Phân tích thiết kế | Thiết kế mô đun | Mô đun con | Xử lí dữ liệu | Xuất dữ liệu | Thiết kế theo mô đun | Nâng cấp chương trình | Tái sử dụng mô đun | Làm việc nhóm | Thiết kế chương trình theo mô đun | Ghi dữ liệu | Sắp xếp | Thư viện chương trình | Lệnh import | Thư viện math | Hàm chuẩn | InsertionSort | Danh sách liên kết | Node | Con trỏ next | Head | Tệp mã nguồn | Cấu trúc LinkedList | Mảng | Hằng số | Điện trở tương đương | Nguyên tử khối trung bình | Phương trình bậc 2 | Kiểm tra dữ liệu"
+}]

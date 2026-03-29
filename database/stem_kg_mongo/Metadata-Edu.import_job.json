@@ -1,0 +1,78 @@
+[{
+  "_id": {
+    "$oid": "69c9663051bdda1a32d0de41"
+  },
+  "status": "done",
+  "progress": 100,
+  "current_collection": null,
+  "processed_rows": 958,
+  "total_rows": 958,
+  "message": "Hoàn tất import",
+  "error": null,
+  "report": {
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpt6o36bmr.xlsx",
+    "collections": {
+      "class": {
+        "rows": 1,
+        "inserted": 1,
+        "updated": 0,
+        "synced": 1,
+        "errors": []
+      },
+      "subject": {
+        "rows": 1,
+        "inserted": 1,
+        "updated": 0,
+        "synced": 1,
+        "errors": []
+      },
+      "topic": {
+        "rows": 6,
+        "inserted": 6,
+        "updated": 0,
+        "synced": 6,
+        "errors": []
+      },
+      "lesson": {
+        "rows": 34,
+        "inserted": 34,
+        "updated": 0,
+        "synced": 34,
+        "errors": []
+      },
+      "chunk": {
+        "rows": 76,
+        "inserted": 76,
+        "updated": 0,
+        "synced": 76,
+        "errors": []
+      },
+      "keyword": {
+        "rows": 420,
+        "inserted": 361,
+        "reused": 59,
+        "synced": 420,
+        "errors": [],
+        "alias_processed_keywords": 63,
+        "alias_inserted": 11,
+        "alias_deleted": 0,
+        "alias_skipped": 0,
+        "alias_errors": [],
+        "alias_stopped_due_to_quota": false,
+        "alias_remaining_keywords": [],
+        "affected_topics": 6,
+        "finalized_topics": 6,
+        "topic_finalize_errors": []
+      }
+    },
+    "errors": []
+  },
+  "file_name": "ImportMetadataMongo.xlsx",
+  "actor": "user_01",
+  "created_at": {
+    "$date": "2026-03-29T17:49:36.302Z"
+  },
+  "updated_at": {
+    "$date": "2026-03-29T17:57:17.155Z"
+  }
+}]

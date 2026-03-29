@@ -1,0 +1,176 @@
+[{
+  "_id": {
+    "$oid": "69c9674451bdda1a32d0e1cb"
+  },
+  "keyword_id": {
+    "$oid": "69c9663451bdda1a32d0ded9"
+  },
+  "keyword_name": "Internet of Things (IoT)",
+  "alias_name": "IoT",
+  "alias_norm": "iot"
+},
+{
+  "_id": {
+    "$oid": "69c9674451bdda1a32d0e1cc"
+  },
+  "keyword_id": {
+    "$oid": "69c9663451bdda1a32d0dedd"
+  },
+  "keyword_name": "Trí tuệ nhân tạo",
+  "alias_name": "AI",
+  "alias_norm": "ai"
+},
+{
+  "_id": {
+    "$oid": "69c9674451bdda1a32d0e1cd"
+  },
+  "keyword_id": {
+    "$oid": "69c9663551bdda1a32d0dee9"
+  },
+  "keyword_name": "Hệ điều hành",
+  "alias_name": "OS",
+  "alias_norm": "os"
+},
+{
+  "_id": {
+    "$oid": "69c9676c51bdda1a32d0e1ce"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df50"
+  },
+  "keyword_name": "Mạng diện rộng",
+  "alias_name": "WAN",
+  "alias_norm": "wan"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1cf"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df5f"
+  },
+  "keyword_name": "SaaS (Software as a Service)",
+  "alias_name": "SaaS",
+  "alias_norm": "saas"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d0"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df5f"
+  },
+  "keyword_name": "SaaS (Software as a Service)",
+  "alias_name": "Software as a Service",
+  "alias_norm": "software as a service"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d1"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df61"
+  },
+  "keyword_name": "PaaS (Platform as a Service)",
+  "alias_name": "PaaS",
+  "alias_norm": "paas"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d2"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df61"
+  },
+  "keyword_name": "PaaS (Platform as a Service)",
+  "alias_name": "Platform as a Service",
+  "alias_norm": "platform as a service"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d3"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df63"
+  },
+  "keyword_name": "IaaS (Infrastructure as a Service)",
+  "alias_name": "IaaS",
+  "alias_norm": "iaas"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d4"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df63"
+  },
+  "keyword_name": "IaaS (Infrastructure as a Service)",
+  "alias_name": "Infrastructure as a Service",
+  "alias_norm": "infrastructure as a service"
+},
+{
+  "_id": {
+    "$oid": "69c9677e51bdda1a32d0e1d5"
+  },
+  "keyword_id": {
+    "$oid": "69c9663751bdda1a32d0df67"
+  },
+  "keyword_name": "Kết nối vạn vật (IoT)",
+  "alias_name": "Kết nối vạn vật",
+  "alias_norm": "ket noi van vat"
+},
+{
+  "_id": {
+    "$oid": "69c985fc9d3ad7ce44964891"
+  },
+  "keyword_id": {
+    "$oid": "69c9851f9d3ad7ce44964599"
+  },
+  "keyword_name": "Plug & Play",
+  "alias_name": "PnP",
+  "alias_norm": "pnp"
+},
+{
+  "_id": {
+    "$oid": "69c986079d3ad7ce44964892"
+  },
+  "keyword_id": {
+    "$oid": "69c985219d3ad7ce449645d6"
+  },
+  "keyword_name": "GNU GPL",
+  "alias_name": "GNU General Public License",
+  "alias_norm": "gnu general public license"
+},
+{
+  "_id": {
+    "$oid": "69c986159d3ad7ce44964893"
+  },
+  "keyword_id": {
+    "$oid": "69c985219d3ad7ce449645f0"
+  },
+  "keyword_name": "RAM",
+  "alias_name": "Random Access Memory",
+  "alias_norm": "random access memory"
+},
+{
+  "_id": {
+    "$oid": "69c986159d3ad7ce44964894"
+  },
+  "keyword_id": {
+    "$oid": "69c985219d3ad7ce449645f2"
+  },
+  "keyword_name": "ROM",
+  "alias_name": "Read-Only Memory",
+  "alias_norm": "read-only memory"
+},
+{
+  "_id": {
+    "$oid": "69c986769d3ad7ce44964895"
+  },
+  "keyword_id": {
+    "$oid": "69c985299d3ad7ce44964727"
+  },
+  "keyword_name": "Nhà quản trị CSDL",
+  "alias_name": "DBA",
+  "alias_norm": "dba"
+}]
