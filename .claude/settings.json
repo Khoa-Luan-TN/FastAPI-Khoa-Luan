@@ -33,7 +33,9 @@
       "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/*.toml)",
       "Bash(ls /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/*.ini)",
       "Bash(/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/.env/bin/pip show:*)",
-      "Bash(/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/.env/bin/python -c \"import watchfiles; print\\(watchfiles.__version__\\)\")"
+      "Bash(/Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/.env/bin/python -c \"import watchfiles; print\\(watchfiles.__version__\\)\")",
+      "Bash(find /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/gemini_pipeline/scripts -name *.py -type f)",
+      "Bash(chmod +x /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/docker/import-mongo.sh /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/docker/import-postgre.sh /Users/tt/Documents/Khoa-Luan-Tot-Nghiep/FastAPI-Khoa-Luan/docker/import-neo4j.sh)"
     ]
   }
 }

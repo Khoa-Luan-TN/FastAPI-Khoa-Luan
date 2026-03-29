@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: stem_kg_backend
     ports:
       - "8000:8000"
     env_file: .env
@@ -12,11 +13,11 @@ services:
       postgres:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       neo4j:
         condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   # ── Frontend (React/Vite → nginx) ─────────────────────────────────────────
@@ -26,6 +27,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
+    container_name: stem_kg_frontend
     ports:
       - "3000:80"
     depends_on:
@@ -35,6 +37,7 @@ services:
   # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    container_name: stem_kg_postgres
     environment:
       POSTGRES_USER: ${PG_USER:-postgres}
       POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
@@ -53,15 +56,23 @@ services:
   # ── MongoDB ────────────────────────────────────────────────────────────────
   mongodb:
     image: mongo:7
+    container_name: stem_kg_mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     restart: unless-stopped
 
   # ── Neo4j ──────────────────────────────────────────────────────────────────
   neo4j:
     image: neo4j:5
+    container_name: stem_kg_neo4j
     environment:
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-changeme}
     ports:
@@ -74,11 +85,13 @@ services:
       interval: 10s
       timeout: 10s
       retries: 12
+      start_period: 30s
     restart: unless-stopped
 
   # ── MinIO ──────────────────────────────────────────────────────────────────
   minio:
     image: minio/minio
+    container_name: stem_kg_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
@@ -88,7 +101,29 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
+
+  # ── MinIO bucket initializer (runs once, exits after bucket is created) ────
+  minio-init:
+    image: minio/mc
+    container_name: stem_kg_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: .env
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY:-minioadmin} $${MINIO_SECRET_KEY:-changeme} &&
+      mc mb --ignore-existing local/$${MINIO_BUCKET:-data-edu} &&
+      echo 'MinIO bucket $${MINIO_BUCKET:-data-edu} is ready.'
+      "
+    restart: "no"
 
 volumes:
   pg_data:
