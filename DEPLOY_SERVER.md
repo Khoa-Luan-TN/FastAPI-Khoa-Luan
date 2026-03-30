@@ -2,19 +2,20 @@
 
 ## Service overview
 
-| Service            | Container              | Port(s)    | Description                   |
-|--------------------|------------------------|------------|-------------------------------|
-| Backend            | `stem_kg_backend`      | 8000       | FastAPI REST API              |
-| Frontend           | `stem_kg_frontend`     | 3000       | React SPA served by nginx     |
-| PostgreSQL         | `stem_kg_postgres`     | 5432       | Structural metadata store     |
-| MongoDB            | `stem_kg_mongodb`      | 27017      | Document/content store        |
-| Neo4j              | `stem_kg_neo4j`        | 7474, 7687 | Graph for topic/keyword search|
-| MinIO              | `stem_kg_minio`        | 9000, 9001 | Object storage (PDFs/assets)  |
-| MinIO init         | `stem_kg_minio_init`   | —          | One-shot bucket creator       |
-| restore-postgres   | *(profile: restore)*   | —          | One-shot PostgreSQL restore   |
-| restore-mongo      | *(profile: restore)*   | —          | One-shot MongoDB restore      |
-| restore-neo4j      | *(profile: restore)*   | —          | One-shot Neo4j restore        |
-| restore-minio      | *(profile: restore)*   | —          | One-shot MinIO restore        |
+| Service            | Container              | Port(s)    | Description                                  |
+|--------------------|------------------------|------------|----------------------------------------------|
+| Backend            | `stem_kg_backend`      | 8000       | FastAPI REST API                             |
+| Frontend           | `stem_kg_frontend`     | 3000       | React SPA served by nginx                   |
+| PostgreSQL         | `stem_kg_postgres`     | 5432       | Structural metadata store                   |
+| MongoDB            | `stem_kg_mongodb`      | 27017      | Document/content store                      |
+| Neo4j              | `stem_kg_neo4j`        | 7474, 7687 | Graph for topic/keyword search              |
+| MinIO              | `stem_kg_minio`        | 9000, 9001 | Object storage (PDFs/assets)                |
+| MinIO init         | `stem_kg_minio_init`   | —          | One-shot bucket creator                     |
+| auto-restore       | `stem_kg_auto_restore` | —          | One-shot restore (only when AUTO_RESTORE=true) |
+| restore-postgres   | *(profile: restore)*   | —          | Manual one-shot PostgreSQL restore          |
+| restore-mongo      | *(profile: restore)*   | —          | Manual one-shot MongoDB restore             |
+| restore-neo4j      | *(profile: restore)*   | —          | Manual one-shot Neo4j restore               |
+| restore-minio      | *(profile: restore)*   | —          | Manual one-shot MinIO restore               |
 
 ## Folder structure
 
@@ -64,6 +65,7 @@ Edit `.env` and set:
 - `CORS_ORIGINS` — add your server IP/domain to allow browser requests:
   - Example: `CORS_ORIGINS=http://<server-ip>:3000`
 - `GEMINI_API_KEYS` — comma-separated Gemini API keys for AI features
+- `AUTO_RESTORE=false` *(optional)* — set to `true` to automatically restore databases on startup
 
 > **Note:** `VITE_API_BASE` is a build-time variable. After changing it you must
 > rebuild the frontend image: `docker compose build frontend`
@@ -104,11 +106,73 @@ Replace `localhost` with your server IP when deploying remotely.
 
 See the `README.md` inside each subfolder for exact format and how to create backups.
 
-**Restore does NOT run automatically during normal `docker compose up`.**
+---
+
+## Auto-restore (recommended for first-time server setup)
+
+By default, restore does **not** run automatically. To enable automatic restore on
+`docker compose up`, set `AUTO_RESTORE=true` in `.env`:
+
+```bash
+# In .env
+AUTO_RESTORE=true
+```
+
+Then run a normal startup:
+
+```bash
+docker compose up -d --build
+```
+
+The `auto-restore` service will run after PostgreSQL, MongoDB, and MinIO are healthy.
+It calls `docker/restore-all.sh` which skips any database whose backup directory is empty.
+
+**What gets restored automatically:**
+
+| Database   | Condition                                             |
+|------------|-------------------------------------------------------|
+| PostgreSQL | `database/stem_kg_backup/backup.dump` or `.sql` found |
+| MongoDB    | `database/stem_kg_mongo/` is non-empty                |
+| MinIO      | `database/stem_kg_minio/<bucket>/` or `.tar.gz` found |
+| Neo4j      | **Never** — must be restored manually (see below)     |
+
+> **Auto-restore requires Docker socket access.**
+> The `auto-restore` service mounts `/var/run/docker.sock` to call `docker exec`/`docker cp`
+> on the running database containers.
+
+> **Idempotent but destructive:** restores drop existing data in the target databases.
+> Do not run with `AUTO_RESTORE=true` after you have real production data in the volumes.
+> Set `AUTO_RESTORE=false` (or remove it) once the initial restore is done.
+
+### Neo4j — manual restore required
+
+Neo4j's `database load` command requires the database to be **offline**.
+It cannot safely stop and restart the `neo4j` container from within a compose service.
+
+After the rest of the stack is running, restore Neo4j manually:
+
+```bash
+docker compose stop neo4j
+bash docker/import-neo4j.sh
+docker compose start neo4j
+```
+
+Or use `docker/restore-all.sh` with `NEO4J_AUTO_RESTORE=true` (host-only):
+
+```bash
+# In .env
+NEO4J_AUTO_RESTORE=true
+# neo4j container must be stopped first
+docker compose stop neo4j
+bash docker/restore-all.sh
+docker compose start neo4j
+```
 
 ---
 
-## Option A — restore via Docker Compose profile (recommended)
+## Manual restore (individual databases)
+
+### Option A — restore via Docker Compose profile
 
 Services start with correct dependencies and run inside Docker (no host tools needed).
 
@@ -129,26 +193,23 @@ docker compose --profile restore run --rm restore-neo4j
 docker compose start neo4j
 ```
 
----
-
-## Option B — restore via manual scripts
+### Option B — restore via manual scripts
 
 ```bash
 # Make scripts executable (first time only)
 chmod +x docker/import-mongo.sh docker/import-postgre.sh \
-         docker/import-neo4j.sh docker/import-minio.sh
+         docker/import-neo4j.sh docker/import-minio.sh docker/restore-all.sh
 
-# MongoDB
-bash docker/import-mongo.sh
+# All-in-one (skips any database with no backup; Neo4j skipped unless NEO4J_AUTO_RESTORE=true)
+bash docker/restore-all.sh
 
-# PostgreSQL
+# Individual databases
 bash docker/import-postgre.sh
-
-# Neo4j (script stops the container automatically, then restarts it)
-bash docker/import-neo4j.sh
-
-# MinIO
+bash docker/import-mongo.sh
 bash docker/import-minio.sh
+
+# Neo4j (stops container, restores, restarts)
+bash docker/import-neo4j.sh
 ```
 
 ---

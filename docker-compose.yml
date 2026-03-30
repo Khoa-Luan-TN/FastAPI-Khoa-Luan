@@ -18,6 +18,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      auto-restore:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # ── Frontend (React/Vite → nginx) ─────────────────────────────────────────
@@ -108,6 +110,49 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+
+  # ── Auto-restore (runs once on startup; skips silently when AUTO_RESTORE≠true) ─
+  # Set AUTO_RESTORE=true in .env to automatically restore databases after
+  # postgres / mongodb / minio are healthy.  Neo4j cannot be auto-restored
+  # (requires offline load) — restore it manually after startup.
+  #
+  # Requires Docker socket access to call docker exec / docker cp on running
+  # service containers.  The service always exits 0 so backend is not blocked
+  # if a restore fails.
+  auto-restore:
+    image: docker:cli
+    container_name: stem_kg_auto_restore
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    env_file: .env
+    environment:
+      AUTO_RESTORE: ${AUTO_RESTORE:-false}
+      NEO4J_AUTO_RESTORE: ${NEO4J_AUTO_RESTORE:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker:/project/docker:ro
+      - ./database:/project/database:ro
+    entrypoint: >
+      /bin/sh -c "
+      if [ \"$${AUTO_RESTORE:-false}\" != 'true' ]; then
+        echo '[auto-restore] Skipped (AUTO_RESTORE != true). Set AUTO_RESTORE=true in .env to enable.';
+        exit 0;
+      fi;
+      echo '[auto-restore] AUTO_RESTORE=true — installing bash...';
+      apk add --no-cache bash >/dev/null 2>&1 || true;
+      echo '[auto-restore] Running restore-all.sh...';
+      bash /project/docker/restore-all.sh || true;
+      echo '[auto-restore] Done.';
+      exit 0
+      "
 
   # ── MinIO bucket initializer (runs once, exits after bucket is created) ────
   minio-init:
@@ -228,13 +273,33 @@ services:
       BUCKET=$${MINIO_BUCKET:-data-edu};
       ACCESS=$${MINIO_ACCESS_KEY:-minioadmin};
       SECRET=$${MINIO_SECRET_KEY:-changeme};
-      if [ ! -d /backup/$$BUCKET ]; then
-        echo 'ERROR: bucket directory not found: /backup/'$$BUCKET && exit 1;
+      TARBALL=/backup/minio-data.tar.gz;
+      TMPDIR=/tmp/minio_restore;
+      SRC='';
+      if [ -d /backup/$$BUCKET ]; then
+        echo '[restore-minio] Backup layout: object tree';
+        SRC=/backup/$$BUCKET;
+      elif [ -f $$TARBALL ]; then
+        echo '[restore-minio] Backup layout: compressed archive — extracting...';
+        mkdir -p $$TMPDIR &&
+        tar -xzf $$TARBALL -C $$TMPDIR;
+        if [ ! -d $$TMPDIR/$$BUCKET ]; then
+          echo 'ERROR: bucket dir not found in archive (expected: '$$BUCKET'/).';
+          echo 'Archive top-level:'; ls $$TMPDIR 2>/dev/null || true;
+          rm -rf $$TMPDIR; exit 1;
+        fi;
+        SRC=$$TMPDIR/$$BUCKET;
+      else
+        echo 'ERROR: No backup found in /backup/';
+        echo '  Expected: /backup/'$$BUCKET'/  (extracted object tree)';
+        echo '  Or:       /backup/minio-data.tar.gz  (compressed archive)';
+        exit 1;
       fi;
       mc alias set local http://minio:9000 $$ACCESS $$SECRET &&
       mc mb --ignore-existing local/$$BUCKET &&
-      mc mirror --overwrite /backup/$$BUCKET local/$$BUCKET &&
-      echo 'SUCCESS: MinIO bucket '$$BUCKET' restored.'
+      mc mirror --overwrite $$SRC local/$$BUCKET &&
+      echo 'SUCCESS: MinIO bucket '$$BUCKET' restored.';
+      rm -rf $$TMPDIR 2>/dev/null || true
       "
     restart: "no"
 
