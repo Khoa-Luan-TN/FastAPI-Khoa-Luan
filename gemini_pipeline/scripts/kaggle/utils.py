@@ -149,12 +149,21 @@ def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -
         if not line:
             continue
         log.info("[download] %s", line)
-        # Kaggle CLI emits: "Downloading <filename> to <path>"
+        # Pattern 1: "Downloading <filename> to <path>"
+        # Pattern 2: "Output file downloaded to <full_path>"
+        fname = None
         if "Downloading" in line and " to " in line:
             try:
                 fname = line.split("Downloading", 1)[1].split(" to ")[0].strip()
             except Exception:
                 fname = line
+        elif "Output file downloaded to" in line:
+            try:
+                full_path = line.split("Output file downloaded to", 1)[1].strip()
+                fname = full_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1] or full_path
+            except Exception:
+                fname = line
+        if fname is not None:
             dl_file_count += 1
             print(f"[STAGE:dl_file] #{dl_file_count} {fname}", flush=True)
     returncode = proc.wait()

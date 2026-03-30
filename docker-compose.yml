@@ -125,6 +125,119 @@ services:
       "
     restart: "no"
 
+  # ── Restore services (profile: restore) ───────────────────────────────────
+  # These services do NOT run during normal `docker compose up`.
+  #
+  # Usage (after placing backups in database/):
+  #   docker compose --profile restore run --rm restore-postgres
+  #   docker compose --profile restore run --rm restore-mongo
+  #   docker compose --profile restore run --rm restore-minio
+  #
+  #   # Neo4j requires the neo4j service to be stopped first:
+  #   docker compose stop neo4j
+  #   docker compose --profile restore run --rm restore-neo4j
+  #   docker compose start neo4j
+
+  restore-postgres:
+    image: postgres:16-alpine
+    profiles: [restore]
+    container_name: stem_kg_restore_postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./database/stem_kg_backup:/backup:ro
+    entrypoint: >
+      /bin/sh -c "
+      if [ -f /backup/backup.dump ]; then
+        echo '[restore-postgres] Restoring from backup.dump (custom format)...' &&
+        PGPASSWORD=$${PG_PASSWORD:-changeme} pg_restore -h postgres -U $${PG_USER:-postgres} --clean --if-exists -d $${PG_NAME:-data-edu} /backup/backup.dump &&
+        echo 'SUCCESS: PostgreSQL restored.';
+      elif [ -f /backup/backup.sql ]; then
+        echo '[restore-postgres] Restoring from backup.sql (plain SQL)...' &&
+        PGPASSWORD=$${PG_PASSWORD:-changeme} psql -h postgres -U $${PG_USER:-postgres} -d $${PG_NAME:-data-edu} -f /backup/backup.sql &&
+        echo 'SUCCESS: PostgreSQL restored.';
+      else
+        echo 'ERROR: No backup file found in /backup (expected backup.dump or backup.sql).' && exit 1;
+      fi
+      "
+    restart: "no"
+
+  restore-mongo:
+    image: mongo:7
+    profiles: [restore]
+    container_name: stem_kg_restore_mongo
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./database/stem_kg_mongo:/backup:ro
+    entrypoint: >
+      /bin/bash -c "
+      DB=$${MONGODB_DB:-Metadata-Edu};
+      if [ -d /backup/$$DB ]; then
+        echo '[restore-mongo] Standard layout -> /backup/'$$DB &&
+        mongorestore --host mongodb --drop --db $$DB /backup/$$DB;
+      else
+        echo '[restore-mongo] Flat layout -> /backup' &&
+        mongorestore --host mongodb --drop --db $$DB /backup;
+      fi && echo 'SUCCESS: MongoDB restored.'
+      "
+    restart: "no"
+
+  restore-neo4j:
+    # NOTE: Stop the neo4j service before running this restore:
+    #   docker compose stop neo4j
+    #   docker compose --profile restore run --rm restore-neo4j
+    #   docker compose start neo4j
+    image: neo4j:5
+    profiles: [restore]
+    container_name: stem_kg_restore_neo4j
+    volumes:
+      - neo4j_data:/data
+      - ./database/stem_kg_neo4j:/backups:ro
+    environment:
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+    entrypoint: >
+      /bin/bash -c "
+      DB=$${NEO4J_DATABASE:-neo4j};
+      DUMP=/backups/$$DB.dump;
+      if [ ! -f $$DUMP ]; then
+        echo 'ERROR: dump not found: '$$DUMP && exit 1;
+      fi;
+      echo '[restore-neo4j] Loading '$$DB' from '$$DUMP'...' &&
+      neo4j-admin database load --from-path=/backups --overwrite-destination=true $$DB &&
+      echo 'SUCCESS: Neo4j restored.'
+      "
+    restart: "no"
+
+  restore-minio:
+    image: minio/mc
+    profiles: [restore]
+    container_name: stem_kg_restore_minio
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./database/stem_kg_minio:/backup:ro
+    entrypoint: >
+      /bin/sh -c "
+      BUCKET=$${MINIO_BUCKET:-data-edu};
+      ACCESS=$${MINIO_ACCESS_KEY:-minioadmin};
+      SECRET=$${MINIO_SECRET_KEY:-changeme};
+      if [ ! -d /backup/$$BUCKET ]; then
+        echo 'ERROR: bucket directory not found: /backup/'$$BUCKET && exit 1;
+      fi;
+      mc alias set local http://minio:9000 $$ACCESS $$SECRET &&
+      mc mb --ignore-existing local/$$BUCKET &&
+      mc mirror --overwrite /backup/$$BUCKET local/$$BUCKET &&
+      echo 'SUCCESS: MinIO bucket '$$BUCKET' restored.'
+      "
+    restart: "no"
+
 volumes:
   pg_data:
   mongo_data:
