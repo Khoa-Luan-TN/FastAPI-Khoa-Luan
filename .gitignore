@@ -47,9 +47,9 @@ htmlcov/
 *.swp
 
 # ========== Local data directories (nếu có đặt trong repo) ==========
-minio-data/
-data/
-tmp/
+# minio-data/
+# data/
+# tmp/
 
 demo.json
 
