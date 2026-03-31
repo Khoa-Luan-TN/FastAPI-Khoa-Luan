@@ -54,3 +54,4 @@ htmlcov/
 demo.json
 
 .claude
+cloudflared/*.json

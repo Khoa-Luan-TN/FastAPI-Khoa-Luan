@@ -1,0 +1,7 @@
+tunnel: a38e4938-65c8-472a-83c1-780e0c31efdf
+credentials-file: /etc/cloudflared/a38e4938-65c8-472a-83c1-780e0c31efdf.json
+
+ingress:
+  - hostname: ers.etechs.vn
+    service: http://frontend:80
+  - service: http_status:404

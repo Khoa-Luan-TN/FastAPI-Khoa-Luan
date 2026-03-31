@@ -36,8 +36,9 @@ cp .env.example .env
 
 Edit `.env` and set strong passwords for `PG_PASSWORD`, `NEO4J_PASSWORD`, `MINIO_SECRET_KEY`.
 
-> `VITE_API_BASE` must be the URL where the **browser** can reach the backend.
-> For local deployment on the same machine leave it as `http://localhost:8000`.
+> For the `ers.etechs.vn` deployment, keep `VITE_API_BASE`, `VITE_API_URL`,
+> and `VITE_API_BASE_URL` as `/api`. The frontend nginx container forwards
+> `/api/*` to the FastAPI backend so the site stays on one domain.
 
 ---
 
@@ -76,6 +77,21 @@ To also remove all data volumes:
 ```bash
 docker compose down -v
 ```
+
+## 4a. Cloudflare Tunnel for `ers.etechs.vn`
+
+1. Copy `.env.example` to `.env` and fill:
+   `CLOUDFLARE_TUNNEL_ID`, `CLOUDFLARE_TUNNEL_CREDENTIALS_FILE`
+2. Put the Cloudflare tunnel credentials JSON in `cloudflared/`
+3. Create a DNS/public hostname in Cloudflare for `ers.etechs.vn`
+4. Start the extra profile:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+The tunnel sends `ers.etechs.vn` to the frontend container, and frontend nginx
+forwards `/api/*` to the backend container internally.
 
 ---
 

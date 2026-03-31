@@ -17,28 +17,42 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$PROJECT_ROOT/database/stem_kg_neo4j"
 
-# Load .env for variable overrides
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    set -a; source "$PROJECT_ROOT/.env"; set +a
-fi
+read_env_value() {
+    local key="$1"
+    local env_file="$PROJECT_ROOT/.env"
+    [ -f "$env_file" ] || return 1
+    local line
+    line=$(grep -m1 "^${key}=" "$env_file" || true)
+    [ -n "$line" ] || return 1
+    line="${line#*=}"
+    line="${line%\"}"
+    line="${line#\"}"
+    printf '%s' "$line"
+}
 
-CONTAINER="${NEO4J_CONTAINER_NAME:-stem_kg_neo4j}"
-NEO4J_DB="${NEO4J_DATABASE:-neo4j}"
-NEO4J_IMAGE="neo4j:5"
+CONTAINER="${NEO4J_CONTAINER_NAME:-$(read_env_value NEO4J_CONTAINER_NAME || printf 'letuandat_neo4j')}"
+NEO4J_DB="${NEO4J_DATABASE:-$(read_env_value NEO4J_DATABASE || printf 'neo4j')}"
+NEO4J_IMAGE="neo4j:2025.11.2-enterprise"
 DUMP_FILE="$BACKUP_DIR/${NEO4J_DB}.dump"
 
 # ── Validate dump file ────────────────────────────────────────────────────────
 if [ ! -f "$DUMP_FILE" ]; then
-    echo "ERROR: Neo4j dump not found: $DUMP_FILE"
-    echo ""
-    echo "  Expected filename : ${NEO4J_DB}.dump"
-    echo "  Expected location : database/stem_kg_neo4j/${NEO4J_DB}.dump"
-    echo ""
-    echo "  To create the dump (run against a running Neo4j instance):"
-    echo "    neo4j-admin database dump $NEO4J_DB --to-path=database/stem_kg_neo4j/"
-    echo ""
-    echo "  Then re-run this script."
-    exit 1
+    MATCHING_DUMPS=("$BACKUP_DIR"/*.dump)
+    if [ "${#MATCHING_DUMPS[@]}" -eq 1 ] && [ -f "${MATCHING_DUMPS[0]}" ]; then
+        DUMP_FILE="${MATCHING_DUMPS[0]}"
+    else
+        echo "ERROR: Neo4j dump not found: $DUMP_FILE"
+        echo ""
+        echo "  Expected filename : ${NEO4J_DB}.dump"
+        echo "  Expected location : database/stem_kg_neo4j/${NEO4J_DB}.dump"
+        echo "  Or place exactly one .dump file in database/stem_kg_neo4j/"
+        echo ""
+        echo "  To create the dump (run against a running Neo4j instance):"
+        echo "    neo4j-admin database dump $NEO4J_DB --to-path=database/stem_kg_neo4j/"
+        echo ""
+        echo "  Then re-run this script."
+        exit 1
+    fi
 fi
 
 # ── Resolve the data volume from the running container ───────────────────────
@@ -63,6 +77,15 @@ echo "Dump file         : $DUMP_FILE"
 echo "Target database   : $NEO4J_DB"
 echo ""
 
+TEMP_DUMP_DIR=""
+LOAD_FROM_DIR="$BACKUP_DIR"
+if [ "$(basename "$DUMP_FILE")" != "${NEO4J_DB}.dump" ]; then
+    TEMP_DUMP_DIR="$(mktemp -d)"
+    chmod 755 "$TEMP_DUMP_DIR"
+    cp "$DUMP_FILE" "$TEMP_DUMP_DIR/${NEO4J_DB}.dump"
+    LOAD_FROM_DIR="$TEMP_DUMP_DIR"
+fi
+
 # ── Stop the container so Neo4j is offline for the load ──────────────────────
 echo "[1/3] Stopping container '$CONTAINER'..."
 docker stop "$CONTAINER"
@@ -70,8 +93,9 @@ docker stop "$CONTAINER"
 # ── Load dump via a temporary container sharing the same data volume ──────────
 echo "[2/3] Loading dump into volume '$DATA_VOLUME'..."
 docker run --rm \
+    -e NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     -v "${DATA_VOLUME}:/data" \
-    -v "${BACKUP_DIR}:/backups:ro" \
+    -v "${LOAD_FROM_DIR}:/backups:ro" \
     "$NEO4J_IMAGE" \
     neo4j-admin database load \
         --from-path=/backups \
@@ -81,6 +105,10 @@ docker run --rm \
 # ── Restart the Neo4j container ───────────────────────────────────────────────
 echo "[3/3] Restarting container '$CONTAINER'..."
 docker start "$CONTAINER"
+
+if [ -n "$TEMP_DUMP_DIR" ] && [ -d "$TEMP_DUMP_DIR" ]; then
+    rm -rf "$TEMP_DUMP_DIR"
+fi
 
 echo ""
 echo "SUCCESS: Neo4j database '$NEO4J_DB' loaded."

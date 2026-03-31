@@ -5,10 +5,28 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: stem_kg_backend
+    container_name: letuandat_backend
     ports:
-      - "8000:8000"
-    env_file: .env
+      - "8100:8000"
+    env_file: app/core/config.env
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-changeme}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      MINIO_BUCKET: ${MINIO_BUCKET:-data-edu}
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: ${PG_USER:-postgres}
+      PG_PASSWORD: ${PG_PASSWORD:-changeme}
+      PG_NAME: ${PG_NAME:-data-edu}
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DB: ${MONGODB_DB:-Metadata-Edu}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3040,https://ers.etechs.vn}
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,26 +46,49 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
-    container_name: stem_kg_frontend
+        VITE_API_BASE: ${VITE_API_BASE:-/api}
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-https://api.etechs.vn}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-ers-fe}
+        VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-https://ers.etechs.vn/auth/callback}
+        VITE_OIDC_POST_LOGOUT_REDIRECT_URI: ${VITE_OIDC_POST_LOGOUT_REDIRECT_URI:-https://ers.etechs.vn}
+        VITE_OIDC_SCOPE: ${VITE_OIDC_SCOPE:-openid profile email}
+    container_name: letuandat_frontend
     ports:
-      - "3000:80"
+      - "3040:80"
     depends_on:
       - backend
     restart: unless-stopped
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: letuandat_cloudflared
+    profiles: [tunnel]
+    depends_on:
+      - frontend
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --config
+      - /etc/cloudflared/config.yml
+      - run
+    restart: unless-stopped
+
   # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
-    container_name: stem_kg_postgres
+    image: pgvector/pgvector:pg18
+    container_name: letuandat_postgres
     environment:
       POSTGRES_USER: ${PG_USER:-postgres}
       POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
       POSTGRES_DB: ${PG_NAME:-data-edu}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg18_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-postgres}"]
       interval: 5s
@@ -57,14 +98,18 @@ services:
 
   # ── MongoDB ────────────────────────────────────────────────────────────────
   mongodb:
-    image: mongo:7
-    container_name: stem_kg_mongodb
+    image: mongo:4.4.29
+    container_name: letuandat_mongodb
     ports:
-      - "27017:27017"
+      - "27019:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      test:
+        [
+          "CMD-SHELL",
+          "(mongosh --quiet --eval \"db.adminCommand('ping').ok\" || mongo --quiet --eval \"db.adminCommand('ping').ok\") | grep 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -73,13 +118,14 @@ services:
 
   # ── Neo4j ──────────────────────────────────────────────────────────────────
   neo4j:
-    image: neo4j:5
-    container_name: stem_kg_neo4j
+    image: neo4j:2025.11.2-enterprise
+    container_name: letuandat_neo4j
     environment:
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-changeme}
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "18474:7474"
+      - "18687:7687"
     volumes:
       - neo4j_data:/data
     healthcheck:
@@ -93,14 +139,14 @@ services:
   # ── MinIO ──────────────────────────────────────────────────────────────────
   minio:
     image: minio/minio
-    container_name: stem_kg_minio
+    container_name: letuandat_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-changeme}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9100:9000"
+      - "9101:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -121,7 +167,7 @@ services:
   # if a restore fails.
   auto-restore:
     image: docker:cli
-    container_name: stem_kg_auto_restore
+    container_name: letuandat_auto_restore
     restart: "no"
     depends_on:
       postgres:
@@ -134,7 +180,7 @@ services:
         condition: service_completed_successfully
     env_file: .env
     environment:
-      AUTO_RESTORE: ${AUTO_RESTORE:-false}
+      AUTO_RESTORE: ${AUTO_RESTORE:-true}
       NEO4J_AUTO_RESTORE: ${NEO4J_AUTO_RESTORE:-false}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -157,7 +203,7 @@ services:
   # ── MinIO bucket initializer (runs once, exits after bucket is created) ────
   minio-init:
     image: minio/mc
-    container_name: stem_kg_minio_init
+    container_name: letuandat_minio_init
     depends_on:
       minio:
         condition: service_healthy
@@ -165,7 +211,11 @@ services:
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY:-minioadmin} $${MINIO_SECRET_KEY:-changeme} &&
-      mc mb --ignore-existing local/$${MINIO_BUCKET:-data-edu} &&
+      (
+        mc ls local/$${MINIO_BUCKET:-data-edu} >/dev/null 2>&1 ||
+        mc mb --ignore-existing local/$${MINIO_BUCKET:-data-edu} >/dev/null 2>&1 ||
+        true
+      ) &&
       echo 'MinIO bucket $${MINIO_BUCKET:-data-edu} is ready.'
       "
     restart: "no"
@@ -184,9 +234,9 @@ services:
   #   docker compose start neo4j
 
   restore-postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg18
     profiles: [restore]
-    container_name: stem_kg_restore_postgres
+    container_name: letuandat_restore_postgres
     depends_on:
       postgres:
         condition: service_healthy
@@ -210,9 +260,9 @@ services:
     restart: "no"
 
   restore-mongo:
-    image: mongo:7
+    image: mongo:4.4.29
     profiles: [restore]
-    container_name: stem_kg_restore_mongo
+    container_name: letuandat_restore_mongo
     depends_on:
       mongodb:
         condition: service_healthy
@@ -222,7 +272,25 @@ services:
     entrypoint: >
       /bin/bash -c "
       DB=$${MONGODB_DB:-Metadata-Edu};
-      if [ -d /backup/$$DB ]; then
+      if find /backup -maxdepth 2 -name '*.json' | grep -q .; then
+        echo '[restore-mongo] JSON export layout -> /backup' &&
+        for file in /backup/*.json; do
+          [ -f $$file ] || continue;
+          base=$$(basename $$file .json);
+          collection=$${base#$$DB.};
+          if [ "$$collection" = "$$base" ]; then collection=$$base; fi;
+          if grep -Eq '^[[:space:]]*\\[[[:space:]]*\\][[:space:]]*$$' $$file; then
+            echo '[restore-mongo] Skipping empty array file -> '$$(basename $$file) &&
+            mongo --host mongodb $$DB --quiet --eval \"db.getCollection('$$collection').drop()\" >/dev/null 2>&1 || true;
+            continue;
+          fi;
+          echo '[restore-mongo] Importing collection -> '$$collection &&
+          mongo --host mongodb $$DB --quiet --eval \"db.getCollection('$$collection').drop()\" >/dev/null 2>&1 || true;
+          mongoimport --host mongodb --db $$DB --collection $$collection --file $$file --jsonArray ||
+          mongoimport --host mongodb --db $$DB --collection $$collection --file $$file;
+        done &&
+        echo 'SUCCESS: MongoDB restored.';
+      elif [ -d /backup/$$DB ]; then
         echo '[restore-mongo] Standard layout -> /backup/'$$DB &&
         mongorestore --host mongodb --drop --db $$DB /backup/$$DB;
       else
@@ -237,20 +305,26 @@ services:
     #   docker compose stop neo4j
     #   docker compose --profile restore run --rm restore-neo4j
     #   docker compose start neo4j
-    image: neo4j:5
+    image: neo4j:2025.11.2-enterprise
     profiles: [restore]
-    container_name: stem_kg_restore_neo4j
+    container_name: letuandat_restore_neo4j
     volumes:
       - neo4j_data:/data
       - ./database/stem_kg_neo4j:/backups:ro
     environment:
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
     entrypoint: >
       /bin/bash -c "
       DB=$${NEO4J_DATABASE:-neo4j};
       DUMP=/backups/$$DB.dump;
       if [ ! -f $$DUMP ]; then
-        echo 'ERROR: dump not found: '$$DUMP && exit 1;
+        alt_dump=$$(find /backups -maxdepth 1 -name '*.dump' | head -n 1);
+        if [ -n "$$alt_dump" ]; then
+          DUMP=$$alt_dump;
+        else
+          echo 'ERROR: dump not found: '$$DUMP && exit 1;
+        fi;
       fi;
       echo '[restore-neo4j] Loading '$$DB' from '$$DUMP'...' &&
       neo4j-admin database load --from-path=/backups --overwrite-destination=true $$DB &&
@@ -261,7 +335,7 @@ services:
   restore-minio:
     image: minio/mc
     profiles: [restore]
-    container_name: stem_kg_restore_minio
+    container_name: letuandat_restore_minio
     depends_on:
       minio:
         condition: service_healthy
@@ -279,20 +353,35 @@ services:
       if [ -d /backup/$$BUCKET ]; then
         echo '[restore-minio] Backup layout: object tree';
         SRC=/backup/$$BUCKET;
+        MODE=object-tree;
+      elif [ -d /backup/minio-data ]; then
+        echo '[restore-minio] Backup layout: full MinIO data directory';
+        SRC=/backup/minio-data;
+        MODE=full-data-dir;
       elif [ -f $$TARBALL ]; then
         echo '[restore-minio] Backup layout: compressed archive — extracting...';
         mkdir -p $$TMPDIR &&
         tar -xzf $$TARBALL -C $$TMPDIR;
-        if [ ! -d $$TMPDIR/$$BUCKET ]; then
-          echo 'ERROR: bucket dir not found in archive (expected: '$$BUCKET'/).';
+        if [ -d $$TMPDIR/$$BUCKET ]; then
+          SRC=$$TMPDIR/$$BUCKET;
+          MODE=object-tree;
+        elif [ -d $$TMPDIR/minio-data ]; then
+          SRC=$$TMPDIR/minio-data;
+          MODE=full-data-dir;
+        else
+          echo 'ERROR: bucket dir not found in archive (expected: '$$BUCKET'/ or minio-data/).';
           echo 'Archive top-level:'; ls $$TMPDIR 2>/dev/null || true;
           rm -rf $$TMPDIR; exit 1;
         fi;
-        SRC=$$TMPDIR/$$BUCKET;
       else
         echo 'ERROR: No backup found in /backup/';
         echo '  Expected: /backup/'$$BUCKET'/  (extracted object tree)';
         echo '  Or:       /backup/minio-data.tar.gz  (compressed archive)';
+        exit 1;
+      fi;
+      if [ "$$MODE" = 'full-data-dir' ]; then
+        echo '[restore-minio] Full data-dir restore is not supported inside the restore container.' &&
+        echo '[restore-minio] Use: bash docker/import-minio.sh' &&
         exit 1;
       fi;
       mc alias set local http://minio:9000 $$ACCESS $$SECRET &&
@@ -304,7 +393,7 @@ services:
     restart: "no"
 
 volumes:
-  pg_data:
+  pg18_data:
   mongo_data:
   neo4j_data:
   minio_data:

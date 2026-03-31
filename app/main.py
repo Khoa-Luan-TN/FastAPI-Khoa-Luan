@@ -31,6 +31,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect
 
 from app.routers.minio import router as minio_router
 from app.routers.postgre import router as postgre_router
@@ -53,10 +54,49 @@ from app.services.mongo.mongo_import_service import (
     backfill_keyword_minio_markers,
 )
 
+_SCHEMA_LOG = logging.getLogger("app.schema")
+_STARTUP_LOG = logging.getLogger("app.startup")
+
+
+def ensure_postgres_schema() -> None:
+    """
+    Keep startup compatible with restored databases.
+
+    This project often restores a prebuilt PostgreSQL dump whose schema does not
+    perfectly match the current SQLAlchemy models. In that case, calling
+    Base.metadata.create_all() on every startup can crash the app before it even
+    serves requests. We only auto-create tables when the database is empty, or
+    when explicitly forced via CREATE_SCHEMA_ON_STARTUP=true.
+    """
+    force_create = os.getenv("CREATE_SCHEMA_ON_STARTUP", "false").strip().lower() == "true"
+    try:
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+    except Exception as exc:
+        _SCHEMA_LOG.warning("Could not inspect PostgreSQL schema at startup: %s", exc)
+        existing_tables = []
+
+    if existing_tables and not force_create:
+        _SCHEMA_LOG.info(
+            "Detected existing PostgreSQL schema with %d tables; skipping Base.metadata.create_all().",
+            len(existing_tables),
+        )
+        return
+
+    try:
+        Base.metadata.create_all(bind=engine)
+        _SCHEMA_LOG.info("PostgreSQL schema ensured via SQLAlchemy metadata.")
+    except Exception as exc:
+        _SCHEMA_LOG.warning("Skipping SQLAlchemy schema creation due to startup error: %s", exc)
+
+
+def run_startup_minio_backfills() -> bool:
+    return os.getenv("RUN_STARTUP_MINIO_BACKFILLS", "false").strip().lower() == "true"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    ensure_postgres_schema()
     # Migrate import_key indexes to sparse-unique on every startup.
     # This converts any legacy non-sparse import_key_1 indexes so normal UI
     # creates (which have no import_key) never collide on null values.
@@ -68,66 +108,67 @@ async def lifespan(app: FastAPI):
         ensure_user_indexes(get_mongo_db())
     except Exception as _e:
         logging.getLogger("app").warning("user_indexes setup warning: %s", _e)
-    # Ensure MinIO root markers exist for all class docs imported before the
-    # class-marker fix. Idempotent — safe to run on every startup.
-    try:
-        result = backfill_class_minio_roots(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "class MinIO backfill: processed=%d errors=%d",
-                result.get("processed", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("class MinIO backfill warning: %s", _e)
-    # Ensure MinIO subject folder markers exist and backfill missing asset_prefixes
-    # for subject docs created before the subject-marker fix. Idempotent.
-    try:
-        result = backfill_subject_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "subject MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("subject MinIO backfill warning: %s", _e)
-    # Ensure MinIO topic folder markers exist and backfill missing asset_prefixes
-    # for topic docs created before the topic-marker fix. Idempotent.
-    try:
-        result = backfill_topic_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "topic MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("topic MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_lesson_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "lesson MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("lesson MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_chunk_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "chunk MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("chunk MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_keyword_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "keyword MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("keyword MinIO backfill warning: %s", _e)
+    if run_startup_minio_backfills():
+        # Keep these as an opt-in migration step; they can be slow and should not
+        # block app availability on environments restored from backups.
+        try:
+            result = backfill_class_minio_roots(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "class MinIO backfill: processed=%d errors=%d",
+                    result.get("processed", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("class MinIO backfill warning: %s", _e)
+        try:
+            result = backfill_subject_minio_markers(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "subject MinIO backfill: processed=%d backfilled=%d errors=%d",
+                    result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("subject MinIO backfill warning: %s", _e)
+        try:
+            result = backfill_topic_minio_markers(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "topic MinIO backfill: processed=%d backfilled=%d errors=%d",
+                    result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("topic MinIO backfill warning: %s", _e)
+        try:
+            result = backfill_lesson_minio_markers(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "lesson MinIO backfill: processed=%d backfilled=%d errors=%d",
+                    result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("lesson MinIO backfill warning: %s", _e)
+        try:
+            result = backfill_chunk_minio_markers(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "chunk MinIO backfill: processed=%d backfilled=%d errors=%d",
+                    result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("chunk MinIO backfill warning: %s", _e)
+        try:
+            result = backfill_keyword_minio_markers(get_mongo_db())
+            if result.get("ok"):
+                logging.getLogger("app").info(
+                    "keyword MinIO backfill: processed=%d backfilled=%d errors=%d",
+                    result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
+                )
+        except Exception as _e:
+            logging.getLogger("app").warning("keyword MinIO backfill warning: %s", _e)
+    else:
+        _STARTUP_LOG.info(
+            "Skipping startup MinIO backfills. Set RUN_STARTUP_MINIO_BACKFILLS=true to enable them."
+        )
     yield
 
 

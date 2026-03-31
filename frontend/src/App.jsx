@@ -4,6 +4,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import UserLayout from "./layouts/UserLayout";
 
 import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
 import RequireRole from "./components/RequireRole";
 
 import Dashboard from "./pages/admin/Dashboard";
@@ -25,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* USER */}
         <Route
