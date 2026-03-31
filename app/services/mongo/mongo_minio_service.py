@@ -183,28 +183,65 @@ def on_minio_rename_object(
     new_url: str,
     actor: str,
 ):
-    """File renamed in MinIO → update asset record."""
+    """File renamed/moved in MinIO → update asset record including owner re-resolution."""
     existing = _find_asset_by_object_key(old_object_key)
     if not existing:
         return {"ok": True, "skipped": True, "reason": "asset not found"}
 
-    _, new_path_prefix, new_file_name = _parse_object_key(new_object_key)
+    new_root, new_path_prefix, new_file_name = _parse_object_key(new_object_key)
     now = utc_now()
 
-    db["asset"].update_one(
-        {"_id": existing["_id"]},
-        {"$set": {
-            "object_key": new_object_key,
-            "url": new_url,
-            "path_prefix": new_path_prefix,
-            "file_name": new_file_name,
-            "updated_at": now,
-            "updated_by": actor,
-        }},
+    old_owner_type = existing.get("owner_type")
+    old_owner_id = existing.get("owner_id")
+
+    # Re-resolve owner from the new path so a rename/move to a different
+    # entity folder immediately updates the ownership rather than waiting
+    # for the next startup backfill.
+    new_owner_info = _find_asset_owner(new_path_prefix, new_root) if (new_root and new_path_prefix) else None
+
+    if new_owner_info:
+        new_owner_type, new_owner_id = new_owner_info
+    else:
+        # Owner cannot be resolved from the new path.  Keep previous owner
+        # fields unchanged — it is safer to leave a stale (but non-null) owner
+        # than to silently null it out and break all existing asset joins.
+        new_owner_type = old_owner_type
+        new_owner_id = old_owner_id
+        _log.warning(
+            "on_minio_rename_object: owner NOT re-resolved for new path — "
+            "keeping previous owner fields unchanged. "
+            "old_object_key=%r  new_object_key=%r  new_path_prefix=%r  new_root=%r  "
+            "prev owner_type=%r  prev owner_id=%r  "
+            "Check that asset_prefixes.%s = %r exists on one of %s.",
+            old_object_key, new_object_key, new_path_prefix, new_root,
+            old_owner_type, old_owner_id,
+            new_root, new_path_prefix, ASSET_OWNER_COLS,
+        )
+
+    patch = {
+        "object_key": new_object_key,
+        "url": new_url,
+        "path_prefix": new_path_prefix,
+        "file_name": new_file_name,
+        "owner_type": new_owner_type,
+        "owner_id": new_owner_id,
+        "updated_at": now,
+        "updated_by": actor,
+    }
+
+    db["asset"].update_one({"_id": existing["_id"]}, {"$set": patch})
+
+    _log.info(
+        "on_minio_rename_object: asset _id=%s  old_object_key=%r → new_object_key=%r  "
+        "old owner_type=%r owner_id=%r  →  new owner_type=%r owner_id=%r  "
+        "new_path_prefix=%r  owner_resolved=%s",
+        existing["_id"], old_object_key, new_object_key,
+        old_owner_type, old_owner_id,
+        new_owner_type, new_owner_id,
+        new_path_prefix, new_owner_info is not None,
     )
 
-    result = {"ok": True, "collection": "asset", "_id": str(existing["_id"])}
-    return result
+    return {"ok": True, "collection": "asset", "_id": str(existing["_id"])}
 
 
 def on_minio_unlink_object(

@@ -1,15 +1,15 @@
 # ========== Secrets / Environment ==========
-# .env
-# .env.*
-# config.env
-# **/config.env
-# *.env
+.env
+.env.*
+config.env
+**/config.env
+*.env
 
 # Nếu bạn muốn giữ file mẫu để người khác copy:
 # (không ignore các file dạng *.example)
-# !*.example
-# !.env.example
-# !config.env.example
+!*.example
+!.env.example
+!config.env.example
 
 # ========== Python ==========
 __pycache__/
@@ -22,10 +22,10 @@ dist/
 build/
 
 # ========== Virtual environments ==========
-# .venv/
-# venv/
-# env/
-# .conda/
+.venv/
+venv/
+env/
+.conda/
 
 # ========== FastAPI / Uvicorn logs ==========
 *.log
@@ -47,9 +47,9 @@ htmlcov/
 *.swp
 
 # ========== Local data directories (nếu có đặt trong repo) ==========
-# minio-data/
-# data/
-# tmp/
+minio-data/
+data/
+tmp/
 
 demo.json
 
