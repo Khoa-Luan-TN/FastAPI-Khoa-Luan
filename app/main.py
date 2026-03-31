@@ -52,6 +52,7 @@ from app.services.mongo.mongo_import_service import (
     backfill_chunk_minio_markers,
     backfill_keyword_minio_markers,
 )
+from app.services.mongo.mongo_minio_service import backfill_asset_owner_ids
 
 
 @asynccontextmanager
@@ -128,6 +129,21 @@ async def lifespan(app: FastAPI):
             )
     except Exception as _e:
         logging.getLogger("app").warning("keyword MinIO backfill warning: %s", _e)
+    # Re-resolve asset.owner_id for every active asset so stale ids from
+    # deleted-and-reimported educational records are corrected.
+    # Runs after all entity asset_prefixes backfills above so entity docs are
+    # guaranteed to have correct asset_prefixes before the asset lookup.
+    try:
+        result = backfill_asset_owner_ids(actor="startup")
+        logging.getLogger("app").info(
+            "asset owner_id backfill: processed=%d repaired=%d "
+            "skipped_no_prefix=%d skipped_no_owner=%d errors=%d",
+            result.get("processed", 0), result.get("repaired", 0),
+            result.get("skipped_no_prefix", 0), result.get("skipped_no_owner", 0),
+            len(result.get("errors") or []),
+        )
+    except Exception as _e:
+        logging.getLogger("app").warning("asset owner_id backfill warning: %s", _e)
     yield
 
 

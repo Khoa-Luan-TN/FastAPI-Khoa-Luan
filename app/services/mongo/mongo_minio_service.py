@@ -56,7 +56,11 @@ def _parse_object_key(object_key: str):
 
 
 def _find_asset_owner(path_prefix: str, root: str) -> Optional[tuple]:
-    """Find (owner_type, owner_id) by matching asset_prefixes on edu entities."""
+    """Find (owner_type, owner_id) by matching asset_prefixes on edu entities.
+
+    Always queries live Mongo documents so the returned owner_id reflects the
+    *current* ObjectId of the owner — not a stale id from a previous import run.
+    """
     if not path_prefix or not root:
         return None
     field = f"asset_prefixes.{root}"
@@ -66,7 +70,16 @@ def _find_asset_owner(path_prefix: str, root: str) -> Optional[tuple]:
             {"_id": 1},
         )
         if doc:
+            _log.debug(
+                "_find_asset_owner: matched col=%s  _id=%s  field=%s  path_prefix=%r",
+                col, doc["_id"], field, path_prefix,
+            )
             return col, str(doc["_id"])
+    _log.warning(
+        "_find_asset_owner: no owner found for root=%r path_prefix=%r — "
+        "check that asset_prefixes.%s = %r exists on one of %s",
+        root, path_prefix, root, path_prefix, ASSET_OWNER_COLS,
+    )
     return None
 
 
@@ -146,15 +159,17 @@ def on_minio_insert_to_mongo(
         result = {"ok": True, "mode": "create", "collection": "asset", "_id": str(inserted.inserted_id)}
 
     _log.info(
-        "Asset %s: object_key=%s  owner=%s/%s",
-        result["mode"], object_key, owner_type, owner_id,
+        "Asset %s: object_key=%s  owner_type=%s  owner_id=%s  path_prefix=%r  root=%r",
+        result["mode"], object_key, owner_type, owner_id, path_prefix, root,
     )
 
     if not owner_type or not owner_id:
         _log.warning(
-            "Asset created but owner not resolved. "
-            "Check that asset_prefixes.%s = %r exists on the owner entity.",
-            root, path_prefix,
+            "Asset %s but owner NOT resolved — owner_type=None owner_id=None. "
+            "object_key=%s  path_prefix=%r  root=%r. "
+            "Check that asset_prefixes.%s = %r exists on one of %s.",
+            result["mode"], object_key, path_prefix, root,
+            root, path_prefix, ASSET_OWNER_COLS,
         )
 
     return result
@@ -216,3 +231,118 @@ def on_minio_unlink_object(
 
     result = {"ok": True, "collection": "asset", "_id": str(existing["_id"])}
     return result
+
+
+# ---------------------------------------------------------------------------
+# Backfill / repair
+# ---------------------------------------------------------------------------
+
+def backfill_asset_owner_ids(*, actor: str = "system") -> dict:
+    """Re-resolve owner_type / owner_id for every active asset record.
+
+    Root cause this fixes
+    ---------------------
+    When educational records are deleted and re-imported they get new MongoDB
+    ObjectIds.  Any asset records that were created while the *old* documents
+    existed still carry the old owner_id, so searches can no longer attach
+    them to the new documents.
+
+    Strategy
+    --------
+    For each non-deleted asset:
+      1. Parse object_key → (root, path_prefix).
+      2. Query current entity collections for asset_prefixes.{root} == path_prefix.
+      3. If the resolved (owner_type, owner_id) differs from what is stored,
+         update the asset record and log the remap.
+
+    The match is deterministic: asset_prefixes paths are derived from stable
+    business keys (class/subject/topic/lesson/chunk slugs + numbers, or
+    keyword_slug + short mongo id), so a path always identifies exactly one
+    live entity when the data is consistent.
+
+    Safe to run multiple times — idempotent.
+    """
+    now = utc_now()
+    processed = repaired = skipped_no_prefix = skipped_no_owner = 0
+    errors: list[dict] = []
+
+    for asset_doc in db["asset"].find(
+        {"is_deleted": {"$ne": True}},
+        {"_id": 1, "object_key": 1, "path_prefix": 1, "owner_type": 1, "owner_id": 1},
+    ):
+        asset_id = asset_doc["_id"]
+        object_key = asset_doc.get("object_key") or ""
+
+        try:
+            root, path_prefix, _ = _parse_object_key(object_key)
+
+            if not root or not path_prefix:
+                skipped_no_prefix += 1
+                _log.debug(
+                    "backfill_asset_owner_ids: skip asset _id=%s — cannot parse object_key=%r",
+                    asset_id, object_key,
+                )
+                continue
+
+            owner_info = _find_asset_owner(path_prefix, root)
+            if not owner_info:
+                skipped_no_owner += 1
+                _log.warning(
+                    "backfill_asset_owner_ids: no owner found for asset _id=%s  "
+                    "object_key=%r  path_prefix=%r  root=%r — asset left unchanged",
+                    asset_id, object_key, path_prefix, root,
+                )
+                continue
+
+            new_owner_type, new_owner_id = owner_info
+            old_owner_type = asset_doc.get("owner_type")
+            old_owner_id = asset_doc.get("owner_id")
+
+            processed += 1
+
+            if new_owner_type == old_owner_type and new_owner_id == old_owner_id:
+                _log.debug(
+                    "backfill_asset_owner_ids: asset _id=%s already correct "
+                    "owner_type=%s owner_id=%s — no change",
+                    asset_id, new_owner_type, new_owner_id,
+                )
+                continue
+
+            db["asset"].update_one(
+                {"_id": asset_id},
+                {"$set": {
+                    "owner_type": new_owner_type,
+                    "owner_id": new_owner_id,
+                    "updated_at": now,
+                    "updated_by": actor,
+                }},
+            )
+            repaired += 1
+            _log.info(
+                "backfill_asset_owner_ids: REPAIRED asset _id=%s  object_key=%r  "
+                "old owner_type=%r owner_id=%r  →  new owner_type=%r owner_id=%r",
+                asset_id, object_key,
+                old_owner_type, old_owner_id,
+                new_owner_type, new_owner_id,
+            )
+
+        except Exception as exc:
+            errors.append({"asset_id": str(asset_id), "object_key": object_key, "error": str(exc)})
+            _log.warning(
+                "backfill_asset_owner_ids: ERROR asset _id=%s object_key=%r: %s",
+                asset_id, object_key, exc,
+            )
+
+    _log.info(
+        "backfill_asset_owner_ids: done — processed=%d repaired=%d "
+        "skipped_no_prefix=%d skipped_no_owner=%d errors=%d",
+        processed, repaired, skipped_no_prefix, skipped_no_owner, len(errors),
+    )
+    return {
+        "ok": True,
+        "processed": processed,
+        "repaired": repaired,
+        "skipped_no_prefix": skipped_no_prefix,
+        "skipped_no_owner": skipped_no_owner,
+        "errors": errors[:50],
+    }
