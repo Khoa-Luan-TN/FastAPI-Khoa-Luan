@@ -56,13 +56,13 @@ First build will take several minutes — torch (~800 MB) and sentence-transform
 
 | Service          | URL                              |
 |------------------|----------------------------------|
-| Frontend         | http://localhost:3000            |
-| Backend API      | http://localhost:8000            |
-| API docs         | http://localhost:8000/docs       |
-| MinIO console    | http://localhost:9001            |
-| Neo4j browser    | http://localhost:7474            |
-| PostgreSQL       | localhost:5432                   |
-| MongoDB          | localhost:27017                  |
+| Frontend         | http://localhost:3040            |
+| Backend API      | http://localhost:8100            |
+| API docs         | http://localhost:8100/docs       |
+| MinIO console    | http://localhost:9101            |
+| Neo4j browser    | http://localhost:18474           |
+| PostgreSQL       | localhost:5434                   |
+| MongoDB          | localhost:27019                  |
 
 ---
 
@@ -95,21 +95,23 @@ forwards `/api/*` to the backend container internally.
 
 ---
 
-## 5. Manual preconditions / known blockers
+## 5. Known first-start notes
 
-- **Neo4j graph data**: The app reads from an existing Neo4j graph. After first startup the
-  database will be empty. Restore a Neo4j dump into the `neo4j_data` volume before running
-  searches that rely on graph nodes.
+- **Neo4j graph data**: On a fresh volume the `neo4j-bootstrap` service automatically loads
+  `database/stem_kg_neo4j/*.dump` before Neo4j starts. No manual step required.
+  If no dump is present Neo4j starts empty; graph-dependent search features will return no results
+  until data is imported.
 
-- **ML model download**: `sentence-transformers` and `BAAI/bge-reranker-v2-m3` are downloaded
-  from Hugging Face the first time the backend starts. Ensure internet access during first boot,
-  or pre-cache the models into the image.
+- **ML model download**: `sentence-transformers` downloads `intfloat/multilingual-e5-base`
+  from Hugging Face the first time the backend starts. Ensure internet access during first boot.
 
-- **MinIO bucket**: The bucket `data-edu` is not auto-created. Create it manually via the MinIO
-  console (http://localhost:9001) after first startup, or add a bucket-init container.
+- **MinIO data**: The `minio-bootstrap` service copies `database/stem_kg_minio/minio-data/`
+  into the MinIO volume before MinIO starts, on a fresh volume. The `minio-init` service then
+  ensures the bucket exists (idempotent). No manual action needed.
 
 - **VITE_API_BASE is a build-time variable**: Changing it requires rebuilding the frontend image
-  (`docker compose build frontend`). It cannot be changed at runtime.
+  (`docker compose build frontend`). It cannot be changed at runtime. Keep the default `/api`
+  unless you need direct access to the backend without the nginx proxy.
 
 ---
 

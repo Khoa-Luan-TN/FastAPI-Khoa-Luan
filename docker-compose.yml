@@ -116,6 +116,51 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  # ── Neo4j bootstrap (runs once before neo4j starts; loads dump on fresh volume) ─
+  # On first `docker compose up` with a fresh neo4j_data volume, this service
+  # loads database/stem_kg_neo4j/*.dump into the volume before Neo4j starts.
+  # On subsequent startups the data directory already exists and the load is skipped.
+  # If no dump file is found the service exits 0 and neo4j starts with an empty DB.
+  neo4j-bootstrap:
+    image: neo4j:2025.11.2-enterprise
+    container_name: letuandat_neo4j_bootstrap
+    restart: "no"
+    environment:
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+    volumes:
+      - neo4j_data:/data
+      - ./database/stem_kg_neo4j:/backups:ro
+    entrypoint: >
+      /bin/bash -c "
+      DB=$${NEO4J_DATABASE:-neo4j};
+      DUMP=/backups/$$DB.dump;
+      if [ ! -f \"$$DUMP\" ]; then
+        DUMP=$$(find /backups -maxdepth 1 -name '*.dump' 2>/dev/null | head -n 1 || true);
+      fi;
+      if [ -z \"$$DUMP\" ] || [ ! -f \"$$DUMP\" ]; then
+        echo '[neo4j-bootstrap] No dump found — starting with empty Neo4j.';
+        exit 0;
+      fi;
+      if [ -d /data/databases/$$DB ] && [ -n \"\$(ls -A /data/databases/$$DB 2>/dev/null)\" ]; then
+        echo '[neo4j-bootstrap] Data already exists — skipping restore.';
+        exit 0;
+      fi;
+      LOAD_DIR=/backups;
+      TMPDIR='';
+      if [ \"\$(basename \"$$DUMP\")\" != \"$$DB.dump\" ]; then
+        TMPDIR=$$(mktemp -d);
+        cp \"$$DUMP\" \"$$TMPDIR/$$DB.dump\";
+        LOAD_DIR=$$TMPDIR;
+      fi;
+      echo \"[neo4j-bootstrap] Loading $$DB from $$DUMP...\";
+      neo4j-admin database load --from-path=$$LOAD_DIR --overwrite-destination=true $$DB &&
+      echo '[neo4j-bootstrap] SUCCESS: Neo4j loaded from dump.' ||
+      echo '[neo4j-bootstrap] WARNING: load failed — neo4j starts with empty database.';
+      [ -n \"$$TMPDIR\" ] && rm -rf \"$$TMPDIR\" 2>/dev/null || true;
+      exit 0
+      "
+
   # ── Neo4j ──────────────────────────────────────────────────────────────────
   neo4j:
     image: neo4j:2025.11.2-enterprise
@@ -128,6 +173,9 @@ services:
       - "18687:7687"
     volumes:
       - neo4j_data:/data
+    depends_on:
+      neo4j-bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
       interval: 10s
@@ -135,6 +183,57 @@ services:
       retries: 12
       start_period: 30s
     restart: unless-stopped
+
+  # ── MinIO bootstrap (runs once before MinIO starts; copies full data-dir backup on fresh volume) ─
+  # On first `docker compose up` with a fresh minio_data volume, this service
+  # copies database/stem_kg_minio/minio-data/ into the volume before MinIO starts.
+  # On subsequent startups the volume already has content and the copy is skipped.
+  # If no full-data-dir backup is found the service exits 0 and MinIO starts fresh.
+  # Exits 1 (blocking MinIO startup) only if a backup was found but the copy failed.
+  minio-bootstrap:
+    image: alpine:3.20
+    container_name: letuandat_minio_bootstrap
+    restart: "no"
+    volumes:
+      - minio_data:/data
+      - ./database/stem_kg_minio:/backup:ro
+    entrypoint: >
+      /bin/sh -c "
+      if [ -n \"\$$(find /data -maxdepth 1 -mindepth 1 2>/dev/null | head -n 1)\" ]; then
+        echo '[minio-bootstrap] MinIO data already exists — skipping restore.';
+        exit 0;
+      fi;
+      if [ -d /backup/minio-data ] && [ -n \"\$$(ls -A /backup/minio-data 2>/dev/null)\" ]; then
+        echo '[minio-bootstrap] Full data-dir backup found — copying to volume...';
+        if cp -a /backup/minio-data/. /data/; then
+          echo '[minio-bootstrap] SUCCESS: MinIO data directory restored.';
+          exit 0;
+        else
+          echo '[minio-bootstrap] FAILED: cp failed.';
+          exit 1;
+        fi;
+      fi;
+      if [ -f /backup/minio-data.tar.gz ]; then
+        echo '[minio-bootstrap] Tarball backup found — extracting to volume...';
+        mkdir -p /tmp/minio_extract &&
+        tar -xzf /backup/minio-data.tar.gz -C /tmp/minio_extract;
+        if [ -d /tmp/minio_extract/minio-data ]; then
+          src=/tmp/minio_extract/minio-data;
+        else
+          src=/tmp/minio_extract;
+        fi;
+        if cp -a \"\$${src}/.\" /data/; then
+          rm -rf /tmp/minio_extract;
+          echo '[minio-bootstrap] SUCCESS: MinIO data directory restored from tarball.';
+          exit 0;
+        fi;
+        rm -rf /tmp/minio_extract;
+        echo '[minio-bootstrap] FAILED: tarball restore failed.';
+        exit 1;
+      fi;
+      echo '[minio-bootstrap] No full-data-dir backup found — MinIO starts fresh.';
+      exit 0
+      "
 
   # ── MinIO ──────────────────────────────────────────────────────────────────
   minio:
@@ -149,6 +248,9 @@ services:
       - "9101:9001"
     volumes:
       - minio_data:/data
+    depends_on:
+      minio-bootstrap:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -157,14 +259,14 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # ── Auto-restore (runs once on startup; skips silently when AUTO_RESTORE≠true) ─
-  # Set AUTO_RESTORE=true in .env to automatically restore databases after
-  # postgres / mongodb / minio are healthy.  Neo4j cannot be auto-restored
-  # (requires offline load) — restore it manually after startup.
+  # ── Auto-restore (runs once on startup; skips when AUTO_RESTORE≠true) ──────
+  # Restores PostgreSQL and MongoDB after their health checks pass.
+  # MinIO is handled by minio-bootstrap (before MinIO starts).
+  # Neo4j is handled by neo4j-bootstrap (before Neo4j starts).
   #
   # Requires Docker socket access to call docker exec / docker cp on running
-  # service containers.  The service always exits 0 so backend is not blocked
-  # if a restore fails.
+  # service containers.  Exits non-zero if a required restore fails — this
+  # causes the backend to not start, surfacing the failure clearly.
   auto-restore:
     image: docker:cli
     container_name: letuandat_auto_restore
@@ -195,9 +297,10 @@ services:
       echo '[auto-restore] AUTO_RESTORE=true — installing bash...';
       apk add --no-cache bash >/dev/null 2>&1 || true;
       echo '[auto-restore] Running restore-all.sh...';
-      bash /project/docker/restore-all.sh || true;
-      echo '[auto-restore] Done.';
-      exit 0
+      bash /project/docker/restore-all.sh;
+      RC=$$?;
+      echo '[auto-restore] Done (exit '$$RC').';
+      exit $$RC
       "
 
   # ── MinIO bucket initializer (runs once, exits after bucket is created) ────

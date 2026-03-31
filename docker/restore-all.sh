@@ -10,13 +10,18 @@
 #   NEO4J_AUTO_RESTORE=true   — opt-in to Neo4j offline restore (host only)
 #
 # Notes:
+#   • MinIO restore is always skipped when running inside Docker because the
+#     full-data-dir backup is handled by the minio-bootstrap compose service
+#     (which runs before MinIO starts and copies data directly into the volume).
 #   • Neo4j restore is always skipped when running inside Docker because
 #     neo4j-admin database load requires an offline database, and stopping /
 #     starting containers from within a compose service is unsafe.
-#   • When called by the compose auto-restore service, Neo4j must be restored
-#     manually — see DEPLOY_SERVER.md for the exact commands.
-#   • All other failures are reported but do NOT abort the script, so the
-#     summary always prints and the compose service always exits 0.
+#   • When called by the compose auto-restore service, only PostgreSQL and
+#     MongoDB are restored; MinIO and Neo4j must be bootstrapped via their
+#     dedicated init services.
+#   • Exit code: 0 = all required restores succeeded (or were skipped because
+#     no backup was found).  Non-zero = at least one restore with a present
+#     backup FAILED — the caller should treat this as a hard failure.
 
 set -uo pipefail
 
@@ -49,9 +54,13 @@ _STATUS_MONGO="skipped (no backup found)"
 _STATUS_MINIO="skipped (no backup found)"
 _STATUS_NEO4J="skipped (no backup found)"
 
+# Track whether any restore with a present backup has failed.
+# Exit code mirrors this at the end.
+_FAILED=0
+
 echo "════════════════════════════════════════════════════════"
 echo " restore-all — starting"
-[ "$_IN_DOCKER" = "true" ] && echo " (running inside Docker: Neo4j auto-restore unavailable)"
+[ "$_IN_DOCKER" = "true" ] && echo " (running inside Docker: MinIO + Neo4j handled by bootstrap services)"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
@@ -63,6 +72,7 @@ if [ -f "$_PG_BACKUP_DIR/backup.dump" ] || [ -f "$_PG_BACKUP_DIR/backup.sql" ]; 
         _STATUS_PG="restored"
     else
         _STATUS_PG="FAILED (see output above)"
+        _FAILED=1
     fi
     echo ""
 fi
@@ -75,18 +85,36 @@ if [ -d "$_MONGO_BACKUP_DIR" ] && [ -n "$(ls -A "$_MONGO_BACKUP_DIR" 2>/dev/null
         _STATUS_MONGO="restored"
     else
         _STATUS_MONGO="FAILED (see output above)"
+        _FAILED=1
     fi
     echo ""
 fi
 
 # ── MinIO ─────────────────────────────────────────────────────────────────────
 _MINIO_BACKUP_DIR="$PROJECT_ROOT/database/stem_kg_minio"
-if [ -d "$_MINIO_BACKUP_DIR/$MINIO_BUCKET" ] || [ -d "$_MINIO_BACKUP_DIR/minio-data/$MINIO_BUCKET" ] || [ -f "$_MINIO_BACKUP_DIR/minio-data.tar.gz" ]; then
+_MINIO_HAS_BACKUP=false
+if [ -d "$_MINIO_BACKUP_DIR/$MINIO_BUCKET" ] || \
+   [ -d "$_MINIO_BACKUP_DIR/minio-data" ] || \
+   [ -f "$_MINIO_BACKUP_DIR/minio-data.tar.gz" ]; then
+    _MINIO_HAS_BACKUP=true
+fi
+
+if [ "$_MINIO_HAS_BACKUP" = "true" ]; then
     echo "──── MinIO ─────────────────────────────────────────────"
-    if bash "$SCRIPT_DIR/import-minio.sh"; then
-        _STATUS_MINIO="restored"
+    if [ "$_IN_DOCKER" = "true" ]; then
+        # Full-data-dir MinIO restore cannot work from inside Docker because the
+        # backup path inside this container is not a host path and cannot be
+        # bind-mounted by docker run.  The minio-bootstrap compose service handles
+        # this before MinIO starts — no action needed here.
+        _STATUS_MINIO="skipped (inside Docker — handled by minio-bootstrap service)"
+        echo "  MinIO backup found but skipped: handled by minio-bootstrap service."
     else
-        _STATUS_MINIO="FAILED (see output above)"
+        if bash "$SCRIPT_DIR/import-minio.sh"; then
+            _STATUS_MINIO="restored"
+        else
+            _STATUS_MINIO="FAILED (see output above)"
+            _FAILED=1
+        fi
     fi
     echo ""
 fi
@@ -102,20 +130,15 @@ fi
 if [ -f "$_NEO4J_DUMP" ]; then
     echo "──── Neo4j ─────────────────────────────────────────────"
     if [ "$_IN_DOCKER" = "true" ]; then
-        _STATUS_NEO4J="skipped — requires host-side restore (see note below)"
-        echo "  Backup found: $_NEO4J_DUMP"
-        echo "  Neo4j is NOT restored automatically (offline load required)."
-        echo ""
-        echo "  Restore Neo4j manually after containers are running:"
-        echo "    docker compose stop neo4j"
-        echo "    bash docker/import-neo4j.sh"
-        echo "    docker compose start neo4j"
+        _STATUS_NEO4J="skipped (inside Docker — handled by neo4j-bootstrap service)"
+        echo "  Neo4j backup found but skipped: handled by neo4j-bootstrap service."
     elif [ "$NEO4J_AUTO_RESTORE" = "true" ]; then
         echo "  NEO4J_AUTO_RESTORE=true — proceeding with offline load..."
         if bash "$SCRIPT_DIR/import-neo4j.sh"; then
             _STATUS_NEO4J="restored"
         else
             _STATUS_NEO4J="FAILED (see output above)"
+            _FAILED=1
         fi
     else
         _STATUS_NEO4J="skipped — set NEO4J_AUTO_RESTORE=true to restore"
@@ -138,3 +161,12 @@ echo "  MongoDB    : $_STATUS_MONGO"
 echo "  MinIO      : $_STATUS_MINIO"
 echo "  Neo4j      : $_STATUS_NEO4J"
 echo "════════════════════════════════════════════════════════"
+
+if [ "$_FAILED" -ne 0 ]; then
+    echo ""
+    echo "  ERROR: One or more restores FAILED. See output above."
+    echo "  The backend will not start until restores succeed."
+    echo "════════════════════════════════════════════════════════"
+fi
+
+exit "$_FAILED"
