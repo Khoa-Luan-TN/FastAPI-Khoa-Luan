@@ -12,14 +12,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$PROJECT_ROOT/database/stem_kg_backup"
 
-# Load .env for variable overrides
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    set -a; source "$PROJECT_ROOT/.env"; set +a
-fi
+read_env_value() {
+    local key="$1"
+    local env_file="$PROJECT_ROOT/.env"
+    [ -f "$env_file" ] || return 1
+    local line
+    line=$(grep -m1 "^${key}=" "$env_file" || true)
+    [ -n "$line" ] || return 1
+    line="${line#*=}"
+    line="${line%\"}"
+    line="${line#\"}"
+    printf '%s' "$line"
+}
 
-CONTAINER="${PG_CONTAINER_NAME:-stem_kg_postgres}"
-PG_USER="${PG_USER:-postgres}"
-PG_NAME="${PG_NAME:-data-edu}"
+CONTAINER="${PG_CONTAINER_NAME:-$(read_env_value PG_CONTAINER_NAME || printf 'letuandat_postgres')}"
+PG_USER="${PG_USER:-$(read_env_value PG_USER || printf 'postgres')}"
+PG_NAME="${PG_NAME:-$(read_env_value PG_NAME || printf 'data-edu')}"
 
 # ── Detect backup file ────────────────────────────────────────────────────────
 BACKUP_DUMP="$BACKUP_DIR/backup.dump"

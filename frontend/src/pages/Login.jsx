@@ -1,12 +1,9 @@
 // src/pages/Login.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import "../styles/login.css";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+import { loginViaOidcMiddleware, resolveOidcRedirectUrl } from "../services/oidcService";
 
 export default function Login() {
-  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,25 +23,17 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/postgre/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: u, password: pw }),
+      const response = await loginViaOidcMiddleware({
+        email: u,
+        password: pw,
+        redirectAfterLogin: "/user",
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.detail || "Đăng nhập thất bại");
-        return;
+      if (!response?.redirect_url) {
+        throw new Error("SSO middleware không trả về redirect_url.");
       }
 
-      // backend trả {user_id, username, role}
-      localStorage.setItem("role", data.role || "user");
-      localStorage.setItem("user_id", data.user_id || "");
-      localStorage.setItem("username", data.username || u);
-
-      if ((data.role || "").toLowerCase() === "admin") navigate("/admin");
-      else navigate("/user");
+      window.location.assign(resolveOidcRedirectUrl(response.redirect_url));
     } catch (err) {
       setError(String(err?.message || err || "Network error"));
     } finally {
@@ -54,32 +43,27 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      {/* Background Image */}
       <div className="background-image"></div>
 
       <div className="login-container">
         <div className="login-card">
-          {/* Header */}
           <div className="header">
-            <div className="logo">
-              <img src="/logo.png" alt="Logo trường" />
-            </div>
-            <div className="school-info">
-              <h1 className="school-name">ĐH Sư phạm TP. Hồ Chí Minh</h1>
-              <div className="school-subtitle">Khoá Luận Tốt Nghiệp</div>
-            </div>
+            <div className="brand-kicker">Etechs.vn</div>
+            <h1 className="brand-title">Etechs Education Data System</h1>
+            <p className="brand-subtitle">
+              Đăng nhập để truy cập hệ thống dữ liệu và tìm kiếm tri thức STEM.
+            </p>
           </div>
 
-          {/* Form */}
           <div className="form-container">
-            <h2 className="form-title">Đăng nhập hệ thống</h2>
+            <h2 className="form-title">Đăng nhập</h2>
 
             <form className="login-form" onSubmit={handleSubmit}>
               <div className="input-group">
                 <div className="input-field">
                   <input
                     type="text"
-                    placeholder="Tên đăng nhập"
+                    placeholder="Email hoặc tên đăng nhập"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="input-control"
@@ -100,7 +84,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="error-message">
                   <span className="error-icon">!</span>
@@ -108,16 +91,10 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button type="submit" className="submit-btn" disabled={isLoading}>
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                {isLoading ? "Đang kiểm tra đăng nhập..." : "Đăng nhập"}
               </button>
             </form>
-
-            {/* Footer */}
-            <div className="footer">
-              <p>48.01.104.023 - Lê Tuấn Đạt</p>
-            </div>
           </div>
         </div>
       </div>

@@ -100,16 +100,7 @@ def _probe_keyword(
     seen_kw_oids: set = set()
 
     for candidate in top_topics:
-        pg_topic_id = candidate.get("topic_id")
-        if not pg_topic_id:
-            continue
-
-        mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
-        if not mongo_topic_id:
-            _log.debug("No mongo_id for pg topic_id=%s", pg_topic_id)
-            continue
-
-        bag = _fetch_topic_bag(db, mongo_topic_id)
+        bag = _resolve_topic_bag(db, candidate)
         if bag is None:
             continue
 
@@ -145,6 +136,34 @@ def _probe_keyword(
             "description": kw_description,
         })
         all_hits.extend(hits)
+
+    if not base["matched_keywords"]:
+        matched_kw = _match_keyword_globally(db, kw_norm)
+        if matched_kw is not None:
+            matched_kw_oid = matched_kw["_oid"]
+            kw_id = str(matched_kw_oid)
+            kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
+            hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+
+            first_hit = hits[0] if hits else {}
+            kw_description = generate_keyword_description(
+                class_name=first_hit.get("class_name"),
+                subject_name=first_hit.get("subject_name"),
+                subject_type=first_hit.get("subject_type"),
+                keyword_name=matched_kw.get("keyword_name"),
+            )
+
+            base["matched_keywords"].append({
+                k: v for k, v in matched_kw.items() if k != "_oid"
+            })
+            base["keyword_documents"].append({
+                "id":          kw_id,
+                "name":        matched_kw.get("keyword_name"),
+                "aliases":     matched_kw.get("aliases") or [],
+                "assets":      kw_assets,
+                "description": kw_description,
+            })
+            all_hits.extend(hits)
 
     base["topic_documents"], base["lesson_documents"], base["chunk_documents"], base["subject_documents"] = (
         _build_documents_from_hits(all_hits)
@@ -249,6 +268,84 @@ def _fetch_topic_bag(db: Any, mongo_topic_id: str) -> Optional[Dict[str, Any]]:
     )
 
 
+def _find_mongo_topic_id_by_candidate(
+    db: Any,
+    candidate: Dict[str, Any],
+) -> Optional[str]:
+    topic_name = str(candidate.get("topic_name") or "").strip()
+    topic_num = candidate.get("topic_num")
+    class_name = str(candidate.get("class_name") or "").strip()
+
+    if not topic_name:
+        return None
+
+    topic_query: Dict[str, Any] = {
+        "topic_name": topic_name,
+        "is_deleted": {"$ne": True},
+    }
+    if topic_num is not None:
+        topic_query["topic_num"] = topic_num
+
+    for topic_doc in db["topic"].find(topic_query, {"subject_id": 1}):
+        topic_oid = topic_doc.get("_id")
+        subject_oid = _to_oid(topic_doc.get("subject_id"))
+        if topic_oid is None or subject_oid is None:
+            continue
+
+        subject_doc = db["subject"].find_one(
+            {"_id": subject_oid, "is_deleted": {"$ne": True}},
+            {"class_id": 1},
+        )
+        if not subject_doc:
+            continue
+
+        class_oid = _to_oid(subject_doc.get("class_id"))
+        if class_oid is None:
+            continue
+
+        class_doc = db["class"].find_one(
+            {"_id": class_oid, "is_deleted": {"$ne": True}},
+            {"class_name": 1},
+        )
+        if not class_doc:
+            continue
+
+        if class_name and str(class_doc.get("class_name") or "").strip() != class_name:
+            continue
+
+        return str(topic_oid)
+
+    return None
+
+
+def _resolve_topic_bag(
+    db: Any,
+    candidate: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    pg_topic_id = candidate.get("topic_id")
+    if not pg_topic_id:
+        return None
+
+    mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
+    if mongo_topic_id:
+        bag = _fetch_topic_bag(db, mongo_topic_id)
+        if bag is not None:
+            return bag
+        _log.info(
+            "Mongo topic_bag not found for PG topic_id=%s via mongo_id=%s, trying fallback lookup.",
+            pg_topic_id,
+            mongo_topic_id,
+        )
+    else:
+        _log.info("No mongo_id for PG topic_id=%s, trying fallback lookup.", pg_topic_id)
+
+    fallback_topic_id = _find_mongo_topic_id_by_candidate(db, candidate)
+    if not fallback_topic_id:
+        return None
+
+    return _fetch_topic_bag(db, fallback_topic_id)
+
+
 def _match_keyword_in_bag(
     db: Any,
     bag: Dict[str, Any],
@@ -263,6 +360,25 @@ def _match_keyword_in_bag(
             {"keyword_name": 1, "aliases": 1},
         )
         if not kw_doc:
+            continue
+        if _norm(kw_doc.get("keyword_name", "")) == kw_norm:
+            return _kw_doc_to_match(kw_oid, kw_doc)
+        for alias in (kw_doc.get("aliases") or []):
+            if _norm(alias) == kw_norm:
+                return _kw_doc_to_match(kw_oid, kw_doc)
+    return None
+
+
+def _match_keyword_globally(
+    db: Any,
+    kw_norm: str,
+) -> Optional[Dict[str, Any]]:
+    for kw_doc in db["keyword"].find(
+        {"is_deleted": {"$ne": True}},
+        {"keyword_name": 1, "aliases": 1},
+    ):
+        kw_oid = kw_doc.get("_id")
+        if kw_oid is None:
             continue
         if _norm(kw_doc.get("keyword_name", "")) == kw_norm:
             return _kw_doc_to_match(kw_oid, kw_doc)

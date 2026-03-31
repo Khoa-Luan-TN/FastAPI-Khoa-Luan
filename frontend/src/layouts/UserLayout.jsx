@@ -1,6 +1,7 @@
 // src/layouts/UserLayout.jsx
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink } from "react-router-dom";
 import "../styles/user.css";
+import { buildSsoLogoutUrl, clearAppSession } from "../services/oidcService";
 
 // ---- Icons ----
 const HomeIcon = () => (
@@ -36,14 +37,11 @@ const LogoutIcon = () => (
 );
 
 export default function UserLayout() {
-  const navigate = useNavigate();
   const username = localStorage.getItem("username") || "User";
 
   function logout() {
-    localStorage.removeItem("role");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("username");
-    navigate("/login");
+    clearAppSession();
+    window.location.assign(buildSsoLogoutUrl());
   }
 
   const navClass = ({ isActive }) => isActive ? "u-nav-item active" : "u-nav-item";

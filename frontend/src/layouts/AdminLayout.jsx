@@ -1,5 +1,6 @@
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
 import "../styles/admin/layout.css";
+import { buildSsoLogoutUrl, clearAppSession } from "../services/oidcService";
 
 // ---- Simple SVG icons (no emoji, no library) ----
 const Icon = {
@@ -78,7 +79,6 @@ const ROUTE_ICONS = {
 };
 
 export default function AdminLayout() {
-  const navigate = useNavigate();
   const location = useLocation();
   const username = localStorage.getItem("username") || "Admin";
 
@@ -88,10 +88,8 @@ export default function AdminLayout() {
   const PageIcon = ROUTE_ICONS[location.pathname] || Icon.Home;
 
   function logout() {
-    localStorage.removeItem("role");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("username");
-    navigate("/login");
+    clearAppSession();
+    window.location.assign(buildSsoLogoutUrl());
   }
 
   return (

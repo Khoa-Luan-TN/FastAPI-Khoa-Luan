@@ -23,14 +23,22 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Load .env (optional — variables already present in environment take precedence)
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    set -a; source "$PROJECT_ROOT/.env"; set +a
-fi
+read_env_value() {
+    local key="$1"
+    local env_file="$PROJECT_ROOT/.env"
+    [ -f "$env_file" ] || return 1
+    local line
+    line=$(grep -m1 "^${key}=" "$env_file" || true)
+    [ -n "$line" ] || return 1
+    line="${line#*=}"
+    line="${line%\"}"
+    line="${line#\"}"
+    printf '%s' "$line"
+}
 
-NEO4J_AUTO_RESTORE="${NEO4J_AUTO_RESTORE:-false}"
-MINIO_BUCKET="${MINIO_BUCKET:-data-edu}"
-NEO4J_DATABASE="${NEO4J_DATABASE:-neo4j}"
+NEO4J_AUTO_RESTORE="${NEO4J_AUTO_RESTORE:-$(read_env_value NEO4J_AUTO_RESTORE || printf 'false')}"
+MINIO_BUCKET="${MINIO_BUCKET:-$(read_env_value MINIO_BUCKET || printf 'data-edu')}"
+NEO4J_DATABASE="${NEO4J_DATABASE:-$(read_env_value NEO4J_DATABASE || printf 'neo4j')}"
 
 # Detect whether we are running inside a Docker container
 _IN_DOCKER=false
@@ -73,7 +81,7 @@ fi
 
 # ── MinIO ─────────────────────────────────────────────────────────────────────
 _MINIO_BACKUP_DIR="$PROJECT_ROOT/database/stem_kg_minio"
-if [ -d "$_MINIO_BACKUP_DIR/$MINIO_BUCKET" ] || [ -f "$_MINIO_BACKUP_DIR/minio-data.tar.gz" ]; then
+if [ -d "$_MINIO_BACKUP_DIR/$MINIO_BUCKET" ] || [ -d "$_MINIO_BACKUP_DIR/minio-data/$MINIO_BUCKET" ] || [ -f "$_MINIO_BACKUP_DIR/minio-data.tar.gz" ]; then
     echo "──── MinIO ─────────────────────────────────────────────"
     if bash "$SCRIPT_DIR/import-minio.sh"; then
         _STATUS_MINIO="restored"
@@ -85,6 +93,12 @@ fi
 
 # ── Neo4j ─────────────────────────────────────────────────────────────────────
 _NEO4J_DUMP="$PROJECT_ROOT/database/stem_kg_neo4j/${NEO4J_DATABASE}.dump"
+if [ ! -f "$_NEO4J_DUMP" ]; then
+    _MATCHING_NEO4J_DUMPS=("$PROJECT_ROOT"/database/stem_kg_neo4j/*.dump)
+    if [ "${#_MATCHING_NEO4J_DUMPS[@]}" -eq 1 ] && [ -f "${_MATCHING_NEO4J_DUMPS[0]}" ]; then
+        _NEO4J_DUMP="${_MATCHING_NEO4J_DUMPS[0]}"
+    fi
+fi
 if [ -f "$_NEO4J_DUMP" ]; then
     echo "──── Neo4j ─────────────────────────────────────────────"
     if [ "$_IN_DOCKER" = "true" ]; then

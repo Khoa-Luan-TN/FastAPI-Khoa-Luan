@@ -3,7 +3,8 @@
 # Restores MinIO object backup into the running MinIO container.
 #
 # Supported backup layouts (place in database/stem_kg_minio/):
-#   database/stem_kg_minio/<bucket-name>/...   ← extracted object tree (preferred)
+#   database/stem_kg_minio/<bucket-name>/...   ← extracted object tree
+#   database/stem_kg_minio/minio-data/...      ← full MinIO data directory
 #   database/stem_kg_minio/minio-data.tar.gz   ← compressed archive
 
 set -euo pipefail
@@ -12,17 +13,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKUP_DIR="$PROJECT_ROOT/database/stem_kg_minio"
 
-# Load .env for variable overrides
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    set -a; source "$PROJECT_ROOT/.env"; set +a
-fi
+read_env_value() {
+    local key="$1"
+    local env_file="$PROJECT_ROOT/.env"
+    [ -f "$env_file" ] || return 1
+    local line
+    line=$(grep -m1 "^${key}=" "$env_file" || true)
+    [ -n "$line" ] || return 1
+    line="${line#*=}"
+    line="${line%\"}"
+    line="${line#\"}"
+    printf '%s' "$line"
+}
 
-CONTAINER="${MINIO_CONTAINER_NAME:-stem_kg_minio}"
-MINIO_ACCESS="${MINIO_ACCESS_KEY:-minioadmin}"
-MINIO_SECRET="${MINIO_SECRET_KEY:-changeme}"
-BUCKET="${MINIO_BUCKET:-data-edu}"
+CONTAINER="${MINIO_CONTAINER_NAME:-$(read_env_value MINIO_CONTAINER_NAME || printf 'letuandat_minio')}"
+MINIO_ACCESS="${MINIO_ACCESS_KEY:-$(read_env_value MINIO_ACCESS_KEY || printf 'minioadmin')}"
+MINIO_SECRET="${MINIO_SECRET_KEY:-$(read_env_value MINIO_SECRET_KEY || printf 'changeme')}"
+BUCKET="${MINIO_BUCKET:-$(read_env_value MINIO_BUCKET || printf 'data-edu')}"
 TARBALL="$BACKUP_DIR/minio-data.tar.gz"
 BUCKET_DIR="$BACKUP_DIR/$BUCKET"
+FULL_DATA_DIR="$BACKUP_DIR/minio-data"
 
 # ── Validate backup exists ────────────────────────────────────────────────────
 if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
@@ -60,24 +70,36 @@ done
 # ── Detect backup layout and resolve host-side source directory ───────────────
 TEMP_DIR=""
 HOST_SRC=""
+RESTORE_MODE=""
 
 if [ -d "$BUCKET_DIR" ]; then
     echo "Backup layout  : object tree"
     echo "Source         : $BUCKET_DIR"
     HOST_SRC="$BACKUP_DIR"
+    RESTORE_MODE="object-tree"
+elif [ -d "$FULL_DATA_DIR" ]; then
+    echo "Backup layout  : full MinIO data directory"
+    echo "Source         : $FULL_DATA_DIR"
+    HOST_SRC="$FULL_DATA_DIR"
+    RESTORE_MODE="full-data-dir"
 elif [ -f "$TARBALL" ]; then
     echo "Backup layout  : compressed archive"
     echo "Archive        : $TARBALL"
     TEMP_DIR="$(mktemp -d)"
     echo "Extracting to  : $TEMP_DIR"
     tar -xzf "$TARBALL" -C "$TEMP_DIR"
-    if [ ! -d "$TEMP_DIR/$BUCKET" ]; then
-        echo "ERROR: Bucket directory '$BUCKET' not found inside archive."
+    if [ -d "$TEMP_DIR/$BUCKET" ]; then
+        HOST_SRC="$TEMP_DIR"
+        RESTORE_MODE="object-tree"
+    elif [ -d "$TEMP_DIR/minio-data" ]; then
+        HOST_SRC="$TEMP_DIR/minio-data"
+        RESTORE_MODE="full-data-dir"
+    else
+        echo "ERROR: Neither bucket dir '$BUCKET' nor minio-data/ found inside archive."
         echo "  Archive top-level: $(ls "$TEMP_DIR" 2>/dev/null | head -10 | tr '\n' ' ')"
         rm -rf "$TEMP_DIR"
         exit 1
     fi
-    HOST_SRC="$TEMP_DIR"
 else
     echo "ERROR: Could not find restore source."
     echo "  Expected:"
@@ -86,32 +108,53 @@ else
     exit 1
 fi
 
-# ── Detect MinIO container network ───────────────────────────────────────────
-MINIO_NETWORK=$(docker inspect "$CONTAINER" \
-    --format '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}} {{end}}' \
-    | awk '{print $1}')
+if [ "$RESTORE_MODE" = "full-data-dir" ]; then
+    DATA_VOLUME=$(docker inspect "$CONTAINER" \
+        --format '{{ range .Mounts }}{{ if eq .Destination "/data" }}{{ .Name }}{{ end }}{{ end }}')
 
-if [ -z "$MINIO_NETWORK" ]; then
-    echo "ERROR: Could not detect Docker network for container '$CONTAINER'."
-    exit 1
+    if [ -z "$DATA_VOLUME" ]; then
+        echo "ERROR: Could not detect /data volume for container '$CONTAINER'."
+        exit 1
+    fi
+
+    echo "Data volume     : $DATA_VOLUME"
+    echo ""
+    echo "[2/3] Restoring full MinIO data directory into volume '$DATA_VOLUME'..."
+    docker run --rm \
+        -v "${DATA_VOLUME}:/target" \
+        -v "${HOST_SRC}:/restore:ro" \
+        alpine:3.20 \
+        /bin/sh -c "
+        rm -rf /target/* /target/.[!.]* /target/..?* 2>/dev/null || true
+        cp -a /restore/. /target/
+        echo '[restore] MinIO data directory copied.'
+        "
+else
+    MINIO_NETWORK=$(docker inspect "$CONTAINER" \
+        --format '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}} {{end}}' \
+        | awk '{print $1}')
+
+    if [ -z "$MINIO_NETWORK" ]; then
+        echo "ERROR: Could not detect Docker network for container '$CONTAINER'."
+        exit 1
+    fi
+
+    echo "Target bucket  : $BUCKET"
+    echo "MinIO network  : $MINIO_NETWORK"
+    echo ""
+
+    echo "[2/3] Restoring objects into MinIO bucket '$BUCKET'..."
+    docker run --rm \
+        --network "$MINIO_NETWORK" \
+        -v "${HOST_SRC}:/restore:ro" \
+        minio/mc \
+        /bin/sh -c "
+        mc alias set local http://${CONTAINER}:9000 ${MINIO_ACCESS} ${MINIO_SECRET} &&
+        mc mb --ignore-existing local/${BUCKET} &&
+        mc mirror --overwrite /restore/${BUCKET} local/${BUCKET} &&
+        echo '[mc] Mirror complete.'
+        "
 fi
-
-echo "Target bucket  : $BUCKET"
-echo "MinIO network  : $MINIO_NETWORK"
-echo ""
-
-# ── Run restore via temporary mc container on the same network ────────────────
-echo "[2/3] Restoring objects into MinIO bucket '$BUCKET'..."
-docker run --rm \
-    --network "$MINIO_NETWORK" \
-    -v "${HOST_SRC}:/restore:ro" \
-    minio/mc \
-    /bin/sh -c "
-    mc alias set local http://${CONTAINER}:9000 ${MINIO_ACCESS} ${MINIO_SECRET} &&
-    mc mb --ignore-existing local/${BUCKET} &&
-    mc mirror --overwrite /restore/${BUCKET} local/${BUCKET} &&
-    echo '[mc] Mirror complete.'
-    "
 
 # ── Cleanup temp dir if used ──────────────────────────────────────────────────
 echo "[3/3] Cleaning up..."
