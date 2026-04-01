@@ -26,8 +26,6 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
-from urllib.parse import quote
-
 from bson import ObjectId
 
 from app.services.mongo.mongo_import_service import (
@@ -43,6 +41,7 @@ from app.services.minio.minio_marker_service import (
     ensure_class_root_markers,
     ensure_root_folders,
 )
+from app.services.infrastructure.minio_public import build_public_minio_url
 from app.services.mongo.mongo_minio_service import on_minio_insert_to_mongo
 from app.services.shared._utils import slugify_vi, utc_now
 
@@ -234,8 +233,7 @@ def _minio_upload_pdf(
         size = pdf_path.stat().st_size
         with open(pdf_path, "rb") as fh:
             client.put_object(bucket, object_key, fh, size, content_type="application/pdf")
-        _public_base = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
-        return f"{_public_base}/{bucket}/{quote(object_key, safe='/')}"
+        return build_public_minio_url(object_key)
     except Exception as exc:
         errors.append({"object_key": object_key, "pdf": str(pdf_path), "error": str(exc)})
         return None

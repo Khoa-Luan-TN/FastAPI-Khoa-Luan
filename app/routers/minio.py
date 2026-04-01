@@ -1,9 +1,9 @@
 # app/routers/minio.py
 import os
 from typing import List
-from urllib.parse import quote
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from minio.commonconfig import CopySource
 from minio.error import S3Error
 
@@ -11,6 +11,7 @@ from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.shared._utils import slugify_vi
 from app.schemas.minio_schemas import RenameObjectBody
 from app.services.infrastructure.minio_client import get_minio_client
+from app.services.infrastructure.minio_public import build_public_minio_url
 from app.services.minio.minio_marker_service import ensure_root_folders
 from app.services.mongo.mongo_minio_service import (
     on_minio_insert_to_mongo,
@@ -19,10 +20,10 @@ from app.services.mongo.mongo_minio_service import (
 )
 
 router = APIRouter(prefix="/admin/minio", tags=["Minio"])
+public_router = APIRouter(prefix="/files", tags=["Files"])
 db = get_mongo_db()
 
 BUCKET = (os.getenv("MINIO_BUCKET") or "").strip()
-MINIO_PUBLIC_BASE_URL = (os.getenv("MINIO_PUBLIC_BASE_URL") or "http://127.0.0.1:9000").rstrip("/")
 
 ROOT_FOLDERS = ("documents", "videos", "images")
 EDU_KINDS = ("topic", "lesson", "chunk")
@@ -171,8 +172,41 @@ def folder_marker(path: str) -> str:
 
 def public_url(object_key: str) -> str:
     _require_bucket()
-    encoded = quote(object_key, safe="/")
-    return f"{MINIO_PUBLIC_BASE_URL}/{BUCKET}/{encoded}"
+    return build_public_minio_url(object_key)
+
+
+@public_router.get("/{object_path:path}", include_in_schema=False)
+def serve_public_file(object_path: str):
+    _require_bucket()
+    client = get_minio_client()
+    key = clean_path(object_path)
+    if not key:
+        raise HTTPException(status_code=400, detail="object_path is required")
+
+    try:
+        stat = client.stat_object(BUCKET, key)
+        response = client.get_object(BUCKET, key)
+    except S3Error as exc:
+        if getattr(exc, "code", "") in {"NoSuchKey", "NoSuchObject", "NoSuchBucket"}:
+            raise HTTPException(status_code=404, detail="Object not found") from exc
+        raise HTTPException(status_code=500, detail=f"MinIO error: {exc}") from exc
+
+    media_type = getattr(stat, "content_type", None) or "application/octet-stream"
+    headers = {
+        "Content-Length": str(getattr(stat, "size", 0) or 0),
+        "Cache-Control": "public, max-age=3600",
+    }
+
+    def _iter_chunks():
+        try:
+            for chunk in response.stream(32 * 1024):
+                if chunk:
+                    yield chunk
+        finally:
+            response.close()
+            response.release_conn()
+
+    return StreamingResponse(_iter_chunks(), media_type=media_type, headers=headers)
 
 
 def _is_subject_leaf(parts: List[str]) -> bool:

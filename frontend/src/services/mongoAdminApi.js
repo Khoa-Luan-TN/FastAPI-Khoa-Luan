@@ -1,5 +1,5 @@
 // src/services/mongoAdminApi.js
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+import { buildApiUrl } from "./apiBase";
 
 function getActorId() {
   return localStorage.getItem("user_id") || "system";
@@ -21,28 +21,28 @@ async function httpJson(url, options = {}) {
 }
 
 export function listCollections() {
-  return httpJson(`${API_BASE}/admin/mongo/collections`, { method: "GET" });
+  return httpJson(buildApiUrl("admin/mongo/collections"), { method: "GET" });
 }
 
 export function createCollection(name) {
   const n = encodeURIComponent(name);
-  return httpJson(`${API_BASE}/admin/mongo/collections/${n}`, { method: "POST" });
+  return httpJson(buildApiUrl(`admin/mongo/collections/${n}`), { method: "POST" });
 }
 
 export function deleteCollection(name) {
   const n = encodeURIComponent(name);
-  return httpJson(`${API_BASE}/admin/mongo/collections/${n}`, { method: "DELETE" });
+  return httpJson(buildApiUrl(`admin/mongo/collections/${n}`), { method: "DELETE" });
 }
 
 export function renameCollection(oldName, newName) {
   const oldN = encodeURIComponent(oldName);
-  const url = new URL(`${API_BASE}/admin/mongo/collections/${oldN}/rename`);
+  const url = new URL(buildApiUrl(`admin/mongo/collections/${oldN}/rename`));
   url.searchParams.set("new_name", newName);
   return httpJson(url.toString(), { method: "PUT" });
 }
 
 export function listDocuments(collectionName, limit = 50, offset = 0) {
-  const url = new URL(`${API_BASE}/admin/mongo/documents`);
+  const url = new URL(buildApiUrl("admin/mongo/documents"));
   url.searchParams.set("collection_name", collectionName);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
@@ -66,7 +66,7 @@ export async function listAllDocuments(collectionName, batchSize = 500) {
 
 export function createDocument(collectionName, doc) {
   const c = encodeURIComponent(collectionName);
-  return httpJson(`${API_BASE}/admin/mongo/documents/${c}`, {
+  return httpJson(buildApiUrl(`admin/mongo/documents/${c}`), {
     method: "POST",
     body: JSON.stringify(doc),
   });
@@ -75,7 +75,7 @@ export function createDocument(collectionName, doc) {
 export function updateDocument(collectionName, oid, patch) {
   const c = encodeURIComponent(collectionName);
   const id = encodeURIComponent(oid);
-  return httpJson(`${API_BASE}/admin/mongo/documents/${c}/${id}`, {
+  return httpJson(buildApiUrl(`admin/mongo/documents/${c}/${id}`), {
     method: "PUT",
     body: JSON.stringify(patch),
   });
@@ -84,7 +84,7 @@ export function updateDocument(collectionName, oid, patch) {
 export function deleteDocument(collectionName, oid) {
   const c = encodeURIComponent(collectionName);
   const id = encodeURIComponent(oid);
-  return httpJson(`${API_BASE}/admin/mongo/documents/${c}/${id}`, { method: "DELETE" });
+  return httpJson(buildApiUrl(`admin/mongo/documents/${c}/${id}`), { method: "DELETE" });
 }
 
 // ✅ NEW: upload multipart/form-data (KHÔNG set Content-Type)
@@ -106,14 +106,14 @@ async function httpUpload(url, formData) {
 export function importExcelWorkbook(file) {
   const fd = new FormData();
   fd.append("file", file);
-  return httpUpload(`${API_BASE}/admin/mongo/import/excel`, fd);
+  return httpUpload(buildApiUrl("admin/mongo/import/excel"), fd);
 }
 
 // ✅ Import vào 1 collection cụ thể (nếu bạn muốn mode đơn giản)
 export function importExcelToCollection(collectionName, file) {
   const fd = new FormData();
   fd.append("file", file);
-  const url = new URL(`${API_BASE}/admin/mongo/import/excel-one`);
+  const url = new URL(buildApiUrl("admin/mongo/import/excel-one"));
   url.searchParams.set("collection_name", collectionName);
   return httpUpload(url.toString(), fd);
 }
@@ -122,13 +122,13 @@ export function importExcelToCollection(collectionName, file) {
 export function importExcelTracked(file, collectionName) {
   const fd = new FormData();
   fd.append("file", file);
-  const url = new URL(`${API_BASE}/admin/mongo/import/excel-tracked`);
+  const url = new URL(buildApiUrl("admin/mongo/import/excel-tracked"));
   if (collectionName) url.searchParams.set("collection_name", collectionName);
   return httpUpload(url.toString(), fd);
 }
 
 export function getImportJobStatus(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/import-jobs/${encodeURIComponent(jobId)}`, {
+  return httpJson(buildApiUrl(`admin/mongo/import-jobs/${encodeURIComponent(jobId)}`), {
     method: "GET",
   });
 }
@@ -136,7 +136,7 @@ export function getImportJobStatus(jobId) {
 // POST /admin/mongo/import/book-bundle
 // payload: { bundle_path, class_name, subject_name, subject_type?, source_pdf_path?, upload_pdfs? }
 export function importBookBundle(payload) {
-  return httpJson(`${API_BASE}/admin/mongo/import/book-bundle`, {
+  return httpJson(buildApiUrl("admin/mongo/import/book-bundle"), {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -150,17 +150,17 @@ export function createReviewJob(classN, pdfFile, subjectName = "Tin học") {
   fd.append("class_name", classN);
   fd.append("subject_name", subjectName);
   fd.append("file", pdfFile);
-  return httpUpload(`${API_BASE}/admin/mongo/book-review/jobs`, fd);
+  return httpUpload(buildApiUrl("admin/mongo/book-review/jobs"), fd);
 }
 
 // GET /admin/mongo/book-review/jobs/:id
 export function getReviewJob(jobId) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}`);
+  return httpJson(buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}`));
 }
 
 // PUT /admin/mongo/book-review/jobs/:id/topics
 export function saveReviewTopics(jobId, topics) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics`, {
+  return httpJson(buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics`), {
     method: "PUT",
     body: JSON.stringify({ topics }),
   });
@@ -168,7 +168,7 @@ export function saveReviewTopics(jobId, topics) {
 
 // PUT /admin/mongo/book-review/jobs/:id/lessons
 export function saveReviewLessons(jobId, lessons) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons`, {
+  return httpJson(buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons`), {
     method: "PUT",
     body: JSON.stringify({ lessons }),
   });
@@ -176,7 +176,7 @@ export function saveReviewLessons(jobId, lessons) {
 
 // PUT /admin/mongo/book-review/jobs/:id/chunks
 export function saveReviewChunks(jobId, chunks) {
-  return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`, {
+  return httpJson(buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`), {
     method: "PUT",
     body: JSON.stringify({ chunks }),
   });
@@ -185,7 +185,7 @@ export function saveReviewChunks(jobId, chunks) {
 // POST /admin/mongo/book-review/jobs/:id/approve-topics
 export function approveTopics(jobId) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`),
     {
       method: "POST",
     }
@@ -195,7 +195,7 @@ export function approveTopics(jobId) {
 // POST /admin/mongo/book-review/jobs/:id/approve-lessons
 export function approveLessons(jobId) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`),
     {
       method: "POST",
     }
@@ -205,7 +205,7 @@ export function approveLessons(jobId) {
 // POST /admin/mongo/book-review/jobs/:id/approve-chunks
 export function approveChunks(jobId) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`),
     {
       method: "POST",
     }
@@ -215,7 +215,7 @@ export function approveChunks(jobId) {
 // POST /admin/mongo/book-review/jobs/:id/trigger-heavy
 export function triggerHeavyStage(jobId) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`),
     {
       method: "POST",
     }
@@ -225,17 +225,17 @@ export function triggerHeavyStage(jobId) {
 // ── Topic preview PDF URLs (no fetch — used directly in iframes) ──────────────
 
 export function reviewTopicPdfUrl(jobId, idx, key = 0) {
-  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/topic/${idx}?k=${key}`;
+  return buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/topic/${idx}?k=${key}`);
 }
 
 export function reviewSourcePdfUrl(jobId) {
-  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/source`;
+  return buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/source`);
 }
 
 // PATCH /admin/mongo/book-review/jobs/:id/topics/:idx
 export function patchReviewTopic(jobId, idx, patch) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}`),
     { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
@@ -243,38 +243,38 @@ export function patchReviewTopic(jobId, idx, patch) {
 // POST /admin/mongo/book-review/jobs/:id/topics/:idx/recut
 export function recutReviewTopic(jobId, idx) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}/recut`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}/recut`),
     { method: "POST" }
   );
 }
 
 export function reviewLessonPdfUrl(jobId, idx, key = 0) {
-  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/lesson/${idx}?k=${key}`;
+  return buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/lesson/${idx}?k=${key}`);
 }
 
 export function patchReviewLesson(jobId, idx, patch) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}`),
     { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
 
 export function recutReviewLesson(jobId, idx) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}/recut`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons/${idx}/recut`),
     { method: "POST" }
   );
 }
 
 export function reviewChunkPdfUrl(jobId, idx, key = 0) {
-  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}?k=${key}`;
+  return buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}?k=${key}`);
 }
 
 // POST /admin/mongo/book-review/jobs/:id/debug-topic
 // enabled: bool, topicIndex: number | null
 export function setDebugTopic(jobId, enabled, topicIndex) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/debug-topic`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/debug-topic`),
     {
       method: "POST",
       body: JSON.stringify({ enabled: !!enabled, topic_index: topicIndex ?? null }),
@@ -284,25 +284,25 @@ export function setDebugTopic(jobId, enabled, topicIndex) {
 
 export function patchReviewChunk(jobId, idx, patch) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`),
     { method: "PATCH", body: JSON.stringify(patch) }
   );
 }
 
 export function reviewChunkLessonPdfUrl(jobId, idx, key = 0) {
-  return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}/lesson?k=${key}`;
+  return buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}/lesson?k=${key}`);
 }
 
 export function recutReviewChunk(jobId, idx) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}/recut`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}/recut`),
     { method: "POST" }
   );
 }
 
 export function deleteReviewChunk(jobId, idx) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks/${idx}`),
     { method: "DELETE" },
   );
 }
@@ -311,7 +311,7 @@ export function deleteReviewChunk(jobId, idx) {
 // payload: { lesson_stem, heading, title, start, end, content_head }
 export function addReviewChunk(jobId, payload) {
   return httpJson(
-    `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`,
+    buildApiUrl(`admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`),
     { method: "POST", body: JSON.stringify(payload) },
   );
 }

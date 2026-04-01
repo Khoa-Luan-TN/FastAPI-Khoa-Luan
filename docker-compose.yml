@@ -15,6 +15,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-changeme}
       MINIO_SECURE: ${MINIO_SECURE:-false}
       MINIO_BUCKET: ${MINIO_BUCKET:-data-edu}
+      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-https://ers.etechs.vn/api/files}
       PG_HOST: postgres
       PG_PORT: 5432
       PG_USER: ${PG_USER:-postgres}
@@ -49,6 +50,7 @@ services:
         VITE_API_BASE: ${VITE_API_BASE:-/api}
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_MINIO_PUBLIC_BASE_URL: ${VITE_MINIO_PUBLIC_BASE_URL:-https://ers.etechs.vn/api/files}
         VITE_OIDC_ISSUER: ${VITE_OIDC_ISSUER:-https://api.etechs.vn}
         VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-ers-fe}
         VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-https://ers.etechs.vn/auth/callback}
@@ -199,19 +201,37 @@ services:
       - ./database/stem_kg_minio:/backup:ro
     entrypoint: >
       /bin/sh -c "
-      if [ -n \"\$$(find /data -maxdepth 1 -mindepth 1 2>/dev/null | head -n 1)\" ]; then
-        echo '[minio-bootstrap] MinIO data already exists — skipping restore.';
+      if [ -f /data/.minio.sys/format.json ]; then
+        echo '[minio-bootstrap] Valid MinIO format detected — skipping restore.';
         exit 0;
+      fi;
+      if [ -n \"\$$(find /data -maxdepth 1 -mindepth 1 2>/dev/null | head -n 1)\" ]; then
+        echo '[minio-bootstrap] Existing MinIO volume is incomplete — cleaning and re-restoring.';
+        rm -rf /data/* /data/.[!.]* /data/..?* 2>/dev/null || true;
       fi;
       if [ -d /backup/minio-data ] && [ -n \"\$$(ls -A /backup/minio-data 2>/dev/null)\" ]; then
         echo '[minio-bootstrap] Full data-dir backup found — copying to volume...';
         if cp -a /backup/minio-data/. /data/; then
-          echo '[minio-bootstrap] SUCCESS: MinIO data directory restored.';
-          exit 0;
+          if [ -f /data/.minio.sys/format.json ]; then
+            echo '[minio-bootstrap] SUCCESS: Raw MinIO data directory restored.';
+            exit 0;
+          fi;
+          echo '[minio-bootstrap] FAILED: format.json missing after raw restore.';
+          exit 1;
         else
           echo '[minio-bootstrap] FAILED: cp failed.';
           exit 1;
         fi;
+      fi;
+      if [ -d /backup/data-edu ] && [ -n \"\$$(find /backup/data-edu -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)\" ]; then
+        echo '[minio-bootstrap] Object tree backup found — copying bucket tree into volume...';
+        mkdir -p /data/data-edu;
+        if cp -a /backup/data-edu/. /data/data-edu/; then
+          echo '[minio-bootstrap] SUCCESS: MinIO data directory restored.';
+          exit 0;
+        fi;
+        echo '[minio-bootstrap] FAILED: object tree copy failed.';
+        exit 1;
       fi;
       if [ -f /backup/minio-data.tar.gz ]; then
         echo '[minio-bootstrap] Tarball backup found — extracting to volume...';
@@ -224,8 +244,12 @@ services:
         fi;
         if cp -a \"\$${src}/.\" /data/; then
           rm -rf /tmp/minio_extract;
-          echo '[minio-bootstrap] SUCCESS: MinIO data directory restored from tarball.';
-          exit 0;
+          if [ -f /data/.minio.sys/format.json ] || [ -d /data/data-edu ]; then
+            echo '[minio-bootstrap] SUCCESS: MinIO data directory restored from tarball.';
+            exit 0;
+          fi;
+          echo '[minio-bootstrap] FAILED: tarball restored no recognizable MinIO data.';
+          exit 1;
         fi;
         rm -rf /tmp/minio_extract;
         echo '[minio-bootstrap] FAILED: tarball restore failed.';

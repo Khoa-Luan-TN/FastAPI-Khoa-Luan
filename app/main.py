@@ -34,6 +34,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
 
 from app.routers.minio import router as minio_router
+from app.routers.minio import public_router as public_minio_router
 from app.routers.postgre import router as postgre_router
 from app.routers.mongo import router as mongo_router
 from app.routers.neo4j import router as neo_router
@@ -95,6 +96,10 @@ def run_startup_minio_backfills() -> bool:
     return os.getenv("RUN_STARTUP_MINIO_BACKFILLS", "false").strip().lower() == "true"
 
 
+def run_startup_asset_owner_backfill() -> bool:
+    return os.getenv("RUN_STARTUP_ASSET_OWNER_BACKFILL", "false").strip().lower() == "true"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_postgres_schema()
@@ -109,81 +114,6 @@ async def lifespan(app: FastAPI):
         ensure_user_indexes(get_mongo_db())
     except Exception as _e:
         logging.getLogger("app").warning("user_indexes setup warning: %s", _e)
-    # Ensure MinIO root markers exist for all class docs imported before the
-    # class-marker fix. Idempotent — safe to run on every startup.
-    try:
-        result = backfill_class_minio_roots(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "class MinIO backfill: processed=%d errors=%d",
-                result.get("processed", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("class MinIO backfill warning: %s", _e)
-    # Ensure MinIO subject folder markers exist and backfill missing asset_prefixes
-    # for subject docs created before the subject-marker fix. Idempotent.
-    try:
-        result = backfill_subject_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "subject MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("subject MinIO backfill warning: %s", _e)
-    # Ensure MinIO topic folder markers exist and backfill missing asset_prefixes
-    # for topic docs created before the topic-marker fix. Idempotent.
-    try:
-        result = backfill_topic_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "topic MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("topic MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_lesson_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "lesson MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("lesson MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_chunk_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "chunk MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("chunk MinIO backfill warning: %s", _e)
-    try:
-        result = backfill_keyword_minio_markers(get_mongo_db())
-        if result.get("ok"):
-            logging.getLogger("app").info(
-                "keyword MinIO backfill: processed=%d backfilled=%d errors=%d",
-                result.get("processed", 0), result.get("backfilled", 0), len(result.get("errors") or []),
-            )
-    except Exception as _e:
-        logging.getLogger("app").warning("keyword MinIO backfill warning: %s", _e)
-    # Re-resolve asset.owner_id for every active asset so stale ids from
-    # deleted-and-reimported educational records are corrected.
-    # Runs after all entity asset_prefixes backfills above so entity docs are
-    # guaranteed to have correct asset_prefixes before the asset lookup.
-    try:
-        result = backfill_asset_owner_ids(actor="startup")
-        logging.getLogger("app").info(
-            "asset owner_id backfill: processed=%d repaired=%d "
-            "skipped_no_prefix=%d skipped_no_owner=%d errors=%d",
-            result.get("processed", 0), result.get("repaired", 0),
-            result.get("skipped_no_prefix", 0), result.get("skipped_no_owner", 0),
-            len(result.get("errors") or []),
-        )
-    except Exception as _e:
-        logging.getLogger("app").warning("asset owner_id backfill warning: %s", _e)
     if run_startup_minio_backfills():
         # Keep these as an opt-in migration step; they can be slow and should not
         # block app availability on environments restored from backups.
@@ -245,6 +175,22 @@ async def lifespan(app: FastAPI):
         _STARTUP_LOG.info(
             "Skipping startup MinIO backfills. Set RUN_STARTUP_MINIO_BACKFILLS=true to enable them."
         )
+    if run_startup_asset_owner_backfill():
+        try:
+            result = backfill_asset_owner_ids(actor="startup")
+            logging.getLogger("app").info(
+                "asset owner_id backfill: processed=%d repaired=%d "
+                "skipped_no_prefix=%d skipped_no_owner=%d errors=%d",
+                result.get("processed", 0), result.get("repaired", 0),
+                result.get("skipped_no_prefix", 0), result.get("skipped_no_owner", 0),
+                len(result.get("errors") or []),
+            )
+        except Exception as _e:
+            logging.getLogger("app").warning("asset owner_id backfill warning: %s", _e)
+    else:
+        _STARTUP_LOG.info(
+            "Skipping startup asset owner_id backfill. Set RUN_STARTUP_ASSET_OWNER_BACKFILL=true to enable it."
+        )
     yield
 
 
@@ -273,6 +219,7 @@ def home():
 
 
 app.include_router(minio_router)
+app.include_router(public_minio_router)
 app.include_router(postgre_router)
 app.include_router(mongo_router)
 app.include_router(neo_router)

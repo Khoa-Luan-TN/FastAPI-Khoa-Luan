@@ -1,13 +1,13 @@
 // src/services/userActionsApi.js
 // User behavior API: search history + saved documents (MongoDB-backed).
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+import { buildApiUrl } from "./apiBase";
 
 function getUserId() {
   return localStorage.getItem("user_id") || "system";
 }
 
 async function httpJson(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     ...options,
     headers: {
       "Content-Type": "application/json",

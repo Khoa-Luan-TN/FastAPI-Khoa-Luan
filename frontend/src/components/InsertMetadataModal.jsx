@@ -66,8 +66,17 @@ function actorName() {
 
 const DEFAULT_BUCKET = import.meta?.env?.VITE_MINIO_BUCKET || "data-edu";
 const DEFAULT_PUBLIC_BASE = (
-  import.meta?.env?.VITE_MINIO_PUBLIC_BASE_URL || "http://127.0.0.1:9000"
-).replace(/\/+$/, "");
+  import.meta?.env?.VITE_MINIO_PUBLIC_BASE_URL || "/api/files"
+);
+
+function normalizePublicBase(base) {
+  const value = (base || "/api/files").trim();
+  if (/^https?:\/\//i.test(value)) {
+    return value.replace(/\/+$/, "");
+  }
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  return `${window.location.origin}${normalizedPath}`.replace(/\/+$/, "");
+}
 
 // Returns the auto-fill owner id for images/videos edu leaf paths.
 // For images/<class>/<subject>/<edu_kind>/<id> or videos/<class>/<subject>/<edu_kind>/<id>
@@ -186,7 +195,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
   // minio computed (readonly preview)
   const objectKeyPreview = file ? `${folderName}/${file.name}` : "";
   const urlPreview = file
-    ? `${DEFAULT_PUBLIC_BASE}/${DEFAULT_BUCKET}/${encodeObjectKey(objectKeyPreview)}`
+    ? `${normalizePublicBase(DEFAULT_PUBLIC_BASE)}/${encodeObjectKey(objectKeyPreview)}`
     : "";
 
   function onChangeField(name, v) {

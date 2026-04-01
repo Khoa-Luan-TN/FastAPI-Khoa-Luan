@@ -1,5 +1,5 @@
 // src/services/userMongoApi.js
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+import { buildApiUrl } from "./apiBase";
 
 function getActorId() {
   return localStorage.getItem("user_id") || "system";
@@ -21,7 +21,7 @@ async function httpJson(url, options = {}) {
 }
 
 export function listUsers({ limit = 500, offset = 0 } = {}) {
-  const url = new URL(`${API_BASE}/admin/mongo/documents`);
+  const url = new URL(buildApiUrl("admin/mongo/documents"));
   url.searchParams.set("collection_name", "user");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
@@ -29,14 +29,14 @@ export function listUsers({ limit = 500, offset = 0 } = {}) {
 }
 
 export function createUser(payload) {
-  return httpJson(`${API_BASE}/admin/mongo/documents/user`, {
+  return httpJson(buildApiUrl("admin/mongo/documents/user"), {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function updateUser(oid, payload) {
-  return httpJson(`${API_BASE}/admin/mongo/documents/user/${encodeURIComponent(oid)}`, {
+  return httpJson(buildApiUrl(`admin/mongo/documents/user/${encodeURIComponent(oid)}`), {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -44,7 +44,7 @@ export function updateUser(oid, payload) {
 
 /** Fetch all users from PostgreSQL — returns rows with user_id and mongo_id for cross-referencing */
 export function listPgUsers({ limit = 500, offset = 0 } = {}) {
-  const url = new URL(`${API_BASE}/admin/postgre/tables/user/rows`);
+  const url = new URL(buildApiUrl("admin/postgre/tables/user/rows"));
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("offset", String(offset));
   return httpJson(url.toString(), { method: "GET" });

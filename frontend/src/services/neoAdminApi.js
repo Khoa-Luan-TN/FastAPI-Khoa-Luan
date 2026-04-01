@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+import { API_BASE } from "./apiBase";
 
 async function httpJson(path, { params, ...options } = {}) {
   const url = new URL(path, API_BASE);

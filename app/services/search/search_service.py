@@ -14,6 +14,7 @@ from sqlalchemy import text as sql_text
 
 from app.services.ai.gemini_keyword_service import extract_query_keywords
 from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.infrastructure.minio_public import normalize_public_minio_url
 from app.services.search.neo_search_service import search_top_topics_by_embedding
 from app.services.infrastructure.postgre_client import SessionLocal
 from app.services.ai.search_description_service import (
@@ -204,7 +205,7 @@ def _fetch_owner_assets(
     for doc in docs:
         bucket = doc.get("bucket")
         object_key = doc.get("object_key")
-        url = doc.get("url")
+        url = normalize_public_minio_url(doc.get("url"), object_key)
         if not any([bucket, object_key, url]):
             continue
         asset_type = doc.get("asset_type", "document")
