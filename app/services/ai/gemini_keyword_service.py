@@ -131,7 +131,6 @@ def extract_query_keywords(
     max_keywords: int = 10,
     model: str = "gemini-2.5-flash",
 ) -> dict:
-    """Extract search keywords from a user query using Gemini."""
     prompt = _PROMPT_TEMPLATE.format(
         input_text=json.dumps(input_text, ensure_ascii=False),
         max_keywords=max_keywords,

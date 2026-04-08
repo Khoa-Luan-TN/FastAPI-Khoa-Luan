@@ -23,15 +23,16 @@ from app.services.ai.search_description_service import (
 
 _log = logging.getLogger(__name__)
 
+# Lấy Top-K là 3
 _TOP_K = 3
 
 
-# N
 def run_topic_probe(
     neo: Session,
     query: str,
 ) -> Dict[str, Any]:
     try:
+        # Gemini tách keyword
         extraction = extract_query_keywords(query)
     except Exception as exc:
         _log.warning("Gemini extraction failed for query=%r: %s", query, exc)
@@ -42,6 +43,7 @@ def run_topic_probe(
             "error": f"Gemini extraction failed: {exc}",
         }
 
+    # Keyword khi Gemini trích xuất xong
     keywords: List[str] = extraction.get("filtered_keywords") or []
 
     if not keywords:
@@ -53,6 +55,7 @@ def run_topic_probe(
 
     db = get_mongo_db()
 
+    # Lặp qua từng Keyword
     per_keyword_results: List[Dict[str, Any]] = []
     for kw in keywords:
         result = _probe_keyword(neo, db, kw)
