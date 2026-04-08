@@ -26,18 +26,11 @@ _log = logging.getLogger(__name__)
 _TOP_K = 3
 
 
+# N
 def run_topic_probe(
     neo: Session,
     query: str,
-    class_hint: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Search pipeline per extracted keyword:
-    1. Gemini keyword extraction
-    2. embed → Neo4j Topic embedding top-k
-    3. PG topic.mongo_id → Mongo topic_bag
-    4. keyword_refs → exact alias/name match
-    5. chunk_keyword → chunk hits enriched with full upward path
-    """
     try:
         extraction = extract_query_keywords(query)
     except Exception as exc:
@@ -58,12 +51,11 @@ def run_topic_probe(
             "per_keyword_results": [],
         }
 
-    class_ids: List[str] = _resolve_class_ids(neo, class_hint)
     db = get_mongo_db()
 
     per_keyword_results: List[Dict[str, Any]] = []
     for kw in keywords:
-        result = _probe_keyword(neo, db, kw, class_ids)
+        result = _probe_keyword(neo, db, kw)
         per_keyword_results.append(result)
 
     return {
@@ -77,7 +69,6 @@ def _probe_keyword(
     neo: Session,
     db: Any,
     keyword: str,
-    class_ids: List[str],
 ) -> Dict[str, Any]:
     base: Dict[str, Any] = {
         "keyword": keyword,
@@ -90,7 +81,7 @@ def _probe_keyword(
         "keyword_documents": [],
     }
 
-    top_topics = _probe_top_topics(neo, keyword, class_ids)
+    top_topics = _probe_top_topics(neo, keyword)
     if not top_topics:
         return base
     base["top_topics"] = top_topics
@@ -209,10 +200,9 @@ def _fetch_owner_assets(
 def _probe_top_topics(
     neo: Session,
     keyword: str,
-    class_ids: List[str],
     k: int = _TOP_K,
 ) -> List[Dict[str, Any]]:
-    rows = search_top_topics_by_embedding(neo, keyword, class_ids, k=k)
+    rows = search_top_topics_by_embedding(neo, keyword, k=k)
     result = []
     for r in rows:
         result.append({
@@ -531,21 +521,3 @@ def _build_documents_from_hits(
 
     return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values()), list(subject_map.values())
 
-
-def _resolve_class_ids(neo: Session, class_hint: Optional[int]) -> List[str]:
-    if class_hint is None:
-        return []
-    try:
-        rows = neo.run(
-            """
-            MATCH (cls:Class)
-            WHERE toLower(cls.class_name) CONTAINS toLower($hint)
-            RETURN cls.class_id AS class_id
-            LIMIT 5
-            """,
-            hint=str(class_hint),
-        )
-        return [r["class_id"] for r in rows]
-    except Exception as exc:
-        _log.warning("class_hint resolution failed: %s", exc)
-        return []

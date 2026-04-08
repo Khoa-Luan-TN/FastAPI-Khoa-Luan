@@ -99,10 +99,6 @@ def generate_keyword_description(
     keyword_name: str | None = None,
     model: str = "gemini-2.5-flash",
 ) -> str:
-    """Generate a single keyword-level description from class/subject/keyword context.
-
-    Returns an empty string on failure or missing input.
-    """
     if not keyword_name or not keyword_name.strip():
         return ""
 
@@ -127,16 +123,6 @@ def generate_hierarchy_descriptions(
     keyword: str | None = None,
     model: str = "gemini-2.5-flash",
 ) -> dict[str, str]:
-    """Generate topic / lesson / chunk level descriptions from a hierarchy path string.
-
-    Returns:
-        {
-            "topic_description": str,
-            "lesson_description": str,
-            "chunk_description": str,
-        }
-    All values are empty strings on failure or missing input.
-    """
     if not path_description or not path_description.strip():
         return dict(_EMPTY)
 

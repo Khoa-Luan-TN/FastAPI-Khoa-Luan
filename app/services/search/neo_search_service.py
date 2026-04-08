@@ -56,25 +56,9 @@ def _rank_scoped_rows(
 
 
 def _q_topic_embedding(
-    neo: Session, vec: List[float], class_ids: List[str], k: int
+    neo: Session, vec: List[float],  k: int
 ) -> List[Dict[str, Any]]:
     try:
-        if class_ids:
-            rows = neo.run(
-                """
-                MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t:Topic)
-                WHERE cls.class_id IN $class_ids
-                RETURN t.topic_id   AS topic_id,
-                       t.topic_name AS topic_name,
-                       t.topic_num  AS topic_num,
-                       cls.class_id   AS class_id,
-                       cls.class_name AS class_name,
-                       t.embedding AS embedding
-                """,
-                class_ids=class_ids,
-            )
-            return _rank_scoped_rows([dict(r) for r in rows], vec, k)
-
         result = neo.run(
             """
             CALL db.index.vector.queryNodes('topic_embedding_idx', $k, $vec)
@@ -100,11 +84,9 @@ def _q_topic_embedding(
 def search_top_topics_by_embedding(
     neo: Session,
     keyword: str,
-    class_ids: List[str],
     k: int = 3,
 ) -> List[Dict[str, Any]]:
-    """Embed keyword and return top-k Topic rows from the Neo4j topic embedding index."""
     vec = embed_query(keyword)
     if not vec:
         return []
-    return _q_topic_embedding(neo, vec, class_ids, k)
+    return _q_topic_embedding(neo, vec, k)
