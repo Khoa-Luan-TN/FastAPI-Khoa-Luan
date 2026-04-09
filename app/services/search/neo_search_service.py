@@ -14,12 +14,7 @@ def _q_topic_embedding(
             CALL db.index.vector.queryNodes('topic_embedding_idx', $k, $vec)
             YIELD node AS t, score
             MATCH (cls:Class)-[:HAS_SUBJECT]->(:Subject)-[:HAS_TOPIC]->(t)
-            RETURN t.topic_id   AS topic_id,
-                   t.topic_name AS topic_name,
-                   t.topic_num  AS topic_num,
-                   cls.class_id   AS class_id,
-                   cls.class_name AS class_name,
-                   score
+            RETURN t.topic_id AS topic_id
             """,
             k=k, vec=vec,
         )

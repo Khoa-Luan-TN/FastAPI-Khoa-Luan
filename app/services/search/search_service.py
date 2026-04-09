@@ -370,14 +370,9 @@ def _probe_top_topics(
     rows = search_top_topics_by_embedding(neo, keyword, k=k)
     result = []
     for r in rows:
-        result.append({
-            "topic_id":   r.get("topic_id"),
-            "topic_name": r.get("topic_name"),
-            "topic_num":  r.get("topic_num"),
-            "score":      round(float(r.get("score", 0.0)), 4),
-            "class_id":   r.get("class_id"),
-            "class_name": r.get("class_name"),
-        })
+        topic_id = r.get("topic_id")
+        if topic_id:
+            result.append({"topic_id": topic_id})
     return result
 
 
