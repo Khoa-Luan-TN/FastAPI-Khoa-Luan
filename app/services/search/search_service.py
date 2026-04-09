@@ -47,12 +47,61 @@ _EMPTY_SEARCH_DESCRIPTIONS = {
     "chunk_description": "",
 }
 
+#========================================== HELPER ==========================================#
 
 def _is_temporary_gemini_extraction_error(exc: Exception) -> bool:
     msg = str(exc).lower()
     return any(pattern in msg for pattern in _TEMP_GEMINI_EXTRACTION_PATTERNS)
 
+def _norm(s: str) -> str:
+    return " ".join(str(s or "").lower().strip().split())
 
+# Đổi string thành ObjectId
+def _to_oid(v: Any) -> Optional[ObjectId]:
+    if isinstance(v, ObjectId):
+        return v
+    s = str(v).strip()
+    return ObjectId(s) if ObjectId.is_valid(s) else None
+
+# Tìm trong asset để lấy tài liệu đi kèm
+def _fetch_owner_assets(
+    db: Any,
+    owner_type: str,
+    owner_id: str,
+) -> Dict[str, List[Dict[str, Any]]]:
+    docs = list(db["asset"].find(
+        {
+            "owner_type": owner_type,
+            "owner_id": owner_id,
+            "is_deleted": {"$ne": True},
+        },
+        {"bucket": 1, "object_key": 1, "url": 1, "file_name": 1, "content_type": 1, "asset_type": 1},
+    ))
+    grouped: Dict[str, List[Dict[str, Any]]] = {"documents": [], "images": [], "videos": []}
+    for doc in docs:
+        bucket = doc.get("bucket")
+        object_key = doc.get("object_key")
+        url = doc.get("url")
+        if not any([bucket, object_key, url]):
+            continue
+        asset_type = doc.get("asset_type", "document")
+        entry: Dict[str, Any] = {
+            "bucket": bucket,
+            "object_key": object_key,
+            "url": url, 
+            "file_name": doc.get("file_name"),
+            "content_type": doc.get("content_type"),
+            "asset_type": asset_type,
+        }
+        if asset_type == "image":
+            grouped["images"].append(entry)
+        elif asset_type == "video":
+            grouped["videos"].append(entry)
+        else:
+            grouped["documents"].append(entry)
+    return grouped
+
+# Hàm để tách keyword
 def _extract_query_keywords_with_retry(query: str) -> Dict[str, Any]:
     max_attempts = 1 + len(_GEMINI_EXTRACTION_RETRY_BACKOFFS)
     last_exc: Exception | None = None
@@ -79,7 +128,6 @@ def _extract_query_keywords_with_retry(query: str) -> Dict[str, Any]:
     if last_exc is not None:
         raise last_exc
 
-
 def _clean_local_keyword_piece(text: str) -> str:
     piece = " ".join(str(text or "").strip().split())
     if not piece:
@@ -94,7 +142,7 @@ def _clean_local_keyword_piece(text: str) -> str:
 
     return piece.strip(" \t\r\n,;:/.-")
 
-
+# Hàm tách Keyword không có Gemini
 def _extract_query_keywords_without_gemini(query: str) -> List[str]:
     pieces = _LOCAL_KEYWORD_SPLIT_RE.split(str(query or "").strip())
     keywords: List[str] = []
@@ -120,6 +168,7 @@ def _extract_query_keywords_without_gemini(query: str) -> List[str]:
     cleaned_query = " ".join(str(query or "").strip().split())
     return [cleaned_query] if cleaned_query else []
 
+# =================== LOG =================#
 
 def _log_description_generation_failure(
     *,
@@ -145,7 +194,7 @@ def _mark_description_unavailable(status: Dict[str, Any] | None) -> None:
     status["available"] = False
     status["reason"] = "gemini_unavailable"
 
-
+# Hàm chạy 1 để Search
 def run_topic_probe(
     neo: Session,
     query: str,
@@ -153,12 +202,14 @@ def run_topic_probe(
     use_gemini_keywords: bool = True,
     include_descriptions: bool = True,
 ) -> Dict[str, Any]:
+    # In log để Debug
     _log.info(
         "[topic_probe] modes | gemini_keywords=%s include_descriptions=%s",
         use_gemini_keywords,
         include_descriptions,
     )
 
+    # Nếu dùng Gemini để trích xuất keyword
     if use_gemini_keywords:
         try:
             extraction = _extract_query_keywords_with_retry(query)
@@ -171,6 +222,7 @@ def run_topic_probe(
                 "error": f"Gemini extraction failed: {exc}",
             }
         keywords: List[str] = extraction.get("filtered_keywords") or []
+    # Nếu không dùng Gemini để trích xuất keyword
     else:
         keywords = _extract_query_keywords_without_gemini(query)
         _log.info("[topic_probe] local keyword fallback for query=%r -> %s", query, keywords)
@@ -182,7 +234,9 @@ def run_topic_probe(
             "per_keyword_results": [],
         }
 
+    # Mở MongoDB
     db = get_mongo_db()
+    # Trạng thái sinh mô tả (khi bật, còn tắt thì không None)
     description_status: Dict[str, Any] | None = {"available": True, "reason": None} if include_descriptions else None
 
     # Lặp qua từng Keyword
@@ -209,7 +263,7 @@ def run_topic_probe(
         }
     return response
 
-
+# Luồng Search 2
 def _probe_keyword(
     neo: Session,
     db: Any,
@@ -232,6 +286,8 @@ def _probe_keyword(
     top_topics = _probe_top_topics(neo, keyword)
     if not top_topics:
         return base
+    
+    # Các topic_id khi Neo4j trả về (3 ứng viên do k = 3)
     base["top_topics"] = top_topics
 
     kw_norm = _norm(keyword)
@@ -239,19 +295,23 @@ def _probe_keyword(
     seen_kw_oids: set = set()
 
     for candidate in top_topics:
+        # Duyệt qua từng topic_id
         pg_topic_id = candidate.get("topic_id")
         if not pg_topic_id:
             continue
 
+        # Lấy mongo_id của topic_id đó trong PG
         mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
         if not mongo_topic_id:
             _log.debug("No mongo_id for pg topic_id=%s", pg_topic_id)
             continue
 
+        # Tìm túi từ của Topic_id đó
         bag = _fetch_topic_bag(db, mongo_topic_id)
         if bag is None:
             continue
 
+        # Tìm keyword tương ứng trong túi từ đó
         matched_kw = _match_keyword_in_bag(db, bag, kw_norm)
         if matched_kw is None:
             continue
@@ -259,10 +319,12 @@ def _probe_keyword(
         matched_kw_oid = matched_kw["_oid"]
         if matched_kw_oid in seen_kw_oids:
             continue
+        
         seen_kw_oids.add(matched_kw_oid)
 
-        kw_id = str(matched_kw_oid)
-        keyword_name = matched_kw.get("keyword_name")
+        kw_id = matched_kw["_id"]
+        keyword_name = matched_kw["keyword_name"]
+
         kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
         hits = _fetch_chunk_hits(
             db,
@@ -307,61 +369,8 @@ def _probe_keyword(
     )
     return base
 
-
-def _norm(s: str) -> str:
-    return " ".join(str(s or "").lower().strip().split())
-
-
-def _to_oid(v: Any) -> Optional[ObjectId]:
-    if isinstance(v, ObjectId):
-        return v
-    s = str(v).strip()
-    return ObjectId(s) if ObjectId.is_valid(s) else None
-
-
-def _fetch_owner_assets(
-    db: Any,
-    owner_type: str,
-    owner_id: str,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Fetch all active assets for an owner grouped by type.
-
-    Returns {"documents": [...], "images": [...], "videos": [...]}
-    Each entry: {bucket, object_key, url, file_name, content_type, asset_type}
-    """
-    docs = list(db["asset"].find(
-        {
-            "owner_type": owner_type,
-            "owner_id": owner_id,
-            "is_deleted": {"$ne": True},
-        },
-        {"bucket": 1, "object_key": 1, "url": 1, "file_name": 1, "content_type": 1, "asset_type": 1},
-    ))
-    grouped: Dict[str, List[Dict[str, Any]]] = {"documents": [], "images": [], "videos": []}
-    for doc in docs:
-        bucket = doc.get("bucket")
-        object_key = doc.get("object_key")
-        url = doc.get("url")
-        if not any([bucket, object_key, url]):
-            continue
-        asset_type = doc.get("asset_type", "document")
-        entry: Dict[str, Any] = {
-            "bucket": bucket,
-            "object_key": object_key,
-            "url": url,
-            "file_name": doc.get("file_name"),
-            "content_type": doc.get("content_type"),
-            "asset_type": asset_type,
-        }
-        if asset_type == "image":
-            grouped["images"].append(entry)
-        elif asset_type == "video":
-            grouped["videos"].append(entry)
-        else:
-            grouped["documents"].append(entry)
-    return grouped
-
-
+# Luồng Search 3
+# Tìm top-k của Topic trong Neo4j
 def _probe_top_topics(
     neo: Session,
     keyword: str,
@@ -375,7 +384,7 @@ def _probe_top_topics(
             result.append({"topic_id": topic_id})
     return result
 
-
+# Từ topic_id chạy vào PG query và lấy ra mongo_id của topic_id
 def _pg_topic_mongo_id(pg_topic_id: str) -> Optional[str]:
     pg = SessionLocal()
     try:
@@ -389,7 +398,7 @@ def _pg_topic_mongo_id(pg_topic_id: str) -> Optional[str]:
     finally:
         pg.close()
 
-
+# Tìm topic_bag trong MongoDB dựa vào topic_id 
 def _fetch_topic_bag(db: Any, mongo_topic_id: str) -> Optional[Dict[str, Any]]:
     oid = _to_oid(mongo_topic_id)
     if oid is None:
@@ -399,21 +408,28 @@ def _fetch_topic_bag(db: Any, mongo_topic_id: str) -> Optional[Dict[str, Any]]:
     )
 
 
+# Xử lí trên MongoDB
+# Duyệt qua các Keyword trong túi
+# tìm Keyword thoả điều kiện của Query
 def _match_keyword_in_bag(
     db: Any,
     bag: Dict[str, Any],
     kw_norm: str,
 ) -> Optional[Dict[str, Any]]:
+    # Duyệt qua các keyword_refs trong Topic_bag
     for ref in (bag.get("keyword_refs") or []):
+        # Lấy keyword_id gán vào kw_oid
         kw_oid = ref.get("keyword_id")
         if kw_oid is None:
             continue
+        # Tìm document của keyword_id đó trong Collection Keyword để lấy _name và _alias
         kw_doc = db["keyword"].find_one(
             {"_id": kw_oid, "is_deleted": {"$ne": True}},
             {"keyword_name": 1, "aliases": 1},
         )
         if not kw_doc:
             continue
+        # Kiểm tra _name nếu trùng thì không chạy dò từng _alias
         if _norm(kw_doc.get("keyword_name", "")) == kw_norm:
             return _kw_doc_to_match(kw_oid, kw_doc)
         for alias in (kw_doc.get("aliases") or []):
@@ -421,7 +437,7 @@ def _match_keyword_in_bag(
                 return _kw_doc_to_match(kw_oid, kw_doc)
     return None
 
-
+# Hàm này dùng để định dạng cho _match_keyword_in_bag trả về
 def _kw_doc_to_match(kw_oid: Any, kw_doc: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "_oid": kw_oid,
@@ -430,7 +446,7 @@ def _kw_doc_to_match(kw_oid: Any, kw_doc: Dict[str, Any]) -> Dict[str, Any]:
         "aliases": kw_doc.get("aliases") or [],
     }
 
-
+# Hàm tìm chunk_id trong Collection[chunk_keyword]
 def _fetch_chunk_hits(
     db: Any,
     kw_oid: Any,
@@ -439,6 +455,7 @@ def _fetch_chunk_hits(
     include_descriptions: bool = True,
     description_status: Dict[str, Any] | None = None,
 ) -> List[Dict[str, Any]]:
+    # Tìm chunk_id của keyword tìm được
     ck_docs = list(db["chunk_keyword"].find(
         {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
         {"chunk_id": 1},
@@ -458,7 +475,7 @@ def _fetch_chunk_hits(
             hits.append(hit)
     return hits
 
-
+# Tạo một chuỗi cách nhau bằng | để sinh mô tả
 def _build_path_description(
     *,
     class_name: Optional[str] = None,
@@ -471,11 +488,6 @@ def _build_path_description(
     chunk_num: Optional[Any] = None,
     chunk_name: Optional[str] = None,
 ) -> str:
-    """Build a pipe-separated breadcrumb string for a chunk hit.
-
-    Example:
-        Lớp 10 | Tin học | SGK | Chủ đề 1: Máy tính và xã hội tri thức | Bài 2: ... | Mục 2: ...
-    """
     parts: list[str] = []
 
     if class_name:
@@ -502,7 +514,7 @@ def _build_path_description(
 
     return " | ".join(parts)
 
-
+# Truy ngược từ chunk_id để lấy class, topic, lesson
 def _build_chunk_hit(
     db: Any,
     raw_chunk_id: Any,
@@ -581,6 +593,7 @@ def _build_chunk_hit(
                                     class_id   = str(class_oid)
                                     class_name = class_doc.get("class_name")
 
+    # gọi để tạo chuỗi dành cho sinh mô tả
     path_description = _build_path_description(
         class_name=class_name,
         subject_name=subject_name,
@@ -593,6 +606,7 @@ def _build_chunk_hit(
         chunk_name=chunk_name,
     )
 
+    # Nếu sinh mô tả là True
     if include_descriptions:
         description_result = generate_search_descriptions_result(
             class_name=class_name,

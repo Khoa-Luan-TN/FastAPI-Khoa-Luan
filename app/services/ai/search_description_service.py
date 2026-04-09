@@ -91,7 +91,7 @@ def _is_temporary_description_error(exc: Exception) -> bool:
     msg = str(exc).lower()
     return any(pattern in msg for pattern in _TEMP_DESCRIPTION_ERROR_PATTERNS)
 
-
+# Hàm sinh mô tả
 def generate_search_descriptions_result(
     *,
     class_name: str | None = None,
