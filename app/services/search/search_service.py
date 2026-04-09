@@ -187,7 +187,7 @@ def _log_description_generation_failure(
         error,
     )
 
-
+# sinh mô tả bị lỗi
 def _mark_description_unavailable(status: Dict[str, Any] | None) -> None:
     if status is None:
         return
@@ -352,6 +352,7 @@ def _probe_keyword(
                     error=kw_description_result.get("error"),
                 )
 
+        # Lấy toàn bộ dữ liệu của matched_kw nhưng bỏ _oid
         base["matched_keywords"].append({
             k: v for k, v in matched_kw.items() if k != "_oid"
         })
@@ -514,7 +515,7 @@ def _build_path_description(
 
     return " | ".join(parts)
 
-# Truy ngược từ chunk_id để lấy class, topic, lesson
+# Truy ngược từ chunk_id để lấy class, topic, lesson và gọi hàm sinh mô tả
 def _build_chunk_hit(
     db: Any,
     raw_chunk_id: Any,
@@ -655,11 +656,10 @@ def _build_chunk_hit(
         "chunk_description":  descriptions["chunk_description"],
     }
 
-
+# Lọc trùng
 def _build_documents_from_hits(
     hits: List[Dict[str, Any]],
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Deduplicate chunk hits into separate topic / lesson / chunk / subject document lists."""
     topic_map: Dict[str, Dict[str, Any]] = {}
     lesson_map: Dict[str, Dict[str, Any]] = {}
     chunk_map: Dict[str, Dict[str, Any]] = {}
@@ -680,7 +680,7 @@ def _build_documents_from_hits(
         tid = hit.get("topic_id")
         if tid and tid not in topic_map:
             topic_map[tid] = {
-                "id":           tid,
+                "id":           tid, 
                 "name":         hit.get("topic_name"),
                 "num":          hit.get("topic_num"),
                 "description":  hit.get("topic_description", ""),
