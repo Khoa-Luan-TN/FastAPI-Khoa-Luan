@@ -54,3 +54,6 @@ tmp/
 demo.json
 
 .claude
+
+app/core/gemini_rotation_state.json
+app/core/gemini_rotation_state.json.tmp
