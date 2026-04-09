@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -31,6 +32,20 @@ _TEMP_GEMINI_EXTRACTION_PATTERNS = (
     "high demand",
 )
 _GEMINI_EXTRACTION_RETRY_BACKOFFS = (0.5, 1.0)
+_LOCAL_KEYWORD_SPLIT_RE = re.compile(r"\s*(?:,|;|/|\bvà\b|\band\b)\s*", re.IGNORECASE)
+_LOCAL_KEYWORD_PREFIX_PATTERNS = (
+    re.compile(r"^(?:cho tôi|cho toi|giúp tôi|giup toi|tôi muốn|toi muon|mình muốn|minh muon|xin|hãy)\s+", re.IGNORECASE),
+    re.compile(r"^(?:tìm kiếm|tim kiem|tìm hiểu|tim hieu|tìm|tim)\s+", re.IGNORECASE),
+    re.compile(r"^(?:thông tin về|thong tin ve|thông tin|thong tin)\s+", re.IGNORECASE),
+    re.compile(r"^(?:tài liệu về|tai lieu ve|tài liệu|tai lieu)\s+", re.IGNORECASE),
+    re.compile(r"^(?:về|ve)\s+", re.IGNORECASE),
+)
+_EMPTY_SEARCH_DESCRIPTIONS = {
+    "keyword_description": "",
+    "topic_description": "",
+    "lesson_description": "",
+    "chunk_description": "",
+}
 
 
 def _is_temporary_gemini_extraction_error(exc: Exception) -> bool:
@@ -65,24 +80,75 @@ def _extract_query_keywords_with_retry(query: str) -> Dict[str, Any]:
         raise last_exc
 
 
+def _clean_local_keyword_piece(text: str) -> str:
+    piece = " ".join(str(text or "").strip().split())
+    if not piece:
+        return ""
+
+    while piece:
+        original = piece
+        for pattern in _LOCAL_KEYWORD_PREFIX_PATTERNS:
+            piece = pattern.sub("", piece, count=1).strip()
+        if piece == original:
+            break
+
+    return piece.strip(" \t\r\n,;:/.-")
+
+
+def _extract_query_keywords_without_gemini(query: str) -> List[str]:
+    pieces = _LOCAL_KEYWORD_SPLIT_RE.split(str(query or "").strip())
+    keywords: List[str] = []
+    seen: set[str] = set()
+
+    for piece in pieces:
+        cleaned = _clean_local_keyword_piece(piece)
+        if not cleaned:
+            continue
+        norm = _norm(cleaned)
+        if not norm or norm in seen:
+            continue
+        seen.add(norm)
+        keywords.append(cleaned)
+
+    if keywords:
+        return keywords
+
+    fallback = _clean_local_keyword_piece(query)
+    if fallback:
+        return [fallback]
+
+    cleaned_query = " ".join(str(query or "").strip().split())
+    return [cleaned_query] if cleaned_query else []
+
+
 def run_topic_probe(
     neo: Session,
     query: str,
+    *,
+    use_gemini_keywords: bool = True,
+    include_descriptions: bool = True,
 ) -> Dict[str, Any]:
-    try:
-        # Gemini tách keyword
-        extraction = _extract_query_keywords_with_retry(query)
-    except Exception as exc:
-        _log.warning("Gemini extraction failed for query=%r: %s", query, exc)
-        return {
-            "query": query,
-            "keywords": [],
-            "per_keyword_results": [],
-            "error": f"Gemini extraction failed: {exc}",
-        }
+    _log.info(
+        "[topic_probe] modes | gemini_keywords=%s include_descriptions=%s",
+        use_gemini_keywords,
+        include_descriptions,
+    )
 
-    # Keyword khi Gemini trích xuất xong
-    keywords: List[str] = extraction.get("filtered_keywords") or []
+    if use_gemini_keywords:
+        try:
+            extraction = _extract_query_keywords_with_retry(query)
+        except Exception as exc:
+            _log.warning("Gemini extraction failed for query=%r: %s", query, exc)
+            return {
+                "query": query,
+                "keywords": [],
+                "per_keyword_results": [],
+                "error": f"Gemini extraction failed: {exc}",
+            }
+        keywords: List[str] = extraction.get("filtered_keywords") or []
+    else:
+        keywords = _extract_query_keywords_without_gemini(query)
+        _log.info("[topic_probe] local keyword fallback for query=%r -> %s", query, keywords)
 
     if not keywords:
         return {
@@ -96,7 +162,7 @@ def run_topic_probe(
     # Lặp qua từng Keyword
     per_keyword_results: List[Dict[str, Any]] = []
     for kw in keywords:
-        result = _probe_keyword(neo, db, kw)
+        result = _probe_keyword(neo, db, kw, include_descriptions=include_descriptions)
         per_keyword_results.append(result)
 
     return {
@@ -110,6 +176,8 @@ def _probe_keyword(
     neo: Session,
     db: Any,
     keyword: str,
+    *,
+    include_descriptions: bool = True,
 ) -> Dict[str, Any]:
     base: Dict[str, Any] = {
         "keyword": keyword,
@@ -162,11 +230,12 @@ def _probe_keyword(
             matched_kw_oid,
             matched_keyword=keyword,
             keyword_name=keyword_name,
+            include_descriptions=include_descriptions,
         )
 
         first_hit = hits[0] if hits else {}
         kw_description = str(first_hit.get("keyword_description") or "").strip()
-        if not hits:
+        if include_descriptions and not hits:
             kw_description = generate_search_descriptions(
                 keyword_name=keyword_name,
                 matched_keyword=keyword,
@@ -323,6 +392,7 @@ def _fetch_chunk_hits(
     kw_oid: Any,
     matched_keyword: Optional[str] = None,
     keyword_name: Optional[str] = None,
+    include_descriptions: bool = True,
 ) -> List[Dict[str, Any]]:
     ck_docs = list(db["chunk_keyword"].find(
         {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
@@ -336,6 +406,7 @@ def _fetch_chunk_hits(
             ck.get("chunk_id"),
             matched_keyword=matched_keyword,
             keyword_name=keyword_name,
+            include_descriptions=include_descriptions,
         )
         if hit is not None:
             hits.append(hit)
@@ -391,6 +462,7 @@ def _build_chunk_hit(
     raw_chunk_id: Any,
     matched_keyword: Optional[str] = None,
     keyword_name: Optional[str] = None,
+    include_descriptions: bool = True,
 ) -> Optional[Dict[str, Any]]:
     chunk_oid = _to_oid(raw_chunk_id)
     if chunk_oid is None:
@@ -474,14 +546,17 @@ def _build_chunk_hit(
         chunk_name=chunk_name,
     )
 
-    descriptions = generate_search_descriptions(
-        class_name=class_name,
-        subject_name=subject_name,
-        subject_type=subject_type,
-        keyword_name=keyword_name,
-        path_description=path_description,
-        matched_keyword=matched_keyword,
-    )
+    if include_descriptions:
+        descriptions = generate_search_descriptions(
+            class_name=class_name,
+            subject_name=subject_name,
+            subject_type=subject_type,
+            keyword_name=keyword_name,
+            path_description=path_description,
+            matched_keyword=matched_keyword,
+        )
+    else:
+        descriptions = dict(_EMPTY_SEARCH_DESCRIPTIONS)
 
     return {
         "chunk_id":     chunk_id,

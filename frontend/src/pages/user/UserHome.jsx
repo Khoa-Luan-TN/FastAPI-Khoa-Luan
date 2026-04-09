@@ -720,6 +720,8 @@ function ResultSection({ level, items, savedIds, onToggleSave, onOpen, indexOffs
 // ---- Main ----
 export default function UserHome() {
   const [query, setQuery] = useState("");
+  const [useGeminiKeywords, setUseGeminiKeywords] = useState(true);
+  const [includeDescriptions, setIncludeDescriptions] = useState(true);
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [groups, setGroups] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -765,7 +767,10 @@ export default function UserHome() {
     setError(null);
 
     try {
-      const data = await executeSearch(trimmed);
+      const data = await executeSearch(trimmed, {
+        useGeminiKeywords,
+        includeDescriptions,
+      });
       const g = buildSearchGroups(data);
       setGroups(g);
 
@@ -778,7 +783,7 @@ export default function UserHome() {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, useGeminiKeywords, includeDescriptions]);
 
   function handleKey(e) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSearch(); }
@@ -813,6 +818,29 @@ export default function UserHome() {
           rows={2}
           autoFocus
         />
+        <div className="u-search-options">
+          <label className="u-search-toggle">
+            <input
+              type="checkbox"
+              checked={useGeminiKeywords}
+              onChange={(e) => setUseGeminiKeywords(e.target.checked)}
+            />
+            <span>Tách keyword bằng Gemini</span>
+          </label>
+          <label className="u-search-toggle">
+            <input
+              type="checkbox"
+              checked={includeDescriptions}
+              onChange={(e) => setIncludeDescriptions(e.target.checked)}
+            />
+            <span>Sinh mô tả</span>
+          </label>
+        </div>
+        {!useGeminiKeywords && (
+          <div className="u-search-helper">
+            Hãy nhập trực tiếp từ khóa cần tìm, ví dụ: IoT, dạng tệp, WAN
+          </div>
+        )}
         <div className="u-search-row">
           <div className="u-chips">
             {SUGGESTIONS.map((s) => (

@@ -1,10 +1,19 @@
 // src/services/searchApi.js
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
-export async function executeSearch(query, classHint) {
+export async function executeSearch(
+  query,
+  {
+    classHint = null,
+    useGeminiKeywords = true,
+    includeDescriptions = true,
+  } = {},
+) {
   const url = new URL(`${API_BASE}/search/topic-probe`);
   url.searchParams.set("q", query);
   if (classHint != null) url.searchParams.set("class_hint", String(classHint));
+  url.searchParams.set("use_gemini_keywords", String(useGeminiKeywords));
+  url.searchParams.set("include_descriptions", String(includeDescriptions));
 
   const res = await fetch(url.toString());
   if (!res.ok) {
