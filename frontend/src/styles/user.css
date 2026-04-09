@@ -227,6 +227,7 @@
 
 /* Wider variant for pages with 2-col grids (Saved) */
 .u-page-wrap--wide { max-width: 1000px; }
+.u-page-wrap--full { max-width: none; }
 
 /* =====================================================
    SEARCH PANEL
@@ -852,6 +853,45 @@
   gap: 8px;
 }
 
+.u-history-sections,
+.u-time-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.u-history-section,
+.u-time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.u-history-section-header,
+.u-time-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.u-history-section-title,
+.u-time-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--us-text-2);
+  white-space: nowrap;
+}
+
+.u-history-section-divider,
+.u-time-section-divider {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.35), rgba(226, 232, 240, 0.85));
+}
+
 .u-history-item {
   background: var(--us-white);
   border: 1px solid var(--us-border);
@@ -952,8 +992,8 @@
    ===================================================== */
 .u-profile-grid {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 18px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 22px;
   align-items: start;
 }
 
@@ -1067,6 +1107,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 /* Quick-nav icon color variants (replaces inline styles) */

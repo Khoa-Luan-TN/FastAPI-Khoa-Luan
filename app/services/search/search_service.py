@@ -19,7 +19,7 @@ from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.search.neo_search_service import search_top_topics_by_embedding
 from app.services.infrastructure.postgre_client import SessionLocal
 from app.services.ai.search_description_service import (
-    generate_search_descriptions,
+    generate_search_descriptions_result,
 )
 
 _log = logging.getLogger(__name__)
@@ -121,6 +121,31 @@ def _extract_query_keywords_without_gemini(query: str) -> List[str]:
     return [cleaned_query] if cleaned_query else []
 
 
+def _log_description_generation_failure(
+    *,
+    keyword_name: str | None = None,
+    matched_keyword: str | None = None,
+    chunk_id: str | None = None,
+    path_description: str | None = None,
+    error: str | None = None,
+) -> None:
+    _log.warning(
+        "[topic_probe] description generation failed | keyword_name=%r matched_keyword=%r chunk_id=%s path_description=%r error=%s",
+        keyword_name,
+        matched_keyword,
+        chunk_id or "—",
+        path_description or "",
+        error,
+    )
+
+
+def _mark_description_unavailable(status: Dict[str, Any] | None) -> None:
+    if status is None:
+        return
+    status["available"] = False
+    status["reason"] = "gemini_unavailable"
+
+
 def run_topic_probe(
     neo: Session,
     query: str,
@@ -158,18 +183,31 @@ def run_topic_probe(
         }
 
     db = get_mongo_db()
+    description_status: Dict[str, Any] | None = {"available": True, "reason": None} if include_descriptions else None
 
     # Lặp qua từng Keyword
     per_keyword_results: List[Dict[str, Any]] = []
     for kw in keywords:
-        result = _probe_keyword(neo, db, kw, include_descriptions=include_descriptions)
+        result = _probe_keyword(
+            neo,
+            db,
+            kw,
+            include_descriptions=include_descriptions,
+            description_status=description_status,
+        )
         per_keyword_results.append(result)
 
-    return {
+    response = {
         "query": query,
         "keywords": keywords,
         "per_keyword_results": per_keyword_results,
     }
+    if description_status and not description_status.get("available"):
+        response["description_status"] = {
+            "available": False,
+            "reason": description_status.get("reason") or "gemini_unavailable",
+        }
+    return response
 
 
 def _probe_keyword(
@@ -178,6 +216,7 @@ def _probe_keyword(
     keyword: str,
     *,
     include_descriptions: bool = True,
+    description_status: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     base: Dict[str, Any] = {
         "keyword": keyword,
@@ -231,15 +270,25 @@ def _probe_keyword(
             matched_keyword=keyword,
             keyword_name=keyword_name,
             include_descriptions=include_descriptions,
+            description_status=description_status,
         )
 
         first_hit = hits[0] if hits else {}
         kw_description = str(first_hit.get("keyword_description") or "").strip()
         if include_descriptions and not hits:
-            kw_description = generate_search_descriptions(
+            kw_description_result = generate_search_descriptions_result(
                 keyword_name=keyword_name,
                 matched_keyword=keyword,
-            )["keyword_description"]
+            )
+            kw_description = kw_description_result["descriptions"]["keyword_description"]
+            if kw_description_result.get("temporary_unavailable"):
+                _mark_description_unavailable(description_status)
+                _log_description_generation_failure(
+                    keyword_name=keyword_name,
+                    matched_keyword=keyword,
+                    path_description=None,
+                    error=kw_description_result.get("error"),
+                )
 
         base["matched_keywords"].append({
             k: v for k, v in matched_kw.items() if k != "_oid"
@@ -393,6 +442,7 @@ def _fetch_chunk_hits(
     matched_keyword: Optional[str] = None,
     keyword_name: Optional[str] = None,
     include_descriptions: bool = True,
+    description_status: Dict[str, Any] | None = None,
 ) -> List[Dict[str, Any]]:
     ck_docs = list(db["chunk_keyword"].find(
         {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
@@ -407,6 +457,7 @@ def _fetch_chunk_hits(
             matched_keyword=matched_keyword,
             keyword_name=keyword_name,
             include_descriptions=include_descriptions,
+            description_status=description_status,
         )
         if hit is not None:
             hits.append(hit)
@@ -463,6 +514,7 @@ def _build_chunk_hit(
     matched_keyword: Optional[str] = None,
     keyword_name: Optional[str] = None,
     include_descriptions: bool = True,
+    description_status: Dict[str, Any] | None = None,
 ) -> Optional[Dict[str, Any]]:
     chunk_oid = _to_oid(raw_chunk_id)
     if chunk_oid is None:
@@ -547,7 +599,7 @@ def _build_chunk_hit(
     )
 
     if include_descriptions:
-        descriptions = generate_search_descriptions(
+        description_result = generate_search_descriptions_result(
             class_name=class_name,
             subject_name=subject_name,
             subject_type=subject_type,
@@ -555,6 +607,16 @@ def _build_chunk_hit(
             path_description=path_description,
             matched_keyword=matched_keyword,
         )
+        descriptions = description_result["descriptions"]
+        if description_result.get("temporary_unavailable"):
+            _mark_description_unavailable(description_status)
+            _log_description_generation_failure(
+                keyword_name=keyword_name,
+                matched_keyword=matched_keyword,
+                chunk_id=chunk_id,
+                path_description=path_description,
+                error=description_result.get("error"),
+            )
     else:
         descriptions = dict(_EMPTY_SEARCH_DESCRIPTIONS)
 

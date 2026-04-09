@@ -80,7 +80,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="u-page-wrap">
+    <div className="u-page-wrap u-page-wrap--full">
       <div className="u-page-header">
         <div>
           <h1 className="u-page-title">Tài khoản</h1>

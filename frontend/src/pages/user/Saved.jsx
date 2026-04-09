@@ -27,15 +27,12 @@ const LEVEL_LABEL = {
   keyword: "Từ khoá",
 };
 
-const LEVEL_ORDER = ["subject", "topic", "lesson", "chunk", "keyword"];
-
-const SECTION_META = {
-  subject: { accent: "#B45309" },
-  topic:   { accent: "#7C3AED" },
-  lesson:  { accent: "#1D4ED8" },
-  chunk:   { accent: "#047857" },
-  keyword: { accent: "#0369A1" },
-};
+const TIME_GROUPS = [
+  { key: "today", label: "Hôm nay" },
+  { key: "yesterday", label: "Hôm qua" },
+  { key: "recent", label: "7 ngày gần đây" },
+  { key: "older", label: "Cũ hơn" },
+];
 
 function mapDoc(raw) {
   return {
@@ -45,19 +42,36 @@ function mapDoc(raw) {
     descShort: raw.desc_short || "",
     subject:   raw.subject_name || "",
     className: raw.class_name || "",
+    savedAt:   raw.saved_at || raw.created_at || "",
     _mongoId:  raw.id,
   };
 }
 
-function groupByLevel(docs) {
-  const g = {};
-  LEVEL_ORDER.forEach(l => { g[l] = []; });
-  docs.forEach(d => {
-    const key = d.level || "chunk";
-    if (!g[key]) g[key] = [];
-    g[key].push(d);
-  });
-  return g;
+function parseSavedDate(dateText) {
+  if (typeof dateText !== "string") return null;
+
+  const [datePart, timePart = "00:00"] = dateText.trim().split(" ");
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour = 0, minute = 0] = timePart.split(":").map(Number);
+
+  if (!day || !month || !year) return null;
+
+  const parsed = new Date(year, month - 1, day, hour, minute);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getSavedGroupKey(savedAt, now = new Date()) {
+  const parsed = parseSavedDate(savedAt);
+  if (!parsed) return "older";
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemStart = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  const diffDays = Math.floor((todayStart - itemStart) / 86400000);
+
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  if (diffDays <= 7) return "recent";
+  return "older";
 }
 
 function DetailModal({ doc, onUnsave, onClose }) {
@@ -139,11 +153,13 @@ export default function Saved() {
     userActionsApi.unsaveByTarget(doc.id, doc.level || "chunk").catch(() => {});
   }
 
-  const groups = groupByLevel(docs);
-  const activeLevels = LEVEL_ORDER.filter(lvl => groups[lvl].length > 0);
+  const groupedDocs = TIME_GROUPS.map((group) => ({
+    ...group,
+    items: docs.filter((doc) => getSavedGroupKey(doc.savedAt) === group.key),
+  })).filter((group) => group.items.length > 0);
 
   return (
-    <div className="u-page-wrap u-page-wrap--wide">
+    <div className="u-page-wrap u-page-wrap--full">
       <div className="u-page-header">
         <div>
           <h1 className="u-page-title">Tài liệu đã lưu</h1>
@@ -163,24 +179,20 @@ export default function Saved() {
           </button>
         </div>
       ) : (
-        <div className="u-saved-sections">
-          {activeLevels.map(lvl => {
-            const { accent } = SECTION_META[lvl] || { accent: "#64748B" };
-            const label = LEVEL_LABEL[lvl] || lvl;
-            const items = groups[lvl];
-            const noFallback = lvl === "subject" || lvl === "keyword";
-            return (
-              <div key={lvl} className="u-section">
-                <div className="u-section-header u-section-header--static" style={{ "--accent": accent }}>
-                  <span className="u-section-header-left">
-                    <span className="u-section-title" style={{ color: accent }}>{label}</span>
-                    <span className="u-section-count">{items.length}</span>
-                  </span>
-                </div>
-                <div className="u-doc-grid">
-                  {items.map((doc, i) => (
+        <div className="u-time-sections">
+          {groupedDocs.map((group) => (
+            <section key={group.key} className="u-time-section">
+              <div className="u-time-section-header">
+                <h2 className="u-time-section-title">{group.label}</h2>
+                <div className="u-time-section-divider" />
+              </div>
+              <div className="u-doc-grid">
+                {group.items.map((doc, i) => {
+                  const label = LEVEL_LABEL[doc.level] || doc.level || "";
+                  const noFallback = doc.level === "subject" || doc.level === "keyword";
+                  return (
                     <div
-                      key={doc.id}
+                      key={`${doc.level}-${doc.id}`}
                       className={`u-doc-card u-doc-card--${doc.level} u-fadein`}
                       style={{ animationDelay: `${i * 0.05}s` }}
                       onClick={() => setSelected(doc)}
@@ -220,11 +232,11 @@ export default function Saved() {
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </section>
+          ))}
         </div>
       )}
 

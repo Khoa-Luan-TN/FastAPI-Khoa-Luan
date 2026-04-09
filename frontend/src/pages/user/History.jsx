@@ -20,6 +20,40 @@ const TrashIcon = ({ size = 14 }) => (
   </svg>
 );
 
+const HISTORY_GROUPS = [
+  { key: "today", label: "Hôm nay" },
+  { key: "yesterday", label: "Hôm qua" },
+  { key: "recent", label: "7 ngày gần đây" },
+  { key: "older", label: "Cũ hơn" },
+];
+
+function parseHistoryDate(dateText) {
+  if (typeof dateText !== "string") return null;
+
+  const [datePart, timePart = "00:00"] = dateText.trim().split(" ");
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour = 0, minute = 0] = timePart.split(":").map(Number);
+
+  if (!day || !month || !year) return null;
+
+  const parsed = new Date(year, month - 1, day, hour, minute);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getHistoryGroupKey(itemDate, now = new Date()) {
+  const parsed = parseHistoryDate(itemDate);
+  if (!parsed) return "older";
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemStart = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  const diffDays = Math.floor((todayStart - itemStart) / 86400000);
+
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  if (diffDays <= 7) return "recent";
+  return "older";
+}
+
 export default function History() {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
@@ -47,8 +81,13 @@ export default function History() {
     userActionsApi.clearHistory().catch(() => {});
   }
 
+  const groupedHistory = HISTORY_GROUPS.map((group) => ({
+    ...group,
+    items: history.filter((item) => getHistoryGroupKey(item.date) === group.key),
+  })).filter((group) => group.items.length > 0);
+
   return (
-    <div className="u-page-wrap">
+    <div className="u-page-wrap u-page-wrap--full">
       <div className="u-page-header">
         <div>
           <h1 className="u-page-title">Lịch sử tìm kiếm</h1>
@@ -85,32 +124,42 @@ export default function History() {
           </button>
         </div>
       ) : (
-        <div className="u-history-list">
-          {history.map((item, i) => (
-            <div key={item.id} className="u-history-item u-fadein" style={{ animationDelay: `${i * 0.04}s` }}>
-              <div className="u-history-icon">
-                <SearchIcon size={16} />
+        <div className="u-history-sections">
+          {groupedHistory.map((group) => (
+            <section key={group.key} className="u-history-section">
+              <div className="u-history-section-header">
+                <h2 className="u-history-section-title">{group.label}</h2>
+                <div className="u-history-section-divider" />
               </div>
-              <div className="u-history-content">
-                <div className="u-history-query">{item.query}</div>
-                <div className="u-history-meta">
-                  <span>{item.date}</span>
-                  {item.count > 0 && (
-                    <span className="u-history-count">{item.count} kết quả</span>
-                  )}
-                </div>
+              <div className="u-history-list">
+                {group.items.map((item, i) => (
+                  <div key={item.id} className="u-history-item u-fadein" style={{ animationDelay: `${i * 0.04}s` }}>
+                    <div className="u-history-icon">
+                      <SearchIcon size={16} />
+                    </div>
+                    <div className="u-history-content">
+                      <div className="u-history-query">{item.query}</div>
+                      <div className="u-history-meta">
+                        <span>{item.date}</span>
+                        {item.count > 0 && (
+                          <span className="u-history-count">{item.count} kết quả</span>
+                        )}
+                      </div>
+                    </div>
+                    <button className="u-history-run" onClick={() => runSearch(item.query)}>
+                      Tìm lại <ArrowRightIcon />
+                    </button>
+                    <button
+                      className="u-icon-btn u-icon-btn--danger"
+                      onClick={() => removeEntry(item.id)}
+                      title="Xoá"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <button className="u-history-run" onClick={() => runSearch(item.query)}>
-                Tìm lại <ArrowRightIcon />
-              </button>
-              <button
-                className="u-icon-btn u-icon-btn--danger"
-                onClick={() => removeEntry(item.id)}
-                title="Xoá"
-              >
-                <TrashIcon />
-              </button>
-            </div>
+            </section>
           ))}
         </div>
       )}

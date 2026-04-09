@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import time
+from typing import Any
 
 from app.services.infrastructure.gemini_client import generate_text
 from app.services.shared._utils import extract_json
@@ -77,6 +79,88 @@ _EMPTY: dict[str, str] = {
     "lesson_description": "",
     "chunk_description": "",
 }
+_TEMP_DESCRIPTION_ERROR_PATTERNS = (
+    "http 503",
+    "unavailable",
+    "high demand",
+)
+_DESCRIPTION_RETRY_BACKOFFS = (0.5, 1.0)
+
+
+def _is_temporary_description_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(pattern in msg for pattern in _TEMP_DESCRIPTION_ERROR_PATTERNS)
+
+
+def generate_search_descriptions_result(
+    *,
+    class_name: str | None = None,
+    subject_name: str | None = None,
+    subject_type: str | None = None,
+    keyword_name: str | None = None,
+    path_description: str | None = None,
+    matched_keyword: str | None = None,
+    model: str = "gemini-2.5-flash",
+) -> dict[str, Any]:
+    keyword_value = str(keyword_name or "").strip()
+    matched_value = str(matched_keyword or "").strip()
+    path_value = str(path_description or "").strip()
+    if not keyword_value and not path_value:
+        return {
+            "descriptions": dict(_EMPTY),
+            "temporary_unavailable": False,
+            "error": None,
+        }
+
+    prompt = _PROMPT_TEMPLATE.format(
+        class_name=str(class_name or "").strip() or "—",
+        subject_name=str(subject_name or "").strip() or "—",
+        subject_type=str(subject_type or "").strip() or "—",
+        keyword_name=keyword_value or "—",
+        matched_keyword=matched_value or "—",
+        path_description=path_value or "—",
+    )
+
+    max_attempts = 1 + len(_DESCRIPTION_RETRY_BACKOFFS)
+    last_exc: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            raw = generate_text(prompt, model=model)
+            parsed = extract_json(raw)
+            return {
+                "descriptions": {
+                    "keyword_description": str(parsed.get("keyword_description") or "").strip(),
+                    "topic_description": str(parsed.get("topic_description") or "").strip(),
+                    "lesson_description": str(parsed.get("lesson_description") or "").strip(),
+                    "chunk_description": str(parsed.get("chunk_description") or "").strip(),
+                },
+                "temporary_unavailable": False,
+                "error": None,
+            }
+        except Exception as exc:
+            last_exc = exc
+            if attempt >= max_attempts or not _is_temporary_description_error(exc):
+                break
+
+            backoff = _DESCRIPTION_RETRY_BACKOFFS[attempt - 1]
+            _log.warning(
+                "[search_descriptions] temporary Gemini failure; retry %d/%d in %.1fs | keyword_name=%r matched_keyword=%r path_description=%r error=%s",
+                attempt,
+                len(_DESCRIPTION_RETRY_BACKOFFS),
+                backoff,
+                keyword_value or None,
+                matched_value or None,
+                path_value,
+                exc,
+            )
+            time.sleep(backoff)
+
+    return {
+        "descriptions": dict(_EMPTY),
+        "temporary_unavailable": _is_temporary_description_error(last_exc) if last_exc else False,
+        "error": str(last_exc) if last_exc else None,
+    }
+
 
 def generate_search_descriptions(
     *,
@@ -88,32 +172,18 @@ def generate_search_descriptions(
     matched_keyword: str | None = None,
     model: str = "gemini-2.5-flash",
 ) -> dict[str, str]:
-    keyword_value = str(keyword_name or "").strip()
-    path_value = str(path_description or "").strip()
-    if not keyword_value and not path_value:
-        return dict(_EMPTY)
-
-    prompt = _PROMPT_TEMPLATE.format(
-        class_name=str(class_name or "").strip() or "—",
-        subject_name=str(subject_name or "").strip() or "—",
-        subject_type=str(subject_type or "").strip() or "—",
-        keyword_name=keyword_value or "—",
-        matched_keyword=str(matched_keyword or "").strip() or "—",
-        path_description=path_value or "—",
+    result = generate_search_descriptions_result(
+        class_name=class_name,
+        subject_name=subject_name,
+        subject_type=subject_type,
+        keyword_name=keyword_name,
+        path_description=path_description,
+        matched_keyword=matched_keyword,
+        model=model,
     )
-
-    try:
-        raw = generate_text(prompt, model=model)
-        parsed = extract_json(raw)
-        return {
-            "keyword_description": str(parsed.get("keyword_description") or "").strip(),
-            "topic_description": str(parsed.get("topic_description") or "").strip(),
-            "lesson_description": str(parsed.get("lesson_description") or "").strip(),
-            "chunk_description": str(parsed.get("chunk_description") or "").strip(),
-        }
-    except Exception as exc:
-        _log.debug("generate_search_descriptions failed: %s", exc)
-        return dict(_EMPTY)
+    if result.get("error"):
+        _log.debug("generate_search_descriptions failed: %s", result.get("error"))
+    return result["descriptions"]
 
 
 def generate_keyword_description(

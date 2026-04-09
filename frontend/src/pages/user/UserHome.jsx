@@ -723,6 +723,7 @@ export default function UserHome() {
   const [useGeminiKeywords, setUseGeminiKeywords] = useState(true);
   const [includeDescriptions, setIncludeDescriptions] = useState(true);
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [descriptionStatus, setDescriptionStatus] = useState(null);
   const [groups, setGroups] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -764,6 +765,7 @@ export default function UserHome() {
     setSubmittedQuery(trimmed);
     setLoading(true);
     setGroups(null);
+    setDescriptionStatus(null);
     setError(null);
 
     try {
@@ -771,6 +773,7 @@ export default function UserHome() {
         useGeminiKeywords,
         includeDescriptions,
       });
+      setDescriptionStatus(data?.description_status || null);
       const g = buildSearchGroups(data);
       setGroups(g);
 
@@ -779,6 +782,7 @@ export default function UserHome() {
       userActionsApi.createHistory({ query: trimmed, result_count: totalCount, top_levels: topLevels }).catch(() => {});
     } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+      setDescriptionStatus(null);
       setGroups({ subjects: [], topics: [], lessons: [], chunks: [], keywords: [] });
     } finally {
       setLoading(false);
@@ -791,6 +795,7 @@ export default function UserHome() {
 
   function clearResults() {
     setGroups(null);
+    setDescriptionStatus(null);
     setError(null);
     setQuery("");
     setSubmittedQuery("");
@@ -869,6 +874,12 @@ export default function UserHome() {
       {/* Error */}
       {error && !loading && (
         <div className="u-confidence-banner u-banner-error">{error}</div>
+      )}
+
+      {!loading && !error && descriptionStatus?.available === false && descriptionStatus?.reason === "gemini_unavailable" && (
+        <div className="u-confidence-banner">
+          Gemini đang quá tải, chưa thể sinh mô tả lúc này.
+        </div>
       )}
 
       {/* Idle */}
