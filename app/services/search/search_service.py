@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
@@ -17,14 +18,51 @@ from app.services.infrastructure.mongo_client import get_mongo_db
 from app.services.search.neo_search_service import search_top_topics_by_embedding
 from app.services.infrastructure.postgre_client import SessionLocal
 from app.services.ai.search_description_service import (
-    generate_hierarchy_descriptions,
-    generate_keyword_description,
+    generate_search_descriptions,
 )
 
 _log = logging.getLogger(__name__)
 
 # Lấy Top-K là 3
 _TOP_K = 3
+_TEMP_GEMINI_EXTRACTION_PATTERNS = (
+    "http 503",
+    "unavailable",
+    "high demand",
+)
+_GEMINI_EXTRACTION_RETRY_BACKOFFS = (0.5, 1.0)
+
+
+def _is_temporary_gemini_extraction_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(pattern in msg for pattern in _TEMP_GEMINI_EXTRACTION_PATTERNS)
+
+
+def _extract_query_keywords_with_retry(query: str) -> Dict[str, Any]:
+    max_attempts = 1 + len(_GEMINI_EXTRACTION_RETRY_BACKOFFS)
+    last_exc: Exception | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return extract_query_keywords(query)
+        except Exception as exc:
+            last_exc = exc
+            if attempt >= max_attempts or not _is_temporary_gemini_extraction_error(exc):
+                raise
+
+            backoff = _GEMINI_EXTRACTION_RETRY_BACKOFFS[attempt - 1]
+            _log.warning(
+                "Gemini keyword extraction temporary failure for query=%r; retry %d/%d in %.1fs: %s",
+                query,
+                attempt,
+                len(_GEMINI_EXTRACTION_RETRY_BACKOFFS),
+                backoff,
+                exc,
+            )
+            time.sleep(backoff)
+
+    if last_exc is not None:
+        raise last_exc
 
 
 def run_topic_probe(
@@ -33,7 +71,7 @@ def run_topic_probe(
 ) -> Dict[str, Any]:
     try:
         # Gemini tách keyword
-        extraction = extract_query_keywords(query)
+        extraction = _extract_query_keywords_with_retry(query)
     except Exception as exc:
         _log.warning("Gemini extraction failed for query=%r: %s", query, exc)
         return {
@@ -117,23 +155,29 @@ def _probe_keyword(
         seen_kw_oids.add(matched_kw_oid)
 
         kw_id = str(matched_kw_oid)
+        keyword_name = matched_kw.get("keyword_name")
         kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
-        hits = _fetch_chunk_hits(db, matched_kw_oid, keyword=keyword)
+        hits = _fetch_chunk_hits(
+            db,
+            matched_kw_oid,
+            matched_keyword=keyword,
+            keyword_name=keyword_name,
+        )
 
         first_hit = hits[0] if hits else {}
-        kw_description = generate_keyword_description(
-            class_name=first_hit.get("class_name"),
-            subject_name=first_hit.get("subject_name"),
-            subject_type=first_hit.get("subject_type"),
-            keyword_name=matched_kw.get("keyword_name"),
-        )
+        kw_description = str(first_hit.get("keyword_description") or "").strip()
+        if not hits:
+            kw_description = generate_search_descriptions(
+                keyword_name=keyword_name,
+                matched_keyword=keyword,
+            )["keyword_description"]
 
         base["matched_keywords"].append({
             k: v for k, v in matched_kw.items() if k != "_oid"
         })
         base["keyword_documents"].append({
             "id":          kw_id,
-            "name":        matched_kw.get("keyword_name"),
+            "name":        keyword_name,
             "aliases":     matched_kw.get("aliases") or [],
             "assets":      kw_assets,
             "description": kw_description,
@@ -277,7 +321,8 @@ def _kw_doc_to_match(kw_oid: Any, kw_doc: Dict[str, Any]) -> Dict[str, Any]:
 def _fetch_chunk_hits(
     db: Any,
     kw_oid: Any,
-    keyword: Optional[str] = None,
+    matched_keyword: Optional[str] = None,
+    keyword_name: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     ck_docs = list(db["chunk_keyword"].find(
         {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
@@ -286,7 +331,12 @@ def _fetch_chunk_hits(
 
     hits: List[Dict[str, Any]] = []
     for ck in ck_docs:
-        hit = _build_chunk_hit(db, ck.get("chunk_id"), keyword=keyword)
+        hit = _build_chunk_hit(
+            db,
+            ck.get("chunk_id"),
+            matched_keyword=matched_keyword,
+            keyword_name=keyword_name,
+        )
         if hit is not None:
             hits.append(hit)
     return hits
@@ -339,7 +389,8 @@ def _build_path_description(
 def _build_chunk_hit(
     db: Any,
     raw_chunk_id: Any,
-    keyword: Optional[str] = None,
+    matched_keyword: Optional[str] = None,
+    keyword_name: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     chunk_oid = _to_oid(raw_chunk_id)
     if chunk_oid is None:
@@ -423,9 +474,13 @@ def _build_chunk_hit(
         chunk_name=chunk_name,
     )
 
-    descriptions = generate_hierarchy_descriptions(
+    descriptions = generate_search_descriptions(
+        class_name=class_name,
+        subject_name=subject_name,
+        subject_type=subject_type,
+        keyword_name=keyword_name,
         path_description=path_description,
-        keyword=keyword,
+        matched_keyword=matched_keyword,
     )
 
     return {
@@ -447,6 +502,7 @@ def _build_chunk_hit(
         "subject_assets": subject_assets,
         "class_id":       class_id,
         "class_name":   class_name,
+        "keyword_description": descriptions["keyword_description"],
         "path_description":   path_description,
         "topic_description":  descriptions["topic_description"],
         "lesson_description": descriptions["lesson_description"],
@@ -523,4 +579,3 @@ def _build_documents_from_hits(
             }
 
     return list(topic_map.values()), list(lesson_map.values()), list(chunk_map.values()), list(subject_map.values())
-
