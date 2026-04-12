@@ -35,7 +35,6 @@ def _run_import_job(
     actor: str,
     only_cols: Optional[list],
 ) -> None:
-    """Runs in a background thread. Writes progress to MongoDB."""
     _db = get_mongo_db()
 
     update_import_job_progress(
@@ -61,6 +60,7 @@ def _run_import_job(
         )
 
     try:
+        # Import excel vào mongo và sync xuống pg truyền vào sync_one = sync_doc_to_postgres
         report = import_excel_to_mongo(
             _db,
             tmp_path,

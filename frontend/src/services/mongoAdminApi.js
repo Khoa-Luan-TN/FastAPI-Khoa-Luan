@@ -102,23 +102,7 @@ async function httpUpload(url, formData) {
   return data;
 }
 
-// ✅ Import workbook: backend tự đọc nhiều sheet và insert nhiều collection
-export function importExcelWorkbook(file) {
-  const fd = new FormData();
-  fd.append("file", file);
-  return httpUpload(`${API_BASE}/admin/mongo/import/excel`, fd);
-}
-
-// ✅ Import vào 1 collection cụ thể (nếu bạn muốn mode đơn giản)
-export function importExcelToCollection(collectionName, file) {
-  const fd = new FormData();
-  fd.append("file", file);
-  const url = new URL(`${API_BASE}/admin/mongo/import/excel-one`);
-  url.searchParams.set("collection_name", collectionName);
-  return httpUpload(url.toString(), fd);
-}
-
-// ✅ Tracked import: returns {ok, job_id} immediately; poll getImportJobStatus for progress
+// Tracked import: returns {ok, job_id} immediately; poll getImportJobStatus for progress
 export function importExcelTracked(file, collectionName) {
   const fd = new FormData();
   fd.append("file", file);

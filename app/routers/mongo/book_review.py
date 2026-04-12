@@ -1,8 +1,4 @@
 # app/routers/mongo/book_review.py
-#
-# Review-first book ingestion endpoints.
-# Users upload a raw PDF; the backend runs sequential stage-by-stage extraction
-# and exposes topic/lesson/chunk data for review before any heavy processing.
 from __future__ import annotations
 import json
 import re

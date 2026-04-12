@@ -45,15 +45,6 @@ def _put_marker(client, bucket: str, marker: str) -> None:
 
 
 def ensure_prefix_chain(client, bucket: str, prefix: str) -> None:
-    """Create folder markers for every ancestor of prefix (inclusive).
-
-    For 'documents/lop-10/tin-hoc/topic/topic_01' creates:
-        documents/
-        documents/lop-10/
-        documents/lop-10/tin-hoc/
-        documents/lop-10/tin-hoc/topic/
-        documents/lop-10/tin-hoc/topic/topic_01/
-    """
     parts = [p for p in (prefix or "").strip("/").split("/") if p]
     for i in range(1, len(parts) + 1):
         _put_marker(client, bucket, "/".join(parts[:i]) + "/")
@@ -66,12 +57,6 @@ def ensure_class_root_markers(
     *,
     errors: Optional[List[Dict]] = None,
 ) -> None:
-    """Idempotently create documents/<slug>/, images/<slug>/, videos/<slug>/ markers.
-
-    Class docs do NOT store asset_prefixes, so class root markers must be created
-    explicitly here. Called on both import and UI create so the class folder always
-    appears in the MinIO browser.
-    """
     if not class_slug:
         return
     for root in ROOT_FOLDERS:
@@ -83,6 +68,7 @@ def ensure_class_root_markers(
                 errors.append({"prefix": f"{root}/{class_slug}/", "error": str(exc)})
 
 
+# Hàm để tạo sẵn các thư mục ảo trên MinIO để Admin có thể thêm dữ liệu vào
 def ensure_asset_prefix_markers(
     client,
     bucket: str,
@@ -91,11 +77,6 @@ def ensure_asset_prefix_markers(
     seen: Optional[Set[str]] = None,
     errors: Optional[List[Dict]] = None,
 ) -> None:
-    """Create full folder chains for every path in asset_prefixes.
-
-    seen  — shared set across multiple calls; already-seen prefixes are skipped.
-    errors — list to append non-fatal MinIO failures to.
-    """
     for prefix in asset_prefixes.values():
         if not prefix:
             continue

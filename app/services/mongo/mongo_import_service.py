@@ -91,19 +91,26 @@ def _two_digit(v: Any) -> str:
     except Exception:
         return ""
 
-
+"""
+    [
+        {"import_key": "cls/10", "class_name": "10", "_row": 2},
+        {"import_key": "cls/11", "class_name": "11", "_row": 3},
+    ]
+"""
 def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
     if sheet_name not in wb.sheetnames:
         return []
 
     ws = wb[sheet_name]
+    # Lấy tất cả các dòng trong Sheet ra thành List
     rows = list(ws.iter_rows(values_only=True))
     if not rows:
         return []
 
+    # Lấy ra header và chuẩn hoá
     headers = [_norm_header(x) for x in rows[0]]
     out = []
-
+    # Bắt đầu từ dòng 2 bỏ qua Header, idx là index, và r là record
     for idx, r in enumerate(rows[1:], start=2):
         rec = {}
         empty = True
@@ -113,6 +120,7 @@ def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
             val = _cell_to_value(cell)
             if val is not None:
                 empty = False
+            # Gán dữ liệu theo header
             rec[h] = val
         if empty:
             continue
@@ -122,12 +130,8 @@ def _read_sheet_rows(wb, sheet_name: str) -> List[Dict[str, Any]]:
     return out
 
 
+# Tạo index trên import_key 
 def _ensure_import_index(db, col: str):
-    # Sparse unique index: only indexes documents where import_key is present and non-null.
-    # Documents created via normal UI (no import_key field) are excluded entirely,
-    # preventing DuplicateKeyError when multiple non-import documents lack import_key.
-    # Always drops the legacy non-sparse index first — create_index alone does NOT
-    # replace an existing index with different options in MongoDB.
     try:
         db[col].drop_index("import_key_1")
     except Exception:
@@ -138,18 +142,10 @@ def _ensure_import_index(db, col: str):
         pass
 
 
-# Entity collections that use import_key for Excel import deduplication.
 _IMPORT_KEY_COLLECTIONS = ["class", "subject", "topic", "lesson", "chunk"]
 
 
 def ensure_all_import_key_indexes(db) -> None:
-    """Migrate import_key indexes for all entity collections to sparse unique.
-
-    Must be called at app startup so legacy non-sparse import_key_1 indexes are
-    converted BEFORE any normal create/update reaches those collections.
-    Without this, a normal UI create on 'class' or 'subject' immediately crashes
-    with DuplicateKeyError on import_key: null even when import has never run.
-    """
     for col in _IMPORT_KEY_COLLECTIONS:
         _ensure_import_index(db, col)
 
@@ -162,17 +158,22 @@ def _upsert_by_import_key(
     *,
     actor: str,
 ) -> Tuple[str, str]:
+    # Lấy ngày giờ hiện tại
     now = utc_now()
 
+    # Tạo projection (nghĩa là trả về các dữ liệu nào)
     proj = {"_id": 1, "deleted_at": 1}
     for k in doc.keys():
         proj[k] = 1
 
+    # Tìm doc cũ theo import_key
     existing = db[col].find_one({"import_key": import_key}, proj)
 
     if existing:
+        # Tạo bản copy của doc
         patch = dict(doc)
 
+        # Xử lí soft delete
         if "is_deleted" in patch:
             is_del = patch["is_deleted"]
             if isinstance(is_del, str):
@@ -184,9 +185,11 @@ def _upsert_by_import_key(
                 patch["deleted_at"] = existing.get("deleted_at") or now
             else:
                 patch["deleted_at"] = None
-
+        
+        # Kiểm tra xem dữ liệu có đổi hay không
         IGNORE = {"_id", "created_at", "created_by", "updated_at", "updated_by"}
         same = True
+        # Chạy vòng lặp để kiểm tra nếu khác thì Update ngay
         for k, v in patch.items():
             if k in IGNORE:
                 continue
@@ -197,11 +200,14 @@ def _upsert_by_import_key(
         if same:
             return str(existing["_id"]), "noop"
 
+        # Khi có sự thay đổi thì thêm vào các field
         patch["updated_at"] = now
         patch["updated_by"] = actor
+        # Update vào Mongodb
         db[col].update_one({"_id": existing["_id"]}, {"$set": patch})
         return str(existing["_id"]), "update"
 
+    # Khi không tồn tại thì tạo mới
     ins = dict(doc)
     ins["import_key"] = import_key
     ins.setdefault("is_deleted", False)
@@ -220,7 +226,6 @@ def _upsert_by_import_key(
 
 
 def _class_slug_by_id(db, class_id, ctx: Dict[str, Any]) -> str:
-    """Return class_slug for a class looked up by its Mongo _id."""
     if not class_id:
         return ""
     key = str(class_id)
@@ -229,12 +234,12 @@ def _class_slug_by_id(db, class_id, ctx: Dict[str, Any]) -> str:
         return cached
     d = db["class"].find_one({"_id": class_id}, {"class_name": 1})
     slug = slugify_vi(d["class_name"]) if (d and d.get("class_name")) else ""
+    # Lưu vào nhớ tạm để không cần phải query mongo
     ctx.setdefault("_class_slug_by_id", {})[key] = slug
     return slug
 
 
 def _subject_path_by_id(db, subject_id, ctx: Dict[str, Any]) -> dict:
-    """Return {class_slug, subject_slug} for a subject looked up by its Mongo _id."""
     if not subject_id:
         return {}
     key = str(subject_id)
@@ -290,6 +295,7 @@ def _lesson_path_by_id(db, lesson_id, ctx: Dict[str, Any]) -> dict:
     return info
 
 
+# Tạo đường dẫn trong MinIO
 def _compute_asset_prefixes(
     col: str,
     doc: Dict[str, Any],
@@ -298,10 +304,6 @@ def _compute_asset_prefixes(
     ctx: Dict[str, Any],
     import_key: str,
 ) -> Optional[Dict[str, Any]]:
-    """Compute deterministic asset_prefixes for educational entities.
-    Uses *_id fields already resolved into doc (not *_ref) so that *_ref does not
-    need to be persisted in the stored document.
-    """
     if col == "class":
         cn = doc.get("class_name")
         if cn:
@@ -309,7 +311,6 @@ def _compute_asset_prefixes(
         return None
 
     if col == "subject":
-        # class_id is already resolved as ObjectId in doc at this point
         class_slug = _class_slug_by_id(db, doc.get("class_id"), ctx)
         subj_slug = slugify_vi(rec.get("subject_name") or doc.get("subject_name"))
         if not (class_slug and subj_slug):
@@ -319,7 +320,6 @@ def _compute_asset_prefixes(
         }
 
     if col == "topic":
-        # subject_id is already resolved as ObjectId in doc at this point
         subj_info = _subject_path_by_id(db, doc.get("subject_id"), ctx)
         if not subj_info:
             return None
@@ -335,7 +335,6 @@ def _compute_asset_prefixes(
         }
 
     if col == "lesson":
-        # topic_id is already resolved as ObjectId in doc at this point
         topic_info = _topic_path_by_id(db, doc.get("topic_id"), ctx)
         if not topic_info:
             return None
@@ -351,7 +350,6 @@ def _compute_asset_prefixes(
         }
 
     if col == "chunk":
-        # lesson_id is already resolved as ObjectId in doc at this point
         lesson_info = _lesson_path_by_id(db, doc.get("lesson_id"), ctx)
         if not lesson_info:
             return None
@@ -709,9 +707,7 @@ def _import_keyword_rows(
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
             _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
 
-            # Always mark topic for finalization regardless of bag_op.
-            # Topics with a pre-existing topic_bag (noop) still need their
-            # keyword_embedding_* fields rebuilt when they were empty (e.g. on re-import).
+            
             if topic_id not in affected_topic_ids:
                 _log.debug(
                     "[import] topic marked for finalization: id=%s name=%s",
@@ -825,7 +821,7 @@ def _import_keyword_rows(
         **topic_finalize_summary,
     }
 
-
+#  Hàm chính để Import Excel vào MongoDB
 def import_excel_to_mongo(
     db,
     xlsx_path: str,
@@ -835,30 +831,53 @@ def import_excel_to_mongo(
     only_cols: Optional[List[str]] = None,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> Dict[str, Any]:
+    # Mở file excel để Import
     wb = load_workbook(xlsx_path, data_only=True)
 
+    # Các cols sẽ import 
     cols = only_cols or IMPORT_ORDER
+
     all_cols = set(IMPORT_ORDER) | set(cols)
+    # Dùng để tạo ra Dictionary để lưu các _id MongoDB trả về để dễ dàng mapping với nhau
     id_map: Dict[str, Dict[str, str]] = {c: {} for c in all_cols}
 
+    # Nhớ tạm 
     ctx: Dict[str, Any] = {"class": {}, "_subject_path": {}, "_topic_path": {}, "_lesson_path": {}}
 
+    # Mở minio 
     minio_client, minio_bucket = _get_import_minio()
     minio_seen: Set[str] = set()
     minio_errors: List[Dict[str, Any]] = []
     if minio_client:
+        # Tạo sẵn folder root (documents/images/videos) nếu chưa có
         ensure_root_folders(minio_client, minio_bucket, errors=minio_errors)
 
+    # Biến lưu báo cáo 
     report = {"file": xlsx_path, "collections": {}, "errors": []}
 
+    # Đọc tất cả các sheet cần import 
+    # Và chuẩn hoá toàn bộ các sheet
+    """ 
+        {
+            "class": [
+                {"import_key": "cls/10", "class_name": "10", "_row": 2}
+            ],
+            "subject": [
+                {"import_key": "subj/10/tinhoc", "class_ref": "cls/10", "subject_name": "Tin học", "_row": 2}
+            ]
+        }
+    """
     rows_by_col: Dict[str, List[Dict[str, Any]]] = {col: _read_sheet_rows(wb, col) for col in cols}
+    # Tính khối lượng cho process
     total_rows: int = sum(
         len(r) * 2 if col == "keyword" else len(r)
         for col, r in rows_by_col.items()
     )
     processed_rows: int = 0
 
+    # Bắt đầu vòng lặp để import
     for col in cols:
+        # Lấy dữ liệu sau khi đọc sheet trả về ở trên
         rows = rows_by_col[col]
         if not rows:
             report["collections"][col] = {"rows": 0, "inserted": 0, "updated": 0, "synced": 0, "skipped": True}
@@ -886,17 +905,22 @@ def import_excel_to_mongo(
 
         _ensure_import_index(db, col)
 
+        # Chuẩn bị biến đếm
         inserted = updated = synced = 0
         errors = []
 
+        # Duyệt từng dòng trong rows trả về ở trên
         for rec in rows:
+            # Lấy number của dòng và bỏ nó ra khỏi
             rowno = rec.pop("_row", None)
             try:
+                # Lấy import_key
                 import_key = str(rec.get("import_key") or "").strip()
                 if not import_key:
                     raise ValueError("missing import_key")
 
                 doc: Dict[str, Any] = {}
+                # Duyệt qua từng key và value trong record lấy ra trong từng dòng
                 for k, v in rec.items():
                     if k is None:
                         continue
@@ -908,29 +932,36 @@ def import_excel_to_mongo(
                         doc[key] = _try_parse_json(v)
                     else:
                         doc[key] = _cell_to_value(v)
+                    # Tới đây thì doc là một dictionary đã được chuẩn hoá 
 
+                # Kiểm tra xem col có tham chiếu đến parent nào không
+                # _ref, _id, _parent
                 if col in REF_MAP:
                     ref_col, target_field, parent_col = REF_MAP[col]
+                    # Lấy value ref_key của parent
                     ref_key = str(rec.get(ref_col) or "").strip()
                     if ref_key:
+                        # Kiểm tra xem parent_id đã có trong map chưa (id của mongodb trả về import_key = _oid)
                         parent_id = id_map[parent_col].get(ref_key)
                         if not parent_id:
+                            # Tìm xem parent_col đã có chưa để lấy _oid
                             parent_doc = db[parent_col].find_one({"import_key": ref_key}, {"_id": 1})
                             if parent_doc:
+                                # Lấy parent_id và gán vào id_map để lần sau dùng
                                 parent_id = str(parent_doc["_id"])
                                 id_map[parent_col][ref_key] = parent_id
                         if not parent_id:
                             raise ValueError(
                                 f"cannot resolve {ref_col}='{ref_key}' (parent '{parent_col}' not imported yet)"
                             )
+                        # Sau đó thêm vào doc _id của parent 
                         doc[target_field] = ObjectId(parent_id) if ObjectId.is_valid(parent_id) else parent_id
 
                 asset_prefixes = _compute_asset_prefixes(col, doc, rec, db, ctx, import_key)
+                # Lưu đường dẫn vào trong doc
                 if asset_prefixes is not None:
                     doc["asset_prefixes"] = asset_prefixes
 
-                # Strip transient *_ref after asset path computation — the stored document
-                # uses *_id as the real parent reference; *_ref is only needed for lookup during import.
                 if col in REF_MAP:
                     doc.pop(REF_MAP[col][0], None)
 
@@ -938,6 +969,7 @@ def import_excel_to_mongo(
 
                 mongo_id, op = _upsert_by_import_key(db, col, import_key, doc, actor=actor)
 
+                # Lưu vào id_map của col và import_key hiện tại để phía sau dùng
                 id_map[col][import_key] = mongo_id
 
                 if asset_prefixes and minio_client:
@@ -946,8 +978,6 @@ def import_excel_to_mongo(
                         seen=minio_seen, errors=minio_errors,
                     )
 
-                # Class docs have no asset_prefixes, but MinIO root markers still
-                # need to exist so the class folder appears in the MinIO browser.
                 if col == "class" and minio_client:
                     cls_slug = slugify_vi(doc.get("class_name") or "")
                     if cls_slug:

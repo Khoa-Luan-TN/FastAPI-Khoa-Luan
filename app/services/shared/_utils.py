@@ -77,7 +77,6 @@ def extract_json(text: str) -> dict:
 
 
 def normalize_for_compare(text: str) -> str:
-    """Lowercase, collapse whitespace, strip Vietnamese diacritics for string comparison."""
     text = text.lower().strip()
     text = " ".join(text.split())
     text = text.replace("\u0111", "d").replace("\u0110", "d")

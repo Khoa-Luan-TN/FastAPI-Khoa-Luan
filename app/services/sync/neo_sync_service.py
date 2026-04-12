@@ -1,8 +1,5 @@
 # app/services/neo_sync_service.py
-# Neo4j write layer: upsert and cascade-delete nodes for all syncable entity types.
-# Called exclusively by sync_service. Not called directly from routers.
-# Note: ensure_neo_vector_indexes() is defined here but not called from any production path;
-#       it is a maintenance utility (safe to call manually or from a startup script).
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -47,10 +44,12 @@ def neo_session() -> NeoSession:
         session.close()
 
 
+# Sync xuống Neo4j
 def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if col not in NEO_SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
 
+    # Vào đây và gọi handlers tương ứng
     handlers: Dict[str, Callable[[NeoSession, Dict[str, Any]], None]] = {
         "class": lambda s, p: _upsert_class(s, class_id=p["id"], class_name=p.get("name", "")),
         "subject": lambda s, p: _upsert_subject(
@@ -89,7 +88,7 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-
+# Tạo node Thing
 def _ensure_thing(session: NeoSession) -> None:
     session.run(
         """
@@ -100,6 +99,7 @@ def _ensure_thing(session: NeoSession) -> None:
     )
 
 
+# Hàm cập nhật và tạo mối quan hệ giữa class và thing
 def _upsert_class(session: NeoSession, *, class_id: str, class_name: str) -> None:
     _ensure_thing(session)
     session.run(

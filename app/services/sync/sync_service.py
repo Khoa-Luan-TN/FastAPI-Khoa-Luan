@@ -1,8 +1,4 @@
 # app/services/sync_service.py
-# Central sync orchestrator: Mongo → PostgreSQL → Neo4j.
-# Called by document_service (on create) and routers/mongo/documents.py (on update/delete).
-# Delegates PG writes to _upsert_one_to_pg, Neo writes to neo_sync_service, embeddings to
-# entity_embedding_service. Does NOT own any DB connection — receives db + uses SessionLocal.
 import logging
 import re
 from typing import Any, Optional
@@ -12,34 +8,18 @@ from app.services.infrastructure.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
 from app.services.sync.entity_embedding_service import ensure_topic_embedding, clear_topic_embedding
 from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity, clear_topic_embedding_neo
+from app.services.search.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
 
 _log = logging.getLogger(__name__)
 
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
 
-
 def _resolve_topic_keyword_text(db, doc: dict) -> str:
-    """Return keyword_embedding_text for a topic doc.
-
-    Reads all keyword names from topic_bag.keyword_refs (no Gemini filtering).
-    Returns "" when no active topic_bag or no valid keyword names.
-    """
-    from app.services.search.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
     result = build_topic_embedding_text_from_topic_bag(db, doc)
     return result["keyword_embedding_text"]
 
 def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
-    """Rebuild Neo subtree for an active topic from ACTIVE Mongo descendants only.
-
-    Walks active lessons -> active chunks -> active chunk_keywords in Mongo,
-    calls _upsert_one_to_pg + neo_sync_upsert for each.  Deleted descendants
-    are skipped (their Neo nodes were already removed by prior soft-delete syncs).
-    PG rows are reused by mongo_id; missing rows are recreated once.
-
-    Returns a summary dict with ok, lessons_synced, chunks_synced,
-    chunk_keywords_synced, errors.
-    """
     topic_oid = topic_doc.get("_id")
     if topic_oid is None:
         return {"ok": False, "error": "topic_doc missing _id"}
@@ -49,7 +29,6 @@ def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
     chunk_keywords_synced = 0
     errors: list[dict] = []
 
-    # Active lessons for this topic
     lesson_docs = list(db["lesson"].find({
         "topic_id": topic_oid,
         "is_deleted": {"$ne": True},
@@ -138,10 +117,8 @@ def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
         "errors": errors if errors else None,
     }
 
-
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
-
 
 def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] = None) -> None:
     """Normalize vec and attach to info['neo_payload']. No-op if vec is invalid."""
@@ -153,7 +130,6 @@ def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] =
         payload["model_name"] = model_name
     info["neo_payload"] = payload
 
-
 def _to_int(v, default=None):
     if v is None:
         return default
@@ -161,7 +137,6 @@ def _to_int(v, default=None):
         return int(v)
     except Exception:
         return default
-
 
 def _as_ref_str(v) -> Optional[str]:
     if v is None:
@@ -172,7 +147,6 @@ def _as_ref_str(v) -> Optional[str]:
         return str(v["$oid"])
     return str(v)
 
-
 def _get_ref(doc: dict, keys: list[str]) -> Optional[str]:
     for k in keys:
         if k in doc and doc[k] is not None:
@@ -181,19 +155,18 @@ def _get_ref(doc: dict, keys: list[str]) -> Optional[str]:
                 return str(s).strip()
     return None
 
-
 def _is_oid_str(v: Any) -> bool:
     if v is None:
         return False
     s = str(v).strip()
     return bool(_OID_HEX_RE.match(s))
 
-
+# Tìm và trả về PG row tương ứng
 def _pg_get_by_mongo_id(pg, model, mongo_id: str):
     if not hasattr(model, "mongo_id"):
         raise ValueError(f"Postgres model '{model.__name__}' missing column mongo_id")
+    # Query trên bảng 
     return pg.query(model).filter(model.mongo_id == mongo_id).first()
-
 
 def _mongo_find_by_oid_or_str(db, col: str, ref: str):
     if _is_oid_str(ref):
@@ -201,7 +174,6 @@ def _mongo_find_by_oid_or_str(db, col: str, ref: str):
         if doc:
             return doc
     return db[col].find_one({"_id": ref})
-
 
 def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str | None:
     if not parent_ref:
@@ -213,6 +185,7 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
     if not _is_oid_str(ref):
         return ref
 
+    # Luồng chạy của Subject
     if parent_col == "class":
         obj = _pg_get_by_mongo_id(pg, pg_models.Class, ref)
         if obj:
@@ -270,40 +243,43 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
 
     return None
 
-# 2
+# Upsert xuống PG
 def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
-    """
-    Upsert 1 mongo doc -> postgres row (by mongo_id).
-    Return info dict.
-    """
+
     mongo_id = str(doc.get("_id"))
 
+    # Luồng chạy Class
     if col == "class":
         name = (doc.get("class_name") or doc.get("name") or "").strip()
         if not name:
             raise ValueError("class_name missing")
 
         obj = _pg_get_by_mongo_id(pg, pg_models.Class, mongo_id)
+        # Nếu có thì update 
         if obj:
             obj.class_name = name
             return {"op": "update", "pg_id": obj.class_id, "neo_payload": {"id": obj.class_id, "name": name}}
 
+        # Tạo object để thêm vào PG class
         obj = pg_models.Class(class_name=name, mongo_id=mongo_id)
         pg.add(obj)
         pg.flush()
         pg.refresh(obj)
         return {"op": "insert", "pg_id": obj.class_id, "neo_payload": {"id": obj.class_id, "name": name}}
 
+    # Luồng chạy Subject
     if col == "subject":
         subject_name = (doc.get("subject_name") or doc.get("name") or "").strip()
         subject_type = (doc.get("subject_type") or doc.get("type") or "").strip()
 
         class_ref = _get_ref(doc, ["class_id", "class_mongo_id", "class_oid", "classRef", "class"])
+        # Kiểm tra đã có trong PG chưa và trả về class_id trong PG
         class_id = _ensure_parent_pg_id(db, pg, "class", class_ref)
 
         if not subject_name or not subject_type or not class_id:
             raise ValueError(f"subject missing fields or class_ref not mapped (class_ref={class_ref})")
 
+        
         obj = _pg_get_by_mongo_id(pg, pg_models.Subject, mongo_id)
         if obj:
             obj.subject_name = subject_name
@@ -387,7 +363,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
         lesson_ref = _get_ref(doc, ["lesson_id", "lesson_mongo_id", "lesson_oid", "lessonRef", "lesson"])
 
-        # Guard: do not restore a chunk whose parent lesson is soft-deleted
         if lesson_ref:
             _parent_lesson = _mongo_find_by_oid_or_str(db, "lesson", lesson_ref)
             if _parent_lesson is None or _parent_lesson.get("is_deleted") is True:
@@ -425,11 +400,9 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             from app.services.keyword.keyword_alias_service import _resolve_keyword_slug
             keyword_slug, _ = _resolve_keyword_slug(db, keyword_name)
 
-        # Upsert standalone Keyword row by mongo_id.
-        # keyword_id is generated by PG trigger as 'kw_' || keyword_slug on INSERT; preserved on rename.
         obj = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if obj:
-            old_keyword_name = obj.keyword_name  # capture before overwrite
+            old_keyword_name = obj.keyword_name  
             obj.keyword_name = keyword_name
             obj.keyword_slug = keyword_slug
             pg.flush()
@@ -445,7 +418,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 ret["old_keyword_name"] = old_keyword_name
             return ret
 
-        # Fallback: lookup by keyword_name to avoid duplicates
         dup = pg.query(pg_models.Keyword).filter(
             pg_models.Keyword.keyword_name == keyword_name,
         ).first()
@@ -460,7 +432,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 "neo_payload": {"id": dup.keyword_id, "name": keyword_name},
             }
 
-        # No existing row — insert without keyword_id; PG trigger generates it as 'kw_' || keyword_slug.
         obj = pg_models.Keyword(
             keyword_name=keyword_name,
             keyword_slug=keyword_slug,
@@ -468,7 +439,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         )
         pg.add(obj)
         pg.flush()
-        # keyword_id is now populated by PG trigger (eager_defaults refreshes the row).
         new_kw_id = obj.keyword_id
         return {
             "op": "insert",
@@ -478,10 +448,8 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         }
 
     if col == "chunk_keyword":
-        # Resolve chunk
         chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid"])
 
-        # Guard: do not revive a soft-deleted parent chunk
         if chunk_ref:
             _parent_chunk = _mongo_find_by_oid_or_str(db, "chunk", chunk_ref)
             if _parent_chunk is None or _parent_chunk.get("is_deleted") is True:
@@ -491,12 +459,10 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not pg_chunk_id:
             raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
 
-        # keyword_id in Mongo chunk_keyword is the Mongo keyword _id
         mongo_kw_id = str(doc.get("keyword_id") or "").strip()
         if not mongo_kw_id:
             raise ValueError("chunk_keyword missing keyword_id")
 
-        # Look up Mongo keyword by _id
         kw_doc = _mongo_find_by_oid_or_str(db, "keyword", mongo_kw_id)
         if not kw_doc or kw_doc.get("is_deleted") is True:
             raise ValueError(f"keyword with _id='{mongo_kw_id}' not found in Mongo")
@@ -504,7 +470,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         if not keyword_name:
             raise ValueError(f"keyword '{mongo_kw_id}' has no keyword_name")
 
-        # Ensure the Keyword row exists in PG — look up by mongo_id
         pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_kw_id)
         if not pg_kw:
             _upsert_one_to_pg(db, pg, "keyword", kw_doc)
@@ -516,12 +481,10 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         keyword_key = f"{pg_chunk_id}::{keyword_name}"
         _neo = {"id": keyword_key, "name": keyword_name, "parent_id": pg_chunk_id}
 
-        # Primary lookup: by mongo_id on chunk_keyword table
         existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, mongo_id)
         if existing_ck:
             old_key = f"{existing_ck.chunk_id}::{keyword_name}"
             if old_key != keyword_key:
-                # Chunk reassigned — replace row
                 old_neo_id = old_key
                 pg.delete(existing_ck)
                 pg.flush()
@@ -538,7 +501,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
                 }
             return {"op": "noop", "pg_id": keyword_key, "chunk_id": pg_chunk_id, "keyword_name": keyword_name, "neo_payload": _neo}
 
-        # Fallback: lookup by composite PK (chunk_id, keyword_id)
         dup = pg.query(pg_models.ChunkKeyword).filter(
             pg_models.ChunkKeyword.chunk_id == pg_chunk_id,
             pg_models.ChunkKeyword.keyword_id == pg_keyword_id,
@@ -568,7 +530,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             is_active = doc.get("active")
         if is_active is None:
             is_active = True
-        # Soft-delete always wins: is_deleted=True forces is_active=False
         if is_deleted:
             is_active = False
 
@@ -580,7 +541,6 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
         obj = _pg_get_by_mongo_id(pg, pg_models.User, mongo_id)
         if obj:
-            # Check PG username uniqueness if username is changing
             if obj.username != username:
                 conflict = pg.query(pg_models.User).filter(
                     pg_models.User.username == username,
@@ -608,11 +568,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
     raise ValueError(f"Unsupported col: {col}")
 
 def _soft_delete_chunk(pg, chunk_doc: dict) -> dict:
-    """Delete PG chunk row (+ cascade chunk_keyword) and remove Neo chunk subtree.
 
-    Returns a summary dict with ok, pg_deleted, chunk_pg_id, neo_deleted, neo.
-    If no PG row exists, returns skipped=True (idempotent).
-    """
     mongo_id = str(chunk_doc.get("_id"))
     chunk_id = None
 
@@ -635,11 +591,7 @@ def _soft_delete_chunk(pg, chunk_doc: dict) -> dict:
     }
 
 def _soft_delete_lesson(pg, lesson_doc: dict) -> dict:
-    """Delete PG lesson row (FK cascade removes child chunk/chunk_keyword rows) and remove Neo lesson subtree.
-
-    Returns a summary dict with ok, pg_deleted, lesson_pg_id, neo_deleted, neo.
-    If no PG row exists, returns skipped=True (idempotent).
-    """
+  
     mongo_id = str(lesson_doc.get("_id"))
     lesson_id = None
 
@@ -661,13 +613,7 @@ def _soft_delete_lesson(pg, lesson_doc: dict) -> dict:
         "neo": neo_result,
     }
 
-
 def _restore_chunk_keywords(db, pg, chunk_doc: dict, chunk_pg_id: str) -> dict:
-    """Sync all active Mongo chunk_keyword rows for this chunk back into PG + Neo.
-
-    Called after a chunk is un-deleted (is_deleted -> false) to restore its keywords.
-    Returns ok, chunk_keywords_synced, errors.
-    """
     chunk_oid = chunk_doc.get("_id")
     if chunk_oid is None:
         return {"ok": False, "error": "chunk_doc missing _id"}
@@ -708,15 +654,7 @@ def _restore_chunk_keywords(db, pg, chunk_doc: dict, chunk_pg_id: str) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_restore_lesson_chunks(db, lesson_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo chunk docs under this lesson and sync each via existing chunk flow.
-
-    Marks each soft-deleted child chunk as is_deleted=False in Mongo, then calls
-    sync_doc_to_postgres(db, "chunk", ...) for each so the existing chunk restore path
-    recreates PG rows and restores Neo + chunk keywords.
-    Returns ok, chunks_restored, errors.
-    """
     lesson_oid = lesson_doc.get("_id")
     if lesson_oid is None:
         return {"ok": False, "error": "lesson_doc missing _id"}
@@ -758,15 +696,8 @@ def _cascade_restore_lesson_chunks(db, lesson_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_soft_delete_lesson_chunks(db, lesson_doc: dict) -> dict:
-    """Soft-delete all active Mongo chunk docs under this lesson and sync each via existing chunk flow.
 
-    Marks each active child chunk as is_deleted=True in Mongo (inheriting deleted_at/updated_by
-    from the lesson), then calls sync_doc_to_postgres(db, "chunk", ...) for each so that the
-    existing chunk soft-delete path handles PG row deletion and Neo subtree removal.
-    Returns ok, chunks_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     lesson_oid = lesson_doc.get("_id")
@@ -811,15 +742,8 @@ def _cascade_soft_delete_lesson_chunks(db, lesson_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_soft_delete_topic_lessons(db, topic_doc: dict) -> dict:
-    """Soft-delete all active Mongo lesson docs under this topic and sync each via existing lesson flow.
 
-    Marks each active child lesson as is_deleted=True in Mongo (inheriting deleted_at/updated_by
-    from the topic), then calls sync_doc_to_postgres(db, "lesson", ...) for each so that the
-    existing lesson soft-delete path cascades to chunks, chunk_keywords, PG, and Neo.
-    Returns ok, lessons_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     topic_oid = topic_doc.get("_id")
@@ -864,14 +788,8 @@ def _cascade_soft_delete_topic_lessons(db, topic_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_soft_delete_topic_bag(db, topic_doc: dict) -> dict:
-    """Soft-delete all active Mongo topic_bag docs under this topic.
 
-    Marks each active topic_bag as is_deleted=True, inheriting deleted_at/updated_by
-    from the topic doc.
-    Returns ok, topic_bags_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     topic_oid = topic_doc.get("_id")
@@ -908,13 +826,8 @@ def _cascade_soft_delete_topic_bag(db, topic_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _soft_delete_topic(pg, topic_doc: dict) -> dict:
-    """Delete PG topic row (FK cascade removes child subject rows if any) and remove Neo topic subtree.
 
-    Returns a summary dict with ok, pg_deleted, topic_pg_id, neo_deleted, neo.
-    If no PG row exists, returns skipped=True (idempotent).
-    """
     mongo_id = str(topic_doc.get("_id"))
     topic_id = None
 
@@ -936,15 +849,8 @@ def _soft_delete_topic(pg, topic_doc: dict) -> dict:
         "neo": neo_result,
     }
 
-
 def _cascade_restore_topic_lessons(db, topic_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo lesson docs under this topic and sync each via existing lesson flow.
 
-    Marks each soft-deleted child lesson as is_deleted=False in Mongo, then calls
-    sync_doc_to_postgres(db, "lesson", ...) for each so the existing lesson restore path
-    recreates PG rows and restores Neo + chunks + chunk_keywords.
-    Returns ok, lessons_restored, errors.
-    """
     topic_oid = topic_doc.get("_id")
     if topic_oid is None:
         return {"ok": False, "error": "topic_doc missing _id"}
@@ -986,13 +892,8 @@ def _cascade_restore_topic_lessons(db, topic_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_restore_topic_bag(db, topic_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo topic_bag docs under this topic.
-
-    Marks each soft-deleted topic_bag as is_deleted=False in Mongo.
-    Returns ok, topic_bags_restored, errors.
-    """
+  
     topic_oid = topic_doc.get("_id")
     if topic_oid is None:
         return {"ok": False, "error": "topic_doc missing _id"}
@@ -1026,14 +927,8 @@ def _cascade_restore_topic_bag(db, topic_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_soft_delete_chunk_keywords(db, chunk_doc: dict) -> dict:
-    """Soft-delete all active Mongo chunk_keyword docs under this chunk.
 
-    Marks each active chunk_keyword as is_deleted=True, inheriting deleted_at/updated_by
-    from the chunk doc. PG rows are removed by FK cascade when the chunk row is deleted.
-    Returns ok, chunk_keywords_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     chunk_oid = chunk_doc.get("_id")
@@ -1070,14 +965,8 @@ def _cascade_soft_delete_chunk_keywords(db, chunk_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_restore_chunk_keywords_mongo(db, chunk_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo chunk_keyword docs under this chunk.
 
-    Marks each soft-deleted chunk_keyword as is_deleted=False in Mongo so that
-    _restore_chunk_keywords can sync them back to PG + Neo.
-    Returns ok, chunk_keywords_restored, errors.
-    """
     chunk_oid = chunk_doc.get("_id")
     if chunk_oid is None:
         return {"ok": False, "error": "chunk_doc missing _id"}
@@ -1111,13 +1000,8 @@ def _cascade_restore_chunk_keywords_mongo(db, chunk_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _soft_delete_subject(pg, subject_doc: dict) -> dict:
-    """Delete PG subject row (FK cascade removes child topic rows) and remove Neo subject subtree.
-
-    Returns a summary dict with ok, pg_deleted, subject_pg_id, neo_deleted, neo.
-    If no PG row exists, returns skipped=True (idempotent).
-    """
+    
     mongo_id = str(subject_doc.get("_id"))
     subject_id = None
 
@@ -1139,13 +1023,8 @@ def _soft_delete_subject(pg, subject_doc: dict) -> dict:
         "neo": neo_result,
     }
 
-
 def _soft_delete_class(pg, class_doc: dict) -> dict:
-    """Delete PG class row (FK cascade removes child subject rows) and remove Neo class subtree.
-
-    Returns a summary dict with ok, pg_deleted, class_pg_id, neo_deleted, neo.
-    If no PG row exists, returns skipped=True (idempotent).
-    """
+   
     mongo_id = str(class_doc.get("_id"))
     class_id = None
 
@@ -1167,15 +1046,7 @@ def _soft_delete_class(pg, class_doc: dict) -> dict:
         "neo": neo_result,
     }
 
-
 def _cascade_soft_delete_subject_topics(db, subject_doc: dict) -> dict:
-    """Soft-delete all active Mongo topic docs under this subject and sync each via existing topic flow.
-
-    Marks each active child topic as is_deleted=True in Mongo, then calls
-    sync_doc_to_postgres(db, "topic", ...) for each so that the existing topic
-    soft-delete path cascades to lessons, chunks, chunk_keywords, topic_bags, PG, and Neo.
-    Returns ok, topics_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     subject_oid = subject_doc.get("_id")
@@ -1220,15 +1091,8 @@ def _cascade_soft_delete_subject_topics(db, subject_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_soft_delete_class_subjects(db, class_doc: dict) -> dict:
-    """Soft-delete all active Mongo subject docs under this class and sync each via existing subject flow.
 
-    Marks each active child subject as is_deleted=True in Mongo, then calls
-    sync_doc_to_postgres(db, "subject", ...) for each so that the existing subject
-    soft-delete path cascades to topics, lessons, chunks, PG, and Neo.
-    Returns ok, subjects_cascaded, errors.
-    """
     from datetime import datetime, timezone
 
     class_oid = class_doc.get("_id")
@@ -1273,15 +1137,8 @@ def _cascade_soft_delete_class_subjects(db, class_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_restore_subject_topics(db, subject_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo topic docs under this subject and sync each via existing topic flow.
-
-    Marks each soft-deleted child topic as is_deleted=False in Mongo, then calls
-    sync_doc_to_postgres(db, "topic", ...) for each so the existing topic restore path
-    recreates PG rows and restores Neo + lessons + chunks + chunk_keywords.
-    Returns ok, topics_restored, errors.
-    """
+   
     subject_oid = subject_doc.get("_id")
     if subject_oid is None:
         return {"ok": False, "error": "subject_doc missing _id"}
@@ -1323,15 +1180,7 @@ def _cascade_restore_subject_topics(db, subject_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
 def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
-    """Restore all soft-deleted Mongo subject docs under this class and sync each via existing subject flow.
-
-    Marks each soft-deleted child subject as is_deleted=False in Mongo, then calls
-    sync_doc_to_postgres(db, "subject", ...) for each so the existing subject restore path
-    recreates PG rows and restores Neo + topics + lessons + chunks.
-    Returns ok, subjects_restored, errors.
-    """
     class_oid = class_doc.get("_id")
     if class_oid is None:
         return {"ok": False, "error": "class_doc missing _id"}
@@ -1339,6 +1188,7 @@ def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
     updated_at = class_doc.get("updated_at")
     updated_by = class_doc.get("updated_by")
 
+    # Tìm các subject đang bị is_deleted
     deleted_subjects = list(db["subject"].find({
         "class_id": class_oid,
         "is_deleted": True,
@@ -1355,10 +1205,12 @@ def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
             if updated_by is not None:
                 patch["updated_by"] = updated_by
             db["subject"].update_one({"_id": subject_oid}, {"$set": patch})
+            # Lấy subject vừa update
             updated_subject = db["subject"].find_one({"_id": subject_oid})
             if updated_subject is None:
                 errors.append({"mongo_id": subject_mongo_id, "error": "subject not found after Mongo update"})
                 continue
+            # Gọi vào PG để sync xuống giống luồng class đi
             subject_sync = sync_doc_to_postgres(db, "subject", updated_subject)
             if subject_sync.get("ok"):
                 restored += 1
@@ -1373,44 +1225,38 @@ def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
-
-# Hàm chạy đầu khi soft delete
+# Hàm xử lí sync PG
+# isinstance(info, dict) kiểm tra kiểu dữ liệu của biến
 def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     if col not in SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
-
+    
+    # Kiểm tra có xoá mềm hay không 
     is_deleted = doc.get("is_deleted") is True
 
     _topic_kw_text: Optional[str] = None
     _topic_restore_in_progress: bool = False
     _topic_kw_empty_with_active_bag: bool = False
     if col == "topic" and not is_deleted:
-        # Nối chuỗi để embed cho topic
+        # Tạo keyword_embedding_text
         _topic_kw_text = _resolve_topic_keyword_text(db, doc)
         doc_id = doc.get("_id")
         if doc_id is not None:
             if not _topic_kw_text:
-                # Resolved empty — determine why before deciding what to write.
                 _deleted_bag_exists = db["topic_bag"].count_documents(
                     {"topic_id": doc_id, "is_deleted": True}, limit=1
                 ) > 0
                 if _deleted_bag_exists:
-                    # Guard 1 (restore): soft-deleted bags still exist — topic_bag not yet
-                    # un-deleted. Defer write to after _cascade_restore_topic_bag below.
                     _topic_restore_in_progress = True
                 else:
                     _active_bag_exists = db["topic_bag"].count_documents(
                         {"topic_id": doc_id, "is_deleted": {"$ne": True}}, limit=1
                     ) > 0
                     if _active_bag_exists:
-                        # Guard 2 (normal update): active bags exist but resolve returned "".
-                        # Re-try once — transient empty on a topic with live bag data.
                         _topic_kw_text = _resolve_topic_keyword_text(db, doc)
                         if not _topic_kw_text:
-                            # Still empty despite active bags — skip write and skip clear.
                             _topic_kw_empty_with_active_bag = True
-            # Only write when we have a definitive result (non-empty, or truly no bags).
             if not _topic_restore_in_progress and not _topic_kw_empty_with_active_bag:
                 try:
                     db["topic"].update_one(
@@ -1422,6 +1268,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
     pg = SessionLocal()
     try:
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "chunk" and is_deleted:
             ck_mongo_cascade = _cascade_soft_delete_chunk_keywords(db, doc)
             chunk_sd = _soft_delete_chunk(pg, doc)
@@ -1434,7 +1281,8 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 "neo": _neo,
                 "neo_entity_sync": _neo,
             }
-
+        
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "chunk_keyword" and is_deleted:
             with pg.begin():
                 existing_ck = _pg_get_by_mongo_id(pg, pg_models.ChunkKeyword, str(doc.get("_id")))
@@ -1461,6 +1309,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             result["neo"] = neo_upsert or {"ok": True, "skipped": True}
             return result
 
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "lesson" and is_deleted:
             lesson_cascade = _cascade_soft_delete_lesson_chunks(db, doc)
             lesson_sd = _soft_delete_lesson(pg, doc)
@@ -1474,6 +1323,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 "neo_entity_sync": _neo,
             }
 
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "topic" and is_deleted:
             topic_lesson_cascade = _cascade_soft_delete_topic_lessons(db, doc)
             topic_bag_cascade = _cascade_soft_delete_topic_bag(db, doc)
@@ -1489,6 +1339,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 "neo_entity_sync": _neo,
             }
 
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "subject" and is_deleted:
             subject_topic_cascade = _cascade_soft_delete_subject_topics(db, doc)
             subject_sd = _soft_delete_subject(pg, doc)
@@ -1502,6 +1353,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 "neo_entity_sync": _neo,
             }
 
+        # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
         if col == "class" and is_deleted:
             class_subject_cascade = _cascade_soft_delete_class_subjects(db, doc)
             class_sd = _soft_delete_class(pg, doc)
@@ -1521,6 +1373,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         _subject_topic_restore: Optional[dict] = None
         _class_subject_restore: Optional[dict] = None
 
+        # Chạy 1
         with pg.begin():
             info = _upsert_one_to_pg(db, pg, col, doc)
 
@@ -1599,8 +1452,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             if rename_errors:
                 info["keyword_rename_errors"] = rename_errors
 
-        # PG persistence guard: for active chunk, verify the row really landed in PG.
-        # Use a separate session to avoid implicitly starting a transaction on the main pg session.
         _pg_persist_check: Optional[dict] = None
         if not is_deleted and col == "chunk":
             verify_pg = SessionLocal()
@@ -1616,8 +1467,8 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         neo_cleanup: Optional[dict] = None
         neo_upsert: Optional[dict] = None
 
+        # Chạy 2
         if col in NEO_SYNCABLE_COLS:
-            # Do not sync chunk to Neo if PG row is missing
             if col == "chunk" and isinstance(_pg_persist_check, dict) and not _pg_persist_check.get("ok"):
                 neo_upsert = {"ok": False, "error": "skipped: chunk row missing in PG"}
             elif is_deleted:
@@ -1640,11 +1491,11 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     neo_payload = info.pop("neo_payload", None) if isinstance(info, dict) else None
                     if not isinstance(neo_payload, dict):
                         neo_upsert = {"ok": False, "error": "missing neo_payload"}
+                    # class, subject sẽ vào đây
                     else:
                         neo_col = "keyword" if col == "chunk_keyword" else col
                         neo_upsert = neo_sync_upsert(neo_col, neo_payload)
 
-        # Restore child chunks only after lesson Neo node is confirmed up
         if not is_deleted and col == "lesson":
             _neo_lesson_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
             if not _neo_lesson_ok:
@@ -1656,7 +1507,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     _log.warning("lesson chunk restore cascade failed: %s", _lcr_err)
                     _lesson_cascade_result = {"ok": False, "error": str(_lcr_err)}
 
-        # Restore child lessons and topic_bag only after topic Neo node is confirmed up
         if not is_deleted and col == "topic" and isinstance(info, dict):
             restore_pg_id = info.get("pg_id")
             _neo_topic_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
@@ -1675,8 +1525,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     _log.warning("topic bag restore failed: %s", _tbr_err)
                     _topic_bag_restore = {"ok": False, "error": str(_tbr_err)}
 
-                # Deferred keyword_embedding_text write: re-resolve now that topic_bag docs
-                # are active. Also updates PG + Neo embedding to replace the skipped clear.
                 if _topic_restore_in_progress and isinstance(_topic_bag_restore, dict) and _topic_bag_restore.get("ok"):
                     _doc_id = doc.get("_id")
                     if _doc_id is not None:
@@ -1725,7 +1573,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         _log.warning("topic subtree restore failed for pg_id=%s: %s", restore_pg_id, _rst_err)
                         info["restore_subtree"] = {"ok": False, "error": str(_rst_err)}
 
-        # Restore chunk keywords only after chunk Neo node is confirmed up
         _restore_ck_result: Optional[dict] = None
         _ck_mongo_restore: Optional[dict] = None
         if not is_deleted and col == "chunk" and isinstance(info, dict):
@@ -1745,20 +1592,21 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                         _log.warning("chunk_keywords restore failed for pg_id=%s: %s", chunk_pg_id, _rck_err)
                         _restore_ck_result = {"ok": False, "error": str(_rck_err)}
 
-        # Restore child topics only after subject Neo node is confirmed up
         if not is_deleted and col == "subject" and isinstance(info, dict):
             _neo_subject_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
             if not _neo_subject_ok:
                 _subject_topic_restore = {"ok": False, "skipped": True, "reason": "subject neo upsert failed"}
             else:
                 try:
+                    # tiếp tục
                     _subject_topic_restore = _cascade_restore_subject_topics(db, doc)
                 except Exception as _str_err:
                     _log.warning("subject topic restore cascade failed: %s", _str_err)
                     _subject_topic_restore = {"ok": False, "error": str(_str_err)}
 
-        # Restore child subjects only after class Neo node is confirmed up
+        # Nếu không bị xoá thì class đi vào đây
         if not is_deleted and col == "class" and isinstance(info, dict):
+            # Kiểm tra sync có thành công không
             _neo_class_ok = isinstance(neo_upsert, dict) and neo_upsert.get("ok")
             if not _neo_class_ok:
                 _class_subject_restore = {"ok": False, "skipped": True, "reason": "class neo upsert failed"}
