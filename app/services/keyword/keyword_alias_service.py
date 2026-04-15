@@ -1,7 +1,5 @@
 # app/services/keyword_alias_service.py
-# Keyword alias management: slug resolution, alias DB writes, canonical name enforcement,
-# batch alias refresh (two-stage: screen then generate via gemini_alias_service).
-# Called by document_service, routers/mongo/documents.py, and mongo_import_service.
+
 from __future__ import annotations
 
 import logging
@@ -28,26 +26,26 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
         _oid = ObjectId(str(exclude_id)) if ObjectId.is_valid(str(exclude_id)) else str(exclude_id)
         _excl["_id"] = {"$ne": _oid}
 
+    # Tìm keyword name có trong mongodb không
     existing = db["keyword"].find_one(
         {"keyword_name": name, "is_deleted": {"$ne": True}, **_excl},
         {"_id": 1, "keyword_slug": 1},
     )
     if existing:
         return existing["keyword_slug"], str(existing["_id"])
-
-    # Case-insensitive (diacritics-sensitive) duplicate check.
-    # "Thông tin" == "thông tin" (same word, different case) → duplicate, reuse.
-    # "Mảng" != "Mạng" (ả ≠ ạ, different Vietnamese words) → NOT duplicate, allocate suffix.
+    
+    # Tìm keyword name không phân biệt hoa thường
     ci_match = db["keyword"].find_one(
         {"keyword_name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
          "is_deleted": {"$ne": True}, **_excl},
         {"_id": 1, "keyword_slug": 1},
     )
+
     if ci_match:
         return ci_match["keyword_slug"], str(ci_match["_id"])
 
-    # Slug collision means a different Vietnamese word happens to transliterate identically —
-    # that is NOT a duplicate; just allocate the next free suffixed slot.
+
+
     pattern = f"^{re.escape(base)}(_[0-9]+)?$"
     taken = {
         doc["keyword_slug"]
@@ -58,9 +56,11 @@ def _resolve_keyword_slug(db, keyword_name: str, *, exclude_id=None) -> tuple[st
         if doc.get("keyword_slug")
     }
 
+    # Kiểm tra slug có nằm trong taken không
     if base not in taken:
         return base, None
 
+    # Nếu có slug nằm trong taken rồi thì trả về slug_num+1 (với num là các slug trùng như khác name)
     i = 1
     while True:
         candidate = f"{base}_{i}"
@@ -90,10 +90,13 @@ def ensure_keyword_alias_indexes(db) -> None:
 
 # ===================== ALIAS ARRAY SYNC =====================
 
+# sync lại mảng alias cho các keyword bị ảnh hưởng
+# dọn dẹp từng keyword_id
 def sync_keyword_alias_array(db, keyword_id, actor: str | None = None) -> list[str]:
     kw_str = str(keyword_id)
     kw_oid = ObjectId(kw_str) if ObjectId.is_valid(kw_str) else kw_str
 
+    # Lấy toàn bộ alias của keyword_id đó và chỉ lấy alias_name để làm array để update lại trong MongoDB của col Keyword alias[]
     active_aliases: list[str] = [
         doc["alias_name"]
         for doc in db["keyword_alias"].find(
@@ -113,6 +116,7 @@ def sync_keyword_alias_array(db, keyword_id, actor: str | None = None) -> list[s
 
 # ===================== CANONICAL NAME ENFORCEMENT =====================
 
+# dọn alias cũ nếu keyword mới thêm vào nằm trong alias
 def enforce_canonical_name_precedence(
     db,
     new_keyword_name: str,
@@ -121,6 +125,7 @@ def enforce_canonical_name_precedence(
 
     new_norm = normalize_for_compare(new_keyword_name)
 
+    # Trả về list id của keyword
     stale = list(db["keyword_alias"].find(
         {"alias_norm": new_norm},
         {"_id": 1, "keyword_id": 1},
@@ -154,10 +159,6 @@ def handle_keyword_rename_cleanup(
 
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
-    # Case-insensitive (diacritics-sensitive) conflict check.
-    # Only blocks rename when the target name is the same word in a different case.
-    # A different word that happens to share the same base slug is NOT a conflict —
-    # _resolve_keyword_slug will allocate a suffixed slug for it.
     conflict = db["keyword"].find_one({
         "is_deleted": {"$ne": True},
         "_id": {"$ne": kw_oid},
@@ -181,11 +182,7 @@ def handle_keyword_rename_cleanup(
 # ===================== SINGLE ALIAS HARD DELETE =====================
 
 def delete_keyword_alias(db, alias_id: str, actor: str) -> dict:
-    """Hard-delete a single keyword_alias doc and refresh the parent keyword.aliases array.
-
-    Returns a result dict with deleted, alias_id, keyword_id, aliases_after_delete.
-    Raises ValueError if the alias doc is not found.
-    """
+  
     oid = ObjectId(alias_id) if ObjectId.is_valid(alias_id) else alias_id
 
     alias_doc = db["keyword_alias"].find_one({"_id": oid})
@@ -214,8 +211,8 @@ def refresh_keyword_aliases_batch(
     actor: str,
     max_aliases: int = 5,
     model: str = "gemini-2.5-flash",
-    batch_size: int = 5,          # Stage 2: alias generation batch size
-    screen_batch_size: int = 25,  # Stage 1: screening batch size
+    batch_size: int = 5,          
+    screen_batch_size: int = 25,  
     batch_sleep: float = 6.0,
     max_wait_seconds: int = 3600,
     debug_output_dir: str | None = "Output",
@@ -223,19 +220,7 @@ def refresh_keyword_aliases_batch(
     progress_state: dict | None = None,
     phase2_total_slots: int = 0,
 ) -> dict:
-    """Two-stage batch alias refresh.
 
-    Stage 1: Screen all keywords for alias potential (screen_batch_size per request).
-    Stage 2: Generate aliases only for candidates (batch_size per request).
-
-    Total job time budget (max_wait_seconds) is shared across both stages.
-    DB writes (hard-delete + insert + sync) happen ONLY for keywords that:
-    - pass Stage 1 screening, AND
-    - belong to a successfully parsed Stage 2 batch (alias_map value is not None).
-    Keywords rejected at screening keep their existing aliases untouched.
-    """
-    # TEMPORARY DEBUG FLAG: skip all alias generation when disabled.
-    # To re-enable: remove DISABLE_ALIAS_GENERATION from config or set it to false.
     if not alias_generation_enabled():
         _log.info("[keyword_alias] alias generation disabled — skipping batch refresh")
         return {
@@ -280,6 +265,7 @@ def refresh_keyword_aliases_batch(
             "message": msg,
         })
 
+    # chia làm 2 giai đoạn
     stage1_slots = phase2_total_slots // 2
     stage2_slots = phase2_total_slots - stage1_slots
 
@@ -319,9 +305,18 @@ def refresh_keyword_aliases_batch(
     if not keyword_id_name_pairs:
         return empty_result
 
+    # Map từ tên sang id
+    """ 
+        {
+            "AI": "kw1",
+            "IoT": "kw2",
+        }
+    """
     name_to_id: dict[str, str] = {name: kw_id for kw_id, name in keyword_id_name_pairs}
+    # chỉ lấy danh sách tên
     all_names = [name for _, name in keyword_id_name_pairs]
 
+    # Lấy tất cả keyword_name hiện có trong mongoDB
     existing_keyword_names: list[str] = [
         doc["keyword_name"]
         for doc in db["keyword"].find({"is_deleted": {"$ne": True}}, {"keyword_name": 1})
@@ -362,6 +357,7 @@ def refresh_keyword_aliases_batch(
                     "remaining_keywords": all_names}
         raise
 
+    # Lấy ra các keyword ứng viên có thể có
     candidates: list[tuple[str, str]] = [
         (name_to_id[name], name)
         for name in all_names
@@ -437,13 +433,14 @@ def refresh_keyword_aliases_batch(
                 "inserted_count": 0,
                 "reason": screen_results.get(name, {}).get("reason", ""),
             })
-    # stage2_entries will be filled during batch loop, then appended at end
+
     stage2_debug: dict[str, dict] = {}
 
     raw_alias_collector: dict = {}
     batches = [candidates[i : i + batch_size] for i in range(0, len(candidates), batch_size)]
     _stage2_prog = {"emitted": 0}
 
+    # Chạy từng keyword để 
     for batch_idx, batch in enumerate(batches):
         elapsed = time.monotonic() - job_start
         remaining_budget = max_wait_seconds - elapsed
@@ -470,6 +467,7 @@ def refresh_keyword_aliases_batch(
         _alias_phase["label"] = f"tạo alias batch {batch_idx + 1}/{len(batches)}"
         _emit(f"Đang tạo alias batch {batch_idx + 1}/{len(batches)} ({len(batch)} keyword)…")
 
+        # Sinh alias theo batch
         try:
             alias_map = generate_aliases_batch(
                 keyword_names=batch_names,

@@ -31,7 +31,6 @@ def _has_cjk(text: str) -> bool:
 
 
 def _is_valid_script(alias: str) -> bool:
-    """Accept only Latin/Vietnamese diacritics/digits/common punctuation."""
     if _has_cjk(alias):
         return False
     _ALLOWED_NONALPHA = set(" \t-_/()[].,;:'\"!@#$%&*+=~0123456789")
@@ -64,7 +63,6 @@ _VIET_ROOTS: frozenset[str] = frozenset({
 
 
 def _is_unaccented_viet(alias: str) -> bool:
-    """True if alias looks like Vietnamese written without diacritics (≥2 root matches)."""
     if not alias.isascii():
         return False
     words = alias.lower().split()
@@ -74,7 +72,6 @@ def _is_unaccented_viet(alias: str) -> bool:
 
 
 def _is_unit_symbol(alias: str) -> bool:
-    """True for single-character aliases — almost always a unit symbol, never a valid alias."""
     return len(alias.strip()) <= 1
 
 
@@ -84,7 +81,6 @@ _MAX_ALIAS_WORDS = 8
 # ── Layer 3: Broad/ambiguous keyword detection ────────────────────────────────
 
 def _kw_has_viet_diacritics(keyword_name: str) -> bool:
-    """True if the raw keyword contains Vietnamese diacritics (non-ASCII LATIN chars)."""
     for ch in keyword_name:
         if not ch.isascii() and unicodedata.name(ch, "").startswith("LATIN"):
             return True
@@ -92,11 +88,7 @@ def _kw_has_viet_diacritics(keyword_name: str) -> bool:
 
 
 def _is_short_abbreviation(alias: str) -> bool:
-    """True for short tokens that look like CS abbreviations (OS, LAN, IoT, UTF-8).
-
-    Requires ≥2 uppercase letters (or all-caps) to distinguish from title-case words
-    like 'Computer' or 'Network' which have only one leading capital.
-    """
+ 
     if " " in alias.strip():
         return False
     if len(alias) > 8:
@@ -109,12 +101,7 @@ def _is_short_abbreviation(alias: str) -> bool:
 
 
 def _is_weak_everyday_alias(alias: str, keyword_name: str, context_text: str | None) -> bool:
-    """Reject Vietnamese aliases for broad single-word Vietnamese keywords without context.
 
-    Short abbreviations (AI, OS, LAN, IoT, KB) and ASCII terms always pass here;
-    ASCII terms are filtered by _is_translation_only in Layer 4 if needed.
-    Only non-ASCII (Vietnamese-diacritic) aliases are rejected at this layer.
-    """
     if not _kw_has_viet_diacritics(keyword_name):
         return False
     if len(keyword_name.strip().split()) != 1:
@@ -129,8 +116,6 @@ def _is_weak_everyday_alias(alias: str, keyword_name: str, context_text: str | N
 
 # ── Layer 4: Semantic policy ──────────────────────────────────────────────────
 
-# Concept-family guard: each alias norm maps to the set of keyword norms it is valid for.
-# Aliases outside their allowed family are rejected as concept-family confusion.
 _TERM_CANONICAL: dict[str, frozenset[str]] = {
     # IoT
     "iot": frozenset({"internet of things", "internet of things (iot)", "iot"}),
@@ -273,6 +258,7 @@ def _is_disallowed_pair(norm_kw: str, norm_alias: str) -> bool:
 
 # ── Small helpers ─────────────────────────────────────────────────────────────
 
+# Trả về list của các keyword đã được cắt theo size (batch)
 def _chunks(lst: list, size: int) -> list:
     return [lst[i : i + size] for i in range(0, len(lst), size)]
 
@@ -464,7 +450,6 @@ Each item in "items" must use the keyword_name EXACTLY as given in input.
 # ── Response parsers ──────────────────────────────────────────────────────────
 
 def _parse_screen_result(batch: list[str], parsed: dict, batch_label: str) -> dict[str, dict]:
-    """Validate and extract screening decisions from a parsed Gemini response."""
     items = parsed.get("items", [])
     if not isinstance(items, list):
         _log.warning("[alias_screen] %s: 'items' is not a list — defaulting all to false", batch_label)
@@ -507,12 +492,7 @@ def _parse_batch_result(
     max_aliases: int,
     batch_label: str,
 ) -> dict[str, list[str]]:
-    """Validate a parsed Gemini batch-response dict and return per-keyword filtered aliases.
-
-    - Missing keys → treated as []; logged as warning.
-    - Non-list values → treated as []; logged as warning.
-    - Extra keys (not in batch) → ignored; logged as warning.
-    """
+   
     expected = set(batch)
     missing = expected - set(parsed)
     extra = set(parsed) - expected
@@ -629,16 +609,7 @@ def generate_aliases_batch(
     _raw_collector: dict | None = None,
     status_callback: Callable[[dict], None] | None = None,
 ) -> dict[str, list[str] | None]:
-    """Generate filtered aliases for multiple keywords using batched Gemini requests.
-
-    Returns a dict mapping each input keyword to its filtered alias list, or None.
-    - list[str]: successful result for that keyword (may be empty).
-    - None: the batch that contained this keyword failed all parse retries.
-      Callers MUST NOT update the DB for keywords that map to None.
-
-    On quota stop condition (max_wait exceeded), re-raises RuntimeError so the
-    caller can record partial progress and stop.
-    """
+    
     if not keyword_names:
         return {}
     if existing_keyword_names is None:
@@ -667,10 +638,9 @@ def generate_aliases_batch(
             existing_section=existing_section,
         )
 
-        # Inner retry loop handles transient parse/network errors (not quota — those are
-        # handled transparently by generate_text when wait_for_available_key=True).
+
         parsed: dict | None = None
-        for parse_attempt in range(1, _MAX_BATCH_PARSE_RETRIES + 2):  # +2 → 1..N+1 attempts
+        for parse_attempt in range(1, _MAX_BATCH_PARSE_RETRIES + 2):  
             try:
                 raw_response = generate_text(
                     prompt,
@@ -710,7 +680,7 @@ def generate_aliases_batch(
 
         if parsed is None:
             for kw in batch:
-                results[kw] = None  # sentinel: caller must NOT delete/overwrite DB for these
+                results[kw] = None  
                 if _raw_collector is not None:
                     _raw_collector[kw] = None
             continue
@@ -729,6 +699,7 @@ def generate_aliases_batch(
     return results
 
 
+# Sàng lọc những keyword khả năng có Alias
 def screen_keywords_for_alias_potential(
     keyword_names: list[str],
     model: str = "gemini-2.5-flash",
@@ -737,26 +708,23 @@ def screen_keywords_for_alias_potential(
     max_wait_seconds: int = 3600,
     status_callback: Callable[[dict], None] | None = None,
 ) -> dict[str, dict]:
-    """Stage 1: screen keywords for alias potential using Gemini.
 
-    Returns dict: keyword_name → {"has_alias_potential": bool, "reason": str}
-    On batch parse failure: all keywords in that batch default to has_alias_potential=False.
-    On quota stop condition: re-raises RuntimeError so the caller can record partial progress.
-    """
     if not keyword_names:
         return {}
 
     _MAX_RETRIES = 2
     results: dict[str, dict] = {}
+    # Cắt keyword thành 25 để sàng lọc
     batches = _chunks(keyword_names, batch_size)
 
     for batch_idx, batch in enumerate(batches):
+        # Đặt nhãn 
         batch_label = f"batch {batch_idx + 1}/{len(batches)}"
         _log.info(
             "[alias_screen] batch_start %d/%d | keywords=%d",
             batch_idx + 1, len(batches), len(batch),
         )
-
+        # tạo prompt
         prompt = _SCREEN_PROMPT_TEMPLATE.format(
             keywords_json=json.dumps(batch, ensure_ascii=False, indent=2),
         )
@@ -771,6 +739,7 @@ def screen_keywords_for_alias_potential(
                     max_wait_seconds=max_wait_seconds,
                     status_callback=status_callback,
                 )
+                # Lấy câu trả lời từ AI chuẩn hoá
                 candidate = extract_json(raw_response)
                 if not isinstance(candidate, dict):
                     raise ValueError("response root is not a JSON object")
@@ -805,6 +774,7 @@ def screen_keywords_for_alias_potential(
                 results[kw] = {"has_alias_potential": False, "reason": "batch parse failed"}
             continue
 
+        # chuẩn hoá xem đủ keyword không
         batch_results = _parse_screen_result(batch, parsed, batch_label)
         results.update(batch_results)
 

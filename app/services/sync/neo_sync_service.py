@@ -366,7 +366,6 @@ def _upsert_keyword(
 
 # NOTE: Not called from production startup. Intended for manual admin use.
 def ensure_neo_vector_indexes() -> dict:
-    """Create all vector indexes (idempotent — uses IF NOT EXISTS)."""
     results = {}
     with neo_session() as s:
         for col, (idx_name, label, prop) in _VECTOR_INDEX_SPECS.items():
@@ -387,17 +386,7 @@ def ensure_neo_vector_indexes() -> dict:
     return results
 
 
-# Cascade hard-delete mapping for Neo4j subtrees.
-#
-# Mongo soft-delete (is_deleted flag) is managed upstream in sync_service.py.
-# These queries perform a hard DETACH DELETE on the Neo4j side so deleted nodes
-# never surface in vector or graph searches.
-#
-# Each descendant level is collected inside an independent CALL { WITH n ... }
-# subquery. This avoids the cartesian row explosion that occurs when chaining
-# OPTIONAL MATCH clauses in a single pipeline (N×M×… rows before any DELETE).
-# After all CALL blocks, the lists are combined, UNWINDed, deduplicated with
-# WITH DISTINCT, nulls filtered out, then each node is DETACH DELETEd once.
+
 _CASCADE_CYPHER: dict[str, str] = {
     "class": """
         MATCH (n:Class {class_id: $eid})
@@ -519,13 +508,6 @@ _CASCADE_CYPHER: dict[str, str] = {
 
 
 def detach_delete_entity(col: str, entity_id: str) -> dict:
-    """
-    Hard-delete a Neo4j node and its entire descendant subtree by entity id.
-    Mongo soft-delete (is_deleted) is handled upstream; this call removes the
-    nodes from Neo so they no longer appear in vector or graph searches.
-    CALL subqueries collect each descendant level independently to prevent
-    cartesian expansion before deletion.
-    """
     cypher = _CASCADE_CYPHER.get(col)
     if not cypher:
         return {"ok": True, "skipped": True}
@@ -538,12 +520,6 @@ def detach_delete_entity(col: str, entity_id: str) -> dict:
 
 
 def clear_topic_embedding_neo(topic_id: str) -> dict:
-    """Remove the embedding property from a Topic node without deleting the node.
-
-    Called when keyword_text becomes empty so the stale vector is no longer
-    present in Neo4j topic search. Uses REMOVE (not SET to null) so the
-    property is fully absent rather than null.
-    """
     try:
         with neo_session() as s:
             s.run(

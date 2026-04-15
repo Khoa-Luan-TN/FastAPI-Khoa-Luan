@@ -121,7 +121,7 @@ SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chu
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
 
 def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] = None) -> None:
-    """Normalize vec and attach to info['neo_payload']. No-op if vec is invalid."""
+    """Chuẩn hóa vector và gắn vào info['neo_payload'] nếu hợp lệ."""
     if not (isinstance(vec, (list, tuple)) and len(vec) == 768):
         return
     payload = info.get("neo_payload") or {}
@@ -165,9 +165,10 @@ def _is_oid_str(v: Any) -> bool:
 def _pg_get_by_mongo_id(pg, model, mongo_id: str):
     if not hasattr(model, "mongo_id"):
         raise ValueError(f"Postgres model '{model.__name__}' missing column mongo_id")
-    # Query trên bảng 
+    # Truy vấn trên bảng
     return pg.query(model).filter(model.mongo_id == mongo_id).first()
 
+# Tìm document trong mongoDB nhưng hỗ trợ 2 cách là string và _oid
 def _mongo_find_by_oid_or_str(db, col: str, ref: str):
     if _is_oid_str(ref):
         doc = db[col].find_one({"_id": ObjectId(ref)})
@@ -175,17 +176,18 @@ def _mongo_find_by_oid_or_str(db, col: str, ref: str):
             return doc
     return db[col].find_one({"_id": ref})
 
+# Đảm bảo parent phải nằm trong PG
 def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str | None:
     if not parent_ref:
         return None
 
     ref = str(parent_ref).strip()
 
-    # không phải 24-hex => coi như PG id
+    # Không phải chuỗi ObjectId 24 ký tự thì coi như PG id
     if not _is_oid_str(ref):
         return ref
 
-    # Luồng chạy của Subject
+    # Luồng xử lý class
     if parent_col == "class":
         obj = _pg_get_by_mongo_id(pg, pg_models.Class, ref)
         if obj:
@@ -196,7 +198,8 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
         _upsert_one_to_pg(db, pg, "class", pdoc)
         obj2 = _pg_get_by_mongo_id(pg, pg_models.Class, ref)
         return obj2.class_id if obj2 else None
-
+    
+    # Luồng xử lý subject
     if parent_col == "subject":
         obj = _pg_get_by_mongo_id(pg, pg_models.Subject, ref)
         if obj:
@@ -207,7 +210,8 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
         _upsert_one_to_pg(db, pg, "subject", pdoc)
         obj2 = _pg_get_by_mongo_id(pg, pg_models.Subject, ref)
         return obj2.subject_id if obj2 else None
-
+        
+    # Luồng xử lý topic
     if parent_col == "topic":
         obj = _pg_get_by_mongo_id(pg, pg_models.Topic, ref)
         if obj:
@@ -219,6 +223,8 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
         obj2 = _pg_get_by_mongo_id(pg, pg_models.Topic, ref)
         return obj2.topic_id if obj2 else None
 
+        
+    # Luồng xử lý lesson
     if parent_col == "lesson":
         obj = _pg_get_by_mongo_id(pg, pg_models.Lesson, ref)
         if obj:
@@ -229,7 +235,8 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
         _upsert_one_to_pg(db, pg, "lesson", pdoc)
         obj2 = _pg_get_by_mongo_id(pg, pg_models.Lesson, ref)
         return obj2.lesson_id if obj2 else None
-
+        
+    # Luồng xử lý chunk
     if parent_col == "chunk":
         obj = _pg_get_by_mongo_id(pg, pg_models.Chunk, ref)
         if obj:
@@ -237,7 +244,9 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
         pdoc = _mongo_find_by_oid_or_str(db, "chunk", ref)
         if not pdoc:
             return None
+        # nếu chưa có chunk cha thì đẩy xuống
         _upsert_one_to_pg(db, pg, "chunk", pdoc)
+        # Sau khi đẩy xuống thì query lại để lấy id trong PG
         obj2 = _pg_get_by_mongo_id(pg, pg_models.Chunk, ref)
         return obj2.chunk_id if obj2 else None
 
@@ -256,12 +265,12 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             raise ValueError("class_name missing")
 
         obj = _pg_get_by_mongo_id(pg, pg_models.Class, mongo_id)
-        # Nếu có thì update 
+        # Nếu đã có thì cập nhật
         if obj:
             obj.class_name = name
             return {"op": "update", "pg_id": obj.class_id, "neo_payload": {"id": obj.class_id, "name": name}}
 
-        # Tạo object để thêm vào PG class
+        # Tạo object để thêm vào bảng class bên PG
         obj = pg_models.Class(class_name=name, mongo_id=mongo_id)
         pg.add(obj)
         pg.flush()
@@ -274,7 +283,12 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         subject_type = (doc.get("subject_type") or doc.get("type") or "").strip()
 
         class_ref = _get_ref(doc, ["class_id", "class_mongo_id", "class_oid", "classRef", "class"])
-        # Kiểm tra đã có trong PG chưa và trả về class_id trong PG
+        if class_ref:
+            _parent_class = _mongo_find_by_oid_or_str(db, "class", class_ref)
+            if _parent_class is None or _parent_class.get("is_deleted") is True:
+                raise ValueError("subject parent class is deleted")
+
+        # Kiểm tra đã có trong PG chưa và trả về class_id bên PG
         class_id = _ensure_parent_pg_id(db, pg, "class", class_ref)
 
         if not subject_name or not subject_type or not class_id:
@@ -304,6 +318,12 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         topic_num = _to_int(doc.get("topic_num") or doc.get("num"), None)
 
         subject_ref = _get_ref(doc, ["subject_id", "subject_mongo_id", "subject_oid", "subjectRef", "subject"])
+
+        if subject_ref:
+            _parent_subject = _mongo_find_by_oid_or_str(db, "subject", subject_ref)
+            if _parent_subject is None or _parent_subject.get("is_deleted") is True:
+                raise ValueError("topic parent subject is deleted")
+
         subject_id = _ensure_parent_pg_id(db, pg, "subject", subject_ref)
 
         if not topic_name or topic_num is None or not subject_id:
@@ -333,6 +353,12 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         lesson_num = _to_int(doc.get("lesson_num") or doc.get("num"), None)
 
         topic_ref = _get_ref(doc, ["topic_id", "topic_mongo_id", "topic_oid", "topicRef", "topic"])
+
+        if topic_ref:
+            _parent_topic = _mongo_find_by_oid_or_str(db, "topic", topic_ref)
+            if _parent_topic is None or _parent_topic.get("is_deleted") is True:
+                raise ValueError("lesson parent topic is deleted")
+
         topic_id = _ensure_parent_pg_id(db, pg, "topic", topic_ref)
 
         if not lesson_name or lesson_num is None or not topic_id:
@@ -392,6 +418,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         pg.refresh(obj)
         return {"op": "insert", "pg_id": obj.chunk_id, "neo_payload": {"id": obj.chunk_id, "name": chunk_name, "parent_id": lesson_id, "chunk_num": chunk_num}}
 
+    # Luồng chạy Keyword
     if col == "keyword":
         keyword_name = (doc.get("keyword_name") or doc.get("name") or "").strip()
         keyword_slug = (doc.get("keyword_slug") or "").strip()
@@ -401,11 +428,13 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             from app.services.keyword.keyword_alias_service import _resolve_keyword_slug
             keyword_slug, _ = _resolve_keyword_slug(db, keyword_name)
 
+        # Lấy row của PG dựa vào mongo_id
         obj = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_id)
         if obj:
             old_keyword_name = obj.keyword_name  
             obj.keyword_name = keyword_name
             obj.keyword_slug = keyword_slug
+            # đánh dấu thay đổi trong transaction
             pg.flush()
             renamed = old_keyword_name != keyword_name
             ret = {
@@ -440,6 +469,7 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         )
         pg.add(obj)
         pg.flush()
+        # khi flush sẽ lấy được keyword_id
         new_kw_id = obj.keyword_id
         return {
             "op": "insert",
@@ -449,36 +479,49 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
         }
 
     if col == "chunk_keyword":
+        # Lấy _id của chunk cha trong chunk_keyword
         chunk_ref = _get_ref(doc, ["chunk_id", "chunk_mongo_id", "chunk_oid"])
 
         if chunk_ref:
+            # Lấy được doc của parent chunk
             _parent_chunk = _mongo_find_by_oid_or_str(db, "chunk", chunk_ref)
+            # Kiểm tra có bị soft delete hay có tồn tại trong Mongo không
             if _parent_chunk is None or _parent_chunk.get("is_deleted") is True:
                 raise ValueError("chunk_keyword parent chunk is deleted")
 
+        # Đảm bảo đã có trong PG
         pg_chunk_id = _ensure_parent_pg_id(db, pg, "chunk", chunk_ref)
         if not pg_chunk_id:
             raise ValueError(f"chunk_keyword: chunk not mapped (chunk_ref={chunk_ref})")
 
+        # Lấy keyword_id
         mongo_kw_id = str(doc.get("keyword_id") or "").strip()
         if not mongo_kw_id:
             raise ValueError("chunk_keyword missing keyword_id")
 
+        # Lấy keyword doc
         kw_doc = _mongo_find_by_oid_or_str(db, "keyword", mongo_kw_id)
+        # Kiểm tra có bị xoá mềm hay không
         if not kw_doc or kw_doc.get("is_deleted") is True:
             raise ValueError(f"keyword with _id='{mongo_kw_id}' not found in Mongo")
+        # Lấy keyword_name
         keyword_name = (kw_doc.get("keyword_name") or "").strip()
         if not keyword_name:
             raise ValueError(f"keyword '{mongo_kw_id}' has no keyword_name")
 
+        # Lấy dữ liệu của keyword trong pg
         pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_kw_id)
         if not pg_kw:
+            # Nếu chưa thì đẩy xuống lại vào PG
+            # Giống đệ quy
             _upsert_one_to_pg(db, pg, "keyword", kw_doc)
+            # Lấy PG _id của keyword
             pg_kw = _pg_get_by_mongo_id(pg, pg_models.Keyword, mongo_kw_id)
         if not pg_kw:
             raise ValueError(f"keyword with mongo_id='{mongo_kw_id}' could not be synced to PG")
-        pg_keyword_id = pg_kw.keyword_id  # PG business keyword_id (generated by trigger)
+        pg_keyword_id = pg_kw.keyword_id  # keyword_id nghiệp vụ bên PG, được sinh bởi trigger
 
+        # nói chuỗi keyword_key
         keyword_key = f"{pg_chunk_id}::{keyword_name}"
         _neo = {"id": keyword_key, "name": keyword_name, "parent_id": pg_chunk_id}
 
@@ -487,9 +530,12 @@ def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
             old_key = f"{existing_ck.chunk_id}::{keyword_name}"
             if old_key != keyword_key:
                 old_neo_id = old_key
+                # Xoá cái cũ nếu khác key
                 pg.delete(existing_ck)
                 pg.flush()
+                # Tạo dữ liệu mới
                 ck = pg_models.ChunkKeyword(chunk_id=pg_chunk_id, keyword_id=pg_keyword_id, mongo_id=mongo_id)
+                # Thêm vào PG
                 pg.add(ck)
                 pg.flush()
                 return {

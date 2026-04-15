@@ -370,14 +370,12 @@ def generate_text(
             idx = (start_idx + attempt) % n
             label, key = _pool[idx]
 
-            # Fast cooldown check before acquiring per-key lock
             if _is_key_in_cooldown(idx, time.monotonic()):
                 continue
 
             tried_labels.append(label)
 
             with _key_locks[idx]:
-                # Re-check cooldown now that we hold the per-key lock
                 if _is_key_in_cooldown(idx, time.monotonic()):
                     _log.info("[gemini_client] Key %s entered cooldown while waiting — skipping", label)
                     continue

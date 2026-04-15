@@ -376,7 +376,8 @@ def _keyword_asset_prefixes(keyword_slug: str, mongo_id_str: str) -> Dict[str, s
         "videos": f"videos/keyword/{identifier}",
     }
 
-
+# Đánh index 
+# Tránh trùng keyword, chunk_keyword, topic_bag
 def _ensure_keyword_related_indexes(db) -> None:
     ensure_keyword_alias_indexes(db)
 
@@ -442,12 +443,15 @@ def _ensure_keyword_related_indexes(db) -> None:
         pass
 
 
+# Tìm hoặc tạo mới keyword
+# Keyword chạy 2
 def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str]:
+    # Có keyword_slug 
     keyword_slug, existing_mongo_id = _resolve_keyword_slug(db, keyword_name)
     if existing_mongo_id:
-        # backfill asset_prefixes if missing
         oid = ObjectId(existing_mongo_id) if ObjectId.is_valid(existing_mongo_id) else existing_mongo_id
         existing_doc = db["keyword"].find_one({"_id": oid}, {"asset_prefixes": 1, "keyword_slug": 1})
+        # chỉ vào để tạo phần asset_prefixes đảm bảo minio tồn tại
         if existing_doc and not existing_doc.get("asset_prefixes"):
             slug = existing_doc.get("keyword_slug") or keyword_slug
             db["keyword"].update_one(
@@ -455,6 +459,7 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
                 {"$set": {"asset_prefixes": _keyword_asset_prefixes(slug, existing_mongo_id)}},
             )
         return existing_mongo_id, "noop"
+    
     enforce_canonical_name_precedence(db, keyword_name, actor)
 
     now = utc_now()
@@ -477,6 +482,7 @@ def _find_or_create_keyword(db, keyword_name: str, actor: str) -> Tuple[str, str
     return mongo_id_str, "insert"
 
 
+# Tạo quan hệ với chunk_keyword
 def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str:
     chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
@@ -501,13 +507,14 @@ def _upsert_chunk_keyword(db, chunk_id: str, keyword_id: str, actor: str) -> str
     })
     return "insert"
 
-
+# Tạo túi từ
 def _upsert_topic_bag(
     db, topic_id: str, topic_name: Optional[str], keyword_id: str, keyword_name: str, actor: str
 ) -> str:
     topic_oid = ObjectId(topic_id) if ObjectId.is_valid(topic_id) else topic_id
     kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
 
+    # Lấy ra _id và keyword_refs của túi từ
     now = utc_now()
     existing = db["topic_bag"].find_one(
         {"topic_id": topic_oid, "is_deleted": {"$ne": True}},
@@ -515,12 +522,15 @@ def _upsert_topic_bag(
     )
 
     if existing:
+        # Lấy [] các keyword_refs
         before_refs = existing.get("keyword_refs") or []
+        # Kiểm tra keyword đã tồn tại trong _refs 
         if any(r.get("keyword_id") == kw_oid for r in before_refs):
             return "noop"
         set_fields: Dict[str, Any] = {"updated_at": now, "updated_by": actor}
         if topic_name is not None:
             set_fields["topic_name"] = topic_name
+        # Thêm keyword mới vào cuối mảng của topic_bag
         db["topic_bag"].update_one(
             {"_id": existing["_id"]},
             {
@@ -528,11 +538,13 @@ def _upsert_topic_bag(
                 "$set": set_fields,
             },
         )
+        # cập nhật lại số lượng của keyword
         updated_doc = db["topic_bag"].find_one({"_id": existing["_id"]}, {"keyword_refs": 1})
         total = len(updated_doc.get("keyword_refs") or [])
         db["topic_bag"].update_one({"_id": existing["_id"]}, {"$set": {"total_keywords": total}})
         return "update"
 
+    # Khi không có thì insert
     db["topic_bag"].insert_one({
         "topic_id": topic_oid,
         "topic_name": topic_name,
@@ -612,6 +624,7 @@ def _finalize_topic_embeddings(
     return {"affected_topics": len(affected_topic_ids), "finalized_topics": finalized, "topic_finalize_errors": finalize_errors}
 
 
+# Keyword chay 1
 def _import_keyword_rows(
     db,
     rows: List[Dict[str, Any]],
@@ -642,19 +655,21 @@ def _import_keyword_rows(
                 raise ValueError("missing chunk_ref")
             if not keyword_name:
                 raise ValueError("missing keyword_name")
-
+            
+            # Lấy doc của chunk dựa vào import_key
             chunk_doc = db["chunk"].find_one(
                 {"import_key": chunk_ref, "is_deleted": {"$ne": True}},
                 {"_id": 1, "lesson_id": 1},
             )
             if not chunk_doc:
                 raise ValueError(f"chunk with import_key='{chunk_ref}' not found")
+            # Lấy chunk_id
             chunk_id = str(chunk_doc["_id"])
-
+            # Lấy lesson_id
             lesson_id = str(chunk_doc.get("lesson_id") or "").strip()
             if not lesson_id:
                 raise ValueError(f"chunk '{chunk_ref}' has no lesson_id")
-
+            # Lấy lesson_doc
             lesson_doc = None
             if ObjectId.is_valid(lesson_id):
                 lesson_doc = db["lesson"].find_one(
@@ -668,10 +683,11 @@ def _import_keyword_rows(
                 )
             if not lesson_doc:
                 raise ValueError(f"lesson '{lesson_id}' not found")
+            # Lấy topic_id
             topic_id = str(lesson_doc.get("topic_id") or "").strip()
             if not topic_id:
                 raise ValueError(f"lesson '{lesson_id}' has no topic_id")
-
+            # Lấy topic_doc 
             topic_doc = None
             if ObjectId.is_valid(topic_id):
                 topic_doc = db["topic"].find_one(
@@ -685,10 +701,14 @@ def _import_keyword_rows(
                 )
             if not topic_doc:
                 raise ValueError(f"topic '{topic_id}' not found")
+            
+            # Lấy topic_name
             topic_name: Optional[str] = topic_doc.get("topic_name") or None
 
+            # Lấy keyword_id và option
             keyword_id, kw_op = _find_or_create_keyword(db, keyword_name, actor)
-
+            
+            # Tạo MinIO với keyword
             if minio_client and minio_bucket:
                 _kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
                 _kw_doc = db["keyword"].find_one({"_id": _kw_oid}, {"asset_prefixes": 1})
@@ -705,7 +725,9 @@ def _import_keyword_rows(
                 reused_keyword_ids.add(keyword_id)
                 reused += 1
 
+            # Up lên col chunk_keyword
             _upsert_chunk_keyword(db, chunk_id, keyword_id, actor)
+            # Up lên col topic_bag
             _upsert_topic_bag(db, topic_id, topic_name, keyword_id, keyword_name, actor)
 
             
@@ -718,12 +740,16 @@ def _import_keyword_rows(
 
             if sync_one is not None:
                 try:
+                    # Lấy chunk_id
                     _ck_chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
+                    # Lấy keyword_id
                     _ck_kw_oid = ObjectId(keyword_id) if ObjectId.is_valid(keyword_id) else keyword_id
+                    # Lấy doc của col chunk_keyword
                     ck_doc = db["chunk_keyword"].find_one(
                         {"chunk_id": _ck_chunk_oid, "keyword_id": _ck_kw_oid, "is_deleted": {"$ne": True}}
                     )
                     if ck_doc:
+                        # Sync xuống PG
                         sync_result = sync_one("chunk_keyword", ck_doc)
                         if isinstance(sync_result, dict) and sync_result.get("ok"):
                             synced += 1
@@ -757,6 +783,11 @@ def _import_keyword_rows(
         "remaining_keywords": [],
     }
 
+    """ 
+        {
+            "<keyword_id>": "<keyword_name>"
+        }
+    """
     if new_keywords:
         from app.services.keyword.keyword_alias_service import refresh_keyword_aliases_batch
 
