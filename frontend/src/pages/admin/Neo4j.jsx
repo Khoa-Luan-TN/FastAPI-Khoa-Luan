@@ -421,7 +421,7 @@ export default function Neo4j() {
     },
     {
       key: "name",
-      label: "NAME",
+      label: "TÊN",
       render: (r) => (
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
@@ -440,7 +440,7 @@ export default function Neo4j() {
             fontWeight: 500, color: "#1E293B", flex: 1,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0,
           }} title={r.name || ""}>
-            {r.name || "(no name)"}
+            {r.name || "(không có tên)"}
           </span>
         </div>
       ),
@@ -462,7 +462,7 @@ export default function Neo4j() {
         >
           <div className="mrh-icon" style={{ color: "#9333EA" }}><Neo4jIcon size={26} /></div>
           <div>
-            <h2 className="mrh-title" style={{ color: "#581C87" }}>Neo4j</h2>
+            <h2 className="mrh-title" style={{ color: "#581C87" }}>Dữ liệu đồ thị</h2>
             <p className="mrh-subtitle" style={{ color: "rgba(88,28,135,0.68)" }}>Xem đồ thị nodes và quan hệ (read-only)</p>
           </div>
         </div>
@@ -474,7 +474,7 @@ export default function Neo4j() {
           <div className="minio-crumb-bar" style={{ marginBottom: 10 }}>
             <span className="minio-crumb-item" onClick={() => { setCurrentLabel(""); setNodes([]); setCurrentNodeId(""); setQ(""); }}>
               <span className="mci-icon"><Neo4jIcon size={14} /></span>
-              <span className="mci-text">Neo4j</span>
+              <span className="mci-text">Dữ liệu đồ thị</span>
             </span>
             {currentLabel && (
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}>

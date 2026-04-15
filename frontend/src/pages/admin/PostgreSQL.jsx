@@ -121,7 +121,7 @@ export default function PostgreSQL() {
   }, [currentTable]);
 
   const headerTitle = useMemo(() => {
-    if (isRoot) return "PostgreSQL";
+    if (isRoot) return "Dữ liệu có cấu trúc";
     if (isRowDetail) {
       const r = rows.find((x) => String(x._pk) === String(currentPk)) || null;
       return rowTitle(r) || String(currentPk);
@@ -242,7 +242,7 @@ export default function PostgreSQL() {
     },
     {
       key: "_title",
-      label: "NAME",
+        label: "TÊN",
       render: (r) => (
         <div className="file-cell" style={{ minWidth: 0 }}>
           <div className="file-left" style={{ minWidth: 0 }}>
@@ -252,7 +252,7 @@ export default function PostgreSQL() {
               title={r._title || ""}
               style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
             >
-              {r._title || "(no name field)"}
+              {r._title || "(không có trường tên)"}
             </div>
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function PostgreSQL() {
             <PgIcon size={26} />
           </div>
           <div>
-            <h2 className="mrh-title" style={{ color: "#312E81" }}>PostgreSQL</h2>
+            <h2 className="mrh-title" style={{ color: "#312E81" }}>Dữ liệu có cấu trúc</h2>
             <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.72)" }}>Xem dữ liệu các bảng (read-only)</p>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function PostgreSQL() {
           <div className="minio-crumb-bar" style={{ marginBottom: 10 }}>
             <span className="minio-crumb-item" onClick={() => { setCurrentTable(""); setCurrentPk(""); setQ(""); }}>
               <span className="mci-icon"><PgIcon size={14} /></span>
-              <span className="mci-text">PostgreSQL</span>
+              <span className="mci-text">Dữ liệu có cấu trúc</span>
             </span>
 
             {currentTable && (

@@ -57,6 +57,129 @@ const GridIcon = ({ size = 20 }) => (
   </svg>
 );
 
+const CheckIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+const WarnIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+  </svg>
+);
+
+function ToastLayer({ toasts }) {
+  return (
+    <div style={{
+      position: "fixed",
+      bottom: 28,
+      right: 28,
+      zIndex: 9999,
+      display: "flex",
+      flexDirection: "column-reverse",
+      gap: 10,
+      pointerEvents: "none",
+    }}>
+      {toasts.map((t) => {
+        const isError = t.type === "error";
+        const isWarning = t.type === "warning";
+        const bg = isError ? "#FFF1F2" : isWarning ? "#FFFBEB" : "#F0FDF4";
+        const border = isError ? "#FECDD3" : isWarning ? "#FDE68A" : "#BBF7D0";
+        const iconColor = isError ? "#DC2626" : isWarning ? "#D97706" : "#15803D";
+        const titleColor = isError ? "#991B1B" : isWarning ? "#92400E" : "#14532D";
+        const bodyColor = isError ? "#DC2626" : isWarning ? "#B45309" : "#15803D";
+        return (
+          <div key={t.id} style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            background: bg,
+            border: `1.5px solid ${border}`,
+            borderRadius: 12,
+            padding: "13px 18px",
+            minWidth: 280,
+            maxWidth: 420,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.10)",
+            animation: "toast-in 0.2s ease",
+            pointerEvents: "auto",
+          }}>
+            <span style={{ color: iconColor, flexShrink: 0, marginTop: 1 }}>
+              {isError || isWarning ? <WarnIcon /> : <CheckIcon />}
+            </span>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: titleColor }}>
+                {isError ? "Lỗi" : isWarning ? "Cảnh báo" : "Thành công"}
+              </div>
+              <div style={{ fontSize: 13, color: bodyColor, marginTop: 2 }}>
+                {t.message}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function buildImportSummary(report) {
+  const collections = report?.collections || {};
+  const importedCollections = Object.entries(collections)
+    .filter(([, info]) => (info?.rows || 0) > 0 && !info?.skipped)
+    .map(([name]) => name);
+
+  const totals = Object.values(collections).reduce((acc, info) => {
+    acc.inserted += Number(info?.inserted || 0);
+    acc.updated += Number(info?.updated || 0);
+    acc.reused += Number(info?.reused || 0);
+    acc.synced += Number(info?.synced || 0);
+    return acc;
+  }, { inserted: 0, updated: 0, reused: 0, synced: 0 });
+
+  const keywordInfo = collections.keyword || {};
+  const aliasRemaining = Array.isArray(keywordInfo.alias_remaining_keywords)
+    ? keywordInfo.alias_remaining_keywords.length
+    : 0;
+  const aliasStopped = Boolean(keywordInfo.alias_stopped_due_to_quota);
+  const aliasSkipped = Boolean(report?.alias_skipped_by_flag || keywordInfo.alias_skipped_by_flag);
+  const warningCount = Object.values(collections).reduce((sum, info) => sum + (Array.isArray(info?.errors) ? info.errors.length : 0), 0)
+    + (Array.isArray(report?.errors) ? report.errors.length : 0);
+
+  let status = "completed";
+  if (aliasStopped || aliasRemaining > 0 || warningCount > 0) {
+    status = "partial";
+  }
+
+  let message = "Import thành công.";
+  if (status === "partial") {
+    if (aliasStopped) {
+      message = aliasRemaining > 0
+        ? `Import hoàn tất nhưng có cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên. Còn ${aliasRemaining} từ khóa chưa xử lý.`
+        : "Import hoàn tất nhưng có cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên.";
+    } else {
+      message = "Import hoàn tất nhưng có cảnh báo.";
+    }
+  }
+
+  return {
+    status,
+    message,
+    importedCollections,
+    inserted: totals.inserted,
+    updated: totals.updated,
+    reused: totals.reused,
+    synced: totals.synced,
+    aliasInserted: Number(keywordInfo.alias_inserted || 0),
+    aliasProcessed: Number(keywordInfo.alias_processed_keywords || 0),
+    aliasSkipped,
+    aliasStopped,
+    aliasRemaining,
+    warningCount,
+  };
+}
+
 /** ===== Helpers ===== */
 function docTitle(doc = {}) {
   return (
@@ -329,7 +452,7 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
     <div className="kw-refs-editor">
       {items.length > 0 && (
         <div className="kw-refs-editor-header">
-          <span className="kw-refs-count-badge">{items.length} keyword{items.length !== 1 ? "s" : ""}</span>
+          <span className="kw-refs-count-badge">{items.length} từ khóa</span>
         </div>
       )}
       <div className="kw-refs-editor-list">
@@ -342,7 +465,7 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
                 <span className="kw-ref-name">{resolvedName}</span>
                 <span className="kw-ref-id">{String(item.keyword_id || "")}</span>
               </div>
-              <button type="button" className="kw-refs-del-btn" onClick={() => deleteItem(i)} title="Remove">✕</button>
+              <button type="button" className="kw-refs-del-btn" onClick={() => deleteItem(i)} title="Xoá">✕</button>
             </div>
           );
         })}
@@ -355,7 +478,7 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
           placeholder="keyword_id…"
         />
-        <button type="button" className="kw-refs-add-btn" onClick={addItem}>Add</button>
+        <button type="button" className="kw-refs-add-btn" onClick={addItem}>Thêm</button>
       </div>
       {addError && <p className="kw-refs-dup-err">{addError}</p>}
     </div>
@@ -503,7 +626,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                         onChange={(e) => change(i, "v", e.target.value)}
                       />
                     )}
-                    <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá field">✕</button>
+                    <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá trường">✕</button>
                   </div>
                 );
               })}
@@ -512,7 +635,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
             {allowExtra && (
               <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
                 <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
-                  + Thêm field
+                  + Thêm trường
                 </button>
               </div>
             )}
@@ -524,7 +647,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
             Huỷ
           </button>
           <button className="minio-btn minio-btn-primary" onClick={submit}>
-            Lưu document
+            Lưu tài liệu
           </button>
         </div>
       </div>
@@ -552,12 +675,19 @@ export default function MongoDB() {
   const isDocDetail = !!currentDocId;
   const importRef = useRef(null);
   const importPollRef = useRef(null);
+  const importProgressResetRef = useRef(null);
+  const importSummaryResetRef = useRef(null);
+  const toastCounterRef = useRef(0);
 
   // modals
   const [openCreateDoc, setOpenCreateDoc] = useState(false);
+  const [openImportDialog, setOpenImportDialog] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(null); // {progress, message, collection, processed_rows?, total_rows?}
-  const [importResult, setImportResult] = useState(null); // null | {status: 'completed'|'partial'|'failed', message}
+  const [importResult, setImportResult] = useState(null); // null | {status, message, ...summary}
+  const [generateAliases, setGenerateAliases] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState(null);
+  const [toasts, setToasts] = useState([]);
 
   // ---- Class docs for subject list (maps class _id → class_name) ----
   const [classDocs, setClassDocs] = useState([]);
@@ -588,6 +718,22 @@ export default function MongoDB() {
       .forEach(k => { m[String(k._id)] = k.keyword_name || ""; });
     return m;
   }, [keywordDocs]);
+
+  function pushToast(message, type = "success") {
+    const id = ++toastCounterRef.current;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (importPollRef.current) clearInterval(importPollRef.current);
+      if (importProgressResetRef.current) clearTimeout(importProgressResetRef.current);
+      if (importSummaryResetRef.current) clearTimeout(importSummaryResetRef.current);
+    };
+  }, []);
 
   // ---- Chunk docs for chunk_keyword list (maps chunk _id → chunk_name) ----
   const [chunkDocs, setChunkDocs] = useState([]);
@@ -716,7 +862,7 @@ export default function MongoDB() {
         return (
           <div className="kw-refs-view">
             <div className="kw-refs-view-header">
-              <span className="kw-refs-count-badge">{val.length} keyword{val.length !== 1 ? "s" : ""}</span>
+              <span className="kw-refs-count-badge">{val.length} từ khóa</span>
             </div>
             <div className="kw-refs-view-list">
               {val.map((item, i) => (
@@ -917,13 +1063,13 @@ export default function MongoDB() {
     const base = [
       {
         key: "_title",
-        label: "NAME",
+        label: "TÊN",
         render: (r) => (
           <div className="file-cell">
             <div className="file-left">
               <div className="file-icon file-other"><DocIcon /></div>
               <div className="file-name" title={r._title || ""}>
-                {r._title || "(no name field)"}
+                {r._title || "(không có trường tên)"}
               </div>
             </div>
           </div>
@@ -962,7 +1108,7 @@ export default function MongoDB() {
             <div className="file-cell">
               <div className="file-left">
                 <div className="file-icon file-other"><DocIcon /></div>
-                <div className="file-name" title={r.alias_name || ""}>{r.alias_name || "(no alias_name)"}</div>
+                <div className="file-name" title={r.alias_name || ""}>{r.alias_name || "(không có tên alias)"}</div>
               </div>
             </div>
           ),
@@ -986,7 +1132,7 @@ export default function MongoDB() {
             <div className="file-cell">
               <div className="file-left">
                 <div className="file-icon file-other"><DocIcon /></div>
-                <div className="file-name" title={r._chunk_name || ""}>{r._chunk_name || "(unknown chunk)"}</div>
+                <div className="file-name" title={r._chunk_name || ""}>{r._chunk_name || "(không rõ mục)"}</div>
               </div>
             </div>
           ),
@@ -1011,19 +1157,47 @@ export default function MongoDB() {
     setQ("");
   }
 
-  async function onPickImportFile(e) {
+  function openImportDialogModal() {
+    setGenerateAliases(false);
+    setPendingImportFile(null);
+    setOpenImportDialog(true);
+  }
+
+  function closeImportDialogModal() {
+    if (importing) return;
+    setOpenImportDialog(false);
+    setGenerateAliases(false);
+    setPendingImportFile(null);
+    if (importRef.current) {
+      importRef.current.value = "";
+    }
+  }
+
+  function onPickImportFile(e) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // reset so same file can be re-picked
+    e.target.value = "";
     if (!file) return;
+    setPendingImportFile(file);
+  }
+
+  async function confirmImportExcel() {
+    const file = pendingImportFile;
+    if (!file) {
+      alert("Vui lòng chọn file Excel trước khi import.");
+      return;
+    }
 
     try {
+      setOpenImportDialog(false);
+      if (importProgressResetRef.current) clearTimeout(importProgressResetRef.current);
+      if (importSummaryResetRef.current) clearTimeout(importSummaryResetRef.current);
+      setImportResult(null);
       setImporting(true);
       setImportProgress({ progress: 0, message: "Đang tải lên...", collection: "" });
 
       const collectionName = isRoot ? null : currentCollection;
-      const { job_id } = await mongoApi.importExcelTracked(file, collectionName);
+      const { job_id } = await mongoApi.importExcelTracked(file, collectionName, generateAliases);
 
-      // Poll job status every second until completed or failed
       const finalJob = await new Promise((resolve, reject) => {
         importPollRef.current = setInterval(async () => {
           try {
@@ -1035,10 +1209,10 @@ export default function MongoDB() {
               processed_rows: s.processed_rows,
               total_rows: s.total_rows,
             });
-            if (s.status === "completed" || s.status === "failed") {
+            if (s.status === "done" || s.status === "completed" || s.status === "failed") {
               clearInterval(importPollRef.current);
               importPollRef.current = null;
-              s.status === "failed" ? reject(new Error(s.error || "Import failed")) : resolve(s);
+              s.status === "failed" ? reject(new Error(s.error || "Import thất bại")) : resolve(s);
             }
           } catch (pollErr) {
             clearInterval(importPollRef.current);
@@ -1048,28 +1222,52 @@ export default function MongoDB() {
         }, 1000);
       });
 
-      const quotaStopped = finalJob.report?.collections?.keyword?.alias_stopped_due_to_quota;
-      setImportResult({
-        status: quotaStopped ? "partial" : "completed",
-        message: quotaStopped ? "Hoàn tất một phần (alias dừng do quota)" : "Hoàn tất import",
+      const summary = buildImportSummary(finalJob.report || {});
+      setImportResult(summary);
+      setImportProgress({
+        progress: 100,
+        message: summary.status === "partial" ? "Import hoàn tất với cảnh báo." : "Import thành công.",
+        collection: "",
       });
-      setImportProgress({ progress: 100, message: "Hoàn tất", collection: "" });
+      pushToast(summary.status === "partial" ? summary.message : "Import thành công.", summary.status === "partial" ? "warning" : "success");
 
       if (isRoot) await reloadCollections();
       else { await loadAllDocs(currentCollection); }
     } catch (err) {
-      setImportResult({ status: "failed", message: String(err?.message || err) });
-      alert(String(err?.message || err));
+      const errorMessage = String(err?.message || err);
+      setImportResult({
+        status: "failed",
+        message: errorMessage,
+        importedCollections: [],
+        inserted: 0,
+        updated: 0,
+        reused: 0,
+        synced: 0,
+        aliasInserted: 0,
+        aliasProcessed: 0,
+        aliasSkipped: false,
+        aliasStopped: false,
+        aliasRemaining: 0,
+        warningCount: 0,
+      });
+      pushToast(errorMessage, "error");
     } finally {
       setImporting(false);
+      setPendingImportFile(null);
+      setGenerateAliases(false);
+      if (importRef.current) {
+        importRef.current.value = "";
+      }
       if (importPollRef.current) {
         clearInterval(importPollRef.current);
         importPollRef.current = null;
       }
-      setTimeout(() => {
+      importProgressResetRef.current = window.setTimeout(() => {
         setImportProgress(null);
+      }, 1400);
+      importSummaryResetRef.current = window.setTimeout(() => {
         setImportResult(null);
-      }, 4000);
+      }, 10000);
     }
   }
 
@@ -1084,7 +1282,7 @@ export default function MongoDB() {
   }
 
   async function deleteDoc(row) {
-    if (!confirm(`Xoá document "${docTitle(row) || row._id}"?`)) return;
+    if (!confirm(`Xoá tài liệu "${docTitle(row) || row._id}"?`)) return;
     try {
       await mongoApi.deleteDocument(currentCollection, String(row._id));
       await loadAllDocs(currentCollection);
@@ -1192,7 +1390,7 @@ export default function MongoDB() {
 
   async function deleteDocFromDetail() {
     if (!selectedDoc) return;
-    if (!confirm(`Xoá document "${docTitle(selectedDoc) || selectedDoc._id}"?`)) return;
+    if (!confirm(`Xoá tài liệu "${docTitle(selectedDoc) || selectedDoc._id}"?`)) return;
     try {
       await mongoApi.deleteDocument(currentCollection, String(selectedDoc._id));
       setCurrentDocId("");
@@ -1204,6 +1402,7 @@ export default function MongoDB() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <ToastLayer toasts={toasts} />
 
       {/* ROOT: gradient header banner — scrolls away normally */}
       {isRoot && (
@@ -1212,8 +1411,8 @@ export default function MongoDB() {
             <MongoIcon size={26} />
           </div>
           <div>
-            <h2 className="mrh-title" style={{ color: "#065F46" }}>MongoDB</h2>
-            <p className="mrh-subtitle" style={{ color: "rgba(6, 95, 70, 0.75)" }}>Quản lý collections và documents</p>
+            <h2 className="mrh-title" style={{ color: "#065F46" }}>Dữ liệu mô tả</h2>
+            <p className="mrh-subtitle" style={{ color: "rgba(6, 95, 70, 0.75)" }}>Quản lý bộ dữ liệu và tài liệu</p>
           </div>
         </div>
       )}
@@ -1225,7 +1424,7 @@ export default function MongoDB() {
           <div className="minio-crumb-bar" style={{ marginBottom: 10 }}>
             <span className="minio-crumb-item" onClick={() => { setCurrent(""); setCurrentDocId(""); setIsEditingDoc(false); setQ(""); }}>
               <span className="mci-icon"><MongoIcon size={14} /></span>
-              <span className="mci-text">MongoDB</span>
+              <span className="mci-text">Dữ liệu mô tả</span>
             </span>
             {currentCollection && (
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1262,7 +1461,7 @@ export default function MongoDB() {
           <div className="minio-search">
             <span className="minio-search-icon"><SearchIcon /></span>
             <input
-              placeholder={isRoot ? "Tìm collection..." : isDocDetail ? "" : "Tìm document (name/_id)..."}
+              placeholder={isRoot ? "Tìm bộ dữ liệu..." : isDocDetail ? "" : "Tìm tài liệu (tên/_id)..."}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               disabled={isDocDetail}
@@ -1271,15 +1470,15 @@ export default function MongoDB() {
           <div className="minio-actions">
             {isRoot ? (
               <>
-                <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={() => importRef.current?.click()}>
-                  {importing ? "Importing..." : "Import Excel"}
+                <button className="minio-btn minio-btn-secondary mab-btn" disabled={importing} onClick={openImportDialogModal}>
+                  {importing ? "Đang import..." : "Nhập Excel"}
                 </button>
               </>
             ) : !isDocDetail ? (
               <>
                 {!COLLECTIONS_NO_CREATE.has(currentCollection) && (
                   <button className="minio-btn minio-btn-primary mab-btn" onClick={() => setOpenCreateDoc(true)}>
-                    + Document
+                    + Tài liệu
                   </button>
                 )}
               </>
@@ -1302,7 +1501,7 @@ export default function MongoDB() {
               </>
             ) : (
               <>
-                <button className="minio-btn minio-btn-secondary mab-btn" onClick={addFieldRow}>+ Field</button>
+                <button className="minio-btn minio-btn-secondary mab-btn" onClick={addFieldRow}>+ Trường</button>
                 <button className="minio-btn minio-btn-secondary mab-btn" onClick={cancelEditDoc}>Huỷ bỏ</button>
                 <button className="minio-btn minio-btn-primary mab-btn" onClick={updateDocFromDetail}>Cập nhật</button>
               </>
@@ -1312,48 +1511,147 @@ export default function MongoDB() {
         </div>
       </div> {/* end sticky */}
 
+      {openImportDialog && (
+        <div className="modal-overlay" onClick={closeImportDialogModal}>
+          <div className="modal import-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeImportDialogModal} aria-label="Đóng">
+              ×
+            </button>
+
+            <div className="modal-header">
+              <h3 className="modal-title">Nhập dữ liệu từ Excel</h3>
+              <p className="modal-subtitle">
+                Chọn tệp và xác nhận có chạy bước tạo alias cho từ khóa hay không.
+              </p>
+            </div>
+
+            <div className="modal-body">
+              <div className="import-modal-section">
+                <label className="import-modal-label">Tệp Excel</label>
+                <div className="import-file-row">
+                  <button
+                    type="button"
+                    className="minio-btn minio-btn-secondary import-file-btn"
+                    onClick={() => importRef.current?.click()}
+                  >
+                    {pendingImportFile ? "Đổi tệp" : "Chọn tệp Excel"}
+                  </button>
+                  <div className={`import-file-status${pendingImportFile ? " is-selected" : ""}`}>
+                    <span className="import-file-status-label">
+                      {pendingImportFile ? "Đã chọn" : "Chưa chọn tệp"}
+                    </span>
+                    <span className="import-file-status-name">
+                      {pendingImportFile?.name || "Chọn một tệp .xlsx hoặc .xls để bắt đầu"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="import-modal-section">
+                <label className="import-modal-label">Tùy chọn</label>
+                <label className="import-alias-row">
+                  <span className="import-alias-check">
+                    <input
+                      type="checkbox"
+                      checked={generateAliases}
+                      onChange={(e) => setGenerateAliases(e.target.checked)}
+                    />
+                  </span>
+                  <span className="import-alias-copy">
+                    <span className="import-alias-title">Tạo alias</span>
+                    <span className="import-alias-subtitle">Bật nếu muốn sinh alias cho từ khóa ngay sau khi nhập dữ liệu.</span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="modal-note import-modal-note">
+                Tắt tuỳ chọn này sẽ chỉ bỏ qua bước sinh alias. Các bước nhập từ khóa, liên kết mục - từ khóa, cập nhật topic_bag và hoàn tất embedding vẫn giữ nguyên.
+              </div>
+            </div>
+
+            <div className="modal-footer import-modal-footer">
+              <button className="minio-btn minio-btn-secondary import-modal-btn" onClick={closeImportDialogModal}>
+                Huỷ
+              </button>
+              <button className="minio-btn minio-btn-primary import-modal-btn" onClick={confirmImportExcel} disabled={!pendingImportFile}>
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Import progress */}
-      {(importProgress || importResult) && (
+      {importProgress && (
         <div style={{ padding: "10px 0 6px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
             <span style={{
               fontSize: 13, fontWeight: 600,
-              color: importResult?.status === "completed" ? "#16A34A"
-                : importResult?.status === "partial" ? "#D97706"
-                  : importResult?.status === "failed" ? "#DC2626"
-                    : "#1D4ED8",
+              color: importResult?.status === "partial" ? "#D97706"
+                : importResult?.status === "failed" ? "#DC2626"
+                  : "#1D4ED8",
             }}>
-              {importResult ? importResult.message : "Import đang chạy..."}
+              {importProgress.message || "Đang import..."}
             </span>
-            {importProgress && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{importProgress.progress}%</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{importProgress.progress}%</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", marginBottom: 5 }}>
+            <span>
+              {importProgress.collection ? <strong>{importProgress.collection}: </strong> : null}
+              {importProgress.message}
+            </span>
+            {(importProgress.total_rows > 0) && (
+              <span style={{ whiteSpace: "nowrap", marginLeft: 8 }}>
+                {importProgress.processed_rows ?? 0} / {importProgress.total_rows}
+              </span>
             )}
           </div>
-          {importProgress && (
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", marginBottom: 5 }}>
-              <span>
-                {importProgress.collection ? <strong>{importProgress.collection}: </strong> : null}
-                {importProgress.message}
-              </span>
-              {(importProgress.total_rows > 0) && (
-                <span style={{ whiteSpace: "nowrap", marginLeft: 8 }}>
-                  {importProgress.processed_rows ?? 0} / {importProgress.total_rows}
-                </span>
-              )}
-            </div>
-          )}
-          {importProgress && (
-            <div style={{ height: 7, background: "#E5E7EB", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{
-                height: "100%",
-                width: `${importProgress.progress}%`,
-                background: importResult?.status === "completed" ? "#16A34A"
-                  : importResult?.status === "partial" ? "#D97706"
-                    : importResult?.status === "failed" ? "#DC2626"
-                      : "#3B82F6",
-                borderRadius: 4,
-                transition: "width 0.4s ease",
-              }} />
+          <div style={{ height: 7, background: "#E5E7EB", borderRadius: 4, overflow: "hidden" }}>
+            <div style={{
+              height: "100%",
+              width: `${importProgress.progress}%`,
+              background: importResult?.status === "partial" ? "#D97706"
+                : importResult?.status === "failed" ? "#DC2626"
+                  : "#3B82F6",
+              borderRadius: 4,
+              transition: "width 0.4s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
+      {importResult && (
+        <div
+          style={{
+            margin: "10px 0 6px",
+            padding: "12px 14px",
+            borderRadius: 12,
+            border: `1px solid ${importResult.status === "failed" ? "#FECACA" : importResult.status === "partial" ? "#FDE68A" : "#BBF7D0"}`,
+            background: importResult.status === "failed" ? "#FEF2F2" : importResult.status === "partial" ? "#FFFBEB" : "#F0FDF4",
+          }}
+        >
+          <div style={{
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: importResult.status === "failed" ? "#B91C1C" : importResult.status === "partial" ? "#B45309" : "#166534",
+            marginBottom: 4,
+          }}>
+            {importResult.message}
+          </div>
+          {importResult.status !== "failed" && (
+            <div style={{ fontSize: 12.5, color: "#4B5563", lineHeight: 1.55 }}>
+              <div>
+                Bộ dữ liệu: {importResult.importedCollections?.length ? importResult.importedCollections.join(", ") : "Không có sheet nào được nhập"}
+              </div>
+              <div>
+                Thêm mới: {importResult.inserted} | Cập nhật: {importResult.updated} | Tái sử dụng: {importResult.reused} | Đồng bộ: {importResult.synced}
+              </div>
+              <div>
+                Alias: {importResult.aliasSkipped
+                  ? "bỏ qua theo lựa chọn người dùng"
+                  : `đã xử lý ${importResult.aliasProcessed} từ khóa, tạo ${importResult.aliasInserted} alias`}
+                {importResult.aliasStopped ? ` | còn lại ${importResult.aliasRemaining} từ khóa` : ""}
+              </div>
             </div>
           )}
         </div>
@@ -1501,7 +1799,7 @@ export default function MongoDB() {
       <DocumentModal
         open={openCreateDoc}
         onClose={() => setOpenCreateDoc(false)}
-        title={`Tạo document mới (${currentCollection})`}
+        title={`Tạo tài liệu mới (${currentCollection})`}
         initialDoc={null}
         onSave={createDoc}
         collectionName={currentCollection}

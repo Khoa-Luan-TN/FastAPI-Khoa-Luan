@@ -230,7 +230,7 @@ const FilterIcon = () => (
 );
 
 // ---- Section label + icon mapping ----
-const SECTION_LABELS = { documents: "Tài liệu", videos: "Videos", images: "Hình ảnh" };
+const SECTION_LABELS = { documents: "Tài liệu", videos: "Video", images: "Hình ảnh" };
 const SECTION_ICONS = { documents: FolderIcon, videos: VideoIcon, images: ImageIcon };
 function getPartLabel(part) {
   return SECTION_LABELS[part] || part;
@@ -254,7 +254,7 @@ const ROOT_SECTIONS = [
   {
     id: "r-vid",
     name: "videos",
-    label: "Videos",
+    label: "Video",
     desc: "Video bài giảng",
     bg: "#FFF7ED",
     color: "#EA580C",
@@ -469,7 +469,7 @@ export default function MinIO() {
             <StorageIcon size={26} />
           </div>
           <div>
-            <h2 className="mrh-title">MinIO Storage</h2>
+            <h2 className="mrh-title">Object data</h2>
             <p className="mrh-subtitle">
               Cấu trúc thư mục được tạo tự động khi import — upload file vào thư mục lá
             </p>
@@ -493,7 +493,7 @@ export default function MinIO() {
               <span className="mci-icon">
                 <StorageIcon size={14} />
               </span>
-              <span className="mci-text">MinIO</span>
+              <span className="mci-text">Object data</span>
             </span>
             {breadcrumbParts.map((part, idx) => {
               const path =

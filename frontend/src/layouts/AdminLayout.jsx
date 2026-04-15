@@ -59,10 +59,10 @@ const Icon = {
 
 const ROUTE_LABELS = {
   "/admin": "Trang chủ",
-  "/admin/minio": "MinIO",
-  "/admin/mongo": "MongoDB",
-  "/admin/postgres": "PostgreSQL",
-  "/admin/neo4j": "Neo4j",
+  "/admin/minio": "Object data",
+  "/admin/mongo": "Dữ liệu mô tả",
+  "/admin/postgres": "Dữ liệu có cấu trúc",
+  "/admin/neo4j": "Dữ liệu đồ thị",
   "/admin/users": "Tài khoản",
   "/admin/book-bundle": "Import sách",
 };
@@ -115,16 +115,16 @@ export default function AdminLayout() {
           {/* Cơ sở dữ liệu */}
           <span className="nav-group-label">Cơ sở dữ liệu</span>
           <NavLink to="/admin/minio" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Storage /></span>MinIO
+            <span className="nav-icon"><Icon.Storage /></span>Object data
           </NavLink>
           <NavLink to="/admin/mongo" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Database /></span>MongoDB
+            <span className="nav-icon"><Icon.Database /></span>Dữ liệu mô tả
           </NavLink>
           <NavLink to="/admin/postgres" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Table /></span>PostgreSQL
+            <span className="nav-icon"><Icon.Table /></span>Dữ liệu có cấu trúc
           </NavLink>
           <NavLink to="/admin/neo4j" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Graph /></span>Neo4j
+            <span className="nav-icon"><Icon.Graph /></span>Dữ liệu đồ thị
           </NavLink>
 
           {/* Nhập dữ liệu */}

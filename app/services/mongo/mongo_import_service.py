@@ -630,6 +630,7 @@ def _import_keyword_rows(
     rows: List[Dict[str, Any]],
     actor: str,
     *,
+    generate_aliases: bool = True,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     progress_state: Optional[Dict[str, Any]] = None,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
@@ -782,13 +783,14 @@ def _import_keyword_rows(
         "stopped_due_to_quota": False,
         "remaining_keywords": [],
     }
+    alias_skipped_by_flag = False
 
     """ 
         {
             "<keyword_id>": "<keyword_name>"
         }
     """
-    if new_keywords:
+    if generate_aliases and new_keywords:
         from app.services.keyword.keyword_alias_service import refresh_keyword_aliases_batch
 
         try:
@@ -806,6 +808,8 @@ def _import_keyword_rows(
             )
         except Exception as batch_e:
             _log.warning("[import] alias batch failed: %s", batch_e)
+    else:
+        alias_skipped_by_flag = bool(new_keywords) and not generate_aliases
 
     if progress_callback is not None and progress_state is not None and phase2_slots > 0:
         already_emitted = progress_state.get("_alias_slots_emitted", 0)
@@ -843,6 +847,8 @@ def _import_keyword_rows(
         "reused": reused,
         "synced": synced,
         "errors": errors[:50],
+        "alias_generation_enabled": generate_aliases,
+        "alias_skipped_by_flag": alias_skipped_by_flag,
         "alias_processed_keywords": batch_result["processed_keywords"],
         "alias_inserted": batch_result["inserted_aliases"],
         "alias_deleted": 0,
@@ -859,6 +865,7 @@ def import_excel_to_mongo(
     xlsx_path: str,
     *,
     actor: str,
+    generate_aliases: bool = True,
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
     only_cols: Optional[List[str]] = None,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
@@ -893,7 +900,13 @@ def import_excel_to_mongo(
         ensure_root_folders(minio_client, minio_bucket, errors=minio_errors)
 
     # Biến lưu báo cáo 
-    report = {"file": xlsx_path, "collections": {}, "errors": []}
+    report = {
+        "file": xlsx_path,
+        "collections": {},
+        "errors": [],
+        "alias_generation_enabled": generate_aliases,
+        "alias_skipped_by_flag": False,
+    }
 
     # Đọc tất cả các sheet cần import 
     # Và chuẩn hoá toàn bộ các sheet
@@ -932,6 +945,7 @@ def import_excel_to_mongo(
             )
             report["collections"]["keyword"] = _import_keyword_rows(
                 db, rows, actor,
+                generate_aliases=generate_aliases,
                 progress_callback=progress_callback,
                 progress_state=_progress_state,
                 sync_one=sync_one,
@@ -940,6 +954,7 @@ def import_excel_to_mongo(
                 minio_seen=minio_seen,
                 minio_errors=minio_errors,
             )
+            report["alias_skipped_by_flag"] = bool(report["collections"]["keyword"].get("alias_skipped_by_flag"))
             if _progress_state is not None:
                 processed_rows = _progress_state["processed_rows"]
             continue

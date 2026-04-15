@@ -72,7 +72,7 @@ const CodeIcon = ({ size = 20 }) => (
 const DB_CARDS = [
   {
     Icon: StorageIcon,
-    label: "MinIO",
+    label: "Object data",
     desc: "Lưu trữ file & media",
     color: "#F59E0B",
     colorBg: "#FFFBEB",
@@ -80,7 +80,7 @@ const DB_CARDS = [
   },
   {
     Icon: DatabaseIcon,
-    label: "MongoDB",
+    label: "Dữ liệu mô tả",
     desc: "Dữ liệu tài liệu học",
     color: "#10B981",
     colorBg: "#ECFDF5",
@@ -88,7 +88,7 @@ const DB_CARDS = [
   },
   {
     Icon: TableIcon,
-    label: "PostgreSQL",
+    label: "Dữ liệu có cấu trúc",
     desc: "Người dùng & phân quyền",
     color: "#3B82F6",
     colorBg: "#EFF6FF",
@@ -96,7 +96,7 @@ const DB_CARDS = [
   },
   {
     Icon: GraphIcon,
-    label: "Neo4j",
+    label: "Dữ liệu đồ thị",
     desc: "Đồ thị tri thức",
     color: "#8B5CF6",
     colorBg: "#F5F3FF",
@@ -105,10 +105,10 @@ const DB_CARDS = [
 ];
 
 const STACK_ITEMS = [
-  { Icon: BoltIcon,    label: "Backend",  value: "FastAPI",      color: "#10B981", colorBg: "#ECFDF5" },
-  { Icon: CodeIcon,    label: "Frontend", value: "React + Vite", color: "#3B82F6", colorBg: "#EFF6FF" },
-  { Icon: StorageIcon, label: "Storage",  value: "MinIO",        color: "#F59E0B", colorBg: "#FFFBEB" },
-  { Icon: GraphIcon,   label: "Graph DB", value: "Neo4j",        color: "#8B5CF6", colorBg: "#F5F3FF" },
+  { Icon: BoltIcon,    label: "Máy chủ",  value: "FastAPI",      color: "#10B981", colorBg: "#ECFDF5" },
+  { Icon: CodeIcon,    label: "Giao diện", value: "React + Vite", color: "#3B82F6", colorBg: "#EFF6FF" },
+  { Icon: StorageIcon, label: "Lưu trữ đối tượng", value: "Object data", color: "#F59E0B", colorBg: "#FFFBEB" },
+  { Icon: GraphIcon,   label: "Cơ sở dữ liệu đồ thị", value: "Dữ liệu đồ thị", color: "#8B5CF6", colorBg: "#F5F3FF" },
 ];
 
 export default function Dashboard() {
@@ -144,7 +144,7 @@ export default function Dashboard() {
       <section className="dash-section">
         <div className="dash-section-header">
           <h2 className="dash-section-title">Cơ sở dữ liệu</h2>
-          <span className="dash-section-meta">4 services</span>
+          <span className="dash-section-meta">4 dịch vụ</span>
         </div>
         <div className="dash-db-grid">
           {DB_CARDS.map((card) => (

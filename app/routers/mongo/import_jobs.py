@@ -34,6 +34,7 @@ def _run_import_job(
     job_id: str,
     actor: str,
     only_cols: Optional[list],
+    generate_aliases: bool,
 ) -> None:
     _db = get_mongo_db()
 
@@ -67,6 +68,7 @@ def _run_import_job(
             actor=actor,
             sync_one=lambda col, doc: sync_doc_to_postgres(_db, col, doc),
             only_cols=only_cols,
+            generate_aliases=generate_aliases,
             progress_callback=progress_callback,
         )
         complete_import_job(
@@ -89,6 +91,7 @@ async def import_excel_tracked(
     request: Request,
     file: UploadFile = File(...),
     collection_name: str = Query(None, description="Import only this collection (optional)"),
+    generate_aliases: bool = Query(True, description="Bật/tắt tạo alias cho keyword"),
 ):
     actor = _get_actor(request)
 
@@ -106,7 +109,7 @@ async def import_excel_tracked(
 
     t = threading.Thread(
         target=_run_import_job,
-        args=(tmp_path, job_id, actor, only_cols),
+        args=(tmp_path, job_id, actor, only_cols, generate_aliases),
         daemon=True,
     )
     t.start()
