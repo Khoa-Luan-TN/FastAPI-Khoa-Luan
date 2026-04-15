@@ -8,11 +8,6 @@ import RenameModal from "../../components/RenameModal";
 import ConfirmModal from "../../components/ConfirmModal";
 
 // ---- helpers ----
-function openFile(row) {
-  if (!row?.url) return alert("Tệp này chưa có liên kết để mở.");
-  window.open(row.url, "_blank", "noopener,noreferrer");
-}
-
 function getExt(name = "") {
   const i = name.lastIndexOf(".");
   return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
@@ -213,6 +208,72 @@ const UploadIcon = () => (
   </svg>
 );
 
+const CheckIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+const WarnIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+  </svg>
+);
+
+function ToastLayer({ toasts }) {
+  return (
+    <div style={{
+      position: "fixed",
+      bottom: 28,
+      right: 28,
+      zIndex: 9999,
+      display: "flex",
+      flexDirection: "column-reverse",
+      gap: 10,
+      pointerEvents: "none",
+    }}>
+      {toasts.map((t) => {
+        const isError = t.type === "error";
+        const isWarning = t.type === "warning";
+        const bg = isError ? "#FFF1F2" : isWarning ? "#FFFBEB" : "#F0FDF4";
+        const border = isError ? "#FECDD3" : isWarning ? "#FDE68A" : "#BBF7D0";
+        const iconColor = isError ? "#DC2626" : isWarning ? "#D97706" : "#15803D";
+        const titleColor = isError ? "#991B1B" : isWarning ? "#92400E" : "#14532D";
+        const bodyColor = isError ? "#DC2626" : isWarning ? "#B45309" : "#15803D";
+        return (
+          <div key={t.id} style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            background: bg,
+            border: `1.5px solid ${border}`,
+            borderRadius: 12,
+            padding: "13px 18px",
+            minWidth: 280,
+            maxWidth: 420,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.10)",
+            pointerEvents: "auto",
+          }}>
+            <span style={{ color: iconColor, flexShrink: 0, marginTop: 1 }}>
+              {isError || isWarning ? <WarnIcon /> : <CheckIcon />}
+            </span>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: titleColor }}>
+                {isError ? "Lỗi" : isWarning ? "Cảnh báo" : "Thành công"}
+              </div>
+              <div style={{ fontSize: 13, color: bodyColor, marginTop: 2 }}>
+                {t.message}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const FilterIcon = () => (
   <svg
     width="14"
@@ -280,6 +341,7 @@ export default function MinIO() {
   const [remote, setRemote] = useState({ folders: [], files: [], pathParts: [] });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [toasts, setToasts] = useState([]);
 
   // Modal states
   const [renameModal, setRenameModal] = useState({ open: false, initialName: "", onConfirm: null });
@@ -289,6 +351,16 @@ export default function MinIO() {
     message: "",
     onConfirm: null,
   });
+  const [toastCounter, setToastCounter] = useState(0);
+
+  function pushToast(message, type = "success") {
+    const id = toastCounter + 1;
+    setToastCounter(id);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  }
 
   const parts = splitPath(currentPath);
   const section = parts[0] || "";
@@ -397,8 +469,9 @@ export default function MinIO() {
         files: data.files || [],
         pathParts: data.path_parts || [],
       });
+      pushToast("Tải tệp thành công.", "success");
     } catch (e) {
-      alert(String(e?.message || e));
+      pushToast(String(e?.message || e || "Tải tệp thất bại."), "error");
     }
   }
 
@@ -420,8 +493,9 @@ export default function MinIO() {
             files: data.files || [],
             pathParts: data.path_parts || [],
           });
+          pushToast("Đổi tên thành công.", "success");
         } catch (err) {
-          alert(String(err?.message || err));
+          pushToast(String(err?.message || err || "Đổi tên thất bại."), "error");
         }
       },
     });
@@ -443,8 +517,9 @@ export default function MinIO() {
             files: data.files || [],
             pathParts: data.path_parts || [],
           });
+          pushToast("Xóa thành công.", "success");
         } catch (err) {
-          alert(String(err?.message || err));
+          pushToast(String(err?.message || err || "Xóa tệp thất bại."), "error");
         }
       },
     });
@@ -462,6 +537,7 @@ export default function MinIO() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <ToastLayer toasts={toasts} />
       {/* ROOT: gradient header banner */}
       {isRoot && (
         <div className="minio-root-header">
@@ -655,7 +731,13 @@ export default function MinIO() {
                   <div
                     key={row.id}
                     className={`minio-file-item type-${type}`}
-                    onDoubleClick={() => openFile(row)}
+                    onDoubleClick={() => {
+                      if (!row?.url) {
+                        pushToast("Tệp này chưa có liên kết để mở.", "warning");
+                        return;
+                      }
+                      window.open(row.url, "_blank", "noopener,noreferrer");
+                    }}
                     title="Nhấp đúp để mở"
                   >
                     <div className="mfi-name-cell">

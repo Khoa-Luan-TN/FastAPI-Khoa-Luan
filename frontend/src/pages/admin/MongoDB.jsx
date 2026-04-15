@@ -4,6 +4,7 @@ import "../../styles/admin/page.css";
 import "../../styles/admin/modal.css";
 import "../../styles/admin/minio.css";
 import DataTable from "../../components/DataTable";
+import ConfirmModal from "../../components/ConfirmModal";
 import * as mongoApi from "../../services/mongoAdminApi";
 
 // ---- SVG icons ----
@@ -126,24 +127,11 @@ function ToastLayer({ toasts }) {
 
 function buildImportSummary(report) {
   const collections = report?.collections || {};
-  const importedCollections = Object.entries(collections)
-    .filter(([, info]) => (info?.rows || 0) > 0 && !info?.skipped)
-    .map(([name]) => name);
-
-  const totals = Object.values(collections).reduce((acc, info) => {
-    acc.inserted += Number(info?.inserted || 0);
-    acc.updated += Number(info?.updated || 0);
-    acc.reused += Number(info?.reused || 0);
-    acc.synced += Number(info?.synced || 0);
-    return acc;
-  }, { inserted: 0, updated: 0, reused: 0, synced: 0 });
-
   const keywordInfo = collections.keyword || {};
   const aliasRemaining = Array.isArray(keywordInfo.alias_remaining_keywords)
     ? keywordInfo.alias_remaining_keywords.length
     : 0;
   const aliasStopped = Boolean(keywordInfo.alias_stopped_due_to_quota);
-  const aliasSkipped = Boolean(report?.alias_skipped_by_flag || keywordInfo.alias_skipped_by_flag);
   const warningCount = Object.values(collections).reduce((sum, info) => sum + (Array.isArray(info?.errors) ? info.errors.length : 0), 0)
     + (Array.isArray(report?.errors) ? report.errors.length : 0);
 
@@ -152,31 +140,14 @@ function buildImportSummary(report) {
     status = "partial";
   }
 
-  let message = "Thêm thành công.";
+  let message = "Import thành công.";
   if (status === "partial") {
-    if (aliasStopped) {
-      message = aliasRemaining > 0
-        ? `Hoàn tất với cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên. Còn ${aliasRemaining} từ khóa chưa xử lý.`
-        : "Hoàn tất với cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên.";
-    } else {
-      message = "Hoàn tất với cảnh báo.";
-    }
+    message = "Import hoàn tất với cảnh báo.";
   }
 
   return {
     status,
     message,
-    importedCollections,
-    inserted: totals.inserted,
-    updated: totals.updated,
-    reused: totals.reused,
-    synced: totals.synced,
-    aliasInserted: Number(keywordInfo.alias_inserted || 0),
-    aliasProcessed: Number(keywordInfo.alias_processed_keywords || 0),
-    aliasSkipped,
-    aliasStopped,
-    aliasRemaining,
-    warningCount,
   };
 }
 
@@ -486,7 +457,7 @@ function KwRefsEditor({ value, onChange, keywordMap = {} }) {
 }
 
 /** ===== Modal: Create/Edit Document (fields động) ===== */
-function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName }) {
+function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionName, submitting = false, onToast, submitError = "" }) {
   const [pairs, setPairs] = useState([]);
 
   const cfg = CREATE_CONFIGS[collectionName] || null;
@@ -529,12 +500,13 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
     setPairs((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
+    if (submitting) return;
     if (collectionName === "subject") {
       const classIdPair = pairs.find(p => p.k === "class_id");
       if (!classIdPair || !String(classIdPair.v || "").trim()) {
-        alert("Vui lòng nhập class_id");
+        onToast?.("Vui lòng nhập mã lớp.", "error");
         return;
       }
     }
@@ -544,7 +516,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
       if (!k) continue;
       obj[k] = parseValue(p.v);
     }
-    onSave(obj);
+    await onSave(obj);
   }
 
   return (
@@ -557,6 +529,11 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
 
         <div className="modal-body">
           <form onSubmit={submit}>
+            {submitError && (
+              <div className="modal-note" style={{ marginBottom: 14, color: "#B91C1C", borderColor: "#FECACA", background: "#FEF2F2" }}>
+                {submitError}
+              </div>
+            )}
             <div>
               {pairs.map((p, i) => {
                 const keyName = (p.k || "").trim();
@@ -574,6 +551,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                             className="kv-input"
                             value={String(p.v ?? p.options?.[0] ?? "")}
                             onChange={(e) => change(i, "v", e.target.value)}
+                            disabled={submitting}
                           >
                             {(p.options || []).map(opt => (
                               <option key={opt} value={opt}>{opt}</option>
@@ -584,6 +562,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                             className="kv-input"
                             value={String(p.v ?? "false")}
                             onChange={(e) => change(i, "v", e.target.value)}
+                            disabled={submitting}
                           >
                             <option value="false">false</option>
                             <option value="true">true</option>
@@ -594,6 +573,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                             placeholder={valuePlaceholder(keyName)}
                             value={p.v}
                             onChange={(e) => change(i, "v", e.target.value)}
+                            disabled={submitting}
                           />
                         )}
                       </div>
@@ -608,12 +588,14 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                       placeholder="Tên trường"
                       value={p.k}
                       onChange={(e) => change(i, "k", e.target.value)}
+                      disabled={submitting}
                     />
                     {isBoolField ? (
                       <select
                         className="kv-input"
                         value={String(p.v ?? "false")}
                         onChange={(e) => change(i, "v", e.target.value)}
+                        disabled={submitting}
                       >
                         <option value="false">false</option>
                         <option value="true">true</option>
@@ -624,9 +606,10 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
                         placeholder={valuePlaceholder(keyName)}
                         value={p.v}
                         onChange={(e) => change(i, "v", e.target.value)}
+                        disabled={submitting}
                       />
                     )}
-                    <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá trường">✕</button>
+                    <button type="button" className="doc-form-del" onClick={() => removeRow(i)} title="Xoá trường" disabled={submitting}>✕</button>
                   </div>
                 );
               })}
@@ -634,7 +617,7 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
 
             {allowExtra && (
               <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow}>
+                <button type="button" className="minio-btn minio-btn-secondary" onClick={addRow} disabled={submitting}>
                   + Thêm trường
                 </button>
               </div>
@@ -643,11 +626,11 @@ function DocumentModal({ open, onClose, title, initialDoc, onSave, collectionNam
         </div>
 
         <div className="modal-footer">
-          <button className="minio-btn minio-btn-secondary" onClick={onClose}>
+          <button className="minio-btn minio-btn-secondary" onClick={onClose} disabled={submitting}>
             Huỷ
           </button>
-          <button className="minio-btn minio-btn-primary" onClick={submit}>
-            Lưu tài liệu
+          <button className="minio-btn minio-btn-primary" onClick={submit} disabled={submitting}>
+            {submitting ? "Đang lưu..." : "Lưu tài liệu"}
           </button>
         </div>
       </div>
@@ -688,6 +671,9 @@ export default function MongoDB() {
   const [generateAliases, setGenerateAliases] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [creatingDoc, setCreatingDoc] = useState(false);
+  const [createDocError, setCreateDocError] = useState("");
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" });
 
   // ---- Class docs for subject list (maps class _id → class_name) ----
   const [classDocs, setClassDocs] = useState([]);
@@ -1183,7 +1169,7 @@ export default function MongoDB() {
   async function confirmImportExcel() {
     const file = pendingImportFile;
     if (!file) {
-      alert("Vui lòng chọn tệp Excel trước khi nhập dữ liệu.");
+      pushToast("Vui lòng chọn tệp Excel trước khi nhập dữ liệu.", "warning");
       return;
     }
 
@@ -1226,31 +1212,19 @@ export default function MongoDB() {
       setImportResult(summary);
       setImportProgress({
         progress: 100,
-        message: summary.status === "partial" ? "Hoàn tất với cảnh báo." : "Thêm thành công.",
+        message: summary.message,
         collection: "",
       });
-      pushToast(summary.status === "partial" ? summary.message : "Thêm thành công.", summary.status === "partial" ? "warning" : "success");
+      pushToast(summary.message, summary.status === "partial" ? "warning" : "success");
 
       if (isRoot) await reloadCollections();
       else { await loadAllDocs(currentCollection); }
     } catch (err) {
-      const errorMessage = String(err?.message || err);
       setImportResult({
         status: "failed",
-        message: errorMessage,
-        importedCollections: [],
-        inserted: 0,
-        updated: 0,
-        reused: 0,
-        synced: 0,
-        aliasInserted: 0,
-        aliasProcessed: 0,
-        aliasSkipped: false,
-        aliasStopped: false,
-        aliasRemaining: 0,
-        warningCount: 0,
+        message: "Import thất bại.",
       });
-      pushToast(errorMessage, "error");
+      pushToast("Import thất bại.", "error");
     } finally {
       setImporting(false);
       setPendingImportFile(null);
@@ -1272,24 +1246,42 @@ export default function MongoDB() {
   }
 
   async function createDoc(dataObj) {
+    if (creatingDoc) return;
+    setCreatingDoc(true);
+    setCreateDocError("");
     try {
       await mongoApi.createDocument(currentCollection, dataObj);
+      pushToast("Thêm thành công.", "success");
       setOpenCreateDoc(false);
       await loadAllDocs(currentCollection);
     } catch (e) {
-      alert(String(e?.message || e));
+      const message = String(e?.message || e || "Thêm tài liệu thất bại.");
+      setCreateDocError(message);
+      pushToast(message, "error");
+    } finally {
+      setCreatingDoc(false);
     }
   }
 
   async function deleteDoc(row) {
-    if (!confirm(`Xoá tài liệu "${docTitle(row) || row._id}"?`)) return;
-    try {
-      await mongoApi.deleteDocument(currentCollection, String(row._id));
-      await loadAllDocs(currentCollection);
-      setCurrentDocId((id) => (String(id) === String(row._id) ? "" : id));
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
+    setConfirmModal({
+      open: true,
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc chắn muốn xóa tài liệu "${docTitle(row) || row._id}" không?`,
+      confirmLabel: "Xóa",
+      tone: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        try {
+          await mongoApi.deleteDocument(currentCollection, String(row._id));
+          await loadAllDocs(currentCollection);
+          setCurrentDocId((id) => (String(id) === String(row._id) ? "" : id));
+          pushToast("Xóa thành công.", "success");
+        } catch (e) {
+          pushToast(String(e?.message || e || "Xóa tài liệu thất bại."), "error");
+        }
+      },
+    });
   }
 
   function changePair(id, key, value) {
@@ -1337,7 +1329,7 @@ export default function MongoDB() {
       const sv = (p.v ?? "").trim();
       if (sv.startsWith("{") || sv.startsWith("[")) {
         try { JSON.parse(sv); } catch {
-          alert(`Trường "${k}" chứa JSON không hợp lệ. Vui lòng kiểm tra lại.`);
+          pushToast(`Trường "${k}" chứa JSON không hợp lệ. Vui lòng kiểm tra lại.`, "error");
           return;
         }
       }
@@ -1363,8 +1355,9 @@ export default function MongoDB() {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), patch);
       setIsEditingDoc(false);
       await loadAllDocs(currentCollection);
+      pushToast("Cập nhật thành công.", "success");
     } catch (e) {
-      alert(String(e?.message || e));
+      pushToast(String(e?.message || e || "Cập nhật tài liệu thất bại."), "error");
     }
   }
 
@@ -1372,8 +1365,9 @@ export default function MongoDB() {
     try {
       await mongoApi.updateDocument(currentCollection, String(row._id), { is_deleted: false });
       await loadAllDocs(currentCollection);
+      pushToast("Khôi phục thành công.", "success");
     } catch (e) {
-      alert(String(e?.message || e));
+      pushToast(String(e?.message || e || "Khôi phục tài liệu thất bại."), "error");
     }
   }
 
@@ -1383,21 +1377,32 @@ export default function MongoDB() {
       await mongoApi.updateDocument(currentCollection, String(selectedDoc._id), { is_deleted: false });
       setIsEditingDoc(false);
       await loadAllDocs(currentCollection);
+      pushToast("Khôi phục thành công.", "success");
     } catch (e) {
-      alert(String(e?.message || e));
+      pushToast(String(e?.message || e || "Khôi phục tài liệu thất bại."), "error");
     }
   }
 
   async function deleteDocFromDetail() {
     if (!selectedDoc) return;
-    if (!confirm(`Xoá tài liệu "${docTitle(selectedDoc) || selectedDoc._id}"?`)) return;
-    try {
-      await mongoApi.deleteDocument(currentCollection, String(selectedDoc._id));
-      setCurrentDocId("");
-      await loadAllDocs(currentCollection);
-    } catch (e) {
-      alert(String(e?.message || e));
-    }
+    setConfirmModal({
+      open: true,
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc chắn muốn xóa tài liệu "${docTitle(selectedDoc) || selectedDoc._id}" không?`,
+      confirmLabel: "Xóa",
+      tone: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        try {
+          await mongoApi.deleteDocument(currentCollection, String(selectedDoc._id));
+          setCurrentDocId("");
+          await loadAllDocs(currentCollection);
+          pushToast("Xóa thành công.", "success");
+        } catch (e) {
+          pushToast(String(e?.message || e || "Xóa tài liệu thất bại."), "error");
+        }
+      },
+    });
   }
 
   return (
@@ -1620,43 +1625,6 @@ export default function MongoDB() {
         </div>
       )}
 
-      {importResult && (
-        <div
-          style={{
-            margin: "10px 0 6px",
-            padding: "12px 14px",
-            borderRadius: 12,
-            border: `1px solid ${importResult.status === "failed" ? "#FECACA" : importResult.status === "partial" ? "#FDE68A" : "#BBF7D0"}`,
-            background: importResult.status === "failed" ? "#FEF2F2" : importResult.status === "partial" ? "#FFFBEB" : "#F0FDF4",
-          }}
-        >
-          <div style={{
-            fontSize: 13.5,
-            fontWeight: 700,
-            color: importResult.status === "failed" ? "#B91C1C" : importResult.status === "partial" ? "#B45309" : "#166534",
-            marginBottom: 4,
-          }}>
-            {importResult.message}
-          </div>
-          {importResult.status !== "failed" && (
-            <div style={{ fontSize: 12.5, color: "#4B5563", lineHeight: 1.55 }}>
-              <div>
-                Bộ dữ liệu: {importResult.importedCollections?.length ? importResult.importedCollections.join(", ") : "Không có sheet nào được nhập"}
-              </div>
-              <div>
-                Thêm mới: {importResult.inserted} | Cập nhật: {importResult.updated} | Tái sử dụng: {importResult.reused} | Đồng bộ: {importResult.synced}
-              </div>
-              <div>
-                Alias: {importResult.aliasSkipped
-                  ? "bỏ qua theo lựa chọn người dùng"
-                  : `đã xử lý ${importResult.aliasProcessed} từ khóa, tạo ${importResult.aliasInserted} alias`}
-                {importResult.aliasStopped ? ` | còn lại ${importResult.aliasRemaining} từ khóa` : ""}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Error */}
       {err && (
         <div className="minio-empty" style={{ borderColor: "#FECACA", marginBottom: 16 }}>
@@ -1798,11 +1766,27 @@ export default function MongoDB() {
 
       <DocumentModal
         open={openCreateDoc}
-        onClose={() => setOpenCreateDoc(false)}
+        onClose={() => {
+          if (creatingDoc) return;
+          setOpenCreateDoc(false);
+          setCreateDocError("");
+        }}
         title={`Tạo tài liệu mới (${currentCollection})`}
         initialDoc={null}
         onSave={createDoc}
         collectionName={currentCollection}
+        submitting={creatingDoc}
+        onToast={pushToast}
+        submitError={createDocError}
+      />
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        tone={confirmModal.tone}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" })}
       />
 
     </div>

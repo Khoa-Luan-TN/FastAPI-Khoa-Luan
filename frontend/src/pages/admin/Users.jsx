@@ -5,6 +5,7 @@ import "../../styles/admin/minio.css";
 import "../../styles/admin/table.css";
 import "../../styles/admin/modal.css";
 import DataTable from "../../components/DataTable";
+import ConfirmModal from "../../components/ConfirmModal";
 import * as userApi from "../../services/userMongoApi";
 
 // ---- SVG icons ----
@@ -471,6 +472,7 @@ export default function Users() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" });
 
   const toast = useToast();
   const currentUserId = localStorage.getItem("user_id") || "";
@@ -518,9 +520,9 @@ export default function Users() {
       render: (r) => {
         const isSelf = currentUserId && r.userId === currentUserId;
         return (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, width: "100%" }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
               background: r.active ? "#EFF6FF" : "#FFF1F2",
               color: r.active ? "#2563EB" : "#DC2626",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -531,6 +533,7 @@ export default function Users() {
             <span style={{
               fontFamily: "var(--doc-font, sans-serif)", fontSize: 14, fontWeight: 600, color: "#1E293B",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              minWidth: 0, flex: 1,
             }} title={r.username}>{r.username}</span>
             {isSelf && (
               <span style={{
@@ -557,7 +560,7 @@ export default function Users() {
       ),
     },
     {
-      key: "status", label: "TRẠNG THÁI", width: "120px",
+      key: "status", label: "TRẠNG THÁI", width: "160px",
       render: (r) => (
         <span style={{
           display: "inline-flex", alignItems: "center", gap: 5,
@@ -573,7 +576,7 @@ export default function Users() {
       ),
     },
     {
-      key: "updatedAt", label: "CẬP NHẬT", width: "110px",
+      key: "updatedAt", label: "CẬP NHẬT", width: "128px",
       render: (r) => <span className="mongo-meta-cell">{r.updatedAt}</span>,
     },
   ];
@@ -584,12 +587,23 @@ export default function Users() {
       return;
     }
     const nextActive = !row.active;
-    if (!confirm(`${nextActive ? "Kích hoạt" : "Vô hiệu hoá"} tài khoản "${row.username}"?`)) return;
-    try {
-      await userApi.updateUser(row.id, { is_active: nextActive });
-      await reloadUsers();
-      toast.success(`Đã ${nextActive ? "kích hoạt" : "vô hiệu hoá"} tài khoản "${row.username}".`);
-    } catch (e) { toast.error(e.message || String(e)); }
+    setConfirmModal({
+      open: true,
+      title: "Xác nhận thay đổi trạng thái",
+      message: `Bạn có chắc chắn muốn ${nextActive ? "kích hoạt" : "vô hiệu hóa"} tài khoản "${row.username}" không?`,
+      confirmLabel: nextActive ? "Kích hoạt" : "Vô hiệu hóa",
+      tone: nextActive ? "info" : "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        try {
+          await userApi.updateUser(row.id, { is_active: nextActive });
+          await reloadUsers();
+          toast.success(`Đã ${nextActive ? "kích hoạt" : "vô hiệu hóa"} tài khoản "${row.username}".`);
+        } catch (e) {
+          toast.error(e.message || String(e));
+        }
+      },
+    });
   }
 
   function openEditUser(row) { setEditTarget(row); setOpenEdit(true); }
@@ -621,12 +635,15 @@ export default function Users() {
       {/* Hero banner */}
       <div className="minio-root-header" style={{
         background: "linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)",
-        boxShadow: "0 10px 30px rgba(99,102,241,0.13)", marginBottom: 14,
+        boxShadow: "0 10px 30px rgba(99,102,241,0.13)",
+        marginBottom: 22,
+        padding: "30px 34px",
+        gap: 22,
       }}>
-        <div className="mrh-icon" style={{ color: "#6366F1" }}><UsersIcon size={26} /></div>
+        <div className="mrh-icon" style={{ color: "#6366F1", width: 64, height: 64 }}><UsersIcon size={28} /></div>
         <div>
-          <h2 className="mrh-title" style={{ color: "#312E81" }}>Quản lý tài khoản</h2>
-          <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.68)" }}>
+          <h2 className="mrh-title" style={{ color: "#312E81", marginBottom: 8 }}>Quản lý tài khoản</h2>
+          <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.68)", lineHeight: 1.7 }}>
             {users.length > 0 ? `${users.length} tài khoản` : "Đang tải..."}
             {" "}— tạo, chỉnh sửa và phân quyền người dùng
           </p>
@@ -634,8 +651,8 @@ export default function Users() {
       </div>
 
       {/* Sticky action bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg, #f0f4ff)" }}>
-        <div className="minio-action-bar">
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg, #f0f4ff)", paddingBottom: 2 }}>
+        <div className="minio-action-bar" style={{ marginBottom: 14, padding: "10px 14px 10px 10px", gap: 14, minHeight: 58 }}>
           <div className="minio-search">
             <span className="minio-search-icon"><SearchIcon /></span>
             <input
@@ -646,7 +663,7 @@ export default function Users() {
           <div className="minio-actions">
             <button type="button" onClick={() => setOpenCreate(true)} style={{
               display: "inline-flex", alignItems: "center", gap: 7,
-              height: 38, borderRadius: 9, padding: "0 18px", cursor: "pointer",
+              height: 40, borderRadius: 10, padding: "0 18px", cursor: "pointer",
               border: "none", background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
               color: "#FFF", fontFamily: "var(--doc-font, inherit)", fontSize: 13.5, fontWeight: 700,
               boxShadow: "0 4px 14px rgba(99,102,241,0.32)",
@@ -657,18 +674,19 @@ export default function Users() {
         </div>
       </div>
 
-      <div className="table-wrapper" style={{ marginTop: 6 }}>
+      <div className="table-wrapper" style={{ marginTop: 16, paddingTop: 4 }}>
         <DataTable
           pageSize={9999}
           columns={columns}
           rows={rows}
           getRowClassName={() => "row-click"}
           actionsWidth="180px"
+          columnTemplate="160px minmax(260px, 1.7fr) 140px 160px 128px 180px"
           renderActions={(row) => {
             const isSelf = currentUserId && row.userId === currentUserId;
             return (
               <div className="table-actions" onDoubleClick={(e) => e.stopPropagation()}
-                style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleDisable(row); }}
                   disabled={!!isSelf}
@@ -716,6 +734,15 @@ export default function Users() {
         onSave={saveEditUser}
         isEdit={true}
         isSelf={editIsSelf}
+      />
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        tone={confirmModal.tone}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" })}
       />
     </div>
   );

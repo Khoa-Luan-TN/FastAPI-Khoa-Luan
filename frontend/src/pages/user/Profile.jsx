@@ -55,7 +55,7 @@ const ArrowRightIcon = ({ size = 14 }) => (
 
 export default function Profile() {
   const navigate = useNavigate();
-  const username = localStorage.getItem("username") || "User";
+  const username = localStorage.getItem("username") || "Người dùng";
   const userId   = localStorage.getItem("user_id") || "—";
   const role     = localStorage.getItem("role") || "user";
 
@@ -129,7 +129,7 @@ export default function Profile() {
               </div>
               <div className="u-info-row">
                 <div className="u-info-row-icon"><HashIcon /></div>
-                <div className="u-info-row-label">User ID</div>
+                <div className="u-info-row-label">Mã tài khoản</div>
                 <div className="u-info-row-value u-monospace">{userId}</div>
               </div>
               <div className="u-info-row">
@@ -137,7 +137,7 @@ export default function Profile() {
                 <div className="u-info-row-label">Vai trò</div>
                 <div className="u-info-row-value">
                   <span className={`u-role-badge u-role-badge--${role}`}>
-                    {role === "admin" ? "Admin" : "User"}
+                    {role === "admin" ? "Quản trị viên" : "Người dùng"}
                   </span>
                 </div>
               </div>

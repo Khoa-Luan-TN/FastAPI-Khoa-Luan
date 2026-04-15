@@ -37,7 +37,7 @@ const LogoutIcon = () => (
 
 export default function UserLayout() {
   const navigate = useNavigate();
-  const username = localStorage.getItem("username") || "User";
+  const username = localStorage.getItem("username") || "Người dùng";
 
   function logout() {
     localStorage.removeItem("role");

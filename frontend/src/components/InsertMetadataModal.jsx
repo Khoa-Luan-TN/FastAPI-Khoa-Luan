@@ -85,7 +85,7 @@ function getAutoFillOwnerId(folderName) {
   return null;
 }
 
-export default function InsertMetadataModal({ open, onClose, folderName, onInsert }) {
+export default function InsertMetadataModal({ open, onClose, folderName, onInsert, onToast }) {
   const kind = useMemo(() => detectKind(folderName), [folderName]);
   const mediaOwnerType = useMemo(() => detectMediaOwnerType(folderName), [folderName]);
   const autoFillOwnerId = useMemo(() => getAutoFillOwnerId(folderName), [folderName]);
@@ -193,9 +193,13 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     setValues((prev) => ({ ...prev, [name]: v }));
   }
 
+  function notify(message, type = "error") {
+    onToast?.(message, type);
+  }
+
   function validate() {
     if (kind === "unknown") {
-      alert(
+      notify(
         "Thư mục này chưa xác định được loại metadata. Hãy vào đúng thư mục (subject/topic/lesson/chunk/images/videos)."
       );
       return false;
@@ -206,13 +210,13 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
       const v = values[f.name];
       const ok = v !== undefined && v !== null && String(v).trim() !== "";
       if (!ok) {
-        alert(`Thiếu field bắt buộc: ${f.label}`);
+        notify(`Thiếu trường bắt buộc: ${f.label}`, "warning");
         return false;
       }
     }
 
     if (schema.requiredFile && !file) {
-      alert("Bạn phải chọn tệp để thêm.");
+      notify("Bạn phải chọn tệp để thêm.", "warning");
       return false;
     }
     return true;
@@ -232,7 +236,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
       if (f.type === "number" && meta[f.name] !== "" && meta[f.name] != null) {
         const n = Number(meta[f.name]);
         if (Number.isNaN(n)) {
-          alert(`${f.label} phải là số`);
+          notify(`${f.label} phải là số`);
           return;
         }
         meta[f.name] = n;

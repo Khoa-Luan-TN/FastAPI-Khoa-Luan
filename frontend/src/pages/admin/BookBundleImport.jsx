@@ -25,6 +25,7 @@ import {
   reviewChunkLessonPdfUrl,
   recutReviewChunk,
 } from "../../services/mongoAdminApi";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const SUBJECT_NAME_OPTIONS = ["Tin học"];
 const CLASS_NAME_OPTIONS = ["Lớp 10", "Lớp 11", "Lớp 12"];
@@ -112,6 +113,7 @@ export default function BookBundleImport() {
   const [chunkIdx, setChunkIdx] = useState(0);
   const [chunkApprovals, setChunkApprovals] = useState([]);
   const [chunkPreviewKey, setChunkPreviewKey] = useState(0);
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" });
 
   const pollRef = useRef(null);
 
@@ -426,21 +428,30 @@ export default function BookBundleImport() {
     const c = editChunks[chunkIdx];
     if (!c) return;
     const label = [c.heading, c.title].filter(Boolean).join(" ").trim() || `chunk ${chunkIdx + 1}`;
-    if (!window.confirm(`Xóa phần "${label}" (${c.lesson_stem}, trang ${c.start}–${c.end ?? "?"})?\n\nHành động này sẽ rebuild lại chunk bundle của bài.`)) return;
-    setActing(true); setJobError("");
-    const prevChunks = editChunks;
-    try {
-      await deleteReviewChunk(job.job_id, chunkIdx);
-      const res = await getReviewJob(job.job_id);
-      setJob(res.job);
-      const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
-      setEditChunks(canonical);
-      const newIdx = canonical.length > 0 ? Math.min(_bestChunkIdxAfterRebuild(canonical, c, true), canonical.length - 1) : 0;
-      setChunkIdx(newIdx);
-      setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
-      setChunkPreviewKey((k) => k + 1);
-    } catch (err) { setJobError(String(err?.message || err)); }
-    finally { setActing(false); }
+    setConfirmModal({
+      open: true,
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc chắn muốn xóa phần "${label}" (${c.lesson_stem}, trang ${c.start}–${c.end ?? "?"}) không? Hành động này sẽ dựng lại danh sách phần của bài.`,
+      confirmLabel: "Xóa",
+      tone: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setActing(true); setJobError("");
+        const prevChunks = editChunks;
+        try {
+          await deleteReviewChunk(job.job_id, chunkIdx);
+          const res = await getReviewJob(job.job_id);
+          setJob(res.job);
+          const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
+          setEditChunks(canonical);
+          const newIdx = canonical.length > 0 ? Math.min(_bestChunkIdxAfterRebuild(canonical, c, true), canonical.length - 1) : 0;
+          setChunkIdx(newIdx);
+          setChunkApprovals((prev) => _rebuildApprovals(prevChunks, prev, canonical, c.lesson_stem));
+          setChunkPreviewKey((k) => k + 1);
+        } catch (err) { setJobError(String(err?.message || err)); }
+        finally { setActing(false); }
+      },
+    });
   }
 
   function handleApproveThisChunk() {
@@ -534,9 +545,10 @@ export default function BookBundleImport() {
   const activeStep = getWorkflowStepKey(status, phase);
 
   return (
-    <div style={s.page}>
-      {/* ── Page header ── */}
-      <div style={s.pageHeader}>
+    <>
+      <div style={s.page}>
+        {/* ── Page header ── */}
+        <div style={s.pageHeader}>
         <div>
           <h1 style={s.pageTitle}>Nhập sách giáo khoa</h1>
           <p style={s.pageSub}>Tải lên PDF, trích xuất cấu trúc, kiểm tra rồi nhập vào hệ thống.</p>
@@ -762,7 +774,9 @@ export default function BookBundleImport() {
           )}
         </div>
       )}
-    </div>
+      </div>
+      <BookBundleConfirm modal={confirmModal} setModal={setConfirmModal} />
+    </>
   );
 }
 
@@ -1678,3 +1692,17 @@ const s = {
     background: "#f1f5f9",
   },
 };
+
+function BookBundleConfirm({ modal, setModal }) {
+  return (
+    <ConfirmModal
+      open={modal.open}
+      title={modal.title}
+      message={modal.message}
+      confirmLabel={modal.confirmLabel}
+      tone={modal.tone}
+      onConfirm={modal.onConfirm}
+      onClose={() => setModal({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" })}
+    />
+  );
+}

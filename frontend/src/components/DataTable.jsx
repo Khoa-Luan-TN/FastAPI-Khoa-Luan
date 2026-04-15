@@ -10,6 +10,7 @@ export default function DataTable({
   getRowClassName,
   pageSize, // nếu không truyền => auto
   actionsWidth = "160px",
+  columnTemplate = "",
 }) {
   const total = rows.length;
 
@@ -77,14 +78,26 @@ export default function DataTable({
     <div className="table-container">
       <div className="table-scroll" ref={scrollRef}>
         <div className="table-list">
-          <div className="table-header">
+          <div
+            className={`table-header${columnTemplate ? " table-header--grid" : ""}`}
+            style={columnTemplate ? { gridTemplateColumns: columnTemplate } : undefined}
+          >
             {columns.map((c) => (
-              <div key={c.key} className="table-th" style={{ flex: c.width ? `0 0 ${c.width}` : 1 }}>
+              <div
+                key={c.key}
+                className="table-th"
+                style={columnTemplate ? undefined : { flex: c.width ? `0 0 ${c.width}` : 1 }}
+              >
                 {c.label}
               </div>
             ))}
             {renderActions ? (
-              <div className="table-th" style={{ textAlign: "right", flex: `0 0 ${actionsWidth}` }}>THAO TÁC</div>
+              <div
+                className="table-th"
+                style={columnTemplate ? { textAlign: "right" } : { textAlign: "right", flex: `0 0 ${actionsWidth}` }}
+              >
+                THAO TÁC
+              </div>
             ) : null}
           </div>
 
@@ -92,16 +105,24 @@ export default function DataTable({
             {visibleRows.map((row) => (
               <div
                 key={row.id}
-                className={`table-row ${getRowClassName ? getRowClassName(row) : ""}`}
+                className={`table-row${columnTemplate ? " table-row--grid" : ""} ${getRowClassName ? getRowClassName(row) : ""}`}
+                style={columnTemplate ? { gridTemplateColumns: columnTemplate } : undefined}
                 onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
               >
                 {columns.map((c) => (
-                  <div key={c.key} className="table-td" style={{ flex: c.width ? `0 0 ${c.width}` : 1 }}>
+                  <div
+                    key={c.key}
+                    className="table-td"
+                    style={columnTemplate ? undefined : { flex: c.width ? `0 0 ${c.width}` : 1 }}
+                  >
                     {c.render ? c.render(row) : row[c.key]}
                   </div>
                 ))}
                 {renderActions ? (
-                  <div className="table-td table-td-actions" style={{ flex: `0 0 ${actionsWidth}`, textAlign: "right" }}>
+                  <div
+                    className="table-td table-td-actions"
+                    style={columnTemplate ? { textAlign: "right" } : { flex: `0 0 ${actionsWidth}`, textAlign: "right" }}
+                  >
                     {renderActions(row)}
                   </div>
                 ) : null}

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as userActionsApi from "../../services/userActionsApi";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const SearchIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,6 +59,7 @@ export default function History() {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" });
 
   useEffect(() => {
     userActionsApi.listHistory().then((data) => {
@@ -76,9 +78,18 @@ export default function History() {
   }
 
   function clearAll() {
-    if (!confirm("Xoá toàn bộ lịch sử tìm kiếm?")) return;
-    setHistory([]);
-    userActionsApi.clearHistory().catch(() => {});
+    setConfirmModal({
+      open: true,
+      title: "Xác nhận xóa",
+      message: "Bạn có chắc chắn muốn xóa toàn bộ lịch sử tìm kiếm không?",
+      confirmLabel: "Xóa",
+      tone: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setHistory([]);
+        userActionsApi.clearHistory().catch(() => {});
+      },
+    });
   }
 
   const groupedHistory = HISTORY_GROUPS.map((group) => ({
@@ -163,6 +174,15 @@ export default function History() {
           ))}
         </div>
       )}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        tone={confirmModal.tone}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal({ open: false, title: "", message: "", onConfirm: null, confirmLabel: "Xác nhận", tone: "danger" })}
+      />
     </div>
   );
 }
