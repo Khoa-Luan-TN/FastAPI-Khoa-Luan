@@ -50,7 +50,7 @@ def _get_import_minio():
 def _norm_header(h: Any) -> str:
     return str(h or "").strip()
 
-
+# Hàm chuẩn hoá Value
 def _cell_to_value(v: Any):
     if v is None:
         return None
@@ -173,7 +173,8 @@ def _upsert_by_import_key(
         # Tạo bản copy của doc
         patch = dict(doc)
 
-        # Xử lí soft delete
+        # Xử lí soft delete (này là khi có soft delete)
+        # Khi có is_deleted thì tạo deleted_at
         if "is_deleted" in patch:
             is_del = patch["is_deleted"]
             if isinstance(is_del, str):
@@ -839,6 +840,14 @@ def import_excel_to_mongo(
 
     all_cols = set(IMPORT_ORDER) | set(cols)
     # Dùng để tạo ra Dictionary để lưu các _id MongoDB trả về để dễ dàng mapping với nhau
+    """
+        id_map = {
+            "class": {...},
+            "subject": {...},
+            "topic": {...},
+            ...
+        }
+    """
     id_map: Dict[str, Dict[str, str]] = {c: {} for c in all_cols}
 
     # Nhớ tạm 
@@ -883,6 +892,7 @@ def import_excel_to_mongo(
             report["collections"][col] = {"rows": 0, "inserted": 0, "updated": 0, "synced": 0, "skipped": True}
             continue
 
+        # Xử lí Logic khác cho Keyword
         if col == "keyword":
             _ensure_keyword_related_indexes(db)
             _progress_state = (
@@ -931,11 +941,19 @@ def import_excel_to_mongo(
                     if key in JSON_FIELDS:
                         doc[key] = _try_parse_json(v)
                     else:
+                        # gọi hàm để chuẩn khoá value của key
                         doc[key] = _cell_to_value(v)
                     # Tới đây thì doc là một dictionary đã được chuẩn hoá 
 
                 # Kiểm tra xem col có tham chiếu đến parent nào không
                 # _ref, _id, _parent
+                # Class không đi qua đây
+                """
+                    "subject": ("class_ref", "class_id", "class"),
+                    "topic": ("subject_ref", "subject_id", "subject"),
+                    "lesson": ("topic_ref", "topic_id", "topic"),
+                    "chunk": ("lesson_ref", "lesson_id", "lesson"),
+                """
                 if col in REF_MAP:
                     ref_col, target_field, parent_col = REF_MAP[col]
                     # Lấy value ref_key của parent
@@ -943,6 +961,7 @@ def import_excel_to_mongo(
                     if ref_key:
                         # Kiểm tra xem parent_id đã có trong map chưa (id của mongodb trả về import_key = _oid)
                         parent_id = id_map[parent_col].get(ref_key)
+                        # Đây là khi import dữ liệu mà phía trước chưa có _oid của parent_col
                         if not parent_id:
                             # Tìm xem parent_col đã có chưa để lấy _oid
                             parent_doc = db[parent_col].find_one({"import_key": ref_key}, {"_id": 1})
@@ -954,30 +973,52 @@ def import_excel_to_mongo(
                             raise ValueError(
                                 f"cannot resolve {ref_col}='{ref_key}' (parent '{parent_col}' not imported yet)"
                             )
-                        # Sau đó thêm vào doc _id của parent 
+                        # Sau đó thêm vào doc _id của parent để con có thể map
                         doc[target_field] = ObjectId(parent_id) if ObjectId.is_valid(parent_id) else parent_id
 
+                # Tạo dường dẫn
                 asset_prefixes = _compute_asset_prefixes(col, doc, rec, db, ctx, import_key)
                 # Lưu đường dẫn vào trong doc
                 if asset_prefixes is not None:
                     doc["asset_prefixes"] = asset_prefixes
 
+                # Class không chạy vào đây
+                # Không lưu _ref trong MongoDB 
                 if col in REF_MAP:
                     doc.pop(REF_MAP[col][0], None)
 
                 doc["import_key"] = import_key
 
+                # db là db của MongoDB
+                # col là collection hiện tại
+                # doc là dictionary của từng dòng đã chuẩn hoá thành dạng Json
                 mongo_id, op = _upsert_by_import_key(db, col, import_key, doc, actor=actor)
 
                 # Lưu vào id_map của col và import_key hiện tại để phía sau dùng
+                """
+                    id_map = {
+                        "class": {
+                            "<import_key_1>": "<mongo_id_1>",
+                            "<import_key_2>": "<mongo_id_2>",
+                        },
+                        "subject": {
+                            "<import_key_3>": "<mongo_id_3>",
+                        },
+                        "topic": {},
+                        ...
+                    }
+                """
                 id_map[col][import_key] = mongo_id
 
+
+                # Đảm bảo tạo sẵn markers trong MinIO
                 if asset_prefixes and minio_client:
                     ensure_asset_prefix_markers(
                         minio_client, minio_bucket, asset_prefixes,
                         seen=minio_seen, errors=minio_errors,
                     )
 
+                # Tạo thư mục class gốc trong MinIO
                 if col == "class" and minio_client:
                     cls_slug = slugify_vi(doc.get("class_name") or "")
                     if cls_slug:
@@ -990,7 +1031,9 @@ def import_excel_to_mongo(
                 elif op == "update":
                     updated += 1
 
+                # sync_one là hàm để đẩy xuống PG và nếu dữ liệu ko bị thay đổi thì không chạy
                 if sync_one and op != "noop":
+                    # Lấy doc trong col hiện tại để đẩy xuống PG
                     full = db[col].find_one({"import_key": import_key})
                     if full:
                         try:
@@ -1030,10 +1073,6 @@ def import_excel_to_mongo(
 
 
 def backfill_lesson_minio_markers(db) -> Dict[str, Any]:
-    """Ensure MinIO lesson folder markers exist for every non-deleted lesson in Mongo.
-
-    Also backfills asset_prefixes on lesson docs that are missing it. Idempotent.
-    """
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
@@ -1074,10 +1113,7 @@ def backfill_lesson_minio_markers(db) -> Dict[str, Any]:
 
 
 def backfill_chunk_minio_markers(db) -> Dict[str, Any]:
-    """Ensure MinIO chunk folder markers exist for every non-deleted chunk in Mongo.
-
-    Also backfills asset_prefixes on chunk docs that are missing it. Idempotent.
-    """
+    
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
@@ -1118,11 +1154,7 @@ def backfill_chunk_minio_markers(db) -> Dict[str, Any]:
 
 
 def backfill_topic_minio_markers(db) -> Dict[str, Any]:
-    """Ensure MinIO topic folder markers exist for every non-deleted topic in Mongo.
-
-    Also backfills asset_prefixes on topic docs that are missing it (created before
-    the topic-marker fix). Safe to call multiple times — operations are idempotent.
-    """
+   
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
@@ -1163,11 +1195,7 @@ def backfill_topic_minio_markers(db) -> Dict[str, Any]:
 
 
 def backfill_subject_minio_markers(db) -> Dict[str, Any]:
-    """Ensure MinIO subject folder markers exist for every non-deleted subject in Mongo.
-
-    Also backfills asset_prefixes on subject docs that are missing it (imported before
-    the subject-marker fix). Safe to call multiple times — operations are idempotent.
-    """
+    
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
@@ -1205,10 +1233,7 @@ def backfill_subject_minio_markers(db) -> Dict[str, Any]:
 
 
 def backfill_keyword_minio_markers(db) -> Dict[str, Any]:
-    """Ensure MinIO keyword folder markers exist for every non-deleted keyword in Mongo.
-
-    Also backfills asset_prefixes on keyword docs that are missing it. Idempotent.
-    """
+  
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}
@@ -1241,12 +1266,7 @@ def backfill_keyword_minio_markers(db) -> Dict[str, Any]:
 
 
 def backfill_class_minio_roots(db) -> Dict[str, Any]:
-    """Ensure MinIO root markers exist for every non-deleted class already in Mongo.
-
-    Safe to call multiple times — marker creation is idempotent.
-    Intended for startup backfill so classes imported before the class-marker fix
-    get their documents/<slug>/, images/<slug>/, videos/<slug>/ folders created.
-    """
+   
     client, bucket = _get_import_minio()
     if not client:
         return {"ok": False, "skipped": True, "reason": "MinIO not configured"}

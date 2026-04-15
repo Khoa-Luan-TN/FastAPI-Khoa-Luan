@@ -246,6 +246,7 @@ def _ensure_parent_pg_id(db, pg, parent_col: str, parent_ref: str | None) -> str
 # Upsert xuống PG
 def _upsert_one_to_pg(db, pg, col: str, doc: dict) -> dict:
 
+    # lấy mongo_id chuyển thành str
     mongo_id = str(doc.get("_id"))
 
     # Luồng chạy Class
@@ -1180,6 +1181,8 @@ def _cascade_restore_subject_topics(db, subject_doc: dict) -> dict:
         "errors": errors if errors else None,
     }
 
+# Phục hồi dây truyền của các Subject bị is_deleted
+# Nếu không có thì sẽ bỏ qua
 def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
     class_oid = class_doc.get("_id")
     if class_oid is None:
@@ -1228,7 +1231,7 @@ def _cascade_restore_class_subjects(db, class_doc: dict) -> dict:
 # Hàm xử lí sync PG
 # isinstance(info, dict) kiểm tra kiểu dữ liệu của biến
 def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
-
+    # "class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"
     if col not in SYNCABLE_COLS:
         return {"ok": True, "skipped": True}
     
@@ -1375,6 +1378,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
         # Chạy 1
         with pg.begin():
+            # trong đây có trả về neo_payload
             info = _upsert_one_to_pg(db, pg, col, doc)
 
         if is_deleted and col == "topic" and isinstance(info, dict):
@@ -1410,13 +1414,10 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                             "model_name": emb.get("model_name"),
                         }
                     elif _topic_restore_in_progress:
-                        # Mid-restore: topic_bag not yet un-deleted; defer embedding to after restore.
                         info["embedding"] = {"ok": True, "skipped": True, "reason": "restore_in_progress"}
                     elif _topic_kw_empty_with_active_bag:
-                        # Active bags exist but keyword text resolved empty — skip clear.
                         info["embedding"] = {"ok": True, "skipped": True, "reason": "topic_keyword_text_resolve_empty_with_active_topic_bag"}
                     else:
-                        # Truly empty — no active bags — clear embedding.
                         with pg.begin():
                             pg_clear = clear_topic_embedding(pg, pg_id)
                         neo_clear = clear_topic_embedding_neo(pg_id)
@@ -1464,10 +1465,13 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             finally:
                 verify_pg.close()
 
+        # ghi log
+        # dọn dẹp dữ liệu trên neo4j
         neo_cleanup: Optional[dict] = None
         neo_upsert: Optional[dict] = None
 
         # Chạy 2
+        # "class", "subject", "topic", "lesson", "chunk", "chunk_keyword"
         if col in NEO_SYNCABLE_COLS:
             if col == "chunk" and isinstance(_pg_persist_check, dict) and not _pg_persist_check.get("ok"):
                 neo_upsert = {"ok": False, "error": "skipped: chunk row missing in PG"}
@@ -1494,6 +1498,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     # class, subject sẽ vào đây
                     else:
                         neo_col = "keyword" if col == "chunk_keyword" else col
+                        # upsert xuống neo4j 
                         neo_upsert = neo_sync_upsert(neo_col, neo_payload)
 
         if not is_deleted and col == "lesson":
@@ -1617,6 +1622,8 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                     _log.warning("class subject restore cascade failed: %s", _csr_err)
                     _class_subject_restore = {"ok": False, "error": str(_csr_err)}
 
+
+        # Dùng để tạo các cờ tổng là top_ok chỉ để ghi log
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
         rename_prop_ok = not bool(isinstance(info, dict) and info.get("keyword_rename_errors"))

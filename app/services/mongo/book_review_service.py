@@ -1,15 +1,5 @@
 # app/services/mongo/book_review_service.py
-#
-# Manages raw-PDF review jobs for the review-first book ingestion pipeline.
-#
-# Status flow:
-#   uploaded → (topics extraction) → reviewing_topics
-#   reviewing_topics → (approve topics) → extracting_lessons
-#   extracting_lessons → (lessons extraction) → reviewing_lessons
-#   reviewing_lessons → (approve lessons) → extracting_chunks
-#   extracting_chunks → (chunks extraction) → reviewing_chunks
-#   reviewing_chunks → (approve chunks) → approved_for_heavy_stage
-#   approved_for_heavy_stage → (trigger heavy) → heavy_stage_running → heavy_stage_done | error
+
 from __future__ import annotations
 
 import json
@@ -31,8 +21,6 @@ COLLECTION = "book_review_jobs"
 
 _log = logging.getLogger(__name__)
 
-# Only one extraction stage may run at a time across all review jobs.
-# Concurrent stages compete for Gemini quota and cause mutual 429s.
 _extraction_semaphore = threading.BoundedSemaphore(1)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]

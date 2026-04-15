@@ -1,23 +1,5 @@
 # app/services/mongo/book_bundle_import_service.py
-#
-# Ingests a processed book bundle produced by the Gemini-Api extraction pipeline
-# into MongoDB, then syncs each entity to PostgreSQL and Neo4j via sync_doc_to_postgres.
-#
-# Expected bundle layout (Output/<book_stem>/):
-#   <book_stem>.json            — manifest with list_topic / list_lesson page ranges
-#   Topic/                      — topic PDFs (flat or in subdirs, discovered via rglob)
-#   Lesson/                     — lesson PDFs (flat files: <book_stem>_lesson_NN.pdf)
-#   Chunk/<lesson_stem>/chunk_NN/
-#       <lesson_stem>_chunk_NN.json           — chunk metadata
-#       <lesson_stem>_chunk_NN.pdf            — chunk PDF
-#       <lesson_stem>_chunk_NN.keywords.json  — keyword list
-#
-# The manifest has NO topic/lesson names — caller must supply them via topic_names /
-# lesson_names dicts, or generic "Chủ đề N" / "Bài N" names are used.
-#
-# Import flow: class → subject → topic → lesson → chunk → keyword → chunk_keyword → topic_bag
-# MinIO paths follow the same legacy convention as the Excel import flow and document_service.py.
-# subject_type is stored as metadata on the subject document but is NOT part of import keys or paths.
+
 from __future__ import annotations
 
 import json

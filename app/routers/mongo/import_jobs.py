@@ -98,7 +98,6 @@ async def import_excel_tracked(
 
     only_cols = [collection_name.strip()] if collection_name and collection_name.strip() else None
 
-    # Save to temp file — the background thread deletes it after import
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
