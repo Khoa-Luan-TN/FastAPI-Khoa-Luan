@@ -59,7 +59,7 @@ const Icon = {
 
 const ROUTE_LABELS = {
   "/admin": "Trang chủ",
-  "/admin/minio": "Object data",
+  "/admin/minio": "Lưu trữ đối tượng",
   "/admin/mongo": "Dữ liệu mô tả",
   "/admin/postgres": "Dữ liệu có cấu trúc",
   "/admin/neo4j": "Dữ liệu đồ thị",
@@ -115,7 +115,7 @@ export default function AdminLayout() {
           {/* Cơ sở dữ liệu */}
           <span className="nav-group-label">Cơ sở dữ liệu</span>
           <NavLink to="/admin/minio" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Storage /></span>Object data
+            <span className="nav-icon"><Icon.Storage /></span>Lưu trữ đối tượng
           </NavLink>
           <NavLink to="/admin/mongo" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <span className="nav-icon"><Icon.Database /></span>Dữ liệu mô tả

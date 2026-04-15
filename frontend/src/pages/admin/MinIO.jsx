@@ -469,7 +469,7 @@ export default function MinIO() {
             <StorageIcon size={26} />
           </div>
           <div>
-            <h2 className="mrh-title">Object data</h2>
+            <h2 className="mrh-title">Lưu trữ đối tượng</h2>
             <p className="mrh-subtitle">
               Cấu trúc thư mục được tạo tự động khi nhập dữ liệu — tải tệp lên tại thư mục lá
             </p>
@@ -493,7 +493,7 @@ export default function MinIO() {
               <span className="mci-icon">
                 <StorageIcon size={14} />
               </span>
-              <span className="mci-text">Object data</span>
+              <span className="mci-text">Lưu trữ đối tượng</span>
             </span>
             {breadcrumbParts.map((part, idx) => {
               const path =

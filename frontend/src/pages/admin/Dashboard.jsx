@@ -72,7 +72,7 @@ const CodeIcon = ({ size = 20 }) => (
 const DB_CARDS = [
   {
     Icon: StorageIcon,
-    label: "Object data",
+    label: "Lưu trữ đối tượng",
     desc: "Lưu trữ tệp và phương tiện",
     color: "#F59E0B",
     colorBg: "#FFFBEB",
@@ -107,7 +107,7 @@ const DB_CARDS = [
 const STACK_ITEMS = [
   { Icon: BoltIcon,    label: "Máy chủ",  value: "FastAPI",      color: "#10B981", colorBg: "#ECFDF5" },
   { Icon: CodeIcon,    label: "Giao diện", value: "React + Vite", color: "#3B82F6", colorBg: "#EFF6FF" },
-  { Icon: StorageIcon, label: "Lưu trữ đối tượng", value: "Object data", color: "#F59E0B", colorBg: "#FFFBEB" },
+  { Icon: StorageIcon, label: "Lưu trữ đối tượng", value: "Lưu trữ đối tượng", color: "#F59E0B", colorBg: "#FFFBEB" },
   { Icon: GraphIcon,   label: "Cơ sở dữ liệu đồ thị", value: "Dữ liệu đồ thị", color: "#8B5CF6", colorBg: "#F5F3FF" },
 ];
 

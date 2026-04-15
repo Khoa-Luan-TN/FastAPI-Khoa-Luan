@@ -737,7 +737,7 @@ export default function BookBundleImport() {
               </div>
               <div style={{ padding: "20px 24px" }}>
                 <p style={{ margin: "0 0 16px", fontSize: 14, color: "#475569", lineHeight: 1.6 }}>
-                  Cấu trúc đã được duyệt đầy đủ. Bước tiếp theo sẽ chạy Kaggle để xử lý OCR, trích xuất từ khóa, rồi import vào MongoDB / PostgreSQL / Neo4j.
+                  Cấu trúc đã được duyệt đầy đủ. Bước tiếp theo sẽ chạy Kaggle để xử lý OCR, trích xuất từ khóa, rồi nhập vào Dữ liệu mô tả / Dữ liệu có cấu trúc / Dữ liệu đồ thị.
                 </p>
                 <button style={s.btnPrimary} disabled={acting} onClick={handleTriggerHeavy}>
                   {acting ? "Đang khởi động…" : "Bắt đầu nhập dữ liệu"}
@@ -952,10 +952,10 @@ const HEAVY_STAGE_LABEL = {
   heavy_kaggle_running: "Kaggle: kernel",
   heavy_kaggle_downloading: "Kaggle: kết quả",
   heavy_keyword_extracting: "Từ khóa",
-  heavy_importing_minio: "MinIO",
-  heavy_importing_mongo: "MongoDB",
-  heavy_syncing_pg: "PostgreSQL",
-  heavy_syncing_neo: "Neo4j",
+  heavy_importing_minio: "Lưu trữ đối tượng",
+  heavy_importing_mongo: "Dữ liệu mô tả",
+  heavy_syncing_pg: "Dữ liệu có cấu trúc",
+  heavy_syncing_neo: "Dữ liệu đồ thị",
   heavy_finalizing_embeddings: "Embeddings",
   heavy_generating_aliases: "Alias từ khóa",
   heavy_done: "Hoàn tất",
