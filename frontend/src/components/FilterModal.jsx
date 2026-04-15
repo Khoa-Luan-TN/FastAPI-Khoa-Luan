@@ -23,8 +23,8 @@ export default function FilterModal({ open, onClose, initialValue, onApply }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Tạo thư mục mới</h3>
-          <p className="modal-subtitle">Thêm thư mục để tổ chức tập tin</p>
+          <h3 className="modal-title">Lọc tệp</h3>
+          <p className="modal-subtitle">Chọn loại tệp muốn hiển thị</p>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -33,26 +33,26 @@ export default function FilterModal({ open, onClose, initialValue, onApply }) {
         <div className="modal-body">
           <form onSubmit={apply}>
             <div className="field">
-              <label htmlFor="file-type">Loại file</label>
+              <label htmlFor="file-type">Loại tệp</label>
               <select id="file-type" value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="all">Tất cả loại file</option>
-                <option value="pdf">PDF Documents</option>
-                <option value="video">Video Files</option>
-                <option value="image">Image Files</option>
+                <option value="all">Tất cả loại tệp</option>
+                <option value="pdf">Tài liệu PDF</option>
+                <option value="video">Tệp video</option>
+                <option value="image">Tệp hình ảnh</option>
                 <option value="other">Loại khác</option>
               </select>
             </div>
 
             <div className="modal-note">
-              <strong>Lưu ý:</strong> Bộ lọc dựa trên đuôi file (.pdf, .mp4, .png, ...). File không
-              có đuôi sẽ thuộc loại "other".
+              <strong>Lưu ý:</strong> Bộ lọc dựa trên đuôi tệp (.pdf, .mp4, .png, ...). Tệp không
+              có đuôi sẽ thuộc loại "khác".
             </div>
           </form>
         </div>
 
         <div className="modal-footer">
           <button className="btn" onClick={reset}>
-            Reset bộ lọc
+            Đặt lại bộ lọc
           </button>
           <button className="btn btn-primary" onClick={apply}>
             Áp dụng

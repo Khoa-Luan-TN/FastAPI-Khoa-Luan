@@ -64,7 +64,7 @@ const ROUTE_LABELS = {
   "/admin/postgres": "Dữ liệu có cấu trúc",
   "/admin/neo4j": "Dữ liệu đồ thị",
   "/admin/users": "Tài khoản",
-  "/admin/book-bundle": "Import sách",
+  "/admin/book-bundle": "Nhập sách",
 };
 
 const ROUTE_ICONS = {
@@ -80,10 +80,10 @@ const ROUTE_ICONS = {
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const username = localStorage.getItem("username") || "Admin";
+  const username = localStorage.getItem("username") || "Quản trị viên";
 
   // Breadcrumb label từ pathname
-  const pageLabel = ROUTE_LABELS[location.pathname] ?? "Admin";
+  const pageLabel = ROUTE_LABELS[location.pathname] ?? "Quản trị viên";
   // Breadcrumb icon từ pathname
   const PageIcon = ROUTE_ICONS[location.pathname] || Icon.Home;
 
@@ -130,7 +130,7 @@ export default function AdminLayout() {
           {/* Nhập dữ liệu */}
           <span className="nav-group-label">Nhập dữ liệu</span>
           <NavLink to="/admin/book-bundle" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon"><Icon.Import /></span>Import sách
+            <span className="nav-icon"><Icon.Import /></span>Nhập sách
           </NavLink>
 
           {/* Người dùng */}
@@ -157,7 +157,7 @@ export default function AdminLayout() {
               <span className="nav-icon" style={{ opacity: 1, marginRight: "4px", display: "inline-flex", verticalAlign: "middle" }}>
                 <Icon.Shield />
               </span>
-              <span style={{ verticalAlign: "middle" }}>Admin</span>
+              <span style={{ verticalAlign: "middle" }}>Quản trị viên</span>
             </span>
             <span className="topbar-breadcrumb-sep">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>

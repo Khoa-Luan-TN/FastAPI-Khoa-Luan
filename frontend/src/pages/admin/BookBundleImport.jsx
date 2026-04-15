@@ -45,10 +45,10 @@ const STATUS_LABEL = {
   reviewing_topics: "Kiểm tra chủ đề",
   extracting_lessons: "Tách bài học",
   reviewing_lessons: "Kiểm tra bài",
-  extracting_chunks: "Tách chunk",
+  extracting_chunks: "Tách phần",
   reviewing_chunks: "Kiểm tra phần",
-  approved_for_heavy_stage: "Sẵn sàng import",
-  heavy_stage_running: "Đang import…",
+  approved_for_heavy_stage: "Sẵn sàng nhập dữ liệu",
+  heavy_stage_running: "Đang nhập dữ liệu…",
   heavy_stage_done: "Hoàn tất",
   error: "Lỗi",
 };
@@ -68,11 +68,11 @@ const STATUS_BADGE_COLOR = {
 };
 
 const WORKFLOW_STEPS = [
-  { key: "upload", label: "Upload" },
+  { key: "upload", label: "Tải lên" },
   { key: "topics", label: "Chủ đề" },
   { key: "lessons", label: "Bài học" },
   { key: "chunks", label: "Phần" },
-  { key: "import", label: "Import" },
+  { key: "import", label: "Nhập dữ liệu" },
 ];
 
 function getWorkflowStepKey(status, phase) {
@@ -191,7 +191,7 @@ export default function BookBundleImport() {
 
   async function handleUpload(e) {
     e.preventDefault();
-    if (!pdfFile) { setUploadError("Vui lòng chọn file PDF."); return; }
+    if (!pdfFile) { setUploadError("Vui lòng chọn tệp PDF."); return; }
     setUploading(true);
     setUploadError("");
     try {
@@ -538,12 +538,12 @@ export default function BookBundleImport() {
       {/* ── Page header ── */}
       <div style={s.pageHeader}>
         <div>
-          <h1 style={s.pageTitle}>Import Sách Giáo Khoa</h1>
-          <p style={s.pageSub}>Tải lên PDF — trích xuất cấu trúc, kiểm tra, rồi import vào hệ thống.</p>
+          <h1 style={s.pageTitle}>Nhập sách giáo khoa</h1>
+          <p style={s.pageSub}>Tải lên PDF, trích xuất cấu trúc, kiểm tra rồi nhập vào hệ thống.</p>
         </div>
         {phase === "job" && job && (
           <button style={s.btnOutline} onClick={handleReset}>
-            + Upload mới
+            + Tải lên mới
           </button>
         )}
       </div>
@@ -590,7 +590,7 @@ export default function BookBundleImport() {
                     ))}
                   </select>
                 </FormField>
-                <FormField label="File PDF sách *">
+                <FormField label="Tệp PDF sách *">
                   <label style={s.fileLabel}>
                     <input
                       type="file"
@@ -600,7 +600,7 @@ export default function BookBundleImport() {
                       style={{ display: "none" }}
                     />
                     <span style={s.fileLabelInner}>
-                      {pdfFile ? (
+                    {pdfFile ? (
                         <>
                           <span style={{ color: "#0f172a", fontWeight: 500 }}>{pdfFile.name}</span>
                           <span style={{ color: "#64748b", marginLeft: 8 }}>
@@ -608,7 +608,7 @@ export default function BookBundleImport() {
                           </span>
                         </>
                       ) : (
-                        <span style={{ color: "#94a3b8" }}>Chọn file PDF…</span>
+                        <span style={{ color: "#94a3b8" }}>Chọn tệp PDF…</span>
                       )}
                     </span>
                     <span style={s.fileLabelBtn}>Duyệt</span>
@@ -617,7 +617,7 @@ export default function BookBundleImport() {
                 {uploadError && <AlertBox type="error" message={uploadError} />}
                 <div style={{ marginTop: 20 }}>
                   <button type="submit" style={s.btnPrimary} disabled={uploading}>
-                    {uploading ? "Đang tải lên…" : "Upload & bắt đầu trích xuất"}
+                    {uploading ? "Đang tải lên…" : "Tải lên và bắt đầu trích xuất"}
                   </button>
                 </div>
               </fieldset>
@@ -733,14 +733,14 @@ export default function BookBundleImport() {
           {job.status === "approved_for_heavy_stage" && (
             <div style={{ ...s.card, marginTop: 16 }}>
               <div style={s.cardHeader}>
-                <span style={s.cardTitle}>Sẵn sàng import</span>
+                <span style={s.cardTitle}>Sẵn sàng nhập dữ liệu</span>
               </div>
               <div style={{ padding: "20px 24px" }}>
                 <p style={{ margin: "0 0 16px", fontSize: 14, color: "#475569", lineHeight: 1.6 }}>
                   Cấu trúc đã được duyệt đầy đủ. Bước tiếp theo sẽ chạy Kaggle để xử lý OCR, trích xuất từ khóa, rồi import vào MongoDB / PostgreSQL / Neo4j.
                 </p>
                 <button style={s.btnPrimary} disabled={acting} onClick={handleTriggerHeavy}>
-                  {acting ? "Đang khởi động…" : "Bắt đầu import"}
+                  {acting ? "Đang khởi động…" : "Bắt đầu nhập dữ liệu"}
                 </button>
               </div>
             </div>
@@ -752,7 +752,7 @@ export default function BookBundleImport() {
               <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 24 }}>✅</span>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "#15803d" }}>Import hoàn tất!</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#15803d" }}>Nhập dữ liệu hoàn tất!</div>
                   {job.heavy_report?.message && (
                     <div style={{ fontSize: 13, color: "#475569", marginTop: 2 }}>{job.heavy_report.message}</div>
                   )}
@@ -921,7 +921,7 @@ function ExtractionProgress({ job }) {
     <div style={{ ...s.card, marginTop: 12, border: isCooldown ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
       <div style={{ ...s.cardHeader, background: isCooldown ? "#fffbeb" : "#eff6ff", borderBottom: isCooldown ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
         <span style={{ ...s.cardTitle, color: isCooldown ? "#92400e" : "#1d4ed8" }}>
-          {isCooldown ? "⏳ API key cooldown" : "Đang trích xuất…"}
+          {isCooldown ? "⏳ Đang chờ làm mát khóa API" : "Đang trích xuất…"}
         </span>
         {stale && !isCooldown && (
           <span style={{ fontSize: 11, color: "#b45309", fontWeight: 500 }}>
@@ -980,12 +980,12 @@ const HEAVY_STAGES_ORDER = [
 const HEAVY_COUNT_LABELS = {
   topics_imported: "Chủ đề",
   lessons_imported: "Bài",
-  chunks_imported: "Chunk",
+  chunks_imported: "Phần",
   kw_extracted: "KW mới",
-  kw_inserted: "KW insert",
-  kw_reused: "KW reused",
-  ck_inserted: "Chunk-KW",
-  topic_bags_affected: "Topic bag",
+  kw_inserted: "KW thêm mới",
+  kw_reused: "KW tái sử dụng",
+  ck_inserted: "Phần-KW",
+  topic_bags_affected: "Túi chủ đề",
 };
 
 function HeavyStageProgress({ job }) {
@@ -1003,7 +1003,7 @@ function HeavyStageProgress({ job }) {
     <div style={{ ...s.card, marginTop: 12, border: isError ? "1px solid #fecaca" : isStale ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
       <div style={{ ...s.cardHeader, background: isError ? "#fef2f2" : isStale ? "#fffbeb" : "#eff6ff", borderBottom: isError ? "1px solid #fecaca" : isStale ? "1px solid #fde68a" : "1px solid #bfdbfe" }}>
         <span style={{ ...s.cardTitle, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#1d4ed8" }}>
-          {isError ? "Import thất bại" : isStale ? "Đang import… (có thể bị treo)" : "Đang import…"}
+          {isError ? "Nhập dữ liệu thất bại" : isStale ? "Đang nhập dữ liệu… (có thể bị treo)" : "Đang nhập dữ liệu…"}
         </span>
         <span style={{ fontSize: 12, fontWeight: 700, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#1d4ed8" }}>{percent}%</span>
       </div>
@@ -1147,10 +1147,10 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
         {/* Primary: cut preview */}
         <div style={s.card}>
           <div style={s.cardHeader}>
-            <span style={s.cardTitle}>Preview — trang {topic.start}–{topic.end}</span>
+            <span style={s.cardTitle}>Xem trước — trang {topic.start}–{topic.end}</span>
           </div>
           <div style={{ padding: "10px" }}>
-            <iframe key={`cut-${topicIdx}-${previewKey}`} src={reviewTopicPdfUrl(job.job_id, topicIdx, previewKey)} title="Topic cut" style={s.pdfFrame} />
+            <iframe key={`cut-${topicIdx}-${previewKey}`} src={reviewTopicPdfUrl(job.job_id, topicIdx, previewKey)} title="Bản cắt chủ đề" style={s.pdfFrame} />
           </div>
         </div>
 
@@ -1158,10 +1158,10 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={s.card}>
             <div style={s.cardHeader}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>PDF gốc (tham chiếu)</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>PDF gốc tham chiếu</span>
             </div>
             <div style={{ padding: "10px" }}>
-              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Source" style={{ ...s.pdfFrame, height: 420 }} />
+              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Tệp nguồn" style={{ ...s.pdfFrame, height: 420 }} />
             </div>
           </div>
 
@@ -1174,7 +1174,7 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
             </div>
             <div style={{ padding: "18px 20px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-                <FormField label="Heading">
+                <FormField label="Số mục">
                   <input style={s.input} value={topic.heading || ""} onChange={(e) => set("heading", e.target.value)} />
                 </FormField>
                 <FormField label="Tên chủ đề">
@@ -1229,7 +1229,7 @@ function DebugTopicPanel({ job, editTopics, topicIdx, loading, onSetDebugTopic }
           onChange={(e) => onSetDebugTopic({ enabled: e.target.checked, topicIndex: e.target.checked ? topicIdx : null })}
         />
         <span style={{ fontWeight: 600 }}>
-          {debugEnabled ? "🐛 Debug mode ON" : "Debug mode"}
+          {debugEnabled ? "🐛 Đang bật chế độ gỡ lỗi" : "Chế độ gỡ lỗi"}
         </span>
         {debugEnabled && selectedTitle && (
           <span style={{ color: "#92400e" }}>— {selectedTitle.trim().slice(0, 30)}</span>
@@ -1237,11 +1237,11 @@ function DebugTopicPanel({ job, editTopics, topicIdx, loading, onSetDebugTopic }
       </label>
       {debugEnabled && !isSelected && (
         <button style={{ ...s.btnSmall, fontSize: 10, padding: "1px 7px", marginTop: 5 }} disabled={loading} onClick={() => onSetDebugTopic({ enabled: true, topicIndex: topicIdx })}>
-          Debug topic {topicIdx + 1}
+          Gỡ lỗi chủ đề {topicIdx + 1}
         </button>
       )}
       {debugEnabled && isSelected && (
-        <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#15803d", fontWeight: 600 }}>✓ Đang debug topic này</span>
+        <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#15803d", fontWeight: 600 }}>✓ Đang gỡ lỗi chủ đề này</span>
       )}
     </div>
   );
@@ -1263,20 +1263,20 @@ function LessonReviewPane({ job, editLessons, lessonIdx, lessonApprovals, canApp
       <div style={{ display: "grid", gridTemplateColumns: "1fr 580px", gap: 24, alignItems: "start" }}>
         <div style={s.card}>
           <div style={s.cardHeader}>
-            <span style={s.cardTitle}>Preview — trang {lesson.start}–{lesson.end}</span>
+            <span style={s.cardTitle}>Xem trước — trang {lesson.start}–{lesson.end}</span>
           </div>
           <div style={{ padding: "10px" }}>
-            <iframe key={`cut-lesson-${lessonIdx}-${lessonPreviewKey}`} src={reviewLessonPdfUrl(job.job_id, lessonIdx, lessonPreviewKey)} title="Lesson cut" style={s.pdfFrame} />
+            <iframe key={`cut-lesson-${lessonIdx}-${lessonPreviewKey}`} src={reviewLessonPdfUrl(job.job_id, lessonIdx, lessonPreviewKey)} title="Bản cắt bài học" style={s.pdfFrame} />
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={s.card}>
             <div style={s.cardHeader}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>PDF gốc (tham chiếu)</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>PDF gốc tham chiếu</span>
             </div>
             <div style={{ padding: "10px" }}>
-              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Source" style={{ ...s.pdfFrame, height: 420 }} />
+              <iframe src={reviewSourcePdfUrl(job.job_id)} title="Tệp nguồn" style={{ ...s.pdfFrame, height: 420 }} />
             </div>
           </div>
 
@@ -1289,7 +1289,7 @@ function LessonReviewPane({ job, editLessons, lessonIdx, lessonApprovals, canApp
             </div>
             <div style={{ padding: "18px 20px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-                <FormField label="Heading">
+                <FormField label="Số mục">
                   <input style={s.input} value={lesson.heading || ""} onChange={(e) => set("heading", e.target.value)} />
                 </FormField>
                 <FormField label="Tên bài">
@@ -1383,7 +1383,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
 
   return (
     <div style={{ marginTop: 16 }}>
-      <SectionLabel>Kiểm tra Phần (Chunk)</SectionLabel>
+      <SectionLabel>Kiểm tra Phần</SectionLabel>
 
       {/* Lesson tab bar */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16, padding: "12px 16px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: s.shadow, alignItems: "center" }}>
@@ -1444,7 +1444,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
             </span>
           </div>
           <div style={{ padding: "10px" }}>
-            <iframe key={`cut-chunk-${chunkIdx}-${chunkPreviewKey}`} src={reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Chunk preview" style={s.pdfFrame} />
+            <iframe key={`cut-chunk-${chunkIdx}-${chunkPreviewKey}`} src={reviewChunkPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Xem trước phần" style={s.pdfFrame} />
           </div>
         </div>
 
@@ -1455,7 +1455,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
               <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>Bài học (tham chiếu)</span>
             </div>
             <div style={{ padding: "10px" }}>
-              <iframe src={reviewChunkLessonPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Lesson ref" style={{ ...s.pdfFrame, height: 420 }} />
+              <iframe src={reviewChunkLessonPdfUrl(job.job_id, chunkIdx, chunkPreviewKey)} title="Bài học tham chiếu" style={{ ...s.pdfFrame, height: 420 }} />
             </div>
             <div style={{ padding: "4px 14px 10px", fontSize: 11, color: "#94a3b8" }}>
               Số trang là tương đối trong bài, không phải cả cuốn.
@@ -1472,10 +1472,10 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
             <div style={{ padding: "16px 18px" }}>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, padding: "8px 10px", background: "#f8fafc", borderRadius: 6, border: "1px solid #e2e8f0" }}>
                 <span style={{ fontSize: 11, color: "#64748b" }}>Trang: <strong style={{ color: "#0f172a" }}>{chunk.start}–{chunk.end ?? "?"}</strong></span>
-                <span style={{ fontSize: 11, color: "#64748b" }}>content_head: <strong style={{ color: "#0f172a" }}>{chunk.content_head ? "true" : "false"}</strong></span>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Là mục đầu: <strong style={{ color: "#0f172a" }}>{chunk.content_head ? "Có" : "Không"}</strong></span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-                <FormField label="Heading">
+                <FormField label="Số mục">
                   <input style={s.input} value={chunk.heading || ""} onChange={(e) => set("heading", e.target.value)} />
                 </FormField>
                 <FormField label="Tên mục">
@@ -1491,7 +1491,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
                 </div>
                 <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#475569", cursor: "pointer" }}>
                   <input type="checkbox" checked={chunk.content_head ?? false} onChange={(e) => set("content_head", e.target.checked)} />
-                  content_head
+                  Là mục đầu
                 </label>
               </div>
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
@@ -1513,10 +1513,10 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
                 onClick={() => setShowAddForm((v) => !v)}
               >
                 <span style={{ fontSize: 13, fontWeight: 700, color: showAddForm ? "#0369a1" : "#64748b" }}>
-                  {showAddForm ? "✕ Hủy thêm chunk" : "+ Thêm chunk mới"}
+                  {showAddForm ? "✕ Hủy thêm phần" : "+ Thêm phần mới"}
                 </span>
                 <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                  bài: {selectedLessonStem.split("_lesson_")[1] || selectedLessonStem}
+                  Bài: {selectedLessonStem.split("_lesson_")[1] || selectedLessonStem}
                 </span>
               </div>
               {showAddForm && (
@@ -1531,7 +1531,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
                           <input style={s.input} type="number" min={1} required value={addForm.end} onChange={(e) => setAddForm((f) => ({ ...f, end: e.target.value }))} />
                         </FormField>
                       </div>
-                      <FormField label="Heading">
+                      <FormField label="Số mục">
                         <input style={s.input} value={addForm.heading} onChange={(e) => setAddForm((f) => ({ ...f, heading: e.target.value }))} placeholder="Ví dụ: 3." />
                       </FormField>
                       <FormField label="Tên mục">
@@ -1539,12 +1539,12 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
                       </FormField>
                       <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#475569", cursor: "pointer" }}>
                         <input type="checkbox" checked={addForm.content_head} onChange={(e) => setAddForm((f) => ({ ...f, content_head: e.target.checked }))} />
-                        content_head
+                        Là mục đầu
                       </label>
                     </div>
                     <div style={{ marginTop: 14, display: "flex", gap: 7 }}>
                       <button type="submit" style={{ ...s.btnSmall, background: "#0ea5e9", color: "#fff", border: "none" }} disabled={loading}>
-                        {loading ? "Đang thêm…" : "Thêm chunk"}
+                        {loading ? "Đang thêm…" : "Thêm phần"}
                       </button>
                       <button type="button" style={s.btnSmall} onClick={() => setShowAddForm(false)}>Hủy</button>
                     </div>

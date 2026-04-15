@@ -371,7 +371,7 @@ export default function Neo4j() {
   const labelColumns = [
     {
       key: "name",
-      label: "NODE TYPE",
+      label: "LOẠI NÚT",
       render: (r) => {
         const col = getLabelStyle(r.name);
         return (
@@ -398,7 +398,7 @@ export default function Neo4j() {
     },
     {
       key: "count",
-      label: "NODES",
+      label: "SỐ NÚT",
       width: "100px",
       render: (r) => <span className="mongo-meta-cell">{r.count ?? "—"}</span>,
     },
@@ -463,7 +463,7 @@ export default function Neo4j() {
           <div className="mrh-icon" style={{ color: "#9333EA" }}><Neo4jIcon size={26} /></div>
           <div>
             <h2 className="mrh-title" style={{ color: "#581C87" }}>Dữ liệu đồ thị</h2>
-            <p className="mrh-subtitle" style={{ color: "rgba(88,28,135,0.68)" }}>Xem đồ thị nodes và quan hệ (read-only)</p>
+            <p className="mrh-subtitle" style={{ color: "rgba(88,28,135,0.68)" }}>Xem đồ thị các nút và quan hệ, chỉ cho phép xem</p>
           </div>
         </div>
       )}
@@ -521,7 +521,7 @@ export default function Neo4j() {
               letterSpacing: "0.03em", whiteSpace: "nowrap",
               fontFamily: "var(--doc-font, inherit)",
             }}>
-              View only
+              Chỉ xem
             </span>
           </div>
         </div>

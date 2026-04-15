@@ -93,49 +93,49 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
   const schema = useMemo(() => {
     if (kind === "subject") {
       return {
-        title: "Insert Subject (PDF)",
+        title: "Thêm môn học (PDF)",
         requiredFile: true,
         fields: [
-          { name: "class_id", label: "class_id", required: true },
-          { name: "subject_name", label: "subject_name", required: true },
-          { name: "subject_type", label: "subject_type", required: true },
+          { name: "class_id", label: "Mã lớp", required: true },
+          { name: "subject_name", label: "Tên môn học", required: true },
+          { name: "subject_type", label: "Loại môn học", required: true },
         ],
       };
     }
 
     if (kind === "topic") {
       return {
-        title: "Insert Topic (PDF)",
+        title: "Thêm chủ đề (PDF)",
         requiredFile: true,
         fields: [
-          { name: "subject_id", label: "subject_id", required: true },
-          { name: "topic_num", label: "topic_num", type: "number", required: true },
-          { name: "topic_name", label: "topic_name", required: true },
+          { name: "subject_id", label: "Mã môn học", required: true },
+          { name: "topic_num", label: "Số chủ đề", type: "number", required: true },
+          { name: "topic_name", label: "Tên chủ đề", required: true },
         ],
       };
     }
 
     if (kind === "lesson") {
       return {
-        title: "Insert Lesson (PDF)",
+        title: "Thêm bài học (PDF)",
         requiredFile: true,
         fields: [
-          { name: "topic_id", label: "topic_id", required: true },
-          { name: "lesson_num", label: "lesson_num", type: "number", required: true },
-          { name: "lesson_name", label: "lesson_name", required: true },
-          { name: "lesson_type", label: "lesson_type", required: false },
+          { name: "topic_id", label: "Mã chủ đề", required: true },
+          { name: "lesson_num", label: "Số bài học", type: "number", required: true },
+          { name: "lesson_name", label: "Tên bài học", required: true },
+          { name: "lesson_type", label: "Loại bài học", required: false },
         ],
       };
     }
 
     if (kind === "chunk") {
       return {
-        title: "Insert Chunk (PDF)",
+        title: "Thêm phần nội dung (PDF)",
         requiredFile: true,
         fields: [
-          { name: "lesson_id", label: "lesson_id", required: true },
-          { name: "chunk_num", label: "chunk_num", type: "number", required: true },
-          { name: "chunk_name", label: "chunk_name", required: true },
+          { name: "lesson_id", label: "Mã bài học", required: true },
+          { name: "chunk_num", label: "Số phần", type: "number", required: true },
+          { name: "chunk_name", label: "Tên phần", required: true },
         ],
       };
     }
@@ -143,11 +143,11 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     if (kind === "image") {
       const ownerField = mediaOwnerType ? `${mediaOwnerType}_id` : "chunk_id";
       return {
-        title: "Insert Image",
+        title: "Thêm hình ảnh",
         requiredFile: true,
         fields: [
-          { name: ownerField, label: ownerField, required: true, readOnly: !!autoFillOwnerId },
-          { name: "image_name", label: "image_name", required: true },
+          { name: ownerField, label: "Mã đối tượng", required: true, readOnly: !!autoFillOwnerId },
+          { name: "image_name", label: "Tên hình ảnh", required: true },
         ],
       };
     }
@@ -155,16 +155,16 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     if (kind === "video") {
       const ownerField = mediaOwnerType ? `${mediaOwnerType}_id` : "chunk_id";
       return {
-        title: "Insert Video",
+        title: "Thêm video",
         requiredFile: true,
         fields: [
-          { name: ownerField, label: ownerField, required: true, readOnly: !!autoFillOwnerId },
-          { name: "video_name", label: "video_name", required: true },
+          { name: ownerField, label: "Mã đối tượng", required: true, readOnly: !!autoFillOwnerId },
+          { name: "video_name", label: "Tên video", required: true },
         ],
       };
     }
 
-    return { title: "Insert", requiredFile: true, fields: [] };
+    return { title: "Thêm dữ liệu", requiredFile: true, fields: [] };
   }, [kind, mediaOwnerType, autoFillOwnerId]);
 
   const [values, setValues] = useState({});
@@ -196,7 +196,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
   function validate() {
     if (kind === "unknown") {
       alert(
-        "Folder này chưa map được loại metadata. Hãy vào đúng folder (subject/topic/lesson/chunk/images/videos)."
+        "Thư mục này chưa xác định được loại metadata. Hãy vào đúng thư mục (subject/topic/lesson/chunk/images/videos)."
       );
       return false;
     }
@@ -212,7 +212,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
     }
 
     if (schema.requiredFile && !file) {
-      alert("Bạn phải chọn file để Insert.");
+      alert("Bạn phải chọn tệp để thêm.");
       return false;
     }
     return true;
@@ -259,7 +259,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
       >
         <div className="modal-header">
           <h3 className="modal-title">{schema.title}</h3>
-          <p className="modal-subtitle">Folder: {folderName}</p>
+          <p className="modal-subtitle">Thư mục: {folderName}</p>
 
           <button type="button" className="modal-close" onClick={onClose}>
             ×
@@ -271,9 +271,9 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
             <div className="modal-body">
               <div className="modal-note">
                 <p>
-                  Folder hiện tại: <b>{folderName}</b>
+                  Thư mục hiện tại: <b>{folderName}</b>
                 </p>
-                <p>Chỉ cho Insert ở:</p>
+                <p>Chỉ cho phép thêm tại:</p>
                 <ul>
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/subject</li>
                   <li>documents/&lt;class&gt;/&lt;subject&gt;/topic/&lt;id&gt;</li>
@@ -318,7 +318,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>
-                <label>File *</label>
+                <label>Tệp *</label>
                 <input
                   className="kv-input"
                   type="file"
@@ -328,13 +328,13 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
                 {file ? (
                   <div className="file-info">
                     <div>
-                      <strong>bucket</strong>: {DEFAULT_BUCKET}
+                      <strong>Kho</strong>: {DEFAULT_BUCKET}
                     </div>
                     <div>
-                      <strong>object_key</strong>: {objectKeyPreview}
+                      <strong>Đường dẫn đối tượng</strong>: {objectKeyPreview}
                     </div>
                     <div>
-                      <strong>url</strong>: {urlPreview}
+                      <strong>Liên kết</strong>: {urlPreview}
                     </div>
                   </div>
                 ) : null}
@@ -346,7 +346,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
                 Đóng
               </button>
               <button className="btn btn-primary" type="submit">
-                Insert
+                Thêm
               </button>
             </div>
           </form>

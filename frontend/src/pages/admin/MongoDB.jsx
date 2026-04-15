@@ -152,14 +152,14 @@ function buildImportSummary(report) {
     status = "partial";
   }
 
-  let message = "Import thành công.";
+  let message = "Thêm thành công.";
   if (status === "partial") {
     if (aliasStopped) {
       message = aliasRemaining > 0
-        ? `Import hoàn tất nhưng có cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên. Còn ${aliasRemaining} từ khóa chưa xử lý.`
-        : "Import hoàn tất nhưng có cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên.";
+        ? `Hoàn tất với cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên. Còn ${aliasRemaining} từ khóa chưa xử lý.`
+        : "Hoàn tất với cảnh báo. Đã dừng tạo alias do giới hạn tài nguyên.";
     } else {
-      message = "Import hoàn tất nhưng có cảnh báo.";
+      message = "Hoàn tất với cảnh báo.";
     }
   }
 
@@ -1183,7 +1183,7 @@ export default function MongoDB() {
   async function confirmImportExcel() {
     const file = pendingImportFile;
     if (!file) {
-      alert("Vui lòng chọn file Excel trước khi import.");
+      alert("Vui lòng chọn tệp Excel trước khi nhập dữ liệu.");
       return;
     }
 
@@ -1212,7 +1212,7 @@ export default function MongoDB() {
             if (s.status === "done" || s.status === "completed" || s.status === "failed") {
               clearInterval(importPollRef.current);
               importPollRef.current = null;
-              s.status === "failed" ? reject(new Error(s.error || "Import thất bại")) : resolve(s);
+              s.status === "failed" ? reject(new Error(s.error || "Nhập dữ liệu thất bại")) : resolve(s);
             }
           } catch (pollErr) {
             clearInterval(importPollRef.current);
@@ -1226,10 +1226,10 @@ export default function MongoDB() {
       setImportResult(summary);
       setImportProgress({
         progress: 100,
-        message: summary.status === "partial" ? "Import hoàn tất với cảnh báo." : "Import thành công.",
+        message: summary.status === "partial" ? "Hoàn tất với cảnh báo." : "Thêm thành công.",
         collection: "",
       });
-      pushToast(summary.status === "partial" ? summary.message : "Import thành công.", summary.status === "partial" ? "warning" : "success");
+      pushToast(summary.status === "partial" ? summary.message : "Thêm thành công.", summary.status === "partial" ? "warning" : "success");
 
       if (isRoot) await reloadCollections();
       else { await loadAllDocs(currentCollection); }

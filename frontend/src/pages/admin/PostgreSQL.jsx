@@ -216,7 +216,7 @@ export default function PostgreSQL() {
   const tableColumns = [
     {
       key: "name",
-      label: "TABLE",
+      label: "BẢNG",
       render: (r) => (
         <div className="folder-cell">
           <div className="folder-left">
@@ -281,7 +281,7 @@ export default function PostgreSQL() {
           </div>
           <div>
             <h2 className="mrh-title" style={{ color: "#312E81" }}>Dữ liệu có cấu trúc</h2>
-            <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.72)" }}>Xem dữ liệu các bảng (read-only)</p>
+            <p className="mrh-subtitle" style={{ color: "rgba(49,46,129,0.72)" }}>Xem dữ liệu các bảng, chỉ cho phép xem</p>
           </div>
         </div>
       )}
@@ -351,7 +351,7 @@ export default function PostgreSQL() {
                 fontFamily: "var(--doc-font, inherit)",
               }}
             >
-              View only
+              Chỉ xem
             </span>
           </div>
         </div>

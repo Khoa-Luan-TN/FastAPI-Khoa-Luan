@@ -20,7 +20,7 @@ export default function CreateFolderModal({ open, onClose, onCreate }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">Tạo thư mục mới</h3>
-          <p className="modal-subtitle">Thêm thư mục để tổ chức tập tin</p>
+          <p className="modal-subtitle">Thêm thư mục để tổ chức tệp</p>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -29,11 +29,11 @@ export default function CreateFolderModal({ open, onClose, onCreate }) {
         <div className="modal-body">
           <form onSubmit={submit}>
             <div className="field">
-              <label htmlFor="folder-name">Tên folder</label>
+              <label htmlFor="folder-name">Tên thư mục</label>
               <input
                 id="folder-name"
                 type="text"
-                placeholder="Ví dụ: documents, images, reports"
+                placeholder="Ví dụ: tai-lieu, hinh-anh, bao-cao"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
@@ -41,9 +41,9 @@ export default function CreateFolderModal({ open, onClose, onCreate }) {
             </div>
 
             <div className="modal-note">
-              <strong>Lưu ý:</strong> Tên folder không được trùng với folder đã tồn tại.
+              <strong>Lưu ý:</strong> Tên thư mục không được trùng với thư mục đã tồn tại.
               <br />
-              (Demo UI) Sau này sẽ gọi API tạo folder thật trên MinIO.
+              Giao diện minh hoạ. Sau này sẽ gọi API để tạo thư mục thật trên MinIO.
             </div>
           </form>
         </div>
@@ -53,7 +53,7 @@ export default function CreateFolderModal({ open, onClose, onCreate }) {
             Huỷ
           </button>
           <button className="btn btn-primary" onClick={submit}>
-            Tạo folder
+            Tạo thư mục
           </button>
         </div>
       </div>

@@ -269,7 +269,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
     const pw = password.trim();
     const cpw = confirmPw.trim();
 
-    if (!u) e.username = "Username là bắt buộc.";
+    if (!u) e.username = "Tên đăng nhập là bắt buộc.";
     if (!isEdit) {
       if (!pw) e.password = "Mật khẩu là bắt buộc.";
       else if (pw.length < 4) e.password = "Mật khẩu phải có ít nhất 4 ký tự.";
@@ -317,16 +317,16 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
   }
 
   const roleOptions = [
-    { value: "admin", label: "Admin", activeColor: "#7C3AED", activeBg: "#F3E8FF" },
-    { value: "user", label: "User", activeColor: "#2563EB", activeBg: "#EFF6FF" },
+    { value: "admin", label: "Quản trị viên", activeColor: "#7C3AED", activeBg: "#F3E8FF" },
+    { value: "user", label: "Người dùng", activeColor: "#2563EB", activeBg: "#EFF6FF" },
   ];
   const statusOptions = [
     {
-      value: "active", label: "Active", activeColor: "#15803D", activeBg: "#F0FDF4",
+      value: "active", label: "Đang hoạt động", activeColor: "#15803D", activeBg: "#F0FDF4",
       icon: <CheckIcon />
     },
     {
-      value: "disabled", label: "Disabled", activeColor: "#DC2626", activeBg: "#FFF1F2",
+      value: "disabled", label: "Đã vô hiệu", activeColor: "#DC2626", activeBg: "#FFF1F2",
       icon: <BanIcon size={13} />
     },
   ];
@@ -386,14 +386,14 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
             </div>
           )}
 
-          <FormField label="Username" required>
+          <FormField label="Tên đăng nhập" required>
             <input style={inputStyle(!!errs.username)} value={username}
               onChange={(e) => { setUsername(e.target.value); setErrs((p) => ({ ...p, username: "" })); }}
-              placeholder="Nhập username..." autoFocus />
+              placeholder="Nhập tên đăng nhập..." autoFocus />
             <FieldError msg={errs.username} />
           </FormField>
 
-          <FormField label="Password" required={!isEdit} hint={isEdit ? "Để trống nếu không muốn đổi mật khẩu" : undefined}>
+          <FormField label="Mật khẩu" required={!isEdit} hint={isEdit ? "Để trống nếu không muốn đổi mật khẩu" : undefined}>
             <input style={inputStyle(!!errs.password)} type="password" value={password}
               onChange={(e) => { setPassword(e.target.value); setErrs((p) => ({ ...p, password: "", confirmPw: "" })); }}
               placeholder={isEdit ? "Nhập mật khẩu mới (nếu muốn đổi)..." : "Nhập mật khẩu..."} />
@@ -409,10 +409,10 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
 
           <div style={{ borderTop: "1px solid #F1F5F9" }} />
 
-          <FormField label="Vai trò (Role)">
+          <FormField label="Vai trò">
             {isEdit ? (
               <LockedField
-                value={role === "admin" ? "Admin" : "User"}
+                value={role === "admin" ? "Quản trị viên" : "Người dùng"}
                 color={role === "admin" ? "#7C3AED" : "#2563EB"}
                 bg={role === "admin" ? "#F3E8FF" : "#EFF6FF"}
                 border={role === "admin" ? "#DDD6FE" : "#BFDBFE"}
@@ -422,10 +422,10 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
             )}
           </FormField>
 
-          <FormField label="Trạng thái (Status)">
+          <FormField label="Trạng thái">
             {isSelf ? (
               <LockedField
-                value={active ? "Active" : "Disabled"}
+                value={active ? "Đang hoạt động" : "Đã vô hiệu"}
                 color={active ? "#15803D" : "#DC2626"}
                 bg={active ? "#F0FDF4" : "#FFF1F2"}
                 border={active ? "#BBF7D0" : "#FECDD3"}
@@ -506,7 +506,7 @@ export default function Users() {
 
   const columns = [
     {
-      key: "userId", label: "USER ID", width: "160px",
+      key: "userId", label: "MÃ NGƯỜI DÙNG", width: "160px",
       render: (r) => (
         <span className="mongo-meta-cell" title={r.userId || r.id}>
           {r.userId || <span className="mongo-empty-dash">—</span>}
@@ -514,7 +514,7 @@ export default function Users() {
       ),
     },
     {
-      key: "username", label: "USERNAME",
+      key: "username", label: "TÊN ĐĂNG NHẬP",
       render: (r) => {
         const isSelf = currentUserId && r.userId === currentUserId;
         return (
@@ -545,7 +545,7 @@ export default function Users() {
       },
     },
     {
-      key: "role", label: "ROLE", width: "110px",
+      key: "role", label: "VAI TRÒ", width: "140px",
       render: (r) => (
         <span style={{
           display: "inline-block", borderRadius: 100, padding: "4px 13px",
@@ -553,7 +553,7 @@ export default function Users() {
           background: r.role === "admin" ? "#F3E8FF" : "#EFF6FF",
           color: r.role === "admin" ? "#7C3AED" : "#2563EB",
           border: `1px solid ${r.role === "admin" ? "#DDD6FE" : "#BFDBFE"}`,
-        }}>{r.role === "admin" ? "Admin" : "User"}</span>
+        }}>{r.role === "admin" ? "Quản trị viên" : "Người dùng"}</span>
       ),
     },
     {
@@ -568,7 +568,7 @@ export default function Users() {
           border: `1px solid ${r.active ? "#BBF7D0" : "#FECDD3"}`,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: r.active ? "#22C55E" : "#EF4444", flexShrink: 0 }} />
-          {r.active ? "Active" : "Disabled"}
+          {r.active ? "Đang hoạt động" : "Đã vô hiệu"}
         </span>
       ),
     },
@@ -639,7 +639,7 @@ export default function Users() {
           <div className="minio-search">
             <span className="minio-search-icon"><SearchIcon /></span>
             <input
-              placeholder="Tìm kiếm theo ID, username hoặc role..."
+              placeholder="Tìm kiếm theo mã, tên đăng nhập hoặc vai trò..."
               value={q} onChange={(e) => setQ(e.target.value)}
             />
           </div>
@@ -651,7 +651,7 @@ export default function Users() {
               color: "#FFF", fontFamily: "var(--doc-font, inherit)", fontSize: 13.5, fontWeight: 700,
               boxShadow: "0 4px 14px rgba(99,102,241,0.32)",
             }}>
-              <PlusIcon /> Thêm User
+              <PlusIcon /> Thêm tài khoản
             </button>
           </div>
         </div>

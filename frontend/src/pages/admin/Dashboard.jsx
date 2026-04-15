@@ -73,7 +73,7 @@ const DB_CARDS = [
   {
     Icon: StorageIcon,
     label: "Object data",
-    desc: "Lưu trữ file & media",
+    desc: "Lưu trữ tệp và phương tiện",
     color: "#F59E0B",
     colorBg: "#FFFBEB",
     to: "/admin/minio",
@@ -113,7 +113,7 @@ const STACK_ITEMS = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const username = localStorage.getItem("username") || "Admin";
+  const username = localStorage.getItem("username") || "Quản trị viên";
 
   return (
     <div className="dashboard">

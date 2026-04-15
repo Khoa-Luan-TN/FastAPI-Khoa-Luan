@@ -9,7 +9,7 @@ import ConfirmModal from "../../components/ConfirmModal";
 
 // ---- helpers ----
 function openFile(row) {
-  if (!row?.url) return alert("File này chưa có url để mở.");
+  if (!row?.url) return alert("Tệp này chưa có liên kết để mở.");
   window.open(row.url, "_blank", "noopener,noreferrer");
 }
 
@@ -471,7 +471,7 @@ export default function MinIO() {
           <div>
             <h2 className="mrh-title">Object data</h2>
             <p className="mrh-subtitle">
-              Cấu trúc thư mục được tạo tự động khi import — upload file vào thư mục lá
+              Cấu trúc thư mục được tạo tự động khi nhập dữ liệu — tải tệp lên tại thư mục lá
             </p>
           </div>
         </div>
@@ -531,7 +531,7 @@ export default function MinIO() {
                 <SearchIcon />
               </span>
               <input
-                placeholder={isLeaf ? "Tìm kiếm file..." : "Tìm kiếm thư mục..."}
+                placeholder={isLeaf ? "Tìm kiếm tệp..." : "Tìm kiếm thư mục..."}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
@@ -542,7 +542,7 @@ export default function MinIO() {
                   className="minio-btn minio-btn-primary mab-btn"
                   onClick={() => setOpenUpload(true)}
                 >
-                  <UploadIcon /> Upload
+                  <UploadIcon /> Tải lên
                 </button>
                 <button
                   className="minio-btn minio-btn-secondary mab-btn"
@@ -560,8 +560,8 @@ export default function MinIO() {
       {!isRoot && isLeaf && (
         <div className="minio-leaf-info">
           {isKeywordAssetFolder(currentPath)
-            ? "Thư mục asset từ khoá — tải file lên tại đây"
-            : "Thư mục lá — tải file lên tại đây"}
+            ? "Thư mục tài nguyên từ khóa — tải tệp lên tại đây"
+            : "Thư mục lá — tải tệp lên tại đây"}
         </div>
       )}
 
@@ -635,13 +635,13 @@ export default function MinIO() {
             <div className="minio-empty-icon">
               <FileIcon />
             </div>
-            <p>Chưa có file nào{q ? ` khớp "${q}"` : " — nhấn Upload để tải lên"}</p>
+            <p>Chưa có tệp nào{q ? ` khớp "${q}"` : " — nhấn Tải lên để thêm tệp"}</p>
           </div>
         ) : (
           <div className="minio-file-list">
             <div className="minio-file-list-inner">
               <div className="minio-file-header">
-                <span className="mfl-th mfl-th-name">Tên file</span>
+                <span className="mfl-th mfl-th-name">Tên tệp</span>
                 <span className="mfl-th mfl-th-type">Loại</span>
                 <span className="mfl-th mfl-th-size">Kích thước</span>
                 <span className="mfl-th mfl-th-date">Ngày</span>
@@ -656,7 +656,7 @@ export default function MinIO() {
                     key={row.id}
                     className={`minio-file-item type-${type}`}
                     onDoubleClick={() => openFile(row)}
-                    title="Double-click để mở"
+                    title="Nhấp đúp để mở"
                   >
                     <div className="mfi-name-cell">
                       <div className={`mfi-icon ${type}`}>

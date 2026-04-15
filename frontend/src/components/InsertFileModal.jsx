@@ -18,8 +18,8 @@ export default function InsertFileModal({ open, onClose, folderName, onInsert })
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Tạo thư mục mới</h3>
-          <p className="modal-subtitle">Thêm thư mục để tổ chức tập tin</p>
+          <h3 className="modal-title">Thêm tệp mô phỏng</h3>
+          <p className="modal-subtitle">Tạo một mục tệp để minh hoạ giao diện</p>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -27,7 +27,7 @@ export default function InsertFileModal({ open, onClose, folderName, onInsert })
 
         <div className="modal-body">
           <div className="field">
-            <label>Tên file (insert)</label>
+            <label>Tên tệp</label>
             <input
               placeholder="vd: note.txt"
               value={name}
@@ -37,8 +37,8 @@ export default function InsertFileModal({ open, onClose, folderName, onInsert })
           </div>
 
           <div style={{ fontSize: 12, color: "rgba(15,23,42,0.6)" }}>
-            Insert = thêm 1 dòng file “giả” để demo UI. Sau này bạn đổi thành insert metadata / tạo
-            object kiểu khác.
+            Thao tác này sẽ thêm một dòng tệp “giả” để minh hoạ giao diện. Sau này có thể đổi sang
+            thêm metadata hoặc tạo object theo cách khác.
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export default function InsertFileModal({ open, onClose, folderName, onInsert })
             Huỷ
           </button>
           <button className="btn btn-primary" onClick={submit}>
-            Insert
+            Thêm
           </button>
         </div>
       </div>
