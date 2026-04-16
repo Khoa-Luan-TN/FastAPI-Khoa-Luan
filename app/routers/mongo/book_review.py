@@ -27,8 +27,8 @@ from app.services.mongo.book_review_service import (
     sync_lesson_item_to_bundle,
     sync_topic_item_to_bundle,
     update_chunks as update_chunks_service,
-    update_lessons,
-    update_topics,
+    update_lessons as update_lessons_service,
+    update_topics as update_topics_service,
 )
 from app.services.sync.sync_service import sync_doc_to_postgres
 
@@ -384,14 +384,14 @@ async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
 @router.put("/book-review/jobs/{job_id}/topics", summary="Save reviewed topics (bulk)")
 async def update_topics(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    update_topics(db, job_id, body.get("topics", []))
+    update_topics_service(db, job_id, body.get("topics", []))
     return {"ok": True}
 
 
 @router.put("/book-review/jobs/{job_id}/lessons", summary="Save reviewed lessons")
 async def update_lessons(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    update_lessons(db, job_id, body.get("lessons", []))
+    update_lessons_service(db, job_id, body.get("lessons", []))
     return {"ok": True}
 
 
