@@ -55,8 +55,8 @@ export default function UserLayout() {
       <aside className="u-sidebar">
         {/* Brand */}
         <div className="u-sidebar-brand">
-          <img src="/logo.png" alt="Logo" className="u-sidebar-logo" />
-          <span className="u-sidebar-brand-name">EduSearch</span>
+          <img src="/app-logo.svg" alt="Biểu trưng ứng dụng" className="u-sidebar-logo" />
+          <span className="u-sidebar-brand-name">Tri thức số</span>
         </div>
 
         {/* Nav */}

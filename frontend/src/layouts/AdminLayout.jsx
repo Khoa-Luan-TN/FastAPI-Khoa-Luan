@@ -101,7 +101,7 @@ export default function AdminLayout() {
       <aside className="sidebar">
         {/* Logo */}
         <div className="sidebar-logo">
-          <img src="/logo.png" alt="Logo" className="sidebar-logo-img" />
+          <img src="/app-logo.svg" alt="Biểu trưng ứng dụng" className="sidebar-logo-img" />
         </div>
 
         {/* Nav */}

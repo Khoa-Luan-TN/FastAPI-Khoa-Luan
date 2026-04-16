@@ -66,10 +66,10 @@
 }
 
 .u-sidebar-logo {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
-  border-radius: 7px;
+  border-radius: 10px;
   flex-shrink: 0;
 }
 

@@ -46,7 +46,7 @@ export default function Login() {
       if ((data.role || "").toLowerCase() === "admin") navigate("/admin");
       else navigate("/user");
     } catch (err) {
-      setError(String(err?.message || err || "Network error"));
+      setError(String(err?.message || err || "Không thể kết nối đến hệ thống"));
     } finally {
       setIsLoading(false);
     }
@@ -54,23 +54,23 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      {/* Background Image */}
+      {/* Nền trang đăng nhập */}
       <div className="background-image"></div>
 
       <div className="login-container">
         <div className="login-card">
-          {/* Header */}
+          {/* Phần đầu */}
           <div className="header">
             <div className="logo">
-              <img src="/logo.png" alt="Logo trường" />
+              <img src="/app-logo.svg" alt="Biểu trưng ứng dụng" />
             </div>
             <div className="school-info">
-              <h1 className="school-name">ĐH Sư phạm TP. Hồ Chí Minh</h1>
-              <div className="school-subtitle">Khoá Luận Tốt Nghiệp</div>
+              <h1 className="school-name">Tri thức số</h1>
+              <div className="school-subtitle">Nền tảng tra cứu và quản lý dữ liệu</div>
             </div>
           </div>
 
-          {/* Form */}
+          {/* Biểu mẫu */}
           <div className="form-container">
             <h2 className="form-title">Đăng nhập hệ thống</h2>
 
@@ -100,7 +100,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Error Message */}
+              {/* Thông báo lỗi */}
               {error && (
                 <div className="error-message">
                   <span className="error-icon">!</span>
@@ -108,15 +108,15 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Submit Button */}
+              {/* Nút gửi */}
               <button type="submit" className="submit-btn" disabled={isLoading}>
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
             </form>
 
-            {/* Footer */}
+            {/* Chân trang */}
             <div className="footer">
-              <p>48.01.104.023 - Lê Tuấn Đạt</p>
+              <p>Không gian làm việc cho tra cứu và quản trị dữ liệu</p>
             </div>
           </div>
         </div>
