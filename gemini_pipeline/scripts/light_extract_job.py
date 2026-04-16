@@ -1,24 +1,4 @@
-"""
-Light extraction job script — stage-aware sequential pipeline.
-
-Usage (from gemini_pipeline/ directory):
-    python scripts/light_extract_job.py --workspace <abs_path> --stage topics|lessons|chunks
-
-Reads:
-    <workspace>/job_config.json
-    <workspace>/extraction_state.json   (lessons / chunks stages)
-    <workspace>/approved_topics.json    (lessons stage — written by service before launch)
-    <workspace>/approved_lessons.json   (chunks stage  — written by service before launch)
-
-Writes:
-    <workspace>/progress.json           (incremental status)
-    <workspace>/topics_partial.json     (topics as soon as LLM returns them)
-    <workspace>/lessons_partial.json    (lessons appended per topic, incrementally)
-    <workspace>/chunks_partial.json     (chunks appended per lesson, incrementally)
-    <workspace>/result.json             (final result on completion)
-    <workspace>/extraction_state.json   (after topics stage — stores raw_lessons + bundle info)
-    <workspace>/<book_stem>/            (rebuilt bundle — created by lessons stage, extended by chunks)
-"""
+# light_extract_job.py
 from __future__ import annotations
 
 import argparse
@@ -275,13 +255,17 @@ def _build_topic_pdfs(
 # ── Stage: topics ─────────────────────────────────────────────────────────────
 
 def _run_topics(workspace: Path, config: dict) -> None:
+    # Lấy ra đường dẫn đến cuốn sách
     pdf_path = config["source_pdf_path"]
+    # Lấy config của gemini và model của gemini
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", _DEFAULT_MODEL)
 
+    # Lấy tên sách và chuẩn bị thư mục cho cuốn sách
     pdf_stem = Path(pdf_path).stem
     unique_output_root = _GEMINI_ROOT / "Output" / pdf_stem
 
+    # Ghi tiến trình tách chủ đề
     log = _make_stage_logger(workspace, "topics")
     log(f"stage=topics  pdf={Path(pdf_path).name}  output_root={unique_output_root}")
 
@@ -862,7 +846,9 @@ def _run_chunks(workspace: Path, config: dict) -> None:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main(workspace: Path, stage: str) -> None:
+    # Đọc config để biết cấu hình
     config = json.loads((workspace / "job_config.json").read_text(encoding="utf-8"))
+
     if stage == "topics":
         _run_topics(workspace, config)
     elif stage == "lessons":

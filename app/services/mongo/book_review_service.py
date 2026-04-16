@@ -53,7 +53,10 @@ def create_job(
     original_filename: str,
     subject_name: str | None = None,
 ) -> Dict[str, Any]:
+    
     job_id = str(uuid.uuid4())
+
+    # Tạo ra nơi lưu trên thư mục ổ đĩa để (pipeline xử lí)
     workspace = _REVIEW_WORKSPACE / job_id
     workspace.mkdir(parents=True, exist_ok=True)
 
@@ -96,6 +99,7 @@ def create_job(
     _col(db).insert_one(doc)
     doc.pop("_id", None)
 
+    # Chạy hàm 2
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "topics"), daemon=True
     ).start()
@@ -118,6 +122,7 @@ def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
 
 def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
     # Báo rằng công việc này đang chờ vì có luồng trích xuất khác đang chạy
+    # Ghi trạng thái
     if not _extraction_semaphore.acquire(blocking=False):
         try:
             progress_path = workspace / "progress.json"
@@ -139,9 +144,13 @@ def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
     finally:
         _extraction_semaphore.release()
 
-
+# Hàm chạy Stage thật sự
 def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, python_exec: str) -> None:
     try:
+        # Gọi script ngoài để trích xuất
+        # Như mở terminal để chạy một file python khác (vì khác version)
+        # chạy light_extract_job.py
+        # workspace đã có pdf gốc
         proc = subprocess.run(
             [python_exec, str(_LIGHT_SCRIPT), "--workspace", str(workspace), "--stage", stage],
             cwd=str(_GEMINI_DIR),

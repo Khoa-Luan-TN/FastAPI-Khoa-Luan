@@ -151,6 +151,7 @@ def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
 
 # ── Tạo công việc ────────────────────────────────────────────────────────────
 
+# Chạy 1 khi import sách
 @router.post(
     "/book-review/jobs",
     summary="Upload raw PDF and start topics-only extraction",
