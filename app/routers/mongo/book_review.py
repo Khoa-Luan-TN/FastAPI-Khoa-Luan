@@ -1,4 +1,3 @@
-# app/routers/mongo/book_review.py
 from __future__ import annotations
 import json
 import re
@@ -42,7 +41,7 @@ def _get_or_404(job_id: str) -> Dict[str, Any]:
 
 
 def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
-    # Prefer the absolute path already stored in the chunk metadata
+    # Ưu tiên đường dẫn tuyệt đối đã lưu sẵn trong metadata của chunk
     direct = chunk.get("chunk_pdf")
     if direct and Path(direct).exists():
         return Path(direct)
@@ -50,11 +49,11 @@ def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
     chunk_name = chunk.get("chunk")
     if lesson_stem and chunk_name:
         chunk_dir = Path(bundle_path) / "Chunk" / lesson_stem / chunk_name
-        # Canonical naming
+        # Tên file chuẩn
         p = chunk_dir / f"{lesson_stem}_{chunk_name}.pdf"
         if p.exists():
             return p
-        # Fallback: read metadata JSON written by sync_bundle.py
+        # Dự phòng: đọc metadata JSON do sync_bundle.py ghi ra
         meta_path = chunk_dir / f"{lesson_stem}_{chunk_name}.json"
         if meta_path.exists():
             try:
@@ -64,7 +63,7 @@ def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
                     return Path(mp)
             except Exception:
                 pass
-        # Last resort: any PDF in chunk dir
+        # Cuối cùng: lấy bất kỳ PDF nào trong thư mục chunk
         pdfs = sorted(chunk_dir.glob("*.pdf"))
         if pdfs:
             return pdfs[0]
@@ -72,13 +71,13 @@ def _find_chunk_pdf(bundle_path: str, chunk: dict) -> Path | None:
 
 
 def _find_lesson_pdf_for_chunk(bundle_path: str, chunk: dict) -> Path | None:
-    # 1. source_lesson_pdf stored directly on the chunk
+    # 1. source_lesson_pdf được lưu trực tiếp trên chunk
     slp = chunk.get("source_lesson_pdf")
     if slp and Path(slp).exists():
         return Path(slp)
     lesson_stem = chunk.get("lesson_stem")
     chunk_name = chunk.get("chunk")
-    # 2. Read from the chunk metadata JSON on disk
+    # 2. Đọc từ metadata JSON của chunk trên đĩa
     if lesson_stem and chunk_name:
         meta_path = (
             Path(bundle_path) / "Chunk" / lesson_stem / chunk_name / f"{lesson_stem}_{chunk_name}.json"
@@ -91,7 +90,7 @@ def _find_lesson_pdf_for_chunk(bundle_path: str, chunk: dict) -> Path | None:
                     return Path(slp)
             except Exception:
                 pass
-    # 3. Search Lesson dir for any PDF whose stem matches lesson_stem
+    # 3. Tìm trong thư mục Lesson file PDF có stem khớp lesson_stem
     if lesson_stem:
         lesson_root = Path(bundle_path) / "Lesson"
         if lesson_root.exists():
@@ -129,7 +128,7 @@ def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
     pdfs = sorted(lesson_dir.rglob(f"*_lesson_{lesson_num}.pdf"))
     return pdfs[0] if pdfs else None
 
-# ── Create job ──────────────────────────────────────────────────────────────
+# ── Tạo công việc ────────────────────────────────────────────────────────────
 
 @router.post(
     "/book-review/jobs",
@@ -160,14 +159,14 @@ async def create_review_job(
     return {"ok": True, "job": _serial(job)}
 
 
-# ── Get job ──────────────────────────────────────────────────────────────────
+# ── Lấy thông tin công việc ──────────────────────────────────────────────────
 
 @router.get("/book-review/jobs/{job_id}", summary="Get review job detail")
 async def get_review_job(job_id: str):
     return {"ok": True, "job": _serial(_get_or_404(job_id))}
 
 
-# ── PDF preview serving ───────────────────────────────────────────────────────
+# ── Phục vụ PDF xem trước ────────────────────────────────────────────────────
 
 @router.get("/book-review/jobs/{job_id}/pdf/source", summary="Serve source PDF for admin preview")
 async def serve_source_pdf(job_id: str):
@@ -279,7 +278,7 @@ async def serve_chunk_pdf(job_id: str, idx: int):
     raise HTTPException(status_code=404, detail="Chunk PDF not found — extraction may still be running")
 
 
-# ── Debug topic selection ─────────────────────────────────────────────────────
+# ── Chọn chủ đề để gỡ lỗi ────────────────────────────────────────────────────
 
 @router.post("/book-review/jobs/{job_id}/debug-topic", summary="Set debug mode: enabled flag + topic index")
 async def set_debug_topic(job_id: str, body: Dict[str, Any] = Body(...)):
@@ -294,7 +293,7 @@ async def set_debug_topic(job_id: str, body: Dict[str, Any] = Body(...)):
     return result
 
 
-# ── Per-topic edit / recut ────────────────────────────────────────────────────
+# ── Sửa và cắt lại theo từng chủ đề ──────────────────────────────────────────
 
 @router.patch("/book-review/jobs/{job_id}/topics/{idx}", summary="Sync a single topic item to bundle")
 async def patch_topic(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
@@ -368,7 +367,7 @@ async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     return {"ok": True}
 
 
-# ── Update review data ────────────────────────────────────────────────────────
+# ── Cập nhật dữ liệu duyệt ────────────────────────────────────────────────────
 
 @router.put("/book-review/jobs/{job_id}/topics", summary="Save reviewed topics (bulk)")
 async def update_topics(job_id: str, body: Dict[str, Any] = Body(...)):
@@ -429,7 +428,7 @@ async def add_chunk(job_id: str, body: Dict[str, Any] = Body(...)):
         raise HTTPException(status_code=400, detail=result.get("error", "Add chunk failed"))
     return {"ok": True, "chunks": result.get("chunks", [])}
 
-# ── Approve stages ────────────────────────────────────────────────────────────
+# ── Xác nhận từng bước ────────────────────────────────────────────────────────
 
 _PAST_TOPICS_STATUSES = {
     "extracting_lessons", "reviewing_lessons",
@@ -465,9 +464,9 @@ async def approve_lessons(job_id: str):
 
     ok = approve_lessons_and_start_chunks(db, job_id)
     if not ok:
-        # Rare race: subprocess wrote "reviewing_lessons" to progress.json before
-        # _run_stage_inner updated MongoDB, so the UI showed "reviewing_lessons" while DB
-        # still had "extracting_lessons".  Give MongoDB a moment to catch up, then retry.
+        # Có trường hợp hiếm subprocess ghi "reviewing_lessons" vào progress.json trước
+        # khi _run_stage_inner cập nhật MongoDB, làm UI thấy "reviewing_lessons" nhưng DB
+        # vẫn là "extracting_lessons". Chờ MongoDB bắt kịp rồi thử lại.
         _time.sleep(0.4)
         ok = approve_lessons_and_start_chunks(db, job_id)
 
@@ -476,8 +475,8 @@ async def approve_lessons(job_id: str):
         current = job["status"]
         if current in _PAST_LESSONS_STATUSES:
             return {"ok": True, "already_advanced": True, "status": current}
-        # If still "reviewing_lessons" after retry, the DB write truly hasn't landed yet —
-        # return a retryable response rather than a hard 409 so the frontend can try again.
+        # Nếu sau khi thử lại mà vẫn là "reviewing_lessons" thì ghi DB thật sự chưa xong.
+        # Trả về kết quả có thể thử lại thay vì ném 409 cứng để frontend gọi lại.
         if current == "reviewing_lessons":
             return {"ok": False, "retry": True, "status": current}
         raise HTTPException(
@@ -507,7 +506,7 @@ async def approve_chunks(job_id: str):
     return {"ok": True}
 
 
-# ── Trigger heavy stage ───────────────────────────────────────────────────────
+# ── Kích hoạt bước nặng ──────────────────────────────────────────────────────
 
 @router.post(
     "/book-review/jobs/{job_id}/trigger-heavy",

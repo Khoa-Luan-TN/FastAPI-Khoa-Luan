@@ -1,4 +1,3 @@
-// src/services/mongoAdminApi.js
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 function getActorId() {
@@ -11,7 +10,7 @@ async function httpJson(url, options = {}) {
     headers: {
       ...(options.headers || {}),
       "Content-Type": "application/json",
-      "x-actor-id": getActorId(), // ✅ only id
+      "x-actor-id": getActorId(), // chỉ gửi id
     },
   });
 
@@ -87,12 +86,12 @@ export function deleteDocument(collectionName, oid) {
   return httpJson(`${API_BASE}/admin/mongo/documents/${c}/${id}`, { method: "DELETE" });
 }
 
-// ✅ NEW: upload multipart/form-data (KHÔNG set Content-Type)
+// Gửi multipart/form-data, không tự set Content-Type
 async function httpUpload(url, formData) {
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      "x-actor-id": getActorId(), // ✅ vẫn gửi actor
+      "x-actor-id": getActorId(), // vẫn gửi actor
     },
     body: formData,
   });
@@ -102,7 +101,7 @@ async function httpUpload(url, formData) {
   return data;
 }
 
-// Tracked import: returns {ok, job_id} immediately; poll getImportJobStatus for progress
+// Import có theo dõi: trả về {ok, job_id} ngay, rồi poll getImportJobStatus để lấy tiến độ
 export function importExcelTracked(file, collectionName, generateAliases = false) {
   const fd = new FormData();
   fd.append("file", file);
@@ -118,7 +117,7 @@ export function getImportJobStatus(jobId) {
   });
 }
 
-// POST /admin/mongo/import/book-bundle
+// Gọi API import book bundle trực tiếp
 // payload: { bundle_path, class_name, subject_name, subject_type?, source_pdf_path?, upload_pdfs? }
 export function importBookBundle(payload) {
   return httpJson(`${API_BASE}/admin/mongo/import/book-bundle`, {
@@ -127,9 +126,9 @@ export function importBookBundle(payload) {
   });
 }
 
-// ── Review-first book ingestion ───────────────────────────────────────────────
+// ── Luồng nhập sách qua bước duyệt trước ─────────────────────────────────────
 
-// POST /admin/mongo/book-review/jobs  (multipart)
+// Tạo job duyệt sách (multipart)
 export function createReviewJob(classN, pdfFile, subjectName = "Tin học") {
   const fd = new FormData();
   fd.append("class_name", classN);
@@ -138,12 +137,12 @@ export function createReviewJob(classN, pdfFile, subjectName = "Tin học") {
   return httpUpload(`${API_BASE}/admin/mongo/book-review/jobs`, fd);
 }
 
-// GET /admin/mongo/book-review/jobs/:id
+// Lấy chi tiết job duyệt sách
 export function getReviewJob(jobId) {
   return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}`);
 }
 
-// PUT /admin/mongo/book-review/jobs/:id/topics
+// Lưu danh sách chủ đề đã duyệt
 export function saveReviewTopics(jobId, topics) {
   return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics`, {
     method: "PUT",
@@ -151,7 +150,7 @@ export function saveReviewTopics(jobId, topics) {
   });
 }
 
-// PUT /admin/mongo/book-review/jobs/:id/lessons
+// Lưu danh sách bài học đã duyệt
 export function saveReviewLessons(jobId, lessons) {
   return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/lessons`, {
     method: "PUT",
@@ -159,7 +158,7 @@ export function saveReviewLessons(jobId, lessons) {
   });
 }
 
-// PUT /admin/mongo/book-review/jobs/:id/chunks
+// Lưu danh sách phần đã duyệt
 export function saveReviewChunks(jobId, chunks) {
   return httpJson(`${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/chunks`, {
     method: "PUT",
@@ -167,7 +166,7 @@ export function saveReviewChunks(jobId, chunks) {
   });
 }
 
-// POST /admin/mongo/book-review/jobs/:id/approve-topics
+// Xác nhận chủ đề
 export function approveTopics(jobId) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-topics`,
@@ -177,7 +176,7 @@ export function approveTopics(jobId) {
   );
 }
 
-// POST /admin/mongo/book-review/jobs/:id/approve-lessons
+// Xác nhận bài học
 export function approveLessons(jobId) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-lessons`,
@@ -187,7 +186,7 @@ export function approveLessons(jobId) {
   );
 }
 
-// POST /admin/mongo/book-review/jobs/:id/approve-chunks
+// Xác nhận phần
 export function approveChunks(jobId) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/approve-chunks`,
@@ -197,7 +196,7 @@ export function approveChunks(jobId) {
   );
 }
 
-// POST /admin/mongo/book-review/jobs/:id/trigger-heavy
+// Kích hoạt bước xử lý nặng
 export function triggerHeavyStage(jobId) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`,
@@ -207,7 +206,7 @@ export function triggerHeavyStage(jobId) {
   );
 }
 
-// ── Topic preview PDF URLs (no fetch — used directly in iframes) ──────────────
+// ── URL PDF xem trước chủ đề, dùng trực tiếp trong iframe ───────────────────
 
 export function reviewTopicPdfUrl(jobId, idx, key = 0) {
   return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/topic/${idx}?k=${key}`;
@@ -217,7 +216,7 @@ export function reviewSourcePdfUrl(jobId) {
   return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/source`;
 }
 
-// PATCH /admin/mongo/book-review/jobs/:id/topics/:idx
+// Cập nhật một chủ đề
 export function patchReviewTopic(jobId, idx, patch) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}`,
@@ -225,7 +224,7 @@ export function patchReviewTopic(jobId, idx, patch) {
   );
 }
 
-// POST /admin/mongo/book-review/jobs/:id/topics/:idx/recut
+// Cắt lại PDF xem trước của chủ đề
 export function recutReviewTopic(jobId, idx) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/topics/${idx}/recut`,
@@ -255,7 +254,7 @@ export function reviewChunkPdfUrl(jobId, idx, key = 0) {
   return `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/pdf/chunk/${idx}?k=${key}`;
 }
 
-// POST /admin/mongo/book-review/jobs/:id/debug-topic
+// Bật hoặc tắt gỡ lỗi theo chủ đề
 // enabled: bool, topicIndex: number | null
 export function setDebugTopic(jobId, enabled, topicIndex) {
   return httpJson(
@@ -292,7 +291,7 @@ export function deleteReviewChunk(jobId, idx) {
   );
 }
 
-// POST /admin/mongo/book-review/jobs/:id/chunks
+// Thêm một phần mới vào bài học
 // payload: { lesson_stem, heading, title, start, end, content_head }
 export function addReviewChunk(jobId, payload) {
   return httpJson(

@@ -1,5 +1,3 @@
-# app/services/mongo/book_bundle_import_service.py
-
 from __future__ import annotations
 
 import json
@@ -30,13 +28,13 @@ from app.services.shared._utils import slugify_vi, utc_now
 
 _log = logging.getLogger(__name__)
 
-# subject_type stored on the subject document (maps to PG Subject.subject_type).
-# Metadata only — not part of import_key or MinIO asset paths.
+# subject_type được lưu trên tài liệu subject, ánh xạ sang PG Subject.subject_type.
+# Đây chỉ là metadata, không tham gia import_key hay đường dẫn tài nguyên trong kho lưu trữ.
 _DEFAULT_SUBJECT_TYPE = "Kết nối tri thức"
 
 
 def _normalize_vi_title(text: str) -> str:
-    """Convert predominantly ALL-CAPS Vietnamese title to sentence case."""
+    """Chuyển tiêu đề tiếng Việt viết hoa gần hết sang dạng câu thông thường."""
     if not text:
         return text
     alpha_chars = [c for c in text if c.isalpha()]
@@ -50,17 +48,17 @@ def _normalize_vi_title(text: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Internal helpers
+# Hàm hỗ trợ nội bộ
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _num2d(v: Any) -> str:
-    """Extract the first integer from a string and return it zero-padded to 2 digits."""
+    """Lấy số nguyên đầu tiên trong chuỗi và trả về dạng 2 chữ số."""
     m = re.search(r"\d+", str(v or ""))
     return f"{int(m.group()):02d}" if m else ""
 
 
 def _parse_manifest_list(manifest: dict, key: str) -> List[Dict[str, Any]]:
-    """Parse list_topic or list_lesson into [{num_2d, start, end}]."""
+    """Phân tích list_topic hoặc list_lesson thành [{num_2d, start, end}]."""
     out: List[Dict[str, Any]] = []
     for item in manifest.get(key, []):
         if not isinstance(item, dict) or len(item) != 1:
@@ -82,10 +80,10 @@ def _infer_lesson_topic_map(
     lessons: List[Dict[str, Any]],
 ) -> Dict[str, str]:
     """
-    Return {lesson_num_2d: topic_num_2d}.
+    Trả về {lesson_num_2d: topic_num_2d}.
 
-    A lesson belongs to the topic whose page range contains lesson.start.
-    Fallback: nearest topic by midpoint distance.
+    Một bài học thuộc về chủ đề có dải trang chứa lesson.start.
+    Nếu không khớp trực tiếp thì lấy chủ đề gần nhất theo khoảng cách điểm giữa.
     """
     result: Dict[str, str] = {}
     for lesson in lessons:
@@ -113,8 +111,8 @@ def _asset_prefixes_for(
     chunk_num: str = "",
 ) -> Optional[Dict[str, str]]:
     """
-    Compute deterministic asset_prefixes for bundle-imported entities.
-    Follows the same legacy convention as the Excel import flow and document_service.py.
+    Tính asset_prefixes cố định cho các thực thể được import từ bundle.
+    Cách đặt đường dẫn giữ cùng quy ước cũ như luồng import Excel và document_service.py.
     """
     base = f"{class_slug}/{subject_slug}"
     if col == "subject":
@@ -144,25 +142,25 @@ def _asset_prefixes_for(
 
 
 def _find_pdf(parent_dir: Path, pattern: str) -> Optional[Path]:
-    """Return the first PDF matching *pattern* under *parent_dir* (recursive)."""
+    """Trả về PDF đầu tiên khớp *pattern* dưới *parent_dir* theo kiểu đệ quy."""
     matches = sorted(parent_dir.rglob(pattern))
     return matches[0] if matches else None
 
 
 def _find_topic_pdf(topic_dir: Path, topic_num: str) -> Optional[Path]:
     """
-    Multi-strategy topic PDF finder (most-specific first):
-      1. Exact suffix pattern: *_topic_{topic_num}.pdf  (original behaviour)
-      2. Any PDF inside Topic/<*topic{topic_num}*>/ subdir
-      3. Any PDF under topic_dir whose stem contains "topic_{topic_num}"
-      4. Any PDF directly under topic_dir (last resort — flat layout)
+    Tìm PDF của chủ đề theo nhiều chiến lược, ưu tiên cách khớp chính xác hơn trước:
+      1. Mẫu hậu tố chính xác: *_topic_{topic_num}.pdf
+      2. Bất kỳ PDF nào trong thư mục con Topic/<*topic{topic_num}*>/
+      3. Bất kỳ PDF nào dưới topic_dir có stem chứa "topic_{topic_num}"
+      4. Bất kỳ PDF nào nằm trực tiếp trong topic_dir như phương án cuối
     """
-    # Strategy 1: exact naming convention
+    # Cách 1: theo quy ước đặt tên chuẩn
     result = _find_pdf(topic_dir, f"*_topic_{topic_num}.pdf")
     if result:
         return result
 
-    # Strategy 2: topic-specific subdirectory (e.g. Topic/Tin-hoc-10_topic_01/)
+    # Cách 2: thư mục con dành riêng cho chủ đề
     for sub in sorted(topic_dir.iterdir()):
         if sub.is_dir() and f"topic_{topic_num}" in sub.name.lower():
             pdfs = sorted(sub.rglob("*.pdf"))
@@ -170,13 +168,13 @@ def _find_topic_pdf(topic_dir: Path, topic_num: str) -> Optional[Path]:
                 _log.debug("_find_topic_pdf strategy2: found %s via subdir %s", pdfs[0], sub)
                 return pdfs[0]
 
-    # Strategy 3: any PDF whose stem contains "topic_{topic_num}"
+    # Cách 3: PDF có stem chứa "topic_{topic_num}"
     for pdf in sorted(topic_dir.rglob("*.pdf")):
         if f"topic_{topic_num}" in pdf.stem.lower():
             _log.debug("_find_topic_pdf strategy3: found %s via stem match", pdf)
             return pdf
 
-    # Strategy 4: only safe if exactly one flat PDF exists (avoids wrong-file upload)
+    # Cách 4: chỉ an toàn khi chỉ có đúng một PDF nằm trực tiếp trong thư mục
     flat = sorted(p for p in topic_dir.iterdir() if p.suffix.lower() == ".pdf")
     if len(flat) == 1:
         _log.debug("_find_topic_pdf strategy4 (last resort, unique flat PDF): returning %s", flat[0])
@@ -192,7 +190,7 @@ def _find_topic_pdf(topic_dir: Path, topic_num: str) -> Optional[Path]:
 
 
 def _minio_prefix_has_pdf(client, bucket: str, prefix: str) -> bool:
-    """Return True if at least one .pdf object exists under *prefix* in MinIO."""
+    """Trả về True nếu có ít nhất một object .pdf dưới *prefix* trên MinIO."""
     try:
         for obj in client.list_objects(bucket, prefix=prefix.rstrip("/") + "/", recursive=True):
             if obj.object_name.lower().endswith(".pdf"):
@@ -211,7 +209,7 @@ def _minio_upload_pdf(
     actor: str,
     errors: List[Dict[str, Any]],
 ) -> Optional[str]:
-    """Upload *pdf_path* to MinIO at *object_key*, return the public URL or None."""
+    """Tải *pdf_path* lên MinIO tại *object_key*, trả về URL công khai hoặc None."""
     try:
         size = pdf_path.stat().st_size
         with open(pdf_path, "rb") as fh:
@@ -297,7 +295,7 @@ def _auto_create_topic_bag(db, topic_oid, topic_name: str, *, actor: str) -> Non
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Public entry point
+# Điểm vào công khai
 # ─────────────────────────────────────────────────────────────────────────────
 
 def import_book_bundle(
@@ -370,7 +368,7 @@ def import_book_bundle(
     except Exception as exc:
         return _fail(f"Cannot read manifest: {exc}")
 
-    # ── MinIO setup ──────────────────────────────────────────────────────────
+    # ── Chuẩn bị kho lưu trữ đối tượng ───────────────────────────────────────
     _cb("heavy_importing_minio", "Kết nối MinIO và chuẩn bị thư mục lưu trữ…", 77)
     bucket = (os.getenv("MINIO_BUCKET") or "").strip()
     minio_client = None
@@ -385,11 +383,11 @@ def import_book_bundle(
             _log.warning("MinIO unavailable (%s) — PDF upload disabled for this run", exc)
             minio_client = None
 
-    # ── Slugs ────────────────────────────────────────────────────────────────
+    # ── Chuẩn bị chuỗi slug ──────────────────────────────────────────────────
     class_slug   = slugify_vi(class_name)
     subject_slug = slugify_vi(subject_name)
 
-    # ── Ensure sparse-unique import_key indexes ──────────────────────────────
+    # ── Đảm bảo index import_key dạng duy nhất và sparse ─────────────────────
     for col in ("class", "subject", "topic", "lesson", "chunk"):
         _ensure_import_index(db, col)
 
@@ -437,7 +435,7 @@ def import_book_bundle(
         except Exception as exc:
             minio_errors.append({"step": "subject_minio", "error": str(exc)})
 
-    # Upload original book PDF to subject documents folder
+    # Tải PDF gốc của sách lên thư mục tài liệu của môn học
     book_pdf_uploaded = False
     _resolved_source_pdf: Optional[Path] = source_pdf_path
     if minio_client and ap_subj:
@@ -445,7 +443,7 @@ def import_book_bundle(
         if source_pdf_path and Path(source_pdf_path).exists():
             _source_pdf = Path(source_pdf_path)
         else:
-            # Discover from first topic companion JSON that has a "source_pdf" field
+            # Tự dò từ file JSON đầu tiên của topic có trường "source_pdf"
             topic_dir_disc = bundle_dir / "Topic"
             if topic_dir_disc.exists():
                 for _tj in sorted(topic_dir_disc.rglob("*.json")):
@@ -475,7 +473,7 @@ def import_book_bundle(
         _sync_entity(sync_one, "subject", subj_key, db, errors)
 
     # ─────────────────────────────────────────────────────────────────────────
-    # 3. Parse manifest → topic / lesson lists + mapping
+    # 3. Phân tích manifest thành danh sách topic / lesson và bảng ánh xạ
     # ─────────────────────────────────────────────────────────────────────────
     topic_list  = _parse_manifest_list(manifest, "list_topic")
     lesson_list = _parse_manifest_list(manifest, "list_lesson")
@@ -487,13 +485,13 @@ def import_book_bundle(
 
     lesson_topic_map = _infer_lesson_topic_map(topic_list, lesson_list)
 
-    # id maps built during import
+    # Bảng ánh xạ id được dựng trong lúc import
     topic_id_map:  Dict[str, str] = {}  # topic_num_2d → mongo_id
     lesson_id_map: Dict[str, str] = {}  # lesson_num_2d → mongo_id
 
     subj_oid = ObjectId(subj_id) if ObjectId.is_valid(subj_id) else subj_id
 
-    # Pre-scan Chunk/ to count chunk dirs per lesson (used for lesson_type inference)
+    # Quét trước thư mục Chunk/ để đếm số thư mục chunk theo từng bài học
     chunk_root = bundle_dir / "Chunk"
     _lesson_chunk_counts: Dict[str, int] = {}
     if chunk_root.exists():
@@ -652,7 +650,7 @@ def import_book_bundle(
             if not lesson_chunk_dir.is_dir():
                 continue
 
-            # lesson_stem e.g. "Tin-hoc-10-ket-noi-tri-thuc_lesson_07"
+            # lesson_stem ví dụ: "Tin-hoc-10-ket-noi-tri-thuc_lesson_07"
             m = re.search(r"_lesson_(\d+)$", lesson_chunk_dir.name)
             if not m:
                 continue
@@ -678,7 +676,7 @@ def import_book_bundle(
                 chunk_num_int = int(m2.group(1))
                 chunk_num = f"{chunk_num_int:02d}"
 
-                # Find chunk metadata JSON (exclude .keywords.json)
+                # Tìm file JSON mô tả của chunk, bỏ qua .keywords.json
                 chunk_jsons = [
                     p for p in chunk_dir.glob("*.json")
                     if not p.name.endswith(".keywords.json")
@@ -761,7 +759,7 @@ def import_book_bundle(
                     "pdf_uploaded": pdf_uploaded,
                 })
 
-                # ── Keywords (Phase 2) ────────────────────────────────────
+                # ── Từ khoá ở pha 2 ───────────────────────────────────────
                 kw_json_path = chunk_json_path.with_suffix(".keywords.json")
                 if not kw_json_path.exists():
                     continue
@@ -792,7 +790,7 @@ def import_book_bundle(
                         else:
                             kw_reused += 1
 
-                        # Ensure MinIO folder markers exist for this keyword
+                        # Đảm bảo marker thư mục lưu trữ tồn tại cho keyword này
                         if minio_client and bucket:
                             _kw_oid = ObjectId(kw_id) if ObjectId.is_valid(kw_id) else kw_id
                             _kw_doc = db["keyword"].find_one({"_id": _kw_oid}, {"asset_prefixes": 1})
@@ -809,7 +807,7 @@ def import_book_bundle(
                         if ck_op == "insert":
                             ck_inserted += 1
 
-                        # Sync chunk_keyword to PG/Neo4j
+                        # Đồng bộ chunk_keyword xuống PG/Neo4j
                         if sync_one is not None:
                             _ck_chunk_oid = ObjectId(chunk_id) if ObjectId.is_valid(chunk_id) else chunk_id
                             _ck_kw_oid = ObjectId(kw_id) if ObjectId.is_valid(kw_id) else kw_id
@@ -836,7 +834,7 @@ def import_book_bundle(
                     except Exception as exc:
                         kw_errors.append({"keyword": kw_name, "error": str(exc)})
 
-    # ── PG / Neo4j sync checkpoint ───────────────────────────────────────────
+    # ── Mốc đồng bộ PG / Neo4j ───────────────────────────────────────────────
     n_chunks_done = len(_chunks_out)
     _cb(
         "heavy_syncing_pg",
@@ -866,7 +864,7 @@ def import_book_bundle(
         },
     )
 
-    # ── Finalize topic embeddings after all keywords are loaded ──────────────
+    # ── Hoàn tất embedding của topic sau khi nạp xong toàn bộ từ khoá ───────
     _cb(
         "heavy_finalizing_embeddings",
         f"Tạo embeddings cho {len(affected_topic_ids)} chủ đề…",
@@ -887,7 +885,7 @@ def import_book_bundle(
         finalize_result = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, _fe)
         errors.extend(_fe)
 
-    # ── Batch alias generation for newly inserted keywords ───────────────────
+    # ── Tạo alias theo lô cho các keyword mới chèn ───────────────────────────
     alias_batch_result: Dict[str, Any] = {
         "total_keywords": 0,
         "screened_true": 0,
@@ -955,7 +953,7 @@ def import_book_bundle(
             kw_errors.append({"alias_batch": str(_alias_e)})
             _cb("heavy_generating_aliases", f"Alias generation lỗi: {str(_alias_e)[:120]}", 98)
 
-    # ── Build UI-friendly response ────────────────────────────────────────────
+    # ── Dựng phản hồi dễ dùng cho giao diện ──────────────────────────────────
     def _ops(lst: List[Dict[str, Any]], op: str) -> int:
         return sum(1 for x in lst if x.get("op") == op)
 

@@ -7,7 +7,7 @@ import FilterModal from "../../components/FilterModal";
 import RenameModal from "../../components/RenameModal";
 import ConfirmModal from "../../components/ConfirmModal";
 
-// ---- helpers ----
+// ---- Hàm hỗ trợ ----
 function getExt(name = "") {
   const i = name.lastIndexOf(".");
   return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
@@ -48,9 +48,9 @@ function lastName(path) {
 }
 
 /**
- * Returns true when `path` is a valid leaf folder that accepts file uploads.
+ * Trả về true nếu `path` là thư mục lá hợp lệ cho phép tải tệp lên.
  *
- * Valid leaf paths:
+ * Các đường dẫn thư mục lá hợp lệ:
  *   documents/<class>/<subject>/subject
  *   documents/<class>/<subject>/topic/<id>
  *   documents/<class>/<subject>/lesson/<id>
@@ -83,7 +83,7 @@ function isKeywordAssetFolder(path) {
   return (p[0] === "images" || p[0] === "videos") && p[1] === "keyword" && p.length === 3;
 }
 
-// ---- SVG icons ----
+// ---- Biểu tượng SVG ----
 const FolderIcon = ({ size = 20 }) => (
   <svg
     width={size}
@@ -290,7 +290,7 @@ const FilterIcon = () => (
   </svg>
 );
 
-// ---- Section label + icon mapping ----
+// ---- Ánh xạ nhãn và biểu tượng theo nhóm ----
 const SECTION_LABELS = { documents: "Tài liệu", videos: "Video", images: "Hình ảnh" };
 const SECTION_ICONS = { documents: FolderIcon, videos: VideoIcon, images: ImageIcon };
 function getPartLabel(part) {
@@ -301,7 +301,7 @@ function getCrumbIcon(part, idx) {
   return FolderIcon;
 }
 
-// ---- Root sections ----
+// ---- Nhóm thư mục gốc ----
 const ROOT_SECTIONS = [
   {
     id: "r-doc",
@@ -343,7 +343,7 @@ export default function MinIO() {
   const [err, setErr] = useState("");
   const [toasts, setToasts] = useState([]);
 
-  // Modal states
+  // Trạng thái modal
   const [renameModal, setRenameModal] = useState({ open: false, initialName: "", onConfirm: null });
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -538,7 +538,7 @@ export default function MinIO() {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
       <ToastLayer toasts={toasts} />
-      {/* ROOT: gradient header banner */}
+      {/* Gốc: banner đầu trang */}
       {isRoot && (
         <div className="minio-root-header">
           <div className="mrh-icon">
@@ -553,7 +553,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* NON-ROOT: sticky breadcrumb + action bar */}
+      {/* Không phải thư mục gốc: breadcrumb và thanh thao tác */}
       {!isRoot && (
         <div
           style={{
@@ -632,7 +632,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* Leaf path info banner */}
+      {/* Gợi ý cho thư mục lá */}
       {!isRoot && isLeaf && (
         <div className="minio-leaf-info">
           {isKeywordAssetFolder(currentPath)
@@ -641,7 +641,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* Non-leaf folder hint */}
+      {/* Gợi ý cho thư mục chưa phải lá */}
       {isFolderView && !loading && remote.folders.length === 0 && !err && (
         <div className="minio-empty">
           <div className="minio-empty-icon">
@@ -651,17 +651,17 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* Error */}
+      {/* Lỗi */}
       {err && (
         <div className="minio-empty" style={{ borderColor: "#FECACA", marginBottom: 16 }}>
           <p style={{ color: "#DC2626" }}>{err}</p>
         </div>
       )}
 
-      {/* Loading */}
+      {/* Đang tải */}
       {loading && <div className="minio-loading">Đang tải...</div>}
 
-      {/* ROOT: 3 section cards */}
+      {/* Gốc: 3 thẻ nhóm chính */}
       {!loading && isRoot && (
         <div className="minio-root-grid">
           {ROOT_SECTIONS.map((s) => (
@@ -688,7 +688,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* FOLDER list */}
+      {/* Danh sách thư mục */}
       {!loading && !isRoot && isFolderView && folderRows.length > 0 && (
         <div className="minio-folder-list">
           {folderRows.map((row) => (
@@ -703,7 +703,7 @@ export default function MinIO() {
         </div>
       )}
 
-      {/* FILE list */}
+      {/* Danh sách tệp */}
       {!loading &&
         isLeaf &&
         (fileRows.length === 0 ? (

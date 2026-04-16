@@ -1,5 +1,3 @@
-# app/main.py
-
 import logging
 import os
 import sys
@@ -57,9 +55,9 @@ from app.services.mongo.mongo_import_service import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    # Migrate import_key indexes to sparse-unique on every startup.
-    # This converts any legacy non-sparse import_key_1 indexes so normal UI
-    # creates (which have no import_key) never collide on null values.
+    # Chuyển index import_key sang sparse-unique ở mỗi lần khởi động.
+    # Việc này đổi các index import_key_1 cũ không sparse để thao tác tạo mới
+    # từ giao diện thường không bị đụng nhau ở giá trị null.
     try:
         ensure_all_import_key_indexes(get_mongo_db())
     except Exception as _e:
@@ -68,8 +66,8 @@ async def lifespan(app: FastAPI):
         ensure_user_indexes(get_mongo_db())
     except Exception as _e:
         logging.getLogger("app").warning("user_indexes setup warning: %s", _e)
-    # Ensure MinIO root markers exist for all class docs imported before the
-    # class-marker fix. Idempotent — safe to run on every startup.
+    # Đảm bảo marker thư mục gốc trên MinIO tồn tại cho mọi class được import
+    # từ trước khi sửa marker class. Hàm idempotent, an toàn khi chạy mỗi lần mở app.
     try:
         result = backfill_class_minio_roots(get_mongo_db())
         if result.get("ok"):
@@ -79,8 +77,8 @@ async def lifespan(app: FastAPI):
             )
     except Exception as _e:
         logging.getLogger("app").warning("class MinIO backfill warning: %s", _e)
-    # Ensure MinIO subject folder markers exist and backfill missing asset_prefixes
-    # for subject docs created before the subject-marker fix. Idempotent.
+    # Đảm bảo marker thư mục subject trên MinIO tồn tại và điền bù asset_prefixes
+    # còn thiếu cho các subject cũ. Hàm idempotent.
     try:
         result = backfill_subject_minio_markers(get_mongo_db())
         if result.get("ok"):
@@ -90,8 +88,8 @@ async def lifespan(app: FastAPI):
             )
     except Exception as _e:
         logging.getLogger("app").warning("subject MinIO backfill warning: %s", _e)
-    # Ensure MinIO topic folder markers exist and backfill missing asset_prefixes
-    # for topic docs created before the topic-marker fix. Idempotent.
+    # Đảm bảo marker thư mục topic trên MinIO tồn tại và điền bù asset_prefixes
+    # còn thiếu cho các topic cũ. Hàm idempotent.
     try:
         result = backfill_topic_minio_markers(get_mongo_db())
         if result.get("ok"):

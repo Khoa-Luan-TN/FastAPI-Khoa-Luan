@@ -1,5 +1,3 @@
-# app/services/mongo/book_review_service.py
-
 from __future__ import annotations
 
 import json
@@ -103,7 +101,7 @@ def create_job(
 
 
 def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
-    """Return the last n lines from the stage log file, if it exists."""
+    """Trả về n dòng cuối của file log của từng bước nếu file tồn tại."""
     log_file = workspace / f"{stage}.log"
     if not log_file.exists():
         return []
@@ -116,7 +114,7 @@ def _read_log_tail(workspace: Path, stage: str, n: int = 50) -> List[str]:
 
 
 def _run_stage(db: Database, job_id: str, workspace: Path, stage: str) -> None:
-    # Signal that this job is queued while another extraction is running
+    # Báo rằng công việc này đang chờ vì có luồng trích xuất khác đang chạy
     if not _extraction_semaphore.acquire(blocking=False):
         try:
             progress_path = workspace / "progress.json"
@@ -148,7 +146,7 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
             capture_output=True,
             text=True,
         )
-        # Persist stdout/stderr for debugging even on success
+        # Lưu stdout/stderr để tiện dò lỗi, kể cả khi chạy thành công
         if proc.stdout or proc.stderr:
             try:
                 (workspace / f"{stage}_subprocess.log").write_text(
@@ -210,7 +208,7 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                 }},
             )
     except subprocess.CalledProcessError as exc:
-        # Preserve subprocess output to workspace for post-mortem
+        # Giữ lại output của subprocess trong workspace để dò lỗi sau này
         try:
             (workspace / f"{stage}_subprocess.log").write_text(
                 (exc.stdout or "") + (exc.stderr or ""), encoding="utf-8"
@@ -242,11 +240,11 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
 
 
 _PROGRESS_FIELDS = (
-    # "status" intentionally excluded: MongoDB is the authoritative state machine.
-    # The subprocess writes "reviewing_*" to progress.json BEFORE _run_stage_inner
-    # updates MongoDB. If we overlay status from progress.json, a fast poll can make
-    # the UI show "reviewing_lessons" while DB still has "extracting_lessons", causing
-    # approve_lessons_and_start_chunks to fail its find_one_and_update.
+    # Cố ý không lấy "status" từ progress.json vì MongoDB mới là nguồn trạng thái chuẩn.
+    # Subprocess có thể ghi "reviewing_*" vào progress.json trước khi _run_stage_inner
+    # cập nhật MongoDB. Nếu đè status theo progress.json thì poll nhanh có thể làm UI
+    # thấy "reviewing_lessons" trong khi DB vẫn là "extracting_lessons", dẫn tới lỗi
+    # ở approve_lessons_and_start_chunks khi gọi find_one_and_update.
     "progress_stage",
     "progress_message",
     "progress_current",
@@ -256,7 +254,7 @@ _PROGRESS_FIELDS = (
 
 _EXTRACTION_STATUSES = {"uploaded", "extracting_topics", "extracting_lessons", "extracting_chunks"}
 
-# Maps extraction status → workspace partial file field name
+# Ánh xạ trạng thái trích xuất sang tên file partial trong workspace
 _PARTIAL_FIELD: Dict[str, str] = {
     "extracting_topics": "topics",
     "extracting_lessons": "lessons",
@@ -276,7 +274,7 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
         if workspace:
             wp = Path(workspace)
 
-            # Overlay live progress fields from progress.json
+            # Gộp thêm các trường tiến độ mới nhất từ progress.json
             progress_path = wp / "progress.json"
             if progress_path.exists():
                 try:
@@ -287,8 +285,8 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                 except Exception:
                     pass
 
-            # Overlay partial items written incrementally by the subprocess.
-            # Only expand: never shrink (user edits on already-seen items stay valid).
+            # Gộp thêm các mục partial được subprocess ghi dần.
+            # Chỉ mở rộng, không thu hẹp để giữ hợp lệ các chỉnh sửa người dùng đã thấy.
             partial_field = _PARTIAL_FIELD.get(status)
             if partial_field:
                 partial_path = wp / f"{partial_field}_partial.json"
@@ -300,8 +298,8 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                     except Exception:
                         pass
 
-            # Include recent stage log for live observability
-            # Map extraction status to log file name
+            # Gắn thêm log gần nhất để tiện quan sát trực tiếp
+            # Ánh xạ trạng thái trích xuất sang tên file log
             _LOG_FILE: Dict[str, str] = {
                 "extracting_topics":  "topics",
                 "extracting_lessons": "lessons",
@@ -313,7 +311,7 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
             if log_tail:
                 doc["live_log_tail"] = log_tail
 
-            # Expose how long ago progress.json was last updated (stale detection)
+            # Cho biết progress.json đã bao lâu chưa cập nhật để phát hiện bị treo
             if progress_path.exists():
                 try:
                     age_s = int((datetime.now(timezone.utc).timestamp()) - progress_path.stat().st_mtime)
@@ -321,7 +319,7 @@ def get_job(db: Database, job_id: str) -> Optional[Dict[str, Any]]:
                 except Exception:
                     pass
 
-    # For heavy stage: expose how long ago the last progress update was written
+    # Ở bước nặng, cho biết đã bao lâu chưa có cập nhật tiến độ
     if status == "heavy_stage_running":
         heavy_updated_at = doc.get("heavy_updated_at")
         if isinstance(heavy_updated_at, datetime):
@@ -355,8 +353,8 @@ def update_lessons(db: Database, job_id: str, lessons: List[Any]) -> None:
 
 def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> Dict[str, Any]:
     """
-    Save reviewed chunks AND sync canonical chunk bundle artifacts lesson-by-lesson
-    before updating MongoDB.
+    Lưu các chunk đã duyệt và đồng bộ lại bộ chunk chuẩn theo từng bài học
+    trước khi cập nhật vào MongoDB.
     """
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
@@ -368,7 +366,7 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> Dict[str, Any
 
     working_chunks = [dict(c) for c in (chunks or [])]
 
-    # preserve lesson order as it appears in current payload
+    # Giữ nguyên thứ tự bài học như xuất hiện trong payload hiện tại
     lesson_order: List[str] = []
     seen_lessons = set()
     for c in working_chunks:
@@ -417,7 +415,7 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> Dict[str, Any
         else:
             rebuilt.append(c)
 
-    # defensive: if a lesson was in canonical_by_lesson but not encountered above
+    # Phòng trường hợp bài học có trong canonical_by_lesson nhưng chưa được gặp ở trên
     for lesson_stem in lesson_order:
         if lesson_stem not in replaced_lessons:
             rebuilt.extend(canonical_by_lesson.get(lesson_stem, []))
@@ -430,7 +428,7 @@ def update_chunks(db: Database, job_id: str, chunks: List[Any]) -> Dict[str, Any
 
 
 def set_debug_topic(db: Database, job_id: str, enabled: bool, topic_index: Optional[int]) -> Dict[str, Any]:
-    """Persist debug mode switch + topic selection to MongoDB and workspace/debug_config.json."""
+    """Lưu cờ gỡ lỗi và chủ đề đang chọn vào MongoDB cùng workspace/debug_config.json."""
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return {"ok": False, "error": "Job not found"}
@@ -460,13 +458,13 @@ def set_debug_topic(db: Database, job_id: str, enabled: bool, topic_index: Optio
 
 def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
     """
-    Advance from reviewing_topics → extracting_lessons (atomic).
+    Chuyển trạng thái từ reviewing_topics sang extracting_lessons theo cách nguyên tử.
 
-    Uses find_one_and_update so a concurrent duplicate request gets the
-    updated doc back (status already changed) and simply returns False.
-    Writes approved_topics.json to the workspace so the lessons subprocess
-    can derive lessons from the approved topic page ranges.
-    Clears the stale lessons array in DB so the UI starts fresh.
+    Dùng find_one_and_update để nếu có request trùng đồng thời thì request sau sẽ
+    thấy tài liệu đã đổi trạng thái và chỉ trả về False.
+    Ghi approved_topics.json vào workspace để subprocess bước lessons suy ra bài học
+    từ dải trang của các chủ đề đã duyệt.
+    Đồng thời xoá mảng lessons cũ trong DB để UI bắt đầu lại sạch.
     """
     doc = _col(db).find_one_and_update(
         {"job_id": job_id, "status": "reviewing_topics"},
@@ -494,13 +492,13 @@ def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
 
 def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
     """
-    Advance from reviewing_lessons → extracting_chunks (atomic).
+    Chuyển trạng thái từ reviewing_lessons sang extracting_chunks theo cách nguyên tử.
 
-    Uses find_one_and_update so a concurrent duplicate request gets the
-    updated doc back (status already changed) and simply returns False.
-    Writes approved_lessons.json to the workspace so the chunks subprocess
-    can process only the approved lesson set.
-    Clears the stale chunks array in DB so the UI starts fresh.
+    Dùng find_one_and_update để nếu có request trùng đồng thời thì request sau sẽ
+    thấy tài liệu đã đổi trạng thái và chỉ trả về False.
+    Ghi approved_lessons.json vào workspace để subprocess bước chunks chỉ xử lý
+    tập bài học đã duyệt.
+    Đồng thời xoá mảng chunks cũ trong DB để UI bắt đầu lại sạch.
     """
     doc = _col(db).find_one_and_update(
         {"job_id": job_id, "status": "reviewing_lessons"},
@@ -527,7 +525,7 @@ def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
 
 
 def approve_chunks_final(db: Database, job_id: str) -> bool:
-    """Advance from reviewing_chunks → approved_for_heavy_stage."""
+    """Chuyển trạng thái từ reviewing_chunks sang approved_for_heavy_stage."""
     result = _col(db).update_one(
         {"job_id": job_id, "status": "reviewing_chunks"},
         {"$set": {"status": "approved_for_heavy_stage", "updated_at": _utc_now()}},
@@ -1020,7 +1018,7 @@ def add_chunk_to_lesson(db: Database, job_id: str, payload: Dict[str, Any]) -> D
     chunks = list(doc.get("chunks", []))
     working_chunks = [dict(c) for c in chunks]
 
-    # Collect existing chunks for this lesson + append new one
+    # Gom các chunk hiện có của bài học rồi nối thêm chunk mới
     lesson_chunks = [c for c in working_chunks if c.get("lesson_stem") == lesson_stem]
     lesson_chunks_for_sync = [
         {
@@ -1120,7 +1118,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
     workspace = Path(doc.get("workspace", ""))
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
 
-    # Track current stage so outer except can set heavy_error_stage precisely
+    # Theo dõi bước hiện tại để khối except bên ngoài ghi heavy_error_stage chính xác
     _current_stage = "heavy_preparing"
 
     try:
@@ -1131,7 +1129,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         bundle_path = Path(bundle_path_str)
         book_stem = doc.get("book_stem", bundle_path.name)
 
-        # ── Stage: Prepare — copy bundle to Output/<book_stem> ───────────────
+        # ── Bước chuẩn bị: chép bundle sang Output/<book_stem> ───────────────
         _current_stage = "heavy_preparing"
         _update_heavy_progress(db, job_id, "heavy_preparing",
                                "Sao chép bundle vào thư mục Output…", 2)
@@ -1144,8 +1142,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         shutil.copytree(str(bundle_path), str(output_book_dir))
         _log.info("[heavy/%s] Bundle copy OK -> %s", job_id, output_book_dir)
 
-        # ── Stage: Kaggle — launch CLI subprocess, parse stage markers incrementally ─
-        # Markers emitted by cli.py/utils.py drive all sub-stage transitions.
+        # ── Bước Kaggle: chạy CLI subprocess và đọc marker theo thời gian thực ─
+        # Các marker do cli.py/utils.py phát ra sẽ điều khiển chuyển bước.
         _current_stage = "heavy_kaggle_submitting"
         _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
                                "Đang chuẩn bị Kaggle pack…", 10)
@@ -1304,7 +1302,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
 
         _log.info("[heavy/%s] Kaggle CLI completed OK — bundle at %s", job_id, output_book_dir)
 
-        # ── Stage: Kaggle downloading — confirm bundle path ───────────────────
+        # ── Bước tải từ Kaggle về: xác nhận lại bundle path ───────────────────
         _current_stage = "heavy_kaggle_downloading"
         _update_heavy_progress(db, job_id, "heavy_kaggle_downloading",
                                "Kaggle hoàn thành — đang xác nhận bundle…", 55,
@@ -1312,7 +1310,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         _log.info("[heavy/%s] Stage: heavy_kaggle_downloading — updating bundle_path to %s",
                   job_id, output_book_dir)
 
-        # After Kaggle extraction, bundle is now at Output/<book_stem>
+        # Sau khi kéo kết quả từ Kaggle về, bundle nằm ở Output/<book_stem>
         bundle_path = output_book_dir
         _col(db).update_one(
             {"job_id": job_id},
@@ -1320,7 +1318,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         )
         doc["bundle_path"] = str(bundle_path)
 
-        # ── Stage: Keyword extraction ─────────────────────────────────────────
+        # ── Bước trích xuất từ khoá ───────────────────────────────────────────
         _current_stage = "heavy_keyword_extracting"
         _update_heavy_progress(db, job_id, "heavy_keyword_extracting",
                                "Đang trích xuất từ khóa cho các chunk…", 60,
@@ -1373,7 +1371,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
 
         assert kw_popen.stdout is not None
         for _kw_raw in kw_popen.stdout:
-            # Timeout watchdog
+            # Canh timeout
             if time.monotonic() - _kw_start >= _KW_TIMEOUT_SEC:
                 _kw_timed_out = True
                 kw_popen.kill()
@@ -1452,7 +1450,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         )
 
         if kw_failed > 0:
-            # Explicitly record failure stage before raising so outer except sees it
+            # Ghi rõ bước lỗi trước khi raise để khối except bên ngoài nhận đúng
             _col(db).update_one(
                 {"job_id": job_id},
                 {"$set": {"heavy_error_stage": "heavy_keyword_extracting"}},
@@ -1463,7 +1461,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                 f"Check keyword_subprocess.log for details."
             )
 
-        # ── Stage: Import ─────────────────────────────────────────────────────
+        # ── Bước import ───────────────────────────────────────────────────────
         _current_stage = "heavy_importing_mongo"
         _update_heavy_progress(
             db, job_id, "heavy_importing_mongo",
@@ -1538,7 +1536,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
     except Exception as exc:
         _log.exception("[heavy/%s] Exception at stage %s: %s", job_id, _current_stage, exc)
 
-        # Gather latest subprocess log for diagnostics
+        # Lấy log subprocess mới nhất để phục vụ chẩn đoán
         error_tail: List[str] = []
         for log_name in ("kaggle_subprocess.log", "keyword_subprocess.log"):
             lf = workspace / log_name

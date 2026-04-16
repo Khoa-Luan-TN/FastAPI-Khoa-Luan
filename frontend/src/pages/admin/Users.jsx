@@ -1,4 +1,3 @@
-// pages/admin/Users.jsx
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "../../styles/admin/page.css";
 import "../../styles/admin/minio.css";
@@ -8,7 +7,7 @@ import DataTable from "../../components/DataTable";
 import ConfirmModal from "../../components/ConfirmModal";
 import * as userApi from "../../services/userMongoApi";
 
-// ---- SVG icons ----
+// ---- Biểu tượng SVG ----
 const UserIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -64,7 +63,7 @@ const LockIcon = ({ size = 14 }) => (
   </svg>
 );
 
-// ---- Date formatter ----
+// ---- Định dạng ngày ----
 function fmtDate(s) {
   if (!s) return "—";
   const d = new Date(String(s));
@@ -78,7 +77,7 @@ function fmtDate(s) {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-// ---- Friendly error mapper ----
+// ---- Chuẩn hoá thông báo lỗi ----
 function friendlyError(raw = "") {
   const s = String(raw).toLowerCase();
   if (s.includes("duplicate key") || s.includes("unique") || s.includes("already exists")) {
@@ -96,7 +95,7 @@ function friendlyError(raw = "") {
 }
 
 // ===========================================================
-// ---- Toast component ----
+// ---- Thành phần toast ----
 // ===========================================================
 function Toast({ toasts }) {
   return (
@@ -151,7 +150,7 @@ function useToast() {
 }
 
 // ===========================================================
-// ---- Inline field error ----
+// ---- Lỗi tại từng trường ----
 // ===========================================================
 function FieldError({ msg }) {
   if (!msg) return null;
@@ -168,7 +167,7 @@ function FieldError({ msg }) {
 }
 
 // ===========================================================
-// ---- Shared styles ----
+// ---- Kiểu dùng chung ----
 // ===========================================================
 const inputStyle = (hasError) => ({
   height: 40, borderRadius: 9,
@@ -218,7 +217,7 @@ function ToggleGroup({ options, value, onChange }) {
   );
 }
 
-// Read-only locked field display
+// Hiển thị trường bị khoá, chỉ cho xem
 function LockedField({ value, color, bg, border }) {
   return (
     <div style={{
@@ -236,7 +235,7 @@ function LockedField({ value, color, bg, border }) {
 }
 
 // ===========================================================
-// ---- User Create/Edit Modal ----
+// ---- Modal tạo/sửa tài khoản ----
 // ===========================================================
 function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSelf = false }) {
   const [username, setUsername] = useState("");
@@ -247,7 +246,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Per-field validation errors
+  // Lỗi kiểm tra theo từng trường
   const [errs, setErrs] = useState({});
 
   useEffect(() => {
@@ -300,8 +299,8 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
         const pw = password.trim();
         if (u && u !== (initial?.username || "")) patch.username = u;
         if (pw) patch.password = pw;
-        // user_role is never sent in edit mode
-        // is_active may be changed only by non-self editors
+        // Không gửi user_role ở chế độ chỉnh sửa
+        // is_active chỉ đổi được khi không tự sửa chính mình
         if (!isSelf && (active ?? true) !== (initial?.active ?? true)) patch.is_active = active;
         if (Object.keys(patch).length === 0) {
           setSubmitError("Không có thay đổi nào để cập nhật.");
@@ -336,7 +335,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460, borderRadius: 18, padding: 0, overflow: "hidden" }}>
 
-        {/* Header */}
+        {/* Phần đầu */}
         <div style={{
           padding: "22px 28px 18px", borderBottom: "1px solid #F1F5F9",
           background: "linear-gradient(135deg, #F8FAFF 0%, #EEF2FF 100%)",
@@ -360,10 +359,10 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
           </div>
         </div>
 
-        {/* Body */}
+        {/* Phần thân */}
         <form onSubmit={submit} style={{ padding: "22px 28px 8px", display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Self-edit info banner */}
+          {/* Nhắc nhở khi tự sửa tài khoản */}
           {isSelf && (
             <div style={{
               display: "flex", alignItems: "flex-start", gap: 8,
@@ -375,7 +374,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
             </div>
           )}
 
-          {/* Submit-level error */}
+          {/* Lỗi khi gửi biểu mẫu */}
           {submitError && (
             <div style={{
               display: "flex", alignItems: "flex-start", gap: 8,
@@ -438,7 +437,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
           </FormField>
         </form>
 
-        {/* Footer */}
+        {/* Chân modal */}
         <div style={{
           padding: "16px 28px 22px", borderTop: "1px solid #F1F5F9",
           display: "flex", gap: 10, justifyContent: "flex-end",
@@ -464,7 +463,7 @@ function UserModal({ open, onClose, title, initial, onSave, isEdit = false, isSe
 }
 
 // ===========================================================
-// ---- Main Users page ----
+// ---- Trang quản lý tài khoản ----
 // ===========================================================
 export default function Users() {
   const [q, setQ] = useState("");
@@ -478,8 +477,8 @@ export default function Users() {
   const currentUserId = localStorage.getItem("user_id") || "";
 
   async function reloadUsers() {
-    // Mongo docs already store user_id (back-filled by backend after create/sync).
-    // No PG cross-reference needed.
+    // Mongo đã lưu sẵn user_id do backend điền bù sau khi tạo/đồng bộ.
+    // Không cần đối chiếu thêm với PostgreSQL.
     const mongoData = await userApi.listUsers({ limit: 500, offset: 0 });
     const docs = mongoData.documents || [];
     setUsers(docs.map((d) => ({
@@ -629,10 +628,10 @@ export default function Users() {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
 
-      {/* Toast layer */}
+      {/* Lớp hiển thị toast */}
       <Toast toasts={toast.toasts} />
 
-      {/* Hero banner */}
+      {/* Banner đầu trang */}
       <div className="minio-root-header" style={{
         background: "linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)",
         boxShadow: "0 10px 30px rgba(99,102,241,0.13)",
@@ -650,7 +649,7 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Sticky action bar */}
+      {/* Thanh thao tác cố định */}
       <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--bg, #f0f4ff)", paddingBottom: 2 }}>
         <div className="minio-action-bar" style={{ marginBottom: 14, padding: "10px 14px 10px 10px", gap: 14, minHeight: 58 }}>
           <div className="minio-search">

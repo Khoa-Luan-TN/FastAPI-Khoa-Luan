@@ -1,4 +1,3 @@
-/* admin/page.css */
 *,
 *::before,
 *::after {
@@ -12,7 +11,7 @@
   min-height: 0;
 }
 
-/* ===== Page Header ===== */
+/* ===== Phần đầu trang ===== */
 .page-header {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
@@ -72,7 +71,7 @@
   flex-wrap: wrap;
 }
 
-/* ===== Search Box ===== */
+/* ===== Ô tìm kiếm ===== */
 .search-box {
   flex: 1;
   min-width: 240px;
@@ -117,7 +116,7 @@
   flex-wrap: wrap;
 }
 
-/* ===== Buttons ===== */
+/* ===== Nút bấm ===== */
 .btn {
   padding: 8px 14px;
   border: 1px solid var(--border);
@@ -179,7 +178,7 @@
   cursor: not-allowed;
 }
 
-/* ===== Back Button ===== */
+/* ===== Nút quay lại ===== */
 .back-btn {
   padding: 7px 12px;
   background: var(--bg);
@@ -208,7 +207,7 @@
   border-color: var(--primary-dark);
 }
 
-/* ===== Table Wrapper ===== */
+/* ===== Khung bảng ===== */
 .table-wrapper {
   background: transparent;
   display: flex;
@@ -217,7 +216,7 @@
   min-height: 200px;
 }
 
-/* ===== Empty State ===== */
+/* ===== Trạng thái rỗng ===== */
 .empty-state {
   padding: 60px 20px;
   text-align: center;
@@ -234,7 +233,7 @@
   font-weight: 500;
 }
 
-/* ===== Detail Footer ===== */
+/* ===== Chân trang chi tiết ===== */
 .detail-footer {
   display: flex;
   gap: 10px;
@@ -247,7 +246,7 @@
   flex: 1;
 }
 
-/* ===== Table Actions ===== */
+/* ===== Nhóm thao tác của bảng ===== */
 .table-actions {
   display: flex;
   align-items: center;
@@ -263,7 +262,7 @@
   font-size: 12.5px;
 }
 
-/* ===== Status & Role Badges ===== */
+/* ===== Nhãn trạng thái và vai trò ===== */
 .status-badge {
   display: inline-flex;
   align-items: center;

@@ -11,26 +11,26 @@ function detectKind(folderName) {
   const p = (folderName || "").trim();
   const parts = splitPath(p);
 
-  // images/keyword/<slug__id>  (len=3, parts[1]="keyword")
-  // images/<class>/<subject>/<edu_kind>/<id>  (len=5, parts[3] in edu_kinds)
+  // images/keyword/<slug__id>  (độ dài 3, parts[1]="keyword")
+  // images/<class>/<subject>/<edu_kind>/<id>  (độ dài 5, parts[3] thuộc edu_kinds)
   if (parts[0] === "images") {
     if (parts.length === 3 && parts[1] === "keyword") return "image";
     if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return "image";
     return "unknown";
   }
 
-  // videos/keyword/<slug__id>  (len=3, parts[1]="keyword")
-  // videos/<class>/<subject>/<edu_kind>/<id>  (len=5, parts[3] in edu_kinds)
+  // videos/keyword/<slug__id>  (độ dài 3, parts[1]="keyword")
+  // videos/<class>/<subject>/<edu_kind>/<id>  (độ dài 5, parts[3] thuộc edu_kinds)
   if (parts[0] === "videos") {
     if (parts.length === 3 && parts[1] === "keyword") return "video";
     if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return "video";
     return "unknown";
   }
 
-  // documents/<class>/<subject>/subject  (len=4, parts[3]="subject")
-  // documents/<class>/<subject>/topic/<id>  (len=5, parts[3]="topic")
-  // documents/<class>/<subject>/lesson/<id>  (len=5, parts[3]="lesson")
-  // documents/<class>/<subject>/chunk/<id>  (len=5, parts[3]="chunk")
+  // documents/<class>/<subject>/subject  (độ dài 4, parts[3]="subject")
+  // documents/<class>/<subject>/topic/<id>  (độ dài 5, parts[3]="topic")
+  // documents/<class>/<subject>/lesson/<id>  (độ dài 5, parts[3]="lesson")
+  // documents/<class>/<subject>/chunk/<id>  (độ dài 5, parts[3]="chunk")
   if (parts[0] === "documents") {
     if (parts.length === 4 && parts[3] === "subject") return "subject";
     if (parts.length === 5 && EDU_KINDS.includes(parts[3])) return parts[3];
@@ -40,8 +40,8 @@ function detectKind(folderName) {
   return "unknown";
 }
 
-// Returns the owner type implied by a media folder path:
-// "keyword" | "topic" | "lesson" | "chunk" | null
+// Trả về loại đối tượng sở hữu suy ra từ đường dẫn thư mục media:
+// Có thể là "keyword" | "topic" | "lesson" | "chunk" | null
 function detectMediaOwnerType(folderName) {
   const parts = splitPath((folderName || "").trim());
   if (parts[0] !== "images" && parts[0] !== "videos") return null;
@@ -51,7 +51,7 @@ function detectMediaOwnerType(folderName) {
 }
 
 function encodeObjectKey(key) {
-  // encodeURIComponent nhưng giữ lại dấu /
+  // encodeURIComponent nhưng giữ nguyên dấu /
   return (key || "").split("/").map(encodeURIComponent).join("/");
 }
 
@@ -60,7 +60,7 @@ function nowIso() {
 }
 
 function actorName() {
-  // tuỳ bạn lưu localStorage key gì
+  // Tuỳ cách lưu khoá trong localStorage
   return localStorage.getItem("username") || localStorage.getItem("actor") || "admin-ui";
 }
 
@@ -69,10 +69,10 @@ const DEFAULT_PUBLIC_BASE = (
   import.meta?.env?.VITE_MINIO_PUBLIC_BASE_URL || "http://127.0.0.1:9000"
 ).replace(/\/+$/, "");
 
-// Returns the auto-fill owner id for images/videos edu leaf paths.
-// For images/<class>/<subject>/<edu_kind>/<id> or videos/<class>/<subject>/<edu_kind>/<id>
-// parts[4] is the real owner entity id stored in MinIO folder name.
-// Keyword paths (len=3) are intentionally excluded — parts[2] is a slug, not a MongoDB _id.
+// Trả về owner id tự điền cho đường dẫn lá images/videos của khối giáo dục.
+// Với images/<class>/<subject>/<edu_kind>/<id> hoặc videos/<class>/<subject>/<edu_kind>/<id>
+// thì parts[4] là id đối tượng thật được lưu trong tên thư mục MinIO.
+// Không áp dụng cho đường dẫn keyword (len=3) vì parts[2] là slug, không phải MongoDB _id.
 function getAutoFillOwnerId(folderName) {
   const parts = splitPath((folderName || "").trim());
   if (
@@ -170,7 +170,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
   const [values, setValues] = useState({});
   const [file, setFile] = useState(null);
 
-  // reset khi mở modal / đổi folder; pre-fill auto-derived owner id if available
+  // Đặt lại dữ liệu khi mở modal hoặc đổi thư mục; tự điền owner id nếu suy ra được
   useEffect(() => {
     if (!open) return;
     const init = {};
@@ -183,7 +183,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
 
   if (!open) return null;
 
-  // minio computed (readonly preview)
+  // Giá trị đường dẫn lưu trữ tự tính để xem trước
   const objectKeyPreview = file ? `${folderName}/${file.name}` : "";
   const urlPreview = file
     ? `${DEFAULT_PUBLIC_BASE}/${DEFAULT_BUCKET}/${encodeObjectKey(objectKeyPreview)}`
@@ -243,7 +243,7 @@ export default function InsertMetadataModal({ open, onClose, folderName, onInser
       }
     }
 
-    // ✅ audit: không hiển thị nhưng luôn set
+    // Trường audit không hiển thị nhưng luôn được gán
     meta.created_by = a;
     meta.updated_by = a;
     meta.is_deleted = false;

@@ -1,5 +1,5 @@
 /* =====================================================
-   DASHBOARD
+   BẢNG ĐIỀU KHIỂN
    ===================================================== */
 .dashboard {
   display: flex;
@@ -7,7 +7,7 @@
   gap: 24px;
 }
 
-/* ---- Section ---- */
+/* ---- Khu vực ---- */
 .dash-section {
   display: flex;
   flex-direction: column;
@@ -40,7 +40,7 @@
 }
 
 /* =====================================================
-   WELCOME BANNER
+   BANNER CHÀO MỪNG
    ===================================================== */
 .dash-welcome {
   background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
@@ -236,7 +236,7 @@
   align-items: start;
 }
 
-/* ---- Management Card ---- */
+/* ---- Thẻ quản lý ---- */
 .dash-mgmt-card {
   display: flex;
   align-items: center;
@@ -301,7 +301,7 @@
   transform: translateX(3px);
 }
 
-/* ---- Tech Stack Grid ---- */
+/* ---- Lưới nhóm công nghệ ---- */
 .dash-stack-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

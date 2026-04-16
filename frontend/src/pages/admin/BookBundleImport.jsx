@@ -1,4 +1,3 @@
-// src/pages/admin/BookBundleImport.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   createReviewJob,
@@ -142,7 +141,7 @@ export default function BookBundleImport() {
           clearInterval(pollRef.current);
         }
       } catch (_) {
-        // ignore
+        // bỏ qua lỗi poll tạm thời
       }
     }, POLL_MS);
 
@@ -474,7 +473,7 @@ export default function BookBundleImport() {
       setJob(res.job);
       const canonical = (res.job.chunks || []).map((x) => ({ ...x }));
       setEditChunks(canonical);
-      // Find the first new chunk for this lesson that didn't exist before
+      // Tìm chunk mới đầu tiên của bài học này sau khi dựng lại danh sách
       const prevStems = prevChunks.filter((c) => c.lesson_stem === lessonStem).map((c) => c.start);
       const newIdx = canonical.findIndex(
         (c) => c.lesson_stem === lessonStem && !prevStems.includes(c.start)
@@ -547,7 +546,7 @@ export default function BookBundleImport() {
   return (
     <>
       <div style={s.page}>
-        {/* ── Page header ── */}
+        {/* ── Phần đầu trang ── */}
         <div style={s.pageHeader}>
         <div>
           <h1 style={s.pageTitle}>Nhập sách giáo khoa</h1>
@@ -560,10 +559,10 @@ export default function BookBundleImport() {
         )}
       </div>
 
-      {/* ── Workflow stepper ── */}
+      {/* ── Thanh bước xử lý ── */}
       <WorkflowStepper steps={WORKFLOW_STEPS} activeKey={activeStep} />
 
-      {/* ── Upload phase ── */}
+      {/* ── Bước tải lên ── */}
       {phase === "upload" && (
         <div style={s.card}>
           <div style={s.cardHeader}>
@@ -638,10 +637,10 @@ export default function BookBundleImport() {
         </div>
       )}
 
-      {/* ── Job phase ── */}
+      {/* ── Bước xử lý công việc ── */}
       {phase === "job" && job && (
         <div>
-          {/* Job status card */}
+          {/* Thẻ trạng thái công việc */}
           <JobStatusCard job={job} />
 
           {jobError && (
@@ -662,17 +661,17 @@ export default function BookBundleImport() {
             </div>
           )}
 
-          {/* Extraction progress */}
+          {/* Tiến độ trích xuất */}
           {TRANSIENT_STATUSES.has(job.status) && job.status !== "heavy_stage_running" && (
             <ExtractionProgress job={job} />
           )}
 
-          {/* Heavy stage progress */}
+          {/* Tiến độ bước nặng */}
           {job.status === "heavy_stage_running" && (
             <HeavyStageProgress job={job} />
           )}
 
-          {/* Approved summaries */}
+          {/* Tóm tắt phần đã duyệt */}
           {isPastTopics && (
             <ApprovedSummary label="Chủ đề" items={job.topics} />
           )}
@@ -683,7 +682,7 @@ export default function BookBundleImport() {
             <ApprovedSummary label="Phần" items={job.chunks} />
           )}
 
-          {/* Review panes */}
+          {/* Khu vực duyệt nội dung */}
           {showTopicReview && (
             <TopicReviewPane
               job={job}
@@ -741,7 +740,7 @@ export default function BookBundleImport() {
             />
           )}
 
-          {/* Approved for heavy stage */}
+          {/* Sẵn sàng chạy bước nặng */}
           {job.status === "approved_for_heavy_stage" && (
             <div style={{ ...s.card, marginTop: 16 }}>
               <div style={s.cardHeader}>
@@ -758,7 +757,7 @@ export default function BookBundleImport() {
             </div>
           )}
 
-          {/* Done */}
+          {/* Hoàn tất */}
           {job.status === "heavy_stage_done" && (
             <div style={{ ...s.card, marginTop: 16, border: "1px solid #bbf7d0" }}>
               <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -780,7 +779,7 @@ export default function BookBundleImport() {
   );
 }
 
-// ─── Shared small components ────────────────────────────────────────────────
+// ─── Các thành phần nhỏ dùng chung ───────────────────────────────────────────
 
 function WorkflowStepper({ steps, activeKey }) {
   const activeIdx = steps.findIndex((s) => s.key === activeKey);
@@ -919,7 +918,7 @@ function ApprovedSummary({ label, items }) {
   );
 }
 
-// ─── Extraction + Heavy progress ─────────────────────────────────────────────
+// ─── Tiến độ trích xuất và bước nặng ─────────────────────────────────────────
 
 function ExtractionProgress({ job }) {
   const msg = job.progress_message || STATUS_LABEL[job.status] || job.status;
@@ -1022,7 +1021,7 @@ function HeavyStageProgress({ job }) {
         <span style={{ fontSize: 12, fontWeight: 700, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#1d4ed8" }}>{percent}%</span>
       </div>
       <div style={{ padding: "16px 20px" }}>
-        {/* Stage stepper */}
+        {/* Thanh bước hiện tại */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
           {HEAVY_STAGES_ORDER.map((st, i) => {
             const done = currentIdx > i;
@@ -1041,7 +1040,7 @@ function HeavyStageProgress({ job }) {
           })}
         </div>
 
-        {/* Stale warning */}
+        {/* Cảnh báo quá lâu không cập nhật */}
         {isStale && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 6, background: "#fef3c7", border: "1px solid #fde68a", marginBottom: 10, fontSize: 12, color: "#92400e" }}>
             <span style={{ fontSize: 15 }}>⚠️</span>
@@ -1049,7 +1048,7 @@ function HeavyStageProgress({ job }) {
           </div>
         )}
 
-        {/* Current message */}
+        {/* Thông báo hiện tại */}
         <div style={{ fontSize: 13, color: isError ? "#b91c1c" : isStale ? "#92400e" : "#334155", marginBottom: 10, fontWeight: 500 }}>
           {message}
         </div>
@@ -1059,10 +1058,10 @@ function HeavyStageProgress({ job }) {
           </div>
         )}
 
-        {/* Progress bar */}
+        {/* Thanh tiến độ */}
         <ProgressBar pct={percent} color={isError ? "#ef4444" : "#3b82f6"} style={{ marginBottom: 12 }} />
 
-        {/* Counts */}
+        {/* Các bộ đếm tạm thời */}
         {Object.keys(counts).length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {Object.entries(HEAVY_COUNT_LABELS).map(([key, label]) =>
@@ -1075,7 +1074,7 @@ function HeavyStageProgress({ job }) {
           </div>
         )}
 
-        {/* Log tail */}
+        {/* Đoạn log gần nhất */}
         {logLines.length > 0 && <LogPanel lines={logLines} maxHeight={180} />}
       </div>
     </div>
@@ -1090,7 +1089,7 @@ function ProgressBar({ pct, color = "#3b82f6", style: extra = {} }) {
   );
 }
 
-// ─── Review panes ─────────────────────────────────────────────────────────────
+// ─── Các khung duyệt nội dung ────────────────────────────────────────────────
 
 function ReviewNavHeader({ label, current, total, idx, approvals, loading, canApproveAll, onPrev, onNext, onApproveAll }) {
   const nApproved = approvals.filter(Boolean).length;
@@ -1158,7 +1157,7 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
         onPrev={() => onNavigateTo(topicIdx - 1)} onNext={() => onNavigateTo(topicIdx + 1)} onApproveAll={onApproveAll}
       />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 580px", gap: 24, alignItems: "start" }}>
-        {/* Primary: cut preview */}
+        {/* Chính: bản cắt xem trước */}
         <div style={s.card}>
           <div style={s.cardHeader}>
             <span style={s.cardTitle}>Xem trước — trang {topic.start}–{topic.end}</span>
@@ -1168,7 +1167,7 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
           </div>
         </div>
 
-        {/* Secondary: reference + edit */}
+        {/* Phụ: tham chiếu và chỉnh sửa */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={s.card}>
             <div style={s.cardHeader}>
@@ -1204,10 +1203,10 @@ function TopicReviewPane({ job, editTopics, topicIdx, topicApprovals, canApprove
                 </div>
               </div>
 
-              {/* Debug panel */}
+              {/* Khu vực gỡ lỗi */}
               <DebugTopicPanel job={job} editTopics={editTopics} topicIdx={topicIdx} loading={loading} onSetDebugTopic={onSetDebugTopic} />
 
-              {/* Actions */}
+              {/* Nhóm thao tác */}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
                 <button style={s.btnSmall} disabled={loading} onClick={onSave}>Lưu</button>
                 <button style={s.btnSmall} disabled={loading} onClick={onRecut}>Cắt lại</button>
@@ -1341,7 +1340,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState({ heading: "", title: "", start: "", end: "", content_head: false });
 
-  // Lesson groups (order of first appearance)
+  // Nhóm bài học theo thứ tự xuất hiện đầu tiên
   const lessonStems = useMemo(() => {
     const seen = new Set();
     const order = [];
@@ -1399,7 +1398,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
     <div style={{ marginTop: 16 }}>
       <SectionLabel>Kiểm tra Phần</SectionLabel>
 
-      {/* Lesson tab bar */}
+      {/* Thanh tab bài học */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16, padding: "12px 16px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: s.shadow, alignItems: "center" }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", marginRight: 4 }}>Bài:</span>
         {lessonStems.map((stem) => {
@@ -1432,7 +1431,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
         </div>
       </div>
 
-      {/* Per-lesson navigation */}
+      {/* Điều hướng theo từng bài học */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#475569", maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selectedLessonStem}
@@ -1450,7 +1449,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 580px", gap: 24, alignItems: "start" }}>
-        {/* Primary: chunk preview */}
+        {/* Chính: xem trước phần */}
         <div style={s.card}>
           <div style={s.cardHeader}>
             <span style={s.cardTitle}>
@@ -1462,7 +1461,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
           </div>
         </div>
 
-        {/* Secondary: lesson reference + edit + add */}
+        {/* Phụ: bài tham chiếu, chỉnh sửa và thêm mới */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={s.card}>
             <div style={s.cardHeader}>
@@ -1519,7 +1518,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
             </div>
           </div>
 
-          {/* Add chunk card */}
+          {/* Thẻ thêm phần */}
           {isReviewing && (
             <div style={{ ...s.card, border: showAddForm ? "1px solid #bae6fd" : "1px solid #e2e8f0" }}>
               <div
@@ -1570,7 +1569,7 @@ function ChunkReviewPane({ job, editChunks, chunkIdx, chunkApprovals, canApprove
         </div>
       </div>
 
-      {/* Per-lesson dot nav */}
+      {/* Điều hướng chấm theo bài học */}
       <ItemDotNav
         items={lessonChunksForNav}
         currentIdx={lessonChunkPos >= 0 ? lessonChunkPos : 0}
@@ -1589,7 +1588,7 @@ function SectionLabel({ children }) {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Kiểu nội tuyến ──────────────────────────────────────────────────────────
 
 const shadow = "0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)";
 
