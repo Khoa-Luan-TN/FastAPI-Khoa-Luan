@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import json
 import re
-
+import time as _time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -9,6 +10,26 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadF
 from fastapi.responses import FileResponse
 
 from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.mongo.book_review_service import (
+    add_chunk_to_lesson,
+    approve_chunks_final,
+    approve_lessons_and_start_chunks,
+    approve_topics_and_start_lessons,
+    create_job,
+    delete_chunk_from_lesson,
+    get_job,
+    launch_heavy_stage,
+    recut_chunk_preview,
+    recut_lesson_preview,
+    recut_topic_preview,
+    set_debug_topic as set_debug_topic_service,
+    sync_chunk_item_to_bundle,
+    sync_lesson_item_to_bundle,
+    sync_topic_item_to_bundle,
+    update_chunks as update_chunks_service,
+    update_lessons,
+    update_topics,
+)
 from app.services.sync.sync_service import sync_doc_to_postgres
 
 router = APIRouter()
@@ -33,7 +54,6 @@ def _serial(doc: dict) -> dict:
 
 
 def _get_or_404(job_id: str) -> Dict[str, Any]:
-    from app.services.mongo.book_review_service import get_job
     job = get_job(db, job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Review job {job_id} not found")
@@ -111,6 +131,7 @@ def _find_topic_pdf(bundle_path: str, topic: dict) -> Path | None:
         return pdfs[0] if pdfs else None
     return None
 
+
 def _find_lesson_pdf(bundle_path: str, lesson: dict) -> Path | None:
     bp = Path(bundle_path)
 
@@ -141,14 +162,11 @@ async def create_review_job(
     file: UploadFile = File(...),
 ):
     _actor(request)
-
     fn = (file.filename or "").lower()
     if not fn.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
     pdf_bytes = await file.read()
-
-    from app.services.mongo.book_review_service import create_job
     job = create_job(
         db,
         class_name=class_name.strip(),
@@ -206,8 +224,8 @@ async def serve_topic_pdf(job_id: str, idx: int):
                 media_type="application/pdf",
                 headers={"Content-Disposition": "inline"},
             )
-
     raise HTTPException(status_code=404, detail="Topic PDF not found — extraction may still be running")
+
 
 @router.get("/book-review/jobs/{job_id}/pdf/lesson/{idx}", summary="Serve lesson preview PDF")
 async def serve_lesson_pdf(job_id: str, idx: int):
@@ -286,8 +304,7 @@ async def set_debug_topic(job_id: str, body: Dict[str, Any] = Body(...)):
     enabled = bool(body.get("enabled", False))
     raw_idx = body.get("topic_index")
     topic_index = int(raw_idx) if raw_idx is not None else None
-    from app.services.mongo.book_review_service import set_debug_topic as _set
-    result = _set(db, job_id, enabled, topic_index)
+    result = set_debug_topic_service(db, job_id, enabled, topic_index)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result["error"])
     return result
@@ -300,7 +317,6 @@ async def patch_topic(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("topics", []))):
         raise HTTPException(status_code=404, detail="Topic index out of range")
-    from app.services.mongo.book_review_service import sync_topic_item_to_bundle
     result = sync_topic_item_to_bundle(db, job_id, idx, body)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Topic sync failed"))
@@ -312,31 +328,28 @@ async def recut_topic(job_id: str, idx: int):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("topics", []))):
         raise HTTPException(status_code=404, detail="Topic index out of range")
-    from app.services.mongo.book_review_service import recut_topic_preview
     result = recut_topic_preview(db, job_id, idx, job)
     if not result["ok"]:
         raise HTTPException(status_code=500, detail=result["error"])
     return {"ok": True}
+
 
 @router.patch("/book-review/jobs/{job_id}/lessons/{idx}", summary="Sync a single lesson item to bundle")
 async def patch_lesson(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("lessons", []))):
         raise HTTPException(status_code=404, detail="Lesson index out of range")
-
-    from app.services.mongo.book_review_service import sync_lesson_item_to_bundle
     result = sync_lesson_item_to_bundle(db, job_id, idx, body)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Lesson sync failed"))
     return {"ok": True}
+
 
 @router.post("/book-review/jobs/{job_id}/lessons/{idx}/recut", summary="Recut lesson preview from source PDF")
 async def recut_lesson(job_id: str, idx: int):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("lessons", []))):
         raise HTTPException(status_code=404, detail="Lesson index out of range")
-
-    from app.services.mongo.book_review_service import recut_lesson_preview
     result = recut_lesson_preview(db, job_id, idx, job)
     if not result.get("ok"):
         raise HTTPException(status_code=500, detail=result.get("error", "Recut failed"))
@@ -348,7 +361,6 @@ async def delete_chunk(job_id: str, idx: int):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("chunks", []))):
         raise HTTPException(status_code=404, detail="Chunk index out of range")
-    from app.services.mongo.book_review_service import delete_chunk_from_lesson
     result = delete_chunk_from_lesson(db, job_id, idx)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Delete chunk failed"))
@@ -360,7 +372,6 @@ async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("chunks", []))):
         raise HTTPException(status_code=404, detail="Chunk index out of range")
-    from app.services.mongo.book_review_service import sync_chunk_item_to_bundle
     result = sync_chunk_item_to_bundle(db, job_id, idx, body)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Chunk sync failed"))
@@ -372,7 +383,6 @@ async def patch_chunk(job_id: str, idx: int, body: Dict[str, Any] = Body(...)):
 @router.put("/book-review/jobs/{job_id}/topics", summary="Save reviewed topics (bulk)")
 async def update_topics(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    from app.services.mongo.book_review_service import update_topics
     update_topics(db, job_id, body.get("topics", []))
     return {"ok": True}
 
@@ -380,7 +390,6 @@ async def update_topics(job_id: str, body: Dict[str, Any] = Body(...)):
 @router.put("/book-review/jobs/{job_id}/lessons", summary="Save reviewed lessons")
 async def update_lessons(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    from app.services.mongo.book_review_service import update_lessons
     update_lessons(db, job_id, body.get("lessons", []))
     return {"ok": True}
 
@@ -388,8 +397,6 @@ async def update_lessons(job_id: str, body: Dict[str, Any] = Body(...)):
 @router.put("/book-review/jobs/{job_id}/chunks", summary="Save reviewed chunks")
 async def update_chunks(job_id: str, body: Dict[str, Any] = Body(...)):
     _get_or_404(job_id)
-    from app.services.mongo.book_review_service import update_chunks as update_chunks_service
-
     result = update_chunks_service(db, job_id, body.get("chunks", []))
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Chunk sync failed"))
@@ -403,8 +410,6 @@ async def recut_chunk(job_id: str, idx: int):
     job = _get_or_404(job_id)
     if not (0 <= idx < len(job.get("chunks", []))):
         raise HTTPException(status_code=404, detail="Chunk index out of range")
-
-    from app.services.mongo.book_review_service import recut_chunk_preview
     result = recut_chunk_preview(db, job_id, idx)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Chunk recut failed"))
@@ -422,7 +427,6 @@ async def add_chunk(job_id: str, body: Dict[str, Any] = Body(...)):
             status_code=409,
             detail=f"Job must be in 'reviewing_chunks' status to add a chunk (current: {job.get('status')})",
         )
-    from app.services.mongo.book_review_service import add_chunk_to_lesson
     result = add_chunk_to_lesson(db, job_id, body)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error", "Add chunk failed"))
@@ -444,7 +448,6 @@ _PAST_LESSONS_STATUSES = {
 
 @router.post("/book-review/jobs/{job_id}/approve-topics", summary="Approve topics and start lesson extraction")
 async def approve_topics(job_id: str):
-    from app.services.mongo.book_review_service import approve_topics_and_start_lessons
     if not approve_topics_and_start_lessons(db, job_id):
         job = _get_or_404(job_id)
         current = job["status"]
@@ -459,9 +462,6 @@ async def approve_topics(job_id: str):
 
 @router.post("/book-review/jobs/{job_id}/approve-lessons", summary="Approve lessons and start chunk extraction")
 async def approve_lessons(job_id: str):
-    from app.services.mongo.book_review_service import approve_lessons_and_start_chunks
-    import time as _time
-
     ok = approve_lessons_and_start_chunks(db, job_id)
     if not ok:
         # Có trường hợp hiếm subprocess ghi "reviewing_lessons" vào progress.json trước
@@ -493,7 +493,6 @@ _PAST_CHUNKS_STATUSES = {
 
 @router.post("/book-review/jobs/{job_id}/approve-chunks", summary="Approve chunks and mark ready for heavy stage")
 async def approve_chunks(job_id: str):
-    from app.services.mongo.book_review_service import approve_chunks_final
     if not approve_chunks_final(db, job_id):
         job = _get_or_404(job_id)
         current = job["status"]
@@ -521,8 +520,6 @@ async def trigger_heavy(request: Request, job_id: str):
             status_code=409,
             detail=f"Job must be in 'approved_for_heavy_stage' status (current: {job['status']})",
         )
-
-    from app.services.mongo.book_review_service import launch_heavy_stage
     launch_heavy_stage(
         db,
         job_id,

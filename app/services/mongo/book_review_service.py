@@ -4,9 +4,11 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
-import time
 import threading
+import time
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +16,8 @@ from typing import Any, Dict, List, Optional
 
 from pymongo import ReturnDocument
 from pymongo.database import Database
+
+from app.services.mongo.book_bundle_import_service import import_book_bundle
 
 COLLECTION = "book_review_jobs"
 
@@ -26,7 +30,6 @@ _GEMINI_DIR = _PROJECT_ROOT / "gemini_pipeline"
 _REVIEW_WORKSPACE = _GEMINI_DIR / "ReviewWorkspace"
 _GEMINI_PYTHON = _GEMINI_DIR / ".env" / "bin" / "python"
 _LIGHT_SCRIPT = _GEMINI_DIR / "scripts" / "light_extract_job.py"
-_KEYWORD_SCRIPT = _GEMINI_DIR / "scripts" / "keyword_extract_book.py"
 _GEMINI_CONFIG = _GEMINI_DIR / "config.env"
 
 
@@ -720,8 +723,7 @@ _SYNC_SCRIPT = _GEMINI_DIR / "scripts" / "sync_bundle.py"
 
 
 def _run_sync_script(kind: str, data: dict, timeout: int = 120) -> dict:
-    """Call sync_bundle.py in the gemini_pipeline venv subprocess."""
-    import tempfile
+    """Gọi sync_bundle.py bằng môi trường gemini_pipeline."""
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
     input_path: Optional[str] = None
     try:
@@ -882,7 +884,6 @@ def delete_chunk_from_lesson(db: Database, job_id: str, idx: int) -> Dict[str, A
         chunk_lesson_dir = Path(bundle_path) / "Chunk" / lesson_stem
         try:
             if chunk_lesson_dir.exists():
-                import shutil
                 shutil.rmtree(chunk_lesson_dir)
         except Exception as exc:
             return {"ok": False, "error": f"Failed to remove empty lesson chunk dir: {exc}"}
@@ -1093,9 +1094,6 @@ def _update_heavy_progress(
 
 
 def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
-    import shutil
-    from app.services.mongo.book_bundle_import_service import import_book_bundle
-
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return

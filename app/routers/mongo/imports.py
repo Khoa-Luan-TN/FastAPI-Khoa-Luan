@@ -1,11 +1,14 @@
-# app/routers/mongo/imports.py
 import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Body, Request, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Request
 
 from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.mongo.book_bundle_import_service import (
+    _DEFAULT_SUBJECT_TYPE,
+    import_book_bundle,
+)
 from app.services.sync.sync_service import sync_doc_to_postgres
 
 router = APIRouter()
@@ -27,7 +30,6 @@ async def import_book_bundle_endpoint(
     request: Request,
     body: Dict[str, Any] = Body(...),
 ):
-   
     actor = _get_actor(request)
 
     bundle_path = str(body.get("bundle_path") or "").strip()
@@ -42,7 +44,6 @@ async def import_book_bundle_endpoint(
     if not subject_name:
         raise HTTPException(status_code=422, detail="subject_name is required")
 
-    from app.services.mongo.book_bundle_import_service import _DEFAULT_SUBJECT_TYPE
     subject_type = str(body.get("subject_type") or "").strip() or _DEFAULT_SUBJECT_TYPE
 
     raw_topic_names  = body.get("topic_names")
@@ -68,7 +69,7 @@ async def import_book_bundle_endpoint(
         if isinstance(raw_lesson_names, dict) else None
     )
 
-    # Fail-fast: validate bundle structure before starting the import.
+    # Kiểm tra sớm cấu trúc bundle trước khi bắt đầu import.
     _bundle_dir = Path(bundle_path)
     if not _bundle_dir.is_dir():
         raise HTTPException(status_code=422, detail=f"bundle_path does not exist or is not a directory: {bundle_path}")
@@ -93,8 +94,6 @@ async def import_book_bundle_endpoint(
             status_code=422,
             detail=f"Bundle is missing required subdirectory/ies: {', '.join(_missing_dirs)}. Expected Topic/, Lesson/, and Chunk/ inside bundle_path.",
         )
-
-    from app.services.mongo.book_bundle_import_service import import_book_bundle
 
     report = import_book_bundle(
         db,
