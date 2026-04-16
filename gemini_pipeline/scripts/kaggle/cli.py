@@ -36,6 +36,7 @@ def setup_logging(log_file: Path | None, verbose: bool) -> None:
     )
 
 def main():
+    # dùng để đọc tham số dòng lệnh
     ap = argparse.ArgumentParser()
     ap.add_argument("book_stem", help="VD: Tin-hoc-10-ket-noi-tri-thuc")
     ap.add_argument("--skip-dataset", action="store_true", help="Không build+version dataset (chỉ push kernel + download)")
@@ -86,12 +87,15 @@ def main():
     else:
         log.info("Skip dataset build/version.")
 
-    # 2) push kernel + wait (with stale-dataset retry) then download output
+
+    # Đoạn này chạy kaggle chính
     _MAX_KERNEL_ATTEMPTS = 3
     _STALE_RETRY_DELAY = 40
-    # Default generic name for --skip-kernel path; overridden to request-specific inside the loop
+
+    # Đặt tên zip kì vọng
     expected_zip = DL_DIR / f"{args.book_stem}_postprocessed.zip"
 
+    # Nếu không skip kernel sẽ chạy vào đây
     if not args.skip_kernel:
         for _ka in range(1, _MAX_KERNEL_ATTEMPTS + 1):
             log.info(

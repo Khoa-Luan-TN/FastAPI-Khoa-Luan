@@ -242,12 +242,8 @@ def run_extract_and_split_chunks_for_book(
     progress_cb=None,
     status_cb=None,
 ) -> Dict[str, Any]:
-    """
-    Hybrid revert:
-    - giữ khung hàm mới để không vỡ review-first flow
-    - bỏ verify phụ bằng Gemini
-    - quay về 1 lần gọi Gemini / 1 lesson như logic cũ
-    """
+    
+    # chuẩn bị thư mục đầu ra cho Chunk
     book_dir = Path(book_dir)
     lesson_dir = book_dir / "Lesson"
     chunk_root = book_dir / "Chunk"
@@ -256,6 +252,7 @@ def run_extract_and_split_chunks_for_book(
     if not lesson_dir.exists():
         raise RuntimeError(f"Không thấy thư mục Lesson: {lesson_dir}")
 
+    # Lấy ra các file pdf của lesson
     lesson_pdfs = sorted(lesson_dir.rglob("*.pdf"))
     if not lesson_pdfs:
         raise RuntimeError(f"Không có file PDF nào trong: {lesson_dir}")
@@ -271,10 +268,12 @@ def run_extract_and_split_chunks_for_book(
     _total = len(lesson_pdfs)
     _done = 0
 
+    # Duyệt các file pdf
     for lesson_pdf in lesson_pdfs:
         lesson_stem = lesson_pdf.stem
 
         try:
+            # Nếu đã có rồi thì không chạy lại
             if resume:
                 lesson_chunk_dir = chunk_root / lesson_stem
                 if lesson_chunk_dir.exists() and any(lesson_chunk_dir.rglob("*.pdf")):
@@ -282,10 +281,15 @@ def run_extract_and_split_chunks_for_book(
                         {"lesson": str(lesson_pdf), "reason": "Đã có chunk pdf, skip"}
                     )
                     continue
+            
 
+            # Tính tổng số trang của lesson
             total_pages = len(PdfReader(str(lesson_pdf)).pages)
+            # Lấy prompt gemini để lấy được danh sách các chunk trong lesson
+            # vị trí, contend_head, heading
             prompt = build_chunk_prompt_start_head(total_pages=total_pages)
 
+            # Gọi gemini và nhận dữ liệu trả về
             raw: Dict[str, Any] = extract_structure_from_pdf(
                 key_manager,
                 str(lesson_pdf),
@@ -294,9 +298,11 @@ def run_extract_and_split_chunks_for_book(
                 status_cb=status_cb,
             )
 
+            # Lấy được danh sách chunk trả về từ lesson 
             list_chunk_raw = raw.get("list_chunk")
             items: List[Tuple[int, bool, str, str]] = []
-
+            
+            # In log
             print(f"\\n[CHUNK] lesson={lesson_pdf.name} total_pages={total_pages}")
             print("[CHUNK][RAW]", json.dumps(list_chunk_raw, ensure_ascii=False))
 
@@ -305,8 +311,8 @@ def run_extract_and_split_chunks_for_book(
 
             print("[CHUNK][FLAT]", items)
 
-            # ── Post-filter: reject junk / sub-item / exercise candidates ────
             filtered: List[Tuple[int, bool, str, str]] = []
+            # Lọc rác
             for s, ch, heading, title in items:
                 is_junk, reason = _is_junk_candidate(heading, title)
                 if is_junk:
@@ -326,6 +332,13 @@ def run_extract_and_split_chunks_for_book(
                 print(f"[CHUNK][FILTER] {len(items)} raw -> {len(filtered)} after filtering")
             items = filtered
 
+            # Tính vị trí start và end của chunk dựa vào start 
+            """
+                [
+                    {"chunk_01": {"start": 1, "end": 2, "heading": "1", "title": "Khái niệm", "content_head": True}},
+                    {"chunk_02": {"start": 3, "end": 5, "heading": "2", "title": "Ví dụ", "content_head": False}}
+                ]
+            """
             list_chunk_computed = _compute_chunks_from_start_head(items, total_pages)
             print("[CHUNK][COMPUTED]", json.dumps(list_chunk_computed, ensure_ascii=False))
 
@@ -337,9 +350,11 @@ def run_extract_and_split_chunks_for_book(
                     }
                 )
                 continue
-
+                
+            # Đếm chunk
             chunk_count = len(list_chunk_computed)
 
+            # Tạo thư mục chunk cho lesson
             lesson_chunk_dir = chunk_root / lesson_stem
             lesson_chunk_dir.mkdir(parents=True, exist_ok=True)
 
@@ -351,9 +366,11 @@ def run_extract_and_split_chunks_for_book(
                 title = obj.get("title", "") or ""
                 content_head = bool(obj.get("content_head", False))
 
+                # Tạo thư mục chunk
                 chunk_dir = lesson_chunk_dir / chunk_name
                 chunk_dir.mkdir(parents=True, exist_ok=True)
 
+                # cắt pdf thành chunk theo range
                 paths = split_pdf_by_ranges(
                     src_pdf=str(lesson_pdf),
                     ranges=[(chunk_name, start, end)],
@@ -363,12 +380,13 @@ def run_extract_and_split_chunks_for_book(
 
                 if not paths:
                     continue
-
+                # Đường dẫn file PDF chunk mới tạo
                 chunk_pdf_path = paths[0]
                 summary["chunk_pdf_files"].append(str(chunk_pdf_path))
 
                 meta_path = chunk_pdf_path.with_suffix(".json")
 
+                # Thêm vào payload để tạo json
                 payload = {
                     "source_lesson_pdf": str(lesson_pdf),
                     "lesson_stem": lesson_stem,
@@ -383,7 +401,6 @@ def run_extract_and_split_chunks_for_book(
                     "chunk_count": chunk_count,
                 }
 
-                # fallback 1 chunk full lesson => coi như bài thực hành để bạn test/import thuận hơn
                 if (
                     chunk_count == 1
                     and heading.strip() == ""
@@ -419,3 +436,4 @@ def run_extract_and_split_chunks_for_book(
                     pass
 
     return summary
+

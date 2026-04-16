@@ -166,12 +166,17 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                 )
             except Exception:
                 pass
-
+        
+        # đọc chỗ này để lấy result
         result_path = workspace / "result.json"
         result = json.loads(result_path.read_text(encoding="utf-8"))
 
+        # Nếu thành công
         if result.get("ok"):
+            # Stage của topic
             if stage == "topics":
+                # Cập nhật xuống MongoDB vào book_review_jobs
+                # Sau khi người dùng duyệt xong sẽ đi vào approve_topics_and_start_lessons
                 _col(db).update_one(
                     {"job_id": job_id, "status": "extracting_topics"},
                     {"$set": {
@@ -467,17 +472,9 @@ def set_debug_topic(db: Database, job_id: str, enabled: bool, topic_index: Optio
     )
     return {"ok": True, "debug_single_topic_enabled": enabled, "debug_topic_index": topic_index}
 
-
+# Sau khi người dùng duyệt Topic sẽ đi vào đây
+# chốt danh sách topic đã duyệt và xoá lesson cũ
 def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
-    """
-    Chuyển trạng thái từ reviewing_topics sang extracting_lessons theo cách nguyên tử.
-
-    Dùng find_one_and_update để nếu có request trùng đồng thời thì request sau sẽ
-    thấy tài liệu đã đổi trạng thái và chỉ trả về False.
-    Ghi approved_topics.json vào workspace để subprocess bước lessons suy ra bài học
-    từ dải trang của các chủ đề đã duyệt.
-    Đồng thời xoá mảng lessons cũ trong DB để UI bắt đầu lại sạch.
-    """
     doc = _col(db).find_one_and_update(
         {"job_id": job_id, "status": "reviewing_topics"},
         {"$set": {
@@ -496,22 +493,15 @@ def approve_topics_and_start_lessons(db: Database, job_id: str) -> bool:
         json.dumps(approved_topics, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    # Đi vào _run_stage với stage là lesson
     threading.Thread(
         target=_run_stage, args=(db, job_id, workspace, "lessons"), daemon=True
     ).start()
     return True
 
 
+# Sau khi người dùng duyệt Lesson sẽ đi vào đây
 def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
-    """
-    Chuyển trạng thái từ reviewing_lessons sang extracting_chunks theo cách nguyên tử.
-
-    Dùng find_one_and_update để nếu có request trùng đồng thời thì request sau sẽ
-    thấy tài liệu đã đổi trạng thái và chỉ trả về False.
-    Ghi approved_lessons.json vào workspace để subprocess bước chunks chỉ xử lý
-    tập bài học đã duyệt.
-    Đồng thời xoá mảng chunks cũ trong DB để UI bắt đầu lại sạch.
-    """
     doc = _col(db).find_one_and_update(
         {"job_id": job_id, "status": "reviewing_lessons"},
         {"$set": {
@@ -535,9 +525,8 @@ def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
     ).start()
     return True
 
-
+# Đợi người dùng duyệt xong và cập nhật job
 def approve_chunks_final(db: Database, job_id: str) -> bool:
-    """Chuyển trạng thái từ reviewing_chunks sang approved_for_heavy_stage."""
     result = _col(db).update_one(
         {"job_id": job_id, "status": "reviewing_chunks"},
         {"$set": {"status": "approved_for_heavy_stage", "updated_at": _utc_now()}},
@@ -545,6 +534,8 @@ def approve_chunks_final(db: Database, job_id: str) -> bool:
     return result.modified_count > 0
 
 
+# Khi bắt đầu chạy nặng thì vào đây
+# Cập nhật job và bắt đầu chạy nặng
 def launch_heavy_stage(db: Database, job_id: str, actor: str, sync_one) -> None:
     _col(db).update_one(
         {"job_id": job_id},
@@ -1103,6 +1094,7 @@ def _update_heavy_progress(
 
 
 def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
+    # cập nhật job
     doc = _col(db).find_one({"job_id": job_id})
     if not doc:
         return
@@ -1122,7 +1114,9 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         }},
     )
 
+    # Thư mục làm việc của job
     workspace = Path(doc.get("workspace", ""))
+    # interpreter Python sẽ dùng để chạy subprocess
     python_exec = str(_GEMINI_PYTHON) if _GEMINI_PYTHON.exists() else "python"
 
     # Theo dõi bước hiện tại để khối except bên ngoài ghi heavy_error_stage chính xác
@@ -1132,7 +1126,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         bundle_path_str = doc.get("bundle_path")
         if not bundle_path_str:
             raise ValueError("bundle_path not set — extraction may have failed")
-
+        
+        # Lấy bundle path và book_stem
         bundle_path = Path(bundle_path_str)
         book_stem = doc.get("book_stem", bundle_path.name)
 
@@ -1151,6 +1146,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
 
         # ── Bước Kaggle: chạy CLI subprocess và đọc marker theo thời gian thực ─
         # Các marker do cli.py/utils.py phát ra sẽ điều khiển chuyển bước.
+        # Đổi stage
         _current_stage = "heavy_kaggle_submitting"
         _update_heavy_progress(db, job_id, "heavy_kaggle_submitting",
                                "Đang chuẩn bị Kaggle pack…", 10)
@@ -1161,6 +1157,7 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
         kaggle_log_lines: List[str] = []
         kaggle_returncode = -1
 
+        # Mở process khác để chạy Kaggle và đọc log theo thời gian thực
         with subprocess.Popen(
             [python_exec, "-m", "scripts.kaggle.cli", book_stem, "--overwrite"],
             cwd=str(_GEMINI_DIR),

@@ -21,7 +21,6 @@ from .gemini_runner import extract_structure_from_pdf
 
 
 def _make_preview_first_pages(src_pdf: str, first_n_pages: int = 20) -> str:
-    """Create a temp PDF with only the first N pages for TOC extraction."""
     reader = PdfReader(src_pdf)
     n = min(max(1, first_n_pages), len(reader.pages))
     writer = PdfWriter()
@@ -56,20 +55,6 @@ def verify_topics_and_get_offset(
     progress_cb=None,
     status_cb=None,
 ) -> int:
-    """
-    Verify topic start pages using binary Gemini calls on single-page PDFs.
-
-    For each topic:
-      predicted_pdf_page = start_printed + raw_offset
-      Probe order: predicted, +1, -1, +2, -2, ..., +probe_radius, -probe_radius
-      Stop at first page where Gemini confirms the topic heading.
-      verified_offset = matched_page - start_printed
-
-    Final offset = most common verified_offset across all topics.
-    Falls back to raw_offset if no topic verifies.
-
-    progress_cb: optional callable(current: int, total: int, message: str)
-    """
     try:
         raw_offset = int(raw_data.get("offset", 0))
     except (TypeError, ValueError):

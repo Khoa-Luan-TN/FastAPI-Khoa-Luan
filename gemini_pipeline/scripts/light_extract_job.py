@@ -249,36 +249,51 @@ def _build_topic_pdfs(
             encoding="utf-8",
         )
 
-
+# Luồng Topic
 def _run_topics(workspace: Path, config: dict) -> None:
+    # Lấy đường dẫn đến sách pdf gốc
     pdf_path = config["source_pdf_path"]
+    # Cấu hình Gemini
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", _DEFAULT_MODEL)
 
+    # Lấy tên file làm mã định danh (file_name.pdf)
     pdf_stem = Path(pdf_path).stem
+    # Thư mục output cho cuốn sách
     unique_output_root = _GEMINI_ROOT / "Output" / pdf_stem
 
+    # Tạo log
     log = _make_stage_logger(workspace, "topics")
     log(f"stage=topics  pdf={Path(pdf_path).name}  output_root={unique_output_root}")
 
+    # Ghi tiến trình
     _write_progress(
         workspace,
         status="extracting_topics",
         progress_stage="preparing_topics",
         progress_message="Đang chuẩn bị tách chủ đề...",
     )
+    # Tạo đường dẫn debug trong workspace
     rotation_state_path = workspace / "gemini_rotation_state.json"
     log(f"preparing_topics: loading key manager | debug_rotation_state={rotation_state_path}")
+    # Tạo key_manager để chuẩn bị gọi gemini
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
 
+    # đếm toàn bộ số trang của file pdf
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
+    # ghi log
     log(f"PDF pages: {total_pages_full}")
 
+    # Tạo các biến tạm
     _active_stage: list[str] = ["waiting_gemini_topics"]
+    # Làm tới đâu
     _active_cur: list[int | None] = [None]
+    # Tổng số cần làm
     _active_tot: list[int | None] = [None]
+    # Phần trăm
     _active_pct: list[int | None] = [None]
 
+    # callback nhận thông báo trạng thái từ các hàm gọi Gemini
     def _gemini_status_cb(msg: str) -> None:
         is_all_cooldown = "Tất cả" in msg and "cooldown" in msg
         stage = "waiting_gemini_key_cooldown" if is_all_cooldown else _active_stage[0]
@@ -299,13 +314,19 @@ def _run_topics(workspace: Path, config: dict) -> None:
         progress_stage="uploading_pdf_to_gemini",
         progress_message="Đang tải PDF lên Gemini...",
     )
+    # =================== Phía trên chưa gọi Gemini ================== #
     log("uploading_pdf_to_gemini: building 20-page preview and uploading")
 
+    # chuẩn bị prompt cho gemini
+    # Đọc mục lục và cấu trúc sách 
+    # Lấy offset (số trang lệch)
     prompt = (
         "QUAN TRỌNG: File PDF này chỉ là BẢN XEM TRƯỚC (preview) gồm 20 trang đầu để đọc MỤC LỤC.\n"
         "Hãy trả về offset, printed_end_of_main, và start_printed cho từng topic/lesson.\n\n"
         + build_topic_lesson_prompt()
     )
+
+    # Trích xuất ra 2 trang đầu của cuốn PDF
     preview_pdf = _make_preview_first_pages(pdf_path, first_n_pages=20)
     log("preview PDF ready, sending to Gemini")
 
@@ -319,7 +340,34 @@ def _run_topics(workspace: Path, config: dict) -> None:
     )
     log("waiting_gemini_topics: Gemini request sent, waiting for response")
 
+    # Gọi Gemini để xử lí trả về .json theo prompt đã định nghĩa 
     try:
+        # Nhận về Dictionary có dạng
+        """ 
+            {
+                "list_topic": [
+                    {
+                    "topic_01": {
+                        "start": 5,
+                        "end": 12,
+                        "heading": "Chủ đề 1",
+                        "title": "Máy tính và xã hội tri thức"
+                    }
+                    }
+                ],
+                "list_lesson": [
+                    {
+                    "lesson_01": {
+                        "start": 5,
+                        "end": 8,
+                        "heading": "Bài 1",
+                        "title": "Thông tin và xử lí thông tin"
+                    }
+                    }
+                ],
+                "offset": 0
+            }
+        """
         data = extract_structure_from_pdf(
             key_manager,
             preview_pdf,
@@ -333,10 +381,12 @@ def _run_topics(workspace: Path, config: dict) -> None:
         except Exception:
             pass
 
+    # đếm kết quả Gemini trả về
     n_topics_raw = len(data.get("list_topic", []))
     n_lessons_raw = len(data.get("list_lesson", []))
     log(f"Gemini response received: {n_topics_raw} topics, {n_lessons_raw} lessons (raw)")
 
+    # Xác minh độ lệch trang
     _active_stage[0] = "verifying_topic_offsets"
     _active_cur[0] = 0
     _active_tot[0] = n_topics_raw
@@ -352,6 +402,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
     )
     log(f"verifying_topic_offsets: {n_topics_raw} topics to verify")
 
+    # Hàm callback verify để xác nhận đã xác minh các topic nào rồi (xác minh offset của topic)
     def _verify_cb(current: int, total: int, message: str) -> None:
         pct = round(current * 100 / total) if total else 0
         _active_cur[0] = current
@@ -368,6 +419,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
         )
         log(f"verify {current}/{total}: {message}")
 
+    # Verify chính cho offset topic
     final_offset = verify_topics_and_get_offset(
         key_manager,
         pdf_path,
@@ -377,11 +429,40 @@ def _run_topics(workspace: Path, config: dict) -> None:
         progress_cb=_verify_cb,
         status_cb=_gemini_status_cb,
     )
+    # Sau khi có offset cuối cùng thì cập nhật offset
     data["offset"] = final_offset
     log(f"verified offset={final_offset}")
 
+    # Chuẩn hoá dữ liệu cho đẹp
     data = normalize_manifest(data, total_pages=total_pages_full)
 
+    # Sau khi chạy xong thì data sẽ có dict dạng
+    """
+        {
+            "list_topic": [
+                {
+                    "topic_01": {
+                        "start": 7,
+                        "end": 18,
+                        "heading": "Chủ đề 1.",
+                        "title": "..."
+                    }
+                }
+            ],
+            "list_lesson": [
+                {
+                    "lesson_01": {
+                        "start": 7,
+                        "end": 10,
+                        "heading": "Bài 1.",
+                        "title": "..."
+                    }
+                }
+            ]
+        }
+    """
+
+    # Trả về tiến trình
     _write_progress(
         workspace,
         status="extracting_topics",
@@ -390,18 +471,72 @@ def _run_topics(workspace: Path, config: dict) -> None:
     )
     log("writing_topic_outputs: saving manifest and splitting PDF")
 
+    # tạo cấu trúc thư mục dạng
+    """
+        Output/<pdf_stem>/
+            <pdf_stem>.json
+            Topic/
+            Lesson/
+    """
     ws_dirs = prepare_workspace(pdf_path, output_root=unique_output_root)
+    # Lấy thư mục gốc của bundle cuốn sách hiện tại (lấy folder mẹ)
     base_dir = ws_dirs["base_dir"]
+    # Lấy data đã chuẩn hoá, ghi thành file json và trả về đường dẫn
     json_path = save_manifest(base_dir, pdf_stem, data)
+    # Cắt pdf theo manifest ( là dựa vào data để cắt và lưu vào bundle )
+    # Sau khi xử lí sẽ có dạng
+    """
+        .../Output/TinHoc10_ab12cd34/
+                TinHoc10_ab12cd34.json
+                Topic/
+                    topic_01/
+                        TinHoc10_ab12cd34_topic_01.pdf
+                        TinHoc10_ab12cd34_topic_01.json
+                    topic_02/
+                        ...
+                Lesson/
+                    lesson_01/
+                        TinHoc10_ab12cd34_lesson_01.pdf
+                        TinHoc10_ab12cd34_lesson_01.json
+                    lesson_02/
+                        ...
+    """
     split_from_manifest(pdf_path, data, base_dir)
+    # Quay về thư mục gốc của cuốn sách (== base_dir)
     book_dir = Path(json_path).parent
 
+    # Chuẩn hoá topic và lesson lại thành dạng dễ dùng hơn
+    """
+        [
+            {
+                "name": "topic_01",
+                "start": 7,
+                "end": 18,
+                "heading": "Chủ đề 1.",
+                "title": "..."
+            },
+            ...
+        ]
+    """
     topics = _flatten(data.get("list_topic", []))
+    """
+        [
+            {
+                "name": "lesson_01",
+                "start": 7,
+                "end": 10,
+                "heading": "Bài 1.",
+                "title": "..."
+            }
+        ]
+    """
+    # Này chưa phải lesson cuối cùng
     raw_lessons = _flatten(data.get("list_lesson", []))
     log(f"split done: {len(topics)} topics, {len(raw_lessons)} lessons")
 
     _write_partial(workspace, "topics", topics)
 
+    # Lưu stage
     state = {
         "bundle_path": str(book_dir),
         "book_stem": pdf_stem,
@@ -411,6 +546,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
         json.dumps(state, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    # Đây là state trung gian cho các stage sau
 
     result = {
         "ok": True,
@@ -430,6 +566,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
             f"({rs['next_key_label']}) call_count={rs['call_count']}"
         )
 
+    # Chuyển sang preview topic
     _write_progress(
         workspace,
         status="reviewing_topics",
@@ -454,13 +591,22 @@ def _read_debug_config(workspace: Path):
     except Exception:
         return False, None
 
-
+# Luồng Lesson
 def _run_lessons(workspace: Path, config: dict) -> None:
+    # Lấy topic đã duyệt ở bước trước
     approved_path = workspace / "approved_topics.json"
     if not approved_path.exists():
         raise FileNotFoundError(
             "approved_topics.json not found — service must write it before launching lessons stage"
         )
+    
+    # Lấy topic ra có dạng
+    """
+        approved_topics = [
+            {"name": "topic_01", "start": 7, "end": 18, "heading": "Chủ đề 1.", "title": "..."},
+            {"name": "topic_02", "start": 19, "end": 30, "heading": "Chủ đề 2.", "title": "..."},
+        ]
+    """
     approved_topics = json.loads(approved_path.read_text(encoding="utf-8"))
 
     state_path = workspace / "extraction_state.json"
@@ -472,6 +618,7 @@ def _run_lessons(workspace: Path, config: dict) -> None:
     log("stage=lessons")
     log(f"approved topics: {len(approved_topics)}")
 
+    # Khi bật debug thì chỉ xử lí một topic thôi
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
     if debug_enabled and debug_topic_index is not None:
         if 0 <= debug_topic_index < len(approved_topics):
@@ -494,11 +641,13 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         debug_enabled = False
         debug_topic_index = None
 
+    # Quan trọng ở đây là lấy raw_lesson cũ đã ghi state trước đó
     raw_lessons: list = state.get("raw_lessons", [])
     book_stem: str = state.get("book_stem", "book")
     pdf_path: str = config["source_pdf_path"]
     n = len(approved_topics)
 
+    # Tạo log thôi
     log(f"raw lessons from state: {len(raw_lessons)}")
     if debug_topic_index is not None:
         log(f"[DEBUG] lessons stage: processing {n} topic (debug mode)")
@@ -515,7 +664,9 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         progress_percent=0,
     )
 
+    # Xem lesson nào đã được lấy, tránh lấy trùng
     seen_raw_keys: set = set()
+    # danh sách lesson cuối cùng
     lessons_out: list = []
 
     for i, topic in enumerate(approved_topics):
@@ -531,7 +682,9 @@ def _run_lessons(workspace: Path, config: dict) -> None:
             if raw_key in seen_raw_keys:
                 continue
 
+            # Kiểm tra lesson có nằm trong topic không 
             if l_end >= t_start and l_start <= t_end:
+                # đánh dấu đã duyệt
                 seen_raw_keys.add(raw_key)
                 topic_lessons.append({
                     **lesson,
@@ -548,6 +701,23 @@ def _run_lessons(workspace: Path, config: dict) -> None:
                 "title": topic.get("title", ""),
             })
 
+        # trải từng phần tử rồi thêm vào
+        """
+            lessons_out = [
+                {"name": "lesson_01"},
+            ]
+
+            topic_lessons = [
+                {"name": "lesson_02"},
+                {"name": "lesson_03"},
+            ]
+            ->
+            lessons_out = [
+                {"name": "lesson_01"},
+                {"name": "lesson_02"},
+                {"name": "lesson_03"},
+            ]
+        """
         lessons_out.extend(topic_lessons)
 
         _write_partial(workspace, "lessons", lessons_out)
@@ -564,9 +734,12 @@ def _run_lessons(workspace: Path, config: dict) -> None:
         log(f"topic {i + 1}/{n}: pages {t_start}-{t_end} -> {len(topic_lessons)} lessons")
 
     log("rebuilding bundle from approved topics (Topic/ + Lesson/)")
+    # Lấy thư mục gốc
     bundle_dir = workspace / book_stem
+    # Cắt Pdf của topic đó (lỡ bị chỉnh sửa thì cắt cho chính xác)
     _build_topic_pdfs(bundle_dir, book_stem, pdf_path, approved_topics)
     log(f"topic PDFs rebuilt under {bundle_dir / 'Topic'} ({len(approved_topics)} topic(s))")
+    # Cắt pdf của lesson    
     _build_lesson_pdfs(bundle_dir, book_stem, pdf_path, lessons_out)
     _write_bundle_manifest(bundle_dir, book_stem, approved_topics, lessons_out)
     log(f"bundle ready: {bundle_dir}")
@@ -614,24 +787,29 @@ def _is_real_chunk_meta(meta_path: Path, meta: Any) -> bool:
         and isinstance(meta.get("end"), int)
     )
 
-
+# Luồng Chunk
 def _run_chunks(workspace: Path, config: dict) -> None:
+    # Dường dẫn đến danh sách lesson đã duyệt
     approved_path = workspace / "approved_lessons.json"
     if not approved_path.exists():
         raise FileNotFoundError(
             "approved_lessons.json not found — service must write it before launching chunks stage"
         )
+    # Lấy ra được dữ liệu của các lesson đã duyệt
     approved_lessons = json.loads(approved_path.read_text(encoding="utf-8"))
 
+    # Lấy đường dẫn đến extraction_state
     state_path = workspace / "extraction_state.json"
     if not state_path.exists():
         raise FileNotFoundError("extraction_state.json not found — topics stage must run first")
+    # Lấy dữ liệu
     state = json.loads(state_path.read_text(encoding="utf-8"))
 
     log = _make_stage_logger(workspace, "chunks")
     log("stage=chunks")
     log(f"approved lessons: {len(approved_lessons)}")
 
+    # Lấy được book_stem để lưu chunk vào đúng path
     book_stem: str = state.get("book_stem", "book")
     pdf_path: str = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
@@ -640,12 +818,16 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
     log(f"book_stem={book_stem} | debug_rotation_state={rotation_state_path}")
 
+    # Kiểm tra xem có đang bật debug không
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
+    # Lấy topic đang debug
     debug_topic_for_manifest = None
 
     if debug_enabled and debug_topic_index is not None:
+        # Lấy path của topic được chọn
         approved_topics_path = workspace / "approved_topics.json"
         if approved_topics_path.exists():
+            # Chọn đúng topic đang debug
             all_topics = json.loads(approved_topics_path.read_text(encoding="utf-8"))
             if 0 <= debug_topic_index < len(all_topics):
                 dbg = all_topics[debug_topic_index]
@@ -657,6 +839,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
                     f"pages {t_start}-{t_end}"
                 )
                 before = len(approved_lessons)
+                # lọc lấy lesson đang nằm trong topic được chọn
                 approved_lessons = [
                     l for l in approved_lessons
                     if int(l.get("end") or 0) >= t_start and int(l.get("start") or 0) <= t_end
@@ -679,15 +862,19 @@ def _run_chunks(workspace: Path, config: dict) -> None:
         debug_enabled = False
         log(f"chunks stage: processing {len(approved_lessons)} lessons (full mode)")
 
+    # Lấy thư mục gốc
     bundle_dir = workspace / book_stem
-
+    
+    # Nếu bật debug
     if debug_enabled and debug_topic_for_manifest is not None:
+        # Chỉ giữ biến đó trong List
         topics_for_manifest = [debug_topic_for_manifest]
         log(
             f"[DEBUG] writing canonical single-topic manifest for topic_index={debug_topic_index} "
             f"with {len(approved_lessons)} lessons"
         )
     else:
+        # Nếu không thì lấy toàn bộ topic
         approved_topics_path = workspace / "approved_topics.json"
         topics_for_manifest = (
             json.loads(approved_topics_path.read_text(encoding="utf-8"))
@@ -695,6 +882,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             else []
         )
 
+    # Rebuild lại thành dữ liệu cuối cùng
     log("rebuilding bundle from approved topics/lessons (Topic/ + Lesson/)")
     _build_topic_pdfs(bundle_dir, book_stem, pdf_path, topics_for_manifest)
     log(f"topic PDFs rebuilt under {bundle_dir / 'Topic'} ({len(topics_for_manifest)} topic(s))")
@@ -703,6 +891,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     _write_bundle_manifest(bundle_dir, book_stem, topics_for_manifest, approved_lessons)
     log("bundle manifest updated")
 
+    # đếm các lesson được chọn
     lesson_count = len(approved_lessons)
     log(f"starting chunk extraction for {lesson_count} lessons")
 
@@ -774,6 +963,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
             chunks_so_far.sort(key=lambda x: (x.get("lesson_stem", ""), x.get("chunk", "")))
             _write_partial(workspace, "chunks", chunks_so_far)
 
+    # Xử lí chunk chính
     chunk_summary = run_extract_and_split_chunks_for_book(
         key_manager,
         bundle_dir,

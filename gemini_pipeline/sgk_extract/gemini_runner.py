@@ -7,11 +7,8 @@ import re
 from .gemini_client import GeminiPool
 
 
+# Chuẩn hoá json
 def _parse_json_loose(text: str) -> dict:
-    """
-    Extract and parse the largest plausible JSON object from text.
-    Gemini sometimes wraps JSON in ```json ... ``` or adds surrounding prose.
-    """
     clean = (text or "").strip()
 
     # 1) Prefer JSON inside ```json ... ```
@@ -36,30 +33,7 @@ def extract_structure_from_pdf(
     wait_for_available_key: bool = True,
     status_cb=None,
 ) -> dict:
-    """
-    Upload *pdf_path* to Gemini and return the parsed JSON response dict.
-
-    A GeminiPool is created on first call and attached to the key_manager instance
-    as ``key_manager._gemini_pool``.  Reusing the same key_manager across a pipeline
-    run (topics → verify → chunks) ensures cooldown and rotation state are shared.
-
-    Parameters
-    ----------
-    key_manager : KeyManager
-        Carries ``key_manager.keys`` (list of API key strings) and the shared pool.
-    pdf_path : str
-        Path to the PDF file to upload.
-    prompt : str
-        Prompt text sent alongside the PDF.
-    model : str
-        Gemini model identifier.
-    wait_for_available_key : bool
-        If True (default), block until a key exits cooldown rather than raising
-        immediately. Suitable for long-running batch jobs.
-    status_cb : callable(str) | None
-        Optional callback invoked with a human-readable message at key events
-        (key selected, cooldown entered, all-keys-waiting, success, etc.).
-    """
+    # Tạo pool
     if not hasattr(key_manager, "_gemini_pool"):
         key_manager._gemini_pool = GeminiPool(
             key_manager.keys,
@@ -71,12 +45,39 @@ def extract_structure_from_pdf(
 
     raw = ""
     try:
+        # Gọi gemini với prompt và nhận về dữ liệu
+        """ 
+            {
+                "list_topic": [
+                    {
+                    "topic_01": {
+                        "start": 5,
+                        "end": 12,
+                        "heading": "Chủ đề 1",
+                        "title": "Máy tính và xã hội tri thức"
+                    }
+                    }
+                ],
+                "list_lesson": [
+                    {
+                    "lesson_01": {
+                        "start": 5,
+                        "end": 8,
+                        "heading": "Bài 1",
+                        "title": "Thông tin và xử lí thông tin"
+                    }
+                    }
+                ],
+                "offset": 0
+            }
+        """
         raw = pool.generate_with_pdf(
             pdf_path=pdf_path,
             prompt=prompt,
             model=model,
             wait_for_available_key=wait_for_available_key,
         )
+        # Chuyển thành dict 
         return _parse_json_loose(raw)
 
     except json.JSONDecodeError as e:

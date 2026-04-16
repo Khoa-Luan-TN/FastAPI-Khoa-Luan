@@ -265,36 +265,18 @@ def _rebuild_manifest_list(items: List[Dict[str, Any]], prefix: str) -> List[Dic
         }})
     return out
 
-
+# Mục tiêu chuẩn hoá để cắt pdf topic, lesson cho chính xác
+# Vì gemini trả về trang in không chính xác với trang của pdf thật (nên mới có offset)
 def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dict[str, Any]:
-    """
-    New-format path: Gemini returns offset + printed_end_of_main + start_printed per item.
-    All end values are computed deterministically in Python.
-
-    Lesson end rules:
-      lesson[i].end_printed = lesson[i+1].start_printed - 1   (sequential)
-      last lesson in each topic: end_printed = topic.end_printed  (topic boundary wins)
-
-    Topic end rules:
-      topic[i].end_printed = topic[i+1].start_printed - 1
-      last topic: end_printed = main_end  (= printed_end_of_main - 1)
-
-    printed_end_of_main from Gemini = first post-main section's printed page (e.g. "Phụ lục ... 165" → 165).
-    Python computes main_end = printed_end_of_main - 1 (= 164).
-
-    PDF page = printed_page + offset, clamped to [1, total_pages].
-    """
-    # ── Extract offset ────────────────────────────────────────────────────────
     try:
+        # Lấy offset 
         offset = int(data.get("offset", 0))
     except (TypeError, ValueError):
         offset = 0
         _norm_log.warning("[NORM] Invalid offset %r, defaulting to 0", data.get("offset"))
 
-    # ── Extract printed_end_of_main and compute main_end ─────────────────────
-    # Gemini returns the printed page of the FIRST post-main section.
-    # Python always subtracts 1 to get the last main content page.
     try:
+        # Lấy trang sau trang cuối cùng của topic và -1 để lấy ra trang chính xác   
         raw_post_main = int(data["printed_end_of_main"])
         main_end = raw_post_main - 1
         main_end_source = f"printed_end_of_main={raw_post_main} → main_end={main_end}"
@@ -305,14 +287,28 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
             "[NORM] Missing/invalid printed_end_of_main, defaulting main_end to %s", main_end
         )
 
-    # ── Flatten + sort ────────────────────────────────────────────────────────
+    # đổi sang dạng dễ sử dụng hơn
+    """
+        {"topic_01": {"start_printed": 1, ...}}
+        ->
+        {
+            "name": "topic_01",
+            "start_printed": 1,
+            "num": "1",
+            "heading": "Chủ đề 1.",
+            "title": "MÁY TÍNH VÀ XÃ HỘI TRI THỨC"
+        }
+    """
+
+
     topics = _flatten_start_printed_items(data.get("list_topic", []))
     lessons = _flatten_start_printed_items(data.get("list_lesson", []))
 
+    # Sắp xếp theo thứ tự trang in tăng dần
     topics.sort(key=lambda t: _sort_key_num_start(t, "start_printed"))
     lessons.sort(key=lambda t: _sort_key_num_start(t, "start_printed"))
 
-    # Deduplicate by start_printed (keep first occurrence after sort)
+    # Loại item trùng start_printed
     def _dedup(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         seen: set = set()
         out = []
@@ -327,23 +323,33 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
     topics = _dedup(topics)
     lessons = _dedup(lessons)
 
-    # ── Compute topic end_printed ─────────────────────────────────────────────
+    # Tính end cho topic 
+    """ 
+        topic_01 bắt đầu ở 1
+        topic_02 bắt đầu ở 13
+        end của topic_01 là 12
+    """
     for i, top in enumerate(topics):
+        # Nếu không phải topic cuối
         if i + 1 < len(topics):
             top["end_printed"] = topics[i + 1]["start_printed"] - 1
+        # Nếu là topic cuối
         else:
             top["end_printed"] = main_end
             print(f"[NORM] Last topic {top.get('num','?')}: start_printed={top['start_printed']}  end_printed={main_end}  source={main_end_source}")
 
-    # ── Assign lessons to topics (nearest preceding topic by start_printed) ───
+    # Nhóm các lesson vào topic theo index
     topic_lesson_map: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+    # Loop lesson
     for les in lessons:
         best: Optional[int] = None
+        # Lấy index và phần tử
+        # Nếu topic_start <= les_start thì ghi nhớ và add vào
         for i, top in enumerate(topics):
             if top["start_printed"] <= les["start_printed"]:
                 best = i
             else:
-                break  # topics sorted ascending
+                break  
         if best is not None:
             topic_lesson_map[best].append(les)
         else:
@@ -352,18 +358,22 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
                 les["name"], les["start_printed"],
             )
 
-    # ── Compute lesson end_printed (sequential globally) ─────────────────────
+    # Tính lesson_end
     for i, les in enumerate(lessons):
+        # Không phải lesson cuối
         if i + 1 < len(lessons):
             les["end_printed"] = lessons[i + 1]["start_printed"] - 1
+        # Nếu là lesson cuối
         else:
-            les["end_printed"] = main_end  # will be overridden below
+            les["end_printed"] = main_end 
 
-    # Override: last lesson in each topic ends exactly at topic.end_printed
-    # (prevents last lesson from crossing into the next topic's header pages)
+
+    # Sửa lesson cuối sao cho đúng bằng topics cuối của phần đó
     for ti, top in enumerate(topics):
         owned = topic_lesson_map.get(ti, [])
         if owned:
+            # gán lesson_end bằng topic_end
+            # top -> topic
             last_les = max(owned, key=lambda x: x["start_printed"])
             last_les["end_printed"] = top["end_printed"]
         else:
@@ -372,16 +382,17 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
                 top.get("num", "?"), top["start_printed"], top["end_printed"],
             )
 
-    # ── Apply offset + clamp to [1, total_pages] ──────────────────────────────
+    # Đổi từ trang in sang trang pdf thật để tránh cắt không chính xác
     def _to_pdf(item: Dict[str, Any]) -> Dict[str, Any]:
         s = max(1, min(item["start_printed"] + offset, total_pages))
         e = max(s, min(item["end_printed"] + offset, total_pages))
         return {**item, "start": s, "end": e}
 
+    # Sau khi gọi hàm và nhận được start và end chính xác sau khi + offset (sai số)
     final_topics = [_to_pdf(t) for t in topics]
     final_lessons = [_to_pdf(l) for l in lessons]
 
-    # ── Print summary ─────────────────────────────────────────────────────────
+    # dùng để debug
     print("[NORM] ── Manifest normalization (start_printed → PDF) ───────────")
     print(f"[NORM]   total_pages={total_pages}  offset={offset}  main_end={main_end}")
     print(f"[NORM]   topics={len(final_topics)}  lessons={len(final_lessons)}")
@@ -393,6 +404,31 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
         print(f"[NORM]     LESSON {les.get('num','?'):>3}: printed {les['start_printed']:>4}–{les['end_printed']:<4}  pdf {les['start']:>4}–{les['end']:<4}  {label}")
     print("[NORM] ──────────────────────────────────────────────────────────")
 
+    # Sau đó sẽ rebuild lại thành dạng
+    """
+        {
+            "list_topic": [
+                {
+                    "topic_01": {
+                        "start": 7,
+                        "end": 18,
+                        "heading": "Chủ đề 1.",
+                        "title": "..."
+                    }
+                }
+            ],
+            "list_lesson": [
+                {
+                    "lesson_01": {
+                        "start": 7,
+                        "end": 10,
+                        "heading": "Bài 1.",
+                        "title": "..."
+                    }
+                }
+            ]
+        }
+    """
     return {
         "list_topic": _rebuild_manifest_list(final_topics, "topic"),
         "list_lesson": _rebuild_manifest_list(final_lessons, "lesson"),
@@ -400,11 +436,7 @@ def _normalize_from_start_printed(data: Dict[str, Any], total_pages: int) -> Dic
 
 
 def _normalize_from_start_end(data: Dict[str, Any], total_pages: int) -> Dict[str, Any]:
-    """
-    Legacy path: Gemini returns start/end directly (old format, no 'offset' key).
-    Fixes overlaps and recomputes topic ranges from lesson assignments.
-    """
-    # ── Validate + fix lessons ────────────────────────────────────────────────
+ 
     raw_lessons = _flatten_list_items(data.get("list_lesson", []), kind="lesson")
 
     valid_lessons: List[Dict[str, Any]] = []
@@ -441,13 +473,11 @@ def _normalize_from_start_end(data: Dict[str, Any], total_pages: int) -> Dict[st
 
     dropped_lessons = len(raw_lessons) - len(fixed_lessons)
 
-    # ── Flatten + sort topics ─────────────────────────────────────────────────
     raw_topics = _flatten_list_items(data.get("list_topic", []), kind="topic")
     raw_topics.sort(key=lambda t: _sort_key_num_start(t, "start"))
     valid_topics = [t for t in raw_topics if 1 <= t["start"] <= t["end"] <= total_pages]
     dropped_topics_invalid = len(raw_topics) - len(valid_topics)
 
-    # ── Assign lessons to nearest preceding topic ─────────────────────────────
     def _nearest_preceding_idx(lesson_start: int) -> Optional[int]:
         best: Optional[int] = None
         for i, top in enumerate(valid_topics):
@@ -465,7 +495,6 @@ def _normalize_from_start_end(data: Dict[str, Any], total_pages: int) -> Dict[st
         else:
             _norm_log.warning("[NORM] Lesson %s (start=%s) precedes all topics – unassigned", les["name"], les["start"])
 
-    # ── Recompute topic ranges from assigned lessons ───────────────────────────
     normalized_topics: List[Dict[str, Any]] = []
     for i, top in enumerate(valid_topics):
         owned = topic_lesson_map.get(i, [])
@@ -486,7 +515,6 @@ def _normalize_from_start_end(data: Dict[str, Any], total_pages: int) -> Dict[st
             )
         normalized_topics.append(top)
 
-    # ── Print summary ─────────────────────────────────────────────────────────
     print("[NORM] ── Manifest normalization (legacy start/end) ─────────────")
     print(f"[NORM]   total_pages={total_pages}  topics={len(normalized_topics)} (dropped {dropped_topics_invalid})  lessons={len(fixed_lessons)} (dropped {dropped_lessons})")
     for top in normalized_topics:
@@ -504,15 +532,6 @@ def _normalize_from_start_end(data: Dict[str, Any], total_pages: int) -> Dict[st
 
 
 def normalize_manifest(data: Dict[str, Any], total_pages: int) -> Dict[str, Any]:
-    """
-    Dispatch to the appropriate normalization path based on Gemini response format.
-
-    New format (has 'offset' key): Gemini returns start_printed + offset + printed_end_of_main.
-      → _normalize_from_start_printed: all ends computed in Python from ordered starts.
-
-    Legacy format (no 'offset' key): Gemini returns start/end directly.
-      → _normalize_from_start_end: fix overlaps, recompute topic ranges from lessons.
-    """
     if "offset" in data:
         return _normalize_from_start_printed(data, total_pages)
     return _normalize_from_start_end(data, total_pages)

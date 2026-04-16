@@ -14,10 +14,6 @@ from scripts.keyword_extract_book import extract_keywords_for_book
 
 
 def run_kaggle_cli(book_stem: str, *, run_local: bool = True, overwrite: bool = True):
-    """
-    Chạy scripts.kaggle.cli giống hệt bạn gõ lệnh terminal.
-    macOS: dùng caffeinate -dimsu để không sleep.
-    """
     base_cmd = [
         sys.executable, "-m", "scripts.kaggle.cli",
         book_stem,

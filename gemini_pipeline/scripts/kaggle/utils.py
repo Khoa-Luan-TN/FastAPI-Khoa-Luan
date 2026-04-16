@@ -176,20 +176,9 @@ def download_kernel_output(kernel_ref: str, dl_dir: Path, force: bool = False) -
 # Dataset packaging + version
 # ----------------------
 def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dataset_id: str) -> None:
-    """
-    Rebuild kaggle_pack/ from scratch:
-      kaggle_pack/
-        dataset-metadata.json
-        book_stem.txt                  ← kernel reads this to know which book to process
-        sgk_extract/chunk_postprocess.py
-        Output/<book_stem>/...
-
-    Always deletes pack_dir first so no stale content from previous books remains.
-    Verifies written artifacts before returning.
-    """
     log.info("Building kaggle_pack for book_stem=%r -> %s", book_stem, pack_dir)
 
-    # Always start clean — eliminates stale Output/<old_book> from previous runs
+    # Xoá pack_dir
     if pack_dir.exists():
         log.info("Removing stale pack_dir: %s", pack_dir)
         shutil.rmtree(pack_dir)
