@@ -1,4 +1,3 @@
-# light_extract_job.py
 from __future__ import annotations
 
 import argparse
@@ -11,23 +10,25 @@ import traceback
 from pathlib import Path
 from typing import Any, Optional
 
+from pypdf import PdfReader, PdfWriter
+
 _GEMINI_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_GEMINI_ROOT))
 
 from scripts.connect import get_key_manager  # noqa: E402
+from sgk_extract.chunk_pipeline import run_extract_and_split_chunks_for_book  # noqa: E402
+from sgk_extract.gemini_runner import extract_structure_from_pdf  # noqa: E402
 from sgk_extract.les_top_pipeline import (  # noqa: E402
     _make_preview_first_pages,
     verify_topics_and_get_offset,
 )
 from sgk_extract.pdf_output import (  # noqa: E402
+    normalize_manifest,
     prepare_workspace,
     save_manifest,
     split_from_manifest,
-    normalize_manifest,
 )
-from sgk_extract.gemini_runner import extract_structure_from_pdf  # noqa: E402
 from sgk_extract.prompts import build_topic_lesson_prompt  # noqa: E402
-from sgk_extract.chunk_pipeline import run_extract_and_split_chunks_for_book  # noqa: E402
 
 _DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
@@ -102,19 +103,19 @@ def _flatten(items: Any) -> list:
         name, rng = next(iter(item.items()))
         if not isinstance(rng, dict):
             continue
-        out.append({
-            "name": str(name),
-            "start": rng.get("start"),
-            "end": rng.get("end"),
-            "heading": (rng.get("heading") or "").strip(),
-            "title": (rng.get("title") or "").strip(),
-        })
+        out.append(
+            {
+                "name": str(name),
+                "start": rng.get("start"),
+                "end": rng.get("end"),
+                "heading": (rng.get("heading") or "").strip(),
+                "title": (rng.get("title") or "").strip(),
+            }
+        )
     return out
 
 
 def _slice_pdf(source_pdf: str, start: int, end: int, out_path: Path) -> None:
-    from pypdf import PdfReader, PdfWriter
-
     reader = PdfReader(source_pdf)
     total = len(reader.pages)
     s = max(1, min(start, total))
@@ -136,21 +137,25 @@ def _write_bundle_manifest(
     lessons: list,
 ) -> None:
     list_topic = [
-        {t.get("name") or f"topic_{i + 1:02d}": {
-            "start": t.get("start") or 1,
-            "end": t.get("end") or 1,
-            "heading": t.get("heading", ""),
-            "title": t.get("title", ""),
-        }}
+        {
+            t.get("name") or f"topic_{i + 1:02d}": {
+                "start": t.get("start") or 1,
+                "end": t.get("end") or 1,
+                "heading": t.get("heading", ""),
+                "title": t.get("title", ""),
+            }
+        }
         for i, t in enumerate(topics)
     ]
     list_lesson = [
-        {l.get("name") or f"lesson_{i + 1:02d}": {
-            "start": l.get("start") or 1,
-            "end": l.get("end") or 1,
-            "heading": l.get("heading", ""),
-            "title": l.get("title", ""),
-        }}
+        {
+            l.get("name") or f"lesson_{i + 1:02d}": {
+                "start": l.get("start") or 1,
+                "end": l.get("end") or 1,
+                "heading": l.get("heading", ""),
+                "title": l.get("title", ""),
+            }
+        }
         for i, l in enumerate(lessons)
     ]
     manifest = {
@@ -209,13 +214,7 @@ def _build_topic_pdfs(
     source_pdf: str,
     topics: list,
 ) -> None:
-    """
-    Slice source_pdf into canonical topic PDFs and write companion JSON metadata.
-
-    Layout: bundle_dir/Topic/topic_NN/<book_stem>_topic_NN.pdf
-    This matches _find_topic_pdf strategy 1 (rglob *_topic_NN.pdf) and
-    strategy 2 (subdir named topic_NN) in book_bundle_import_service.py.
-    """
+    """Tách PDF chủ đề theo cấu trúc chuẩn để các bước sau dễ dò lại."""
     topic_dir = bundle_dir / "Topic"
     if topic_dir.exists():
         shutil.rmtree(topic_dir)
@@ -224,7 +223,6 @@ def _build_topic_pdfs(
     for idx, topic in enumerate(topics):
         top_name = (topic.get("name") or f"topic_{idx + 1:02d}").strip()
         safe_name = top_name.replace("/", "_").replace("\\", "_")
-        # Ensure the folder name always starts with "topic_" for deterministic discovery
         if not safe_name.lower().startswith("topic_"):
             safe_name = f"topic_{idx + 1:02d}"
         top_folder = topic_dir / safe_name
@@ -252,20 +250,14 @@ def _build_topic_pdfs(
         )
 
 
-# ── Stage: topics ─────────────────────────────────────────────────────────────
-
 def _run_topics(workspace: Path, config: dict) -> None:
-    # Lấy ra đường dẫn đến cuốn sách
     pdf_path = config["source_pdf_path"]
-    # Lấy config của gemini và model của gemini
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", _DEFAULT_MODEL)
 
-    # Lấy tên sách và chuẩn bị thư mục cho cuốn sách
     pdf_stem = Path(pdf_path).stem
     unique_output_root = _GEMINI_ROOT / "Output" / pdf_stem
 
-    # Ghi tiến trình tách chủ đề
     log = _make_stage_logger(workspace, "topics")
     log(f"stage=topics  pdf={Path(pdf_path).name}  output_root={unique_output_root}")
 
@@ -279,7 +271,6 @@ def _run_topics(workspace: Path, config: dict) -> None:
     log(f"preparing_topics: loading key manager | debug_rotation_state={rotation_state_path}")
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
 
-    from pypdf import PdfReader
     total_pages_full = len(PdfReader(str(pdf_path)).pages)
     log(f"PDF pages: {total_pages_full}")
 
@@ -449,10 +440,8 @@ def _run_topics(workspace: Path, config: dict) -> None:
     log("reviewing_topics: extraction complete, awaiting review")
 
 
-# ── Stage: lessons ────────────────────────────────────────────────────────────
-
 def _read_debug_config(workspace: Path):
-    """Return (enabled: bool, topic_index: int | None) from debug_config.json."""
+    """Đọc cấu hình debug cho chế độ chạy theo một chủ đề."""
     p = workspace / "debug_config.json"
     if not p.exists():
         return False, None
@@ -483,7 +472,6 @@ def _run_lessons(workspace: Path, config: dict) -> None:
     log("stage=lessons")
     log(f"approved topics: {len(approved_topics)}")
 
-    # ── Debug mode: restrict to a single topic ────────────────────────────────
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
     if debug_enabled and debug_topic_index is not None:
         if 0 <= debug_topic_index < len(approved_topics):
@@ -611,7 +599,6 @@ def _run_lessons(workspace: Path, config: dict) -> None:
     log("reviewing_lessons: lesson extraction complete")
 
 
-# ── Stage: chunks ─────────────────────────────────────────────────────────────
 def _is_real_chunk_meta(meta_path: Path, meta: Any) -> bool:
     if meta_path.name.endswith(".keywords.json"):
         return False
@@ -626,6 +613,7 @@ def _is_real_chunk_meta(meta_path: Path, meta: Any) -> bool:
         and isinstance(meta.get("start"), int)
         and isinstance(meta.get("end"), int)
     )
+
 
 def _run_chunks(workspace: Path, config: dict) -> None:
     approved_path = workspace / "approved_lessons.json"
@@ -652,7 +640,6 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
     log(f"book_stem={book_stem} | debug_rotation_state={rotation_state_path}")
 
-    # ── Debug mode: restrict to lessons of a single topic ─────────────────────
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
     debug_topic_for_manifest = None
 
@@ -694,7 +681,6 @@ def _run_chunks(workspace: Path, config: dict) -> None:
 
     bundle_dir = workspace / book_stem
 
-    # Canonical manifest: single-topic in debug mode, full book otherwise
     if debug_enabled and debug_topic_for_manifest is not None:
         topics_for_manifest = [debug_topic_for_manifest]
         log(
@@ -724,7 +710,6 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     seen_chunk_files: set[str] = set()
     chunks_so_far: list = []
 
-    # Mutable containers so the Gemini callback can read the latest lesson progress
     _active_done: list[int] = [0]
     _active_total: list[int] = [lesson_count]
     _active_pct: list[int] = [0]
@@ -843,10 +828,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     log("reviewing_chunks: chunk extraction complete")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
-
 def main(workspace: Path, stage: str) -> None:
-    # Đọc config để biết cấu hình
     config = json.loads((workspace / "job_config.json").read_text(encoding="utf-8"))
 
     if stage == "topics":
