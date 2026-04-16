@@ -320,7 +320,7 @@ def main():
     key_manager = get_key_manager(args.config, state_file=rotation_state_path)
 
     if rotation_state_path:
-        print(f"[keyword_extract] rotation_state={rotation_state_path}", flush=True)
+        print(f"[keyword_extract] debug_rotation_state={rotation_state_path}", flush=True)
 
     summary = extract_keywords_for_book(
         key_manager=key_manager,
@@ -333,7 +333,7 @@ def main():
         rs = key_manager._gemini_pool.rotation_status()
         print(
             f"[keyword_extract] rotation state at end: "
-            f"next_idx={rs['next_idx']} ({rs['next_key_label']}) "
+            f"next_key_index={rs['next_key_index']} ({rs['next_key_label']}) "
             f"call_count={rs['call_count']}",
             flush=True,
         )

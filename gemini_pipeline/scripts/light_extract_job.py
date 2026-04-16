@@ -276,7 +276,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
         progress_message="Đang chuẩn bị tách chủ đề...",
     )
     rotation_state_path = workspace / "gemini_rotation_state.json"
-    log(f"preparing_topics: loading key manager | rotation_state={rotation_state_path}")
+    log(f"preparing_topics: loading key manager | debug_rotation_state={rotation_state_path}")
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
 
     from pypdf import PdfReader
@@ -435,7 +435,7 @@ def _run_topics(workspace: Path, config: dict) -> None:
     if hasattr(key_manager, "_gemini_pool"):
         rs = key_manager._gemini_pool.rotation_status()
         log(
-            f"rotation state at topics end: next_idx={rs['next_idx']} "
+            f"rotation state at topics end: next_key_index={rs['next_key_index']} "
             f"({rs['next_key_label']}) call_count={rs['call_count']}"
         )
 
@@ -650,7 +650,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     model = config.get("model", _DEFAULT_MODEL)
     rotation_state_path = workspace / "gemini_rotation_state.json"
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
-    log(f"book_stem={book_stem} | rotation_state={rotation_state_path}")
+    log(f"book_stem={book_stem} | debug_rotation_state={rotation_state_path}")
 
     # ── Debug mode: restrict to lessons of a single topic ─────────────────────
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
@@ -836,7 +836,7 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     if hasattr(key_manager, "_gemini_pool"):
         rs = key_manager._gemini_pool.rotation_status()
         log(
-            f"rotation state at chunks end: next_idx={rs['next_idx']} "
+            f"rotation state at chunks end: next_key_index={rs['next_key_index']} "
             f"({rs['next_key_label']}) call_count={rs['call_count']}"
         )
 
