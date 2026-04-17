@@ -184,13 +184,20 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
         shutil.rmtree(pack_dir)
     pack_dir.mkdir(parents=True, exist_ok=True)
 
+    # Tạo cấu trúc mới
+    """
+        kaggle_pack/
+            sgk_extract/
+            Output/
+    """
     (pack_dir / "sgk_extract").mkdir(parents=True, exist_ok=True)
     (pack_dir / "Output").mkdir(parents=True, exist_ok=True)
 
-    # Write book_stem marker — kernel reads this to select the correct book
+    # Tạo đường dẫn
     marker_path = pack_dir / "book_stem.txt"
     marker_path.write_text(book_stem, encoding="utf-8")
-    # Verify immediately
+    
+    # Verify lại xem đúng không
     written_stem = marker_path.read_text(encoding="utf-8").strip()
     if written_stem != book_stem:
         raise RuntimeError(
@@ -198,7 +205,7 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
         )
     log.info("Packed book_stem marker: %s  (content=%r)", marker_path, written_stem)
 
-    # Copy code (ensure kernel imports the latest chunk_postprocess)
+    # copy lại code chunk_postprocess.py
     src_code = project_root / "sgk_extract" / "chunk_postprocess.py"
     if src_code.exists():
         shutil.copy2(src_code, pack_dir / "sgk_extract" / "chunk_postprocess.py")
@@ -206,7 +213,7 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
     else:
         log.warning("Missing %s (still ok if kernel doesn't need it).", src_code)
 
-    # Copy book output — exactly one book, matching book_stem
+    # Lấy đúng nguồn sách
     src_book = project_root / "Output" / book_stem
     dst_book = pack_dir / "Output" / book_stem
     if not src_book.exists():
@@ -216,11 +223,9 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
             f"  project_root/Output contents: "
             f"{sorted(p.name for p in (project_root / 'Output').iterdir() if p.is_dir()) if (project_root / 'Output').exists() else 'N/A'}"
         )
-    # dst_book cannot already exist because we deleted pack_dir above
     shutil.copytree(src_book, dst_book)
     log.info("Packed book Output: %s -> %s", src_book, dst_book)
 
-    # Verify Output contains exactly the expected book and nothing else
     output_books = sorted(p.name for p in (pack_dir / "Output").iterdir() if p.is_dir())
     if output_books != [book_stem]:
         raise RuntimeError(
@@ -229,7 +234,6 @@ def build_kaggle_pack(pack_dir: Path, *, book_stem: str, project_root: Path, dat
         )
     log.info("Output integrity OK: Output/ contains exactly %r", book_stem)
 
-    # Write dataset-metadata.json (pack_dir is recreated each time so this is always fresh)
     meta = pack_dir / "dataset-metadata.json"
     title = dataset_id.split("/", 1)[1] if "/" in dataset_id else dataset_id
     meta.write_text(
@@ -342,15 +346,7 @@ def push_dataset_version(
     retry_delay: int = 15,
     debug_log_path: Optional[Path] = None,
 ) -> None:
-    """
-    Khi nào cần version dataset?
-      - BẤT KỲ lúc nào bạn đổi Output/<book_stem> hoặc sgk_extract/chunk_postprocess.py
-      - Muốn kernel dùng code mới nhất => phải datasets version trước kernel push
 
-    Runs kaggle datasets version in a Popen with a reader thread for live
-    heartbeat markers.  Retries up to `retries` times on failure with a short
-    backoff; full CLI output is preserved on every attempt.
-    """
     cmd = [
         "kaggle", "datasets", "version",
         "-p", str(pack_dir),
@@ -362,6 +358,7 @@ def push_dataset_version(
     last_returncode = -1
     last_lines: list[str] = []
 
+    # Nếu bị lỗi thì retry
     for attempt in range(1, retries + 2):  # attempts: 1, 2, ..., retries+1
         returncode, collected = _run_dataset_version_once(
             cmd,

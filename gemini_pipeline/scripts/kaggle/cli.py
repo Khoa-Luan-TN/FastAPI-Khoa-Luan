@@ -75,14 +75,16 @@ def main():
         )
         log.info("Local chunk pipeline summary: %s", summary)
 
-    # 1) dataset version (đảm bảo code + Output mới nhất được mount trong kernel)
+
+    # Chuẩn bị data set cho kaggle
     if not args.skip_dataset:
         print("[STAGE:dataset_building]", flush=True)
+        # Tạo pack local để chuẩn bị đẩy lên Kaggle
         build_kaggle_pack(PACK_DIR, book_stem=args.book_stem, project_root=PROJECT_ROOT, dataset_id=DATASET_ID)
         log.info("build_kaggle_pack OK — starting dataset version upload")
         print("[STAGE:dataset_versioning]", flush=True)
+        # Đẩy lên Kaggle
         push_dataset_version(PACK_DIR, message=f"auto upload: {args.book_stem}", dir_mode="zip")
-        # [STAGE:dataset_versioned] is emitted by push_dataset_version on success
         log.info("Dataset versioned OK — kernel push has NOT started yet; starting now")
     else:
         log.info("Skip dataset build/version.")

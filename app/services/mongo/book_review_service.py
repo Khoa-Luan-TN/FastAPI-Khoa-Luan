@@ -28,6 +28,7 @@ _extraction_semaphore = threading.BoundedSemaphore(1)
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _GEMINI_DIR = _PROJECT_ROOT / "gemini_pipeline"
 _REVIEW_WORKSPACE = _GEMINI_DIR / "ReviewWorkspace"
+_OUTPUT_ROOT = _GEMINI_DIR / "Output"
 _GEMINI_PYTHON = _GEMINI_DIR / ".env" / "bin" / "python"
 _LIGHT_SCRIPT = _GEMINI_DIR / "scripts" / "light_extract_job.py"
 _GEMINI_CONFIG = _GEMINI_DIR / "config.env"
@@ -46,6 +47,59 @@ _FIXED_SUBJECT_TYPE = "Kết nối tri thức"
 _FIXED_MODEL = "gemini-2.5-flash"
 
 
+def _is_safe_child_path(path: Path, parent: Path) -> bool:
+    try:
+        resolved_parent = parent.resolve()
+        resolved_path = path.resolve()
+    except Exception:
+        return False
+    return resolved_path != resolved_parent and resolved_parent in resolved_path.parents
+
+
+def _cleanup_tree_if_safe(path: Path, parent: Path, *, reason: str) -> bool:
+    if not path.exists():
+        _log.info("[cleanup] Bỏ qua %s: đường dẫn không tồn tại (%s)", reason, path)
+        return False
+    if not _is_safe_child_path(path, parent):
+        _log.warning("[cleanup] Bỏ qua %s: đường dẫn không an toàn (%s)", reason, path)
+        return False
+    shutil.rmtree(path)
+    _log.info("[cleanup] Đã xóa %s: %s", reason, path)
+    return True
+
+
+def cleanup_review_workspace_root() -> None:
+    if not _REVIEW_WORKSPACE.exists():
+        _log.info("[cleanup] Bỏ qua ReviewWorkspace: thư mục gốc chưa tồn tại")
+        return
+
+    for child in _REVIEW_WORKSPACE.iterdir():
+        _cleanup_tree_if_safe(
+            child,
+            _REVIEW_WORKSPACE,
+            reason=f"mục cũ trong ReviewWorkspace ({child.name})",
+        )
+
+
+def cleanup_output_root_except_kaggle_outputs() -> None:
+    if not _OUTPUT_ROOT.exists():
+        _log.info("[cleanup] Bỏ qua Output: thư mục gốc chưa tồn tại")
+        return
+
+    for child in _OUTPUT_ROOT.iterdir():
+        if child.name == "_kaggle_outputs":
+            _log.info("[cleanup] Giữ thư mục được bảo vệ trong Output: %s", child.name)
+            continue
+        if not child.is_dir():
+            _log.info("[cleanup] Giữ mục không phải thư mục trong Output: %s", child.name)
+            continue
+        _cleanup_tree_if_safe(
+            child,
+            _OUTPUT_ROOT,
+            reason=f"thư mục output cũ ({child.name})",
+        )
+
+
 def create_job(
     db: Database,
     class_name: str,
@@ -53,7 +107,9 @@ def create_job(
     original_filename: str,
     subject_name: str | None = None,
 ) -> Dict[str, Any]:
-    
+    cleanup_review_workspace_root()
+    cleanup_output_root_except_kaggle_outputs()
+
     job_id = str(uuid.uuid4())
 
     # Tạo ra nơi lưu trên thư mục ổ đĩa để (pipeline xử lí)
@@ -1137,10 +1193,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                                "Sao chép bundle vào thư mục Output…", 2)
         _log.info("[heavy/%s] Stage: heavy_preparing — Copying bundle %s -> Output/%s",
                   job_id, bundle_path, book_stem)
-        output_book_dir = _GEMINI_DIR / "Output" / book_stem
+        output_book_dir = _OUTPUT_ROOT / book_stem
         output_book_dir.parent.mkdir(parents=True, exist_ok=True)
-        if output_book_dir.exists():
-            shutil.rmtree(output_book_dir)
         shutil.copytree(str(bundle_path), str(output_book_dir))
         _log.info("[heavy/%s] Bundle copy OK -> %s", job_id, output_book_dir)
 
