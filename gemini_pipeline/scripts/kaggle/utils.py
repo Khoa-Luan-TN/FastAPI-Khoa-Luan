@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -390,16 +391,130 @@ def push_dataset_version(
     raise subprocess.CalledProcessError(last_returncode, cmd, output=full_output)
 
 
+def _read_downloaded_marker(download_dir: Path, marker_name: str) -> str:
+    marker_path = download_dir / marker_name
+    if marker_path.exists():
+        return marker_path.read_text(encoding="utf-8").strip()
+
+    for zip_path in sorted(download_dir.glob("*.zip")):
+        try:
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                if marker_name in zf.namelist():
+                    with zf.open(marker_name) as fh:
+                        return fh.read().decode("utf-8").strip()
+        except Exception:
+            continue
+
+    raise FileNotFoundError(f"Marker {marker_name!r} not found in {download_dir}")
+
+
+def wait_for_dataset_marker_ready(
+    dataset_id: str,
+    *,
+    expected_book_stem: str,
+    marker_name: str = "book_stem.txt",
+    poll_sec: int = 5,
+    timeout_sec: int = 90,
+) -> None:
+    if timeout_sec <= 0:
+        log.info("Skipping dataset propagation wait because timeout_sec=%s", timeout_sec)
+        return
+
+    log.info(
+        "Dataset version succeeded — polling remote marker %s for dataset=%s expected_book_stem=%r",
+        marker_name,
+        dataset_id,
+        expected_book_stem,
+    )
+
+    started = time.monotonic()
+    attempt = 0
+    with tempfile.TemporaryDirectory(prefix="kaggle_dataset_marker_") as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        try:
+            while True:
+                elapsed = int(time.monotonic() - started)
+                if elapsed >= timeout_sec:
+                    break
+
+                attempt += 1
+                print(
+                    f"[STAGE:dataset_propagation_waiting] attempt={attempt} elapsed={elapsed}s",
+                    flush=True,
+                )
+                log.info(
+                    "[dataset propagation] Poll attempt %d after %ss for dataset=%s",
+                    attempt,
+                    elapsed,
+                    dataset_id,
+                )
+
+                for old_item in tmp_path.iterdir():
+                    if old_item.is_dir():
+                        shutil.rmtree(old_item)
+                    else:
+                        old_item.unlink()
+
+                run_cmd(
+                    [
+                        "kaggle",
+                        "datasets",
+                        "download",
+                        dataset_id,
+                        "-f",
+                        marker_name,
+                        "-p",
+                        str(tmp_path),
+                        "-o",
+                        "-q",
+                    ]
+                )
+                remote_marker = _read_downloaded_marker(tmp_path, marker_name)
+                log.info(
+                    "[dataset propagation] Remote marker content=%r expected=%r",
+                    remote_marker,
+                    expected_book_stem,
+                )
+
+                if remote_marker == expected_book_stem:
+                    print("[STAGE:dataset_propagation_ready] marker_matched", flush=True)
+                    log.info(
+                        "Dataset ready — marker %s matched expected book stem %r after %ss",
+                        marker_name,
+                        expected_book_stem,
+                        elapsed,
+                    )
+                    return
+
+                remaining = max(0, timeout_sec - elapsed)
+                print(
+                    f"[STAGE:dataset_propagation_waiting] marker_mismatch remote={remote_marker} remaining={remaining}s",
+                    flush=True,
+                )
+                time.sleep(min(poll_sec, remaining))
+        except Exception as exc:
+            log.warning(
+                "[dataset propagation] Marker polling failed, sẽ fallback sang retry kernel hiện có: %s",
+                exc,
+            )
+
+    print(
+        f"[STAGE:dataset_propagation_timeout] dataset={dataset_id} expected={expected_book_stem}",
+        flush=True,
+    )
+    log.warning(
+        "Dataset propagation could not be confirmed within %ss for dataset=%s expected_book_stem=%r; proceeding with existing kernel retry fallback",
+        timeout_sec,
+        dataset_id,
+        expected_book_stem,
+    )
+
+
 # ----------------------
 # Apply zip into Output/
 # ----------------------
 def safe_extract_zip_to_output(zip_path: Path, output_root: Path, *, overwrite: bool) -> Path:
-    """
-    zip chứa folder <book_stem>/...
-    Giải nén vào Output/ (output_root)
-    - overwrite=True: xoá folder đích rồi extract
-    - overwrite=False: nếu tồn tại thì raise để tránh ghi đè lẫn lộn
-    """
+
     if not zip_path.exists():
         raise FileNotFoundError(f"Missing zip: {zip_path}")
 

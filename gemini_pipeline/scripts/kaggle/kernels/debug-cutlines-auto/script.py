@@ -7,6 +7,9 @@ os.environ["DISABLE_MODEL_SOURCE_CHECK"] = "True"
 os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 os.environ["DISABLE_PDF_UPDATE"] = "0"   # ✅ cho phép fitz update PDF
 
+# Rewritten by cli.py before each `kaggle kernels push`.
+_EMBEDDED_RUN_REQUEST_JSON = "{\"expected_book_stem\": \"SGK-KHMT-11_97f07988\", \"request_id\": \"dccc9938\", \"requested_at\": \"2026-04-17T12:24:48.810445+00:00\", \"attempt\": 1}"
+
 def sh(cmd):
     print(">>>", cmd)
     subprocess.run(cmd, shell=True, check=True)
@@ -14,20 +17,30 @@ def sh(cmd):
 # ==============
 # (A) Load run_request.json — written by local CLI before every kernel push
 # ==============
-_REQUEST_FILE_CANDIDATES = [
-    Path(__file__).parent / "run_request.json",
-    Path("/kaggle/working/run_request.json"),
-]
 run_request: dict = {}
 _request_file_used: str = "not found"
-for _rfc in _REQUEST_FILE_CANDIDATES:
-    if _rfc.exists():
-        try:
-            run_request = json.loads(_rfc.read_text(encoding="utf-8"))
-            _request_file_used = str(_rfc)
-            break
-        except Exception as _rfe:
-            print(f"[REQUEST] Failed to parse {_rfc}: {_rfe}")
+
+try:
+    _embedded_request = json.loads(_EMBEDDED_RUN_REQUEST_JSON)
+    if isinstance(_embedded_request, dict) and _embedded_request:
+        run_request = _embedded_request
+        _request_file_used = "embedded:script.py"
+except Exception as _embedded_err:
+    print(f"[REQUEST] Failed to parse embedded payload: {_embedded_err}")
+
+if not run_request:
+    _REQUEST_FILE_CANDIDATES = [
+        Path(__file__).parent / "run_request.json",
+        Path("/kaggle/working/run_request.json"),
+    ]
+    for _rfc in _REQUEST_FILE_CANDIDATES:
+        if _rfc.exists():
+            try:
+                run_request = json.loads(_rfc.read_text(encoding="utf-8"))
+                _request_file_used = str(_rfc)
+                break
+            except Exception as _rfe:
+                print(f"[REQUEST] Failed to parse {_rfc}: {_rfe}")
 
 request_id = run_request.get("request_id", "unknown")
 expected_book_stem_from_request = run_request.get("expected_book_stem", "").strip()

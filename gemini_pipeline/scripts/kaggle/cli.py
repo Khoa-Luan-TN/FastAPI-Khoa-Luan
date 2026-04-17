@@ -5,6 +5,7 @@ import argparse
 import datetime
 import json
 import logging
+import re
 import time
 import uuid
 from pathlib import Path
@@ -18,6 +19,7 @@ from .utils import (
     ensure_kaggle_cli,
     build_kaggle_pack,
     push_dataset_version,
+    wait_for_dataset_marker_ready,
     push_kernel,
     clean_dl_dir,
     download_kernel_output,
@@ -34,6 +36,23 @@ def setup_logging(log_file: Path | None, verbose: bool) -> None:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         handlers=handlers,
     )
+
+
+_EMBEDDED_REQUEST_PATTERN = re.compile(
+    r'^_EMBEDDED_RUN_REQUEST_JSON = .*$',
+    re.MULTILINE,
+)
+
+
+def _inject_embedded_run_request(kernel_script_path: Path, request_payload: dict) -> None:
+    script_text = kernel_script_path.read_text(encoding="utf-8")
+    embedded_line = f"_EMBEDDED_RUN_REQUEST_JSON = {json.dumps(json.dumps(request_payload, ensure_ascii=False))}"
+    updated_text, replaced = _EMBEDDED_REQUEST_PATTERN.subn(embedded_line, script_text, count=1)
+    if replaced != 1:
+        raise RuntimeError(
+            f"Embedded run request placeholder not found in kernel script: {kernel_script_path}"
+        )
+    kernel_script_path.write_text(updated_text, encoding="utf-8")
 
 def main():
     # dùng để đọc tham số dòng lệnh
@@ -85,7 +104,12 @@ def main():
         print("[STAGE:dataset_versioning]", flush=True)
         # Đẩy lên Kaggle
         push_dataset_version(PACK_DIR, message=f"auto upload: {args.book_stem}", dir_mode="zip")
-        log.info("Dataset versioned OK — kernel push has NOT started yet; starting now")
+        log.info("Dataset versioned OK — polling marker readiness before kernel push")
+        wait_for_dataset_marker_ready(
+            DATASET_ID,
+            expected_book_stem=args.book_stem,
+        )
+        log.info("Dataset propagation ready — kernel push has NOT started yet; starting now")
     else:
         log.info("Skip dataset build/version.")
 
@@ -114,10 +138,16 @@ def main():
                 "requested_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 "attempt": _ka,
             }
+            _kernel_script_path = KERNEL_DIR / "script.py"
+            _inject_embedded_run_request(_kernel_script_path, _request)
             _req_path = KERNEL_DIR / "run_request.json"
             _req_path.write_text(json.dumps(_request, indent=2), encoding="utf-8")
             log.info(
-                "[attempt %d] run_request.json: request_id=%r expected_book_stem=%r",
+                "[attempt %d] embedded run request updated in %s: request_id=%r expected_book_stem=%r",
+                _ka, _kernel_script_path.name, _request_id, args.book_stem,
+            )
+            log.info(
+                "[attempt %d] debug fallback run_request.json written: request_id=%r expected_book_stem=%r",
                 _ka, _request_id, args.book_stem,
             )
 

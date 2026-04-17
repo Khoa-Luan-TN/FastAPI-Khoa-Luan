@@ -591,15 +591,45 @@ def approve_chunks_final(db: Database, job_id: str) -> bool:
 
 
 # Khi bắt đầu chạy nặng thì vào đây
-# Cập nhật job và bắt đầu chạy nặng
-def launch_heavy_stage(db: Database, job_id: str, actor: str, sync_one) -> None:
-    _col(db).update_one(
-        {"job_id": job_id},
-        {"$set": {"status": "heavy_stage_running", "updated_at": _utc_now()}},
+# Chỉ chuyển trạng thái và spawn thread đúng một lần theo kiểu atomic.
+def launch_heavy_stage(db: Database, job_id: str, actor: str, sync_one) -> Dict[str, Any]:
+    now = _utc_now()
+    accepted = _col(db).find_one_and_update(
+        {"job_id": job_id, "status": "approved_for_heavy_stage"},
+        {"$set": {"status": "heavy_stage_running", "updated_at": now}},
+        return_document=ReturnDocument.AFTER,
     )
-    threading.Thread(
-        target=_do_heavy, args=(db, job_id, actor, sync_one), daemon=True
-    ).start()
+    if accepted:
+        _log.info(
+            "[heavy/%s] Heavy launch accepted: approved_for_heavy_stage -> heavy_stage_running",
+            job_id,
+        )
+        threading.Thread(
+            target=_do_heavy, args=(db, job_id, actor, sync_one), daemon=True
+        ).start()
+        return {"accepted": True, "status": "heavy_stage_running", "already_started": False}
+
+    current = _col(db).find_one({"job_id": job_id}, {"status": 1, "_id": 0})
+    current_status = current.get("status") if current else None
+    if current_status == "heavy_stage_running":
+        _log.warning(
+            "[heavy/%s] Duplicate heavy trigger prevented: job already heavy_stage_running",
+            job_id,
+        )
+        return {"accepted": False, "status": current_status, "already_started": True}
+    if current_status == "heavy_stage_done":
+        _log.info(
+            "[heavy/%s] Heavy launch skipped: job already heavy_stage_done",
+            job_id,
+        )
+        return {"accepted": False, "status": current_status, "already_started": True}
+
+    _log.info(
+        "[heavy/%s] Heavy launch skipped: current status is %s",
+        job_id,
+        current_status,
+    )
+    return {"accepted": False, "status": current_status, "already_started": False}
 
 
 def _num_pad(heading: str) -> str:
@@ -1195,6 +1225,22 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
                   job_id, bundle_path, book_stem)
         output_book_dir = _OUTPUT_ROOT / book_stem
         output_book_dir.parent.mkdir(parents=True, exist_ok=True)
+        if output_book_dir.exists():
+            removed = _cleanup_tree_if_safe(
+                output_book_dir,
+                _OUTPUT_ROOT,
+                reason=f"thư mục output đích tồn tại trước khi copy ({book_stem})",
+            )
+            if removed:
+                _log.warning(
+                    "[heavy/%s] Output dir existed and was removed defensively before copy: %s",
+                    job_id,
+                    output_book_dir,
+                )
+            else:
+                raise FileExistsError(
+                    f"Output destination exists but could not be removed safely: {output_book_dir}"
+                )
         shutil.copytree(str(bundle_path), str(output_book_dir))
         _log.info("[heavy/%s] Bundle copy OK -> %s", job_id, output_book_dir)
 

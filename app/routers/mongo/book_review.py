@@ -515,16 +515,29 @@ async def approve_chunks(job_id: str):
 async def trigger_heavy(request: Request, job_id: str):
     actor = _actor(request)
     job = _get_or_404(job_id)
-
-    if job["status"] != "approved_for_heavy_stage":
+    current = job["status"]
+    if current not in {"approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done"}:
         raise HTTPException(
             status_code=409,
-            detail=f"Job must be in 'approved_for_heavy_stage' status (current: {job['status']})",
+            detail=f"Job must be in 'approved_for_heavy_stage' status (current: {current})",
         )
-    launch_heavy_stage(
+
+    launch_result = launch_heavy_stage(
         db,
         job_id,
         actor=actor,
         sync_one=lambda col, doc: sync_doc_to_postgres(db, col, doc),
     )
-    return {"ok": True, "message": "Heavy stage started in background"}
+    if launch_result["accepted"]:
+        return {"ok": True, "message": "Heavy stage started in background", "status": launch_result["status"]}
+    if launch_result["status"] in {"heavy_stage_running", "heavy_stage_done"}:
+        return {
+            "ok": True,
+            "already_started": True,
+            "message": "Heavy stage already started" if launch_result["status"] == "heavy_stage_running" else "Heavy stage already completed",
+            "status": launch_result["status"],
+        }
+    raise HTTPException(
+        status_code=409,
+        detail=f"Job must be in 'approved_for_heavy_stage' status (current: {launch_result['status']})",
+    )
