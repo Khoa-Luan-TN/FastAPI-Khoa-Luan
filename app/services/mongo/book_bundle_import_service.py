@@ -312,26 +312,9 @@ def import_book_bundle(
     sync_one: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
     upload_pdfs: bool = True,
     progress_cb: Optional[Callable[..., None]] = None,
+    generate_keyword_alias: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Import a processed book bundle into MongoDB and sync to PG / Neo4j.
-
-    Parameters
-    ----------
-    bundle_dir:      Absolute path to Output/<book_stem>/ produced by Gemini-Api.
-    class_name:      e.g. "10"  (must be supplied; not in bundle output).
-    subject_name:    e.g. "Tin học"  (must be supplied; not in bundle output).
-    subject_type:    e.g. "Kết nối tri thức" — stored on subject as metadata only.
-                     Does not affect import_key or MinIO paths.
-    topic_names:     Optional {"01": "Chủ đề 1: ...", "02": ...}.  Falls back to "Chủ đề N".
-    lesson_names:    Optional {"07": "Bài 7: ...", ...}.  Falls back to "Bài N".
-    source_pdf_path: Optional path to the original book PDF; uploaded to subject documents.
-                     If omitted, discovery is attempted from topic companion JSONs.
-    actor:           Mongo audit actor (usually admin user ID).
-    sync_one:        Callable(col, doc) → dict; should call sync_doc_to_postgres.
-    upload_pdfs:     Set False to skip MinIO PDF upload.
-    progress_cb:     Optional Callable(stage, message, percent, counts) for progress reporting.
-    """
+    
 
     def _cb(stage: str, message: str, percent: int, counts: Optional[Dict[str, Any]] = None) -> None:
         if progress_cb is not None:
@@ -897,9 +880,14 @@ def import_book_bundle(
         "stopped_due_to_quota": False,
         "remaining_keywords": [],
     }
-    if new_keywords:
+    if new_keywords and not generate_keyword_alias:
         _log.info(
-            "[book_bundle_import] alias phase start: %d newly inserted keyword(s) entering alias generation",
+            "[book_bundle_import] generate_keyword_alias=false -> skipping keyword alias generation for %d newly inserted keyword(s)",
+            len(new_keywords),
+        )
+    if new_keywords and generate_keyword_alias:
+        _log.info(
+            "[book_bundle_import] generate_keyword_alias=true -> alias generation enabled for %d newly inserted keyword(s)",
             len(new_keywords),
         )
         _cb("heavy_generating_aliases", f"Bắt đầu tạo alias cho {len(new_keywords)} từ khóa mới…", 97)
@@ -974,6 +962,7 @@ def import_book_bundle(
         "subject_type_used": subject_type,
         "source_pdf_path_used": str(_resolved_source_pdf) if _resolved_source_pdf else None,
         "upload_pdfs": upload_pdfs,
+        "generate_keyword_alias": generate_keyword_alias,
         "counts": {
             "class_op":   class_op,
             "subject_op": subj_op,

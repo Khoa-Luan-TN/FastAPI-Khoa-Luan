@@ -197,11 +197,14 @@ export function approveChunks(jobId) {
 }
 
 // Kích hoạt bước xử lý nặng
-export function triggerHeavyStage(jobId) {
+export function triggerHeavyStage(jobId, options = {}) {
   return httpJson(
     `${API_BASE}/admin/mongo/book-review/jobs/${encodeURIComponent(jobId)}/trigger-heavy`,
     {
       method: "POST",
+      body: JSON.stringify({
+        generate_keyword_alias: Boolean(options.generate_keyword_alias),
+      }),
     }
   );
 }

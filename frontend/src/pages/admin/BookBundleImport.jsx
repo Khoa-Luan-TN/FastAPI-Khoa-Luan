@@ -89,6 +89,7 @@ function getWorkflowStepKey(status, phase) {
 export default function BookBundleImport() {
   const [phase, setPhase] = useState("upload");
   const [form, setForm] = useState({ class_name: "Lớp 10", subject_name: "Tin học" });
+  const [generateKeywordAlias, setGenerateKeywordAlias] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -498,12 +499,18 @@ export default function BookBundleImport() {
       await approveChunks(job.job_id);
     });
 
-  const handleTriggerHeavy = () => act(() => triggerHeavyStage(job.job_id));
+  const handleTriggerHeavy = () =>
+    act(() =>
+      triggerHeavyStage(job.job_id, {
+        generate_keyword_alias: generateKeywordAlias,
+      })
+    );
 
   function handleReset() {
     clearInterval(pollRef.current);
     setPhase("upload");
     setForm({ class_name: "Lớp 10", subject_name: "Tin học" });
+    setGenerateKeywordAlias(false);
     setPdfFile(null);
     setUploading(false);
     setUploadError("");
@@ -750,6 +757,15 @@ export default function BookBundleImport() {
                 <p style={{ margin: "0 0 16px", fontSize: 14, color: "#475569", lineHeight: 1.6 }}>
                   Cấu trúc đã được duyệt đầy đủ. Bước tiếp theo sẽ chạy Kaggle để xử lý OCR, trích xuất từ khóa, rồi nhập vào Dữ liệu mô tả / Dữ liệu có cấu trúc / Dữ liệu đồ thị.
                 </p>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, fontSize: 14, color: "#334155" }}>
+                  <input
+                    type="checkbox"
+                    checked={generateKeywordAlias}
+                    disabled={acting}
+                    onChange={(e) => setGenerateKeywordAlias(e.target.checked)}
+                  />
+                  <span>Auto-generate keyword aliases</span>
+                </label>
                 <button style={s.btnPrimary} disabled={acting} onClick={handleTriggerHeavy}>
                   {acting ? "Đang khởi động…" : "Bắt đầu nhập dữ liệu"}
                 </button>

@@ -137,6 +137,7 @@ def create_job(
         "class_name": class_name,
         "subject_name": subject_name.strip() if subject_name and subject_name.strip() else _FIXED_SUBJECT_NAME,
         "subject_type": _FIXED_SUBJECT_TYPE,
+        "generate_keyword_alias": False,
         "source_pdf_path": str(pdf_path),
         "book_stem": unique_stem,
         "workspace": str(workspace),
@@ -592,44 +593,81 @@ def approve_chunks_final(db: Database, job_id: str) -> bool:
 
 # Khi bắt đầu chạy nặng thì vào đây
 # Chỉ chuyển trạng thái và spawn thread đúng một lần theo kiểu atomic.
-def launch_heavy_stage(db: Database, job_id: str, actor: str, sync_one) -> Dict[str, Any]:
+def launch_heavy_stage(
+    db: Database,
+    job_id: str,
+    actor: str,
+    sync_one,
+    *,
+    generate_keyword_alias: bool = False,
+) -> Dict[str, Any]:
     now = _utc_now()
     accepted = _col(db).find_one_and_update(
         {"job_id": job_id, "status": "approved_for_heavy_stage"},
-        {"$set": {"status": "heavy_stage_running", "updated_at": now}},
+        {
+            "$set": {
+                "status": "heavy_stage_running",
+                "updated_at": now,
+                "generate_keyword_alias": bool(generate_keyword_alias),
+            }
+        },
         return_document=ReturnDocument.AFTER,
     )
     if accepted:
         _log.info(
-            "[heavy/%s] Heavy launch accepted: approved_for_heavy_stage -> heavy_stage_running",
+            "[heavy/%s] Heavy launch accepted: approved_for_heavy_stage -> heavy_stage_running | generate_keyword_alias=%s",
             job_id,
+            bool(generate_keyword_alias),
         )
         threading.Thread(
             target=_do_heavy, args=(db, job_id, actor, sync_one), daemon=True
         ).start()
-        return {"accepted": True, "status": "heavy_stage_running", "already_started": False}
+        return {
+            "accepted": True,
+            "status": "heavy_stage_running",
+            "already_started": False,
+            "generate_keyword_alias": bool(generate_keyword_alias),
+        }
 
-    current = _col(db).find_one({"job_id": job_id}, {"status": 1, "_id": 0})
+    current = _col(db).find_one(
+        {"job_id": job_id},
+        {"status": 1, "generate_keyword_alias": 1, "_id": 0},
+    )
     current_status = current.get("status") if current else None
     if current_status == "heavy_stage_running":
         _log.warning(
             "[heavy/%s] Duplicate heavy trigger prevented: job already heavy_stage_running",
             job_id,
         )
-        return {"accepted": False, "status": current_status, "already_started": True}
+        return {
+            "accepted": False,
+            "status": current_status,
+            "already_started": True,
+            "generate_keyword_alias": current.get("generate_keyword_alias") if current else None,
+        }
     if current_status == "heavy_stage_done":
         _log.info(
             "[heavy/%s] Heavy launch skipped: job already heavy_stage_done",
             job_id,
         )
-        return {"accepted": False, "status": current_status, "already_started": True}
+        return {
+            "accepted": False,
+            "status": current_status,
+            "already_started": True,
+            "generate_keyword_alias": current.get("generate_keyword_alias") if current else None,
+        }
 
     _log.info(
         "[heavy/%s] Heavy launch skipped: current status is %s",
         job_id,
         current_status,
     )
-    return {"accepted": False, "status": current_status, "already_started": False}
+    return {
+        "accepted": False,
+        "status": current_status,
+        "already_started": False,
+        "generate_keyword_alias": current.get("generate_keyword_alias") if current else None,
+    }
 
 
 def _num_pad(heading: str) -> str:
@@ -1576,6 +1614,12 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             "[heavy/%s] Stage: heavy_importing_mongo — starting import (kw_extracted=%d, kw_skipped=%d)",
             job_id, kw_extracted, kw_skipped,
         )
+        _log.info(
+            "[heavy/%s] generate_keyword_alias=%s -> %s",
+            job_id,
+            bool(doc.get("generate_keyword_alias", False)),
+            "alias generation enabled" if bool(doc.get("generate_keyword_alias", False)) else "skipping keyword alias generation",
+        )
 
         topic_names = _build_name_dict(doc.get("topics", [])) or None
         lesson_names = _build_name_dict(doc.get("lessons", [])) or None
@@ -1600,7 +1644,8 @@ def _do_heavy(db: Database, job_id: str, actor: str, sync_one) -> None:
             actor=actor,
             sync_one=sync_one,
             upload_pdfs=True,
-            progress_cb=_import_progress_cb,
+        progress_cb=_import_progress_cb,
+            generate_keyword_alias=bool(doc.get("generate_keyword_alias", False)),
         )
         _log.info("[heavy/%s] import_book_bundle returned OK", job_id)
 

@@ -49,6 +49,7 @@ async def import_book_bundle_endpoint(
     raw_topic_names  = body.get("topic_names")
     raw_lesson_names = body.get("lesson_names")
     upload_pdfs      = bool(body.get("upload_pdfs", True))
+    generate_keyword_alias = bool(body.get("generate_keyword_alias", False))
 
     raw_source_pdf = str(body.get("source_pdf_path") or "").strip()
     source_pdf_path: Optional[Path] = None
@@ -107,6 +108,7 @@ async def import_book_bundle_endpoint(
         actor=actor,
         sync_one=lambda col, doc: sync_doc_to_postgres(db, col, doc),
         upload_pdfs=upload_pdfs,
+        generate_keyword_alias=generate_keyword_alias,
     )
 
     return report

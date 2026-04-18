@@ -516,6 +516,16 @@ async def trigger_heavy(request: Request, job_id: str):
     actor = _actor(request)
     job = _get_or_404(job_id)
     current = job["status"]
+    body: Dict[str, Any] = {}
+    if request.headers.get("content-type", "").lower().startswith("application/json"):
+        try:
+            parsed = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON body")
+        if parsed is not None and not isinstance(parsed, dict):
+            raise HTTPException(status_code=400, detail="JSON body must be an object")
+        body = parsed or {}
+    generate_keyword_alias = bool((body or {}).get("generate_keyword_alias", False))
     if current not in {"approved_for_heavy_stage", "heavy_stage_running", "heavy_stage_done"}:
         raise HTTPException(
             status_code=409,
@@ -527,15 +537,22 @@ async def trigger_heavy(request: Request, job_id: str):
         job_id,
         actor=actor,
         sync_one=lambda col, doc: sync_doc_to_postgres(db, col, doc),
+        generate_keyword_alias=generate_keyword_alias,
     )
     if launch_result["accepted"]:
-        return {"ok": True, "message": "Heavy stage started in background", "status": launch_result["status"]}
+        return {
+            "ok": True,
+            "message": "Heavy stage started in background",
+            "status": launch_result["status"],
+            "generate_keyword_alias": launch_result["generate_keyword_alias"],
+        }
     if launch_result["status"] in {"heavy_stage_running", "heavy_stage_done"}:
         return {
             "ok": True,
             "already_started": True,
             "message": "Heavy stage already started" if launch_result["status"] == "heavy_stage_running" else "Heavy stage already completed",
             "status": launch_result["status"],
+            "generate_keyword_alias": launch_result.get("generate_keyword_alias"),
         }
     raise HTTPException(
         status_code=409,
