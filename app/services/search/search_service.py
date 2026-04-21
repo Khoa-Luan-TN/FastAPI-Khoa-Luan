@@ -1,7 +1,7 @@
 # app/services/search_service.py
 # Top-level search pipeline orchestrator.
-# Flow: Gemini keyword extraction → Neo4j topic embedding search → Mongo topic_bag lookup
-#       → alias/name match → chunk traversal → path description → Gemini hierarchy description.
+# Flow: Gemini keyword extraction → Mongo topic_bag embedding search → bag keyword/alias match
+#       → Neo4j graph traversal → PG/Mongo resolution → path description → Gemini hierarchy description.
 # Entry point: run_topic_probe() — called by routers/search.py only.
 from __future__ import annotations
 
@@ -16,7 +16,8 @@ from sqlalchemy import text as sql_text
 
 from app.services.ai.gemini_keyword_service import extract_query_keywords
 from app.services.infrastructure.mongo_client import get_mongo_db
-from app.services.search.neo_search_service import search_top_topics_by_embedding
+from app.services.search.mongo_vector_search_service import search_top_topic_bags_by_embedding
+from app.services.search.neo_search_service import fetch_topic_keyword_graph_paths
 from app.services.infrastructure.postgre_client import SessionLocal
 from app.services.ai.search_description_service import (
     generate_search_descriptions_result,
@@ -283,32 +284,25 @@ def _probe_keyword(
         "keyword_documents": [],
     }
 
-    top_topics = _probe_top_topics(neo, keyword)
+    top_topics = _probe_top_topics(db, keyword)
     if not top_topics:
         return base
     
-    # Các topic_id khi Neo4j trả về (3 ứng viên do k = 3)
-    base["top_topics"] = top_topics
+    base["top_topics"] = [
+        {k: v for k, v in candidate.items() if k != "topic_bag"}
+        for candidate in top_topics
+    ]
 
     kw_norm = _norm(keyword)
     all_hits: List[Dict[str, Any]] = []
     seen_kw_oids: set = set()
 
     for candidate in top_topics:
-        # Duyệt qua từng topic_id
+        bag = candidate.get("topic_bag") or {}
         pg_topic_id = candidate.get("topic_id")
         if not pg_topic_id:
             continue
-
-        # Lấy mongo_id của topic_id đó trong PG
-        mongo_topic_id = _pg_topic_mongo_id(pg_topic_id)
-        if not mongo_topic_id:
-            _log.debug("No mongo_id for pg topic_id=%s", pg_topic_id)
-            continue
-
-        # Tìm túi từ của Topic_id đó
-        bag = _fetch_topic_bag(db, mongo_topic_id)
-        if bag is None:
+        if not bag:
             continue
 
         # Tìm keyword tương ứng trong túi từ đó
@@ -327,8 +321,9 @@ def _probe_keyword(
 
         kw_assets = _fetch_owner_assets(db, "keyword", kw_id)
         hits = _fetch_chunk_hits(
+            neo,
             db,
-            matched_kw_oid,
+            pg_topic_id,
             matched_keyword=keyword,
             keyword_name=keyword_name,
             include_descriptions=include_descriptions,
@@ -371,27 +366,35 @@ def _probe_keyword(
     return base
 
 # Luồng Search 3
-# Tìm top-k của Topic trong Neo4j
+# Tìm top-k topic_bag trong MongoDB bằng embedding đã lưu trên topic_bag
 def _probe_top_topics(
-    neo: Session,
+    db: Any,
     keyword: str,
     k: int = _TOP_K,
 ) -> List[Dict[str, Any]]:
-    rows = search_top_topics_by_embedding(neo, keyword, k=k)
-    result = []
-    for r in rows:
-        topic_id = r.get("topic_id")
-        if topic_id:
-            result.append({"topic_id": topic_id})
+    rows = search_top_topic_bags_by_embedding(db, keyword, k=k)
+    result: List[Dict[str, Any]] = []
+    for row in rows:
+        bag = row.get("topic_bag") or {}
+        mongo_topic_id = str(bag.get("topic_id")).strip() if bag.get("topic_id") is not None else None
+        topic_bag_id = str(bag.get("_id")).strip() if bag.get("_id") is not None else None
+        pg_topic_id = _pg_topic_id_by_mongo_topic_id(mongo_topic_id) if mongo_topic_id else None
+        result.append({
+            "topic_id": pg_topic_id,
+            "mongo_topic_id": mongo_topic_id,
+            "topic_bag_id": topic_bag_id,
+            "score": row.get("score"),
+            "topic_bag": bag,
+        })
     return result
 
-# Từ topic_id chạy vào PG query và lấy ra mongo_id của topic_id
-def _pg_topic_mongo_id(pg_topic_id: str) -> Optional[str]:
+# Từ Mongo topic_id chạy vào PG query và lấy ra topic_id
+def _pg_topic_id_by_mongo_topic_id(mongo_topic_id: str) -> Optional[str]:
     pg = SessionLocal()
     try:
         row = pg.execute(
-            sql_text("SELECT mongo_id FROM topic WHERE topic_id = :tid LIMIT 1"),
-            {"tid": pg_topic_id},
+            sql_text("SELECT topic_id FROM topic WHERE mongo_id = :mongo_id LIMIT 1"),
+            {"mongo_id": mongo_topic_id},
         ).fetchone()
         if row and row[0]:
             return str(row[0]).strip() or None
@@ -399,14 +402,18 @@ def _pg_topic_mongo_id(pg_topic_id: str) -> Optional[str]:
     finally:
         pg.close()
 
-# Tìm topic_bag trong MongoDB dựa vào topic_id 
-def _fetch_topic_bag(db: Any, mongo_topic_id: str) -> Optional[Dict[str, Any]]:
-    oid = _to_oid(mongo_topic_id)
-    if oid is None:
+def _pg_entity_mongo_id(table: str, id_col: str, entity_id: str) -> Optional[str]:
+    pg = SessionLocal()
+    try:
+        row = pg.execute(
+            sql_text(f"SELECT mongo_id FROM {table} WHERE {id_col} = :entity_id LIMIT 1"),
+            {"entity_id": entity_id},
+        ).fetchone()
+        if row and row[0]:
+            return str(row[0]).strip() or None
         return None
-    return db["topic_bag"].find_one(
-        {"topic_id": oid, "is_deleted": {"$ne": True}},
-    )
+    finally:
+        pg.close()
 
 
 # Xử lí trên MongoDB
@@ -419,6 +426,23 @@ def _match_keyword_in_bag(
 ) -> Optional[Dict[str, Any]]:
     # Duyệt qua các keyword_refs trong Topic_bag
     for ref in (bag.get("keyword_refs") or []):
+        ref_keyword_name = str(ref.get("keyword_name") or "").strip()
+        if ref_keyword_name and _norm(ref_keyword_name) == kw_norm:
+            kw_oid = ref.get("keyword_id")
+            if kw_oid is not None:
+                kw_doc = db["keyword"].find_one(
+                    {"_id": kw_oid, "is_deleted": {"$ne": True}},
+                    {"keyword_name": 1, "aliases": 1},
+                )
+                if kw_doc:
+                    return _kw_doc_to_match(kw_oid, kw_doc)
+                return {
+                    "_oid": kw_oid,
+                    "_id": str(kw_oid),
+                    "keyword_name": ref_keyword_name,
+                    "aliases": [],
+                }
+
         # Lấy keyword_id gán vào kw_oid
         kw_oid = ref.get("keyword_id")
         if kw_oid is None:
@@ -447,26 +471,42 @@ def _kw_doc_to_match(kw_oid: Any, kw_doc: Dict[str, Any]) -> Dict[str, Any]:
         "aliases": kw_doc.get("aliases") or [],
     }
 
-# Hàm tìm chunk_id trong Collection[chunk_keyword]
+# Dùng Cypher sau khi chọn candidate bag để tìm chunk liên quan trong graph
 def _fetch_chunk_hits(
+    neo: Session,
     db: Any,
-    kw_oid: Any,
+    pg_topic_id: str,
     matched_keyword: Optional[str] = None,
     keyword_name: Optional[str] = None,
     include_descriptions: bool = True,
     description_status: Dict[str, Any] | None = None,
 ) -> List[Dict[str, Any]]:
-    # Tìm chunk_id của keyword tìm được
-    ck_docs = list(db["chunk_keyword"].find(
-        {"keyword_id": kw_oid, "is_deleted": {"$ne": True}},
-        {"chunk_id": 1},
-    ))
+    graph_rows = fetch_topic_keyword_graph_paths(
+        neo,
+        topic_id=pg_topic_id,
+        keyword_name=keyword_name or "",
+    )
 
     hits: List[Dict[str, Any]] = []
-    for ck in ck_docs:
+    seen_chunk_ids: set[str] = set()
+    for row in graph_rows:
+        row_topic_id = str(row.get("topic_id") or "").strip()
+        row_keyword_name = str(row.get("keyword_name") or "").strip()
+        if row_topic_id != str(pg_topic_id).strip():
+            continue
+        if not row_keyword_name or _norm(row_keyword_name) != _norm(keyword_name or ""):
+            continue
+
+        pg_chunk_id = row.get("chunk_id")
+        if not pg_chunk_id:
+            continue
+        mongo_chunk_id = _pg_entity_mongo_id("chunk", "chunk_id", str(pg_chunk_id))
+        if not mongo_chunk_id or mongo_chunk_id in seen_chunk_ids:
+            continue
+        seen_chunk_ids.add(mongo_chunk_id)
         hit = _build_chunk_hit(
             db,
-            ck.get("chunk_id"),
+            mongo_chunk_id,
             matched_keyword=matched_keyword,
             keyword_name=keyword_name,
             include_descriptions=include_descriptions,
