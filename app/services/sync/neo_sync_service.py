@@ -3,35 +3,13 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Any, Dict, Optional, Callable
+from typing import Dict, Optional, Callable
 
 from neo4j import Session as NeoSession
 from app.services.infrastructure.neo_client import neo4j_driver, _neo4j_database
 
 ROOT_THING_ID = "thing"
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword"}  # ✅ không sync user; chunk_keyword routes via "keyword"
-
-_VECTOR_INDEX_SPECS = {
-    "topic": ("topic_embedding_idx", "Topic", "embedding"),
-}
-
-def _ensure_vector_index_for_col(session: NeoSession, col: str) -> None:
-    spec = _VECTOR_INDEX_SPECS.get(col)
-    if not spec:
-        return
-
-    idx_name, label, prop = spec
-
-    session.run(
-        f"""
-        CREATE VECTOR INDEX {idx_name} IF NOT EXISTS
-        FOR (n:{label}) ON (n.{prop})
-        OPTIONS {{indexConfig: {{
-            `vector.dimensions`: 768,
-            `vector.similarity_function`: 'cosine'
-        }}}}
-        """
-    )
 
 @contextmanager
 def neo_session() -> NeoSession:
@@ -57,7 +35,7 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "topic": lambda s, p: _upsert_topic(
             s, topic_id=p["id"], topic_name=p.get("name", ""), subject_id=p.get("parent_id"),
-            topic_num=p.get("topic_num"), embedding=p.get("embedding"),
+            topic_num=p.get("topic_num"),
         ),
         "lesson": lambda s, p: _upsert_lesson(
             s, lesson_id=p["id"], lesson_name=p.get("name", ""), topic_id=p.get("parent_id"),
@@ -77,11 +55,6 @@ def sync_upsert(col: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         with neo_session() as s:
-            # chỉ ensure index khi payload thật sự có embedding
-            vec = payload.get("embedding")
-            if isinstance(vec, (list, tuple)) and len(vec) > 0:
-                _ensure_vector_index_for_col(s, col)
-
             handlers[col](s, payload)
 
         return {"ok": True}
@@ -163,7 +136,6 @@ def _upsert_topic(
     topic_name: str,
     subject_id: Optional[str],
     topic_num: Optional[int] = None,
-    embedding: Optional[list[float]] = None,
 ) -> None:
     if not subject_id:
         session.run(
@@ -171,13 +143,11 @@ def _upsert_topic(
             MERGE (t:Topic {topic_id:$topic_id})
             SET t.topic_name = $topic_name,
                 t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
-                t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
                 t.updated_at = datetime()
             """,
             topic_id=topic_id,
             topic_name=topic_name or "",
             topic_num=topic_num,
-            embedding=embedding,
         )
         return
 
@@ -187,7 +157,6 @@ def _upsert_topic(
         MERGE (t:Topic {topic_id:$topic_id})
         SET t.topic_name = $topic_name,
             t.topic_num = CASE WHEN $topic_num IS NOT NULL THEN $topic_num ELSE t.topic_num END,
-            t.embedding = CASE WHEN $embedding IS NULL THEN t.embedding ELSE $embedding END,
             t.updated_at = datetime()
 
         WITH s, t
@@ -201,7 +170,6 @@ def _upsert_topic(
         topic_id=topic_id,
         topic_name=topic_name or "",
         topic_num=topic_num,
-        embedding=embedding,
     )
 
 
@@ -515,20 +483,5 @@ def detach_delete_entity(col: str, entity_id: str) -> dict:
         with neo_session() as s:
             s.run(cypher, eid=entity_id).consume()
         return {"ok": True, "deleted": True}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
-def clear_topic_embedding_neo(topic_id: str) -> dict:
-    try:
-        with neo_session() as s:
-            s.run(
-                """
-                MATCH (t:Topic {topic_id: $topic_id})
-                REMOVE t.embedding
-                """,
-                topic_id=topic_id,
-            ).consume()
-        return {"ok": True, "cleared": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}

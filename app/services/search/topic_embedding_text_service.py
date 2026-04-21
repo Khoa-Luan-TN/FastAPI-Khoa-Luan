@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from bson import ObjectId
+from app.services.ai.embedder import embed_passage_prepared, normalize_embedding_text
 from app.services.shared._utils import normalize_for_compare
 
 
@@ -67,4 +68,54 @@ def build_topic_embedding_text_from_topic_bag(db, topic_doc: dict[str, Any]) -> 
         "keyword_embedding_text": keyword_embedding_text,
         "raw_keywords": raw_keywords,
         "topic_bag_id": topic_bag_id,
+    }
+
+
+def refresh_topic_bag_embedding(db, topic_doc: dict[str, Any]) -> dict[str, Any]:
+    result = build_topic_embedding_text_from_topic_bag(db, topic_doc)
+    topic_bag_id = result["topic_bag_id"]
+    keyword_embedding_text = result["keyword_embedding_text"]
+
+    if not topic_bag_id:
+        return {
+            "ok": True,
+            "skipped": True,
+            "reason": "active_topic_bag_missing",
+            "keyword_embedding_text": "",
+            "topic_bag_embedding": None,
+            "topic_bag_id": None,
+        }
+
+    normalized_text = normalize_embedding_text(keyword_embedding_text)
+    topic_bag_embedding = None
+    if normalized_text:
+        topic_bag_embedding = [float(x) for x in embed_passage_prepared(normalized_text)]
+
+    bag_oid = ObjectId(topic_bag_id) if ObjectId.is_valid(topic_bag_id) else topic_bag_id
+    update_result = db["topic_bag"].update_one(
+        {"_id": bag_oid, "is_deleted": {"$ne": True}},
+        {
+            "$set": {
+                "keyword_embedding_text": keyword_embedding_text,
+                "topic_bag_embedding": topic_bag_embedding,
+            }
+        },
+    )
+
+    if update_result.matched_count == 0:
+        return {
+            "ok": True,
+            "skipped": True,
+            "reason": "active_topic_bag_missing",
+            "keyword_embedding_text": "",
+            "topic_bag_embedding": None,
+            "topic_bag_id": None,
+        }
+
+    return {
+        "ok": True,
+        "topic_bag_id": topic_bag_id,
+        "keyword_embedding_text": keyword_embedding_text,
+        "topic_bag_embedding": topic_bag_embedding,
+        "embedding_generated": topic_bag_embedding is not None,
     }

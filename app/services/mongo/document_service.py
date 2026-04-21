@@ -81,6 +81,8 @@ def _auto_create_topic_bag(db, topic_oid, topic_name: str, *, actor: str, now) -
             "topic_name": topic_name,
             "keyword_refs": [],
             "total_keywords": 0,
+            "keyword_embedding_text": "",
+            "topic_bag_embedding": None,
             "is_deleted": False,
             "deleted_at": None,
             "created_at": now,

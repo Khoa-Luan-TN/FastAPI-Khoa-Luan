@@ -9,6 +9,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 
 from app.services.infrastructure.mongo_client import get_mongo_db
+from app.services.search.topic_embedding_text_service import refresh_topic_bag_embedding
 from app.services.sync.sync_service import sync_doc_to_postgres
 from app.services.mongo.document_service import create_document_core
 
@@ -477,7 +478,7 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
             pg_user_id = str(sync["pg_id"])
             db[col].update_one(id_filter, {"$set": {"user_id": pg_user_id}})
 
-    # topic_bag: keyword_refs changed → reconcile chunk_keyword rows, then re-sync topic embedding
+    # topic_bag: keyword_refs changed → reconcile chunk_keyword rows, then refresh topic_bag embedding
     _topic_bag_sync: Optional[dict] = None
     _ck_reconcile: Optional[dict] = None
     if _topic_bag_kw_refs_changed:
@@ -494,10 +495,10 @@ def update_document(collection_name: str, oid: str, request: Request, body: Dict
                         now=now,
                         actor=actor,
                     )
-                # 2. Rebuild topic.keyword_embedding_text and re-sync topic to PG+Neo4j
+                # 2. Rebuild keyword_embedding_text and topic_bag_embedding on the active topic_bag
                 _topic_doc = db["topic"].find_one({"_id": _topic_oid, "is_deleted": {"$ne": True}})
                 if _topic_doc:
-                    _topic_bag_sync = sync_doc_to_postgres(db, "topic", _topic_doc)
+                    _topic_bag_sync = refresh_topic_bag_embedding(db, _topic_doc)
         except Exception as _tbs_err:
             _topic_bag_sync = {"ok": False, "error": str(_tbs_err)}
 
@@ -523,7 +524,7 @@ def _cascade_keyword_soft_delete(db, keyword_oid, now, actor: str) -> dict:
 
     1. Soft-delete all active chunk_keyword rows for this keyword and sync each to PG+Neo4j.
     2. Remove this keyword from all active topic_bag.keyword_refs arrays and recompute total_keywords.
-    3. Re-sync each affected topic to PG+Neo4j (rebuilds keyword_embedding_text + embedding).
+    3. Refresh each affected topic_bag in Mongo (rebuilds keyword_embedding_text + topic_bag_embedding).
 
     Returns a debug dict with counts and any errors.
     """
@@ -565,16 +566,16 @@ def _cascade_keyword_soft_delete(db, keyword_oid, now, actor: str) -> dict:
         }})
         affected_topic_bag += 1
 
-        # 3. Re-sync the parent topic (reads updated topic_bag.keyword_refs)
+        # 3. Refresh the parent topic_bag (reads updated topic_bag.keyword_refs)
         topic_oid = bag_doc.get("topic_id")
         if topic_oid:
             topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
             if topic_doc:
                 try:
-                    sync_doc_to_postgres(db, "topic", topic_doc)
+                    refresh_topic_bag_embedding(db, topic_doc)
                     affected_topic_sync += 1
                 except Exception as _e:
-                    cascade_errors.append({"step": "topic_sync", "id": str(topic_oid), "error": str(_e)})
+                    cascade_errors.append({"step": "topic_bag_embedding_refresh", "id": str(topic_oid), "error": str(_e)})
 
     return {
         "chunk_keyword_soft_deleted_count": ck_soft_deleted,
@@ -590,8 +591,8 @@ def _cascade_keyword_restore(db, keyword_oid, kw_doc, now, actor: str) -> dict:
     1. Restore soft-deleted chunk_keyword rows for this keyword and sync each to PG+Neo4j.
     2. Trace each restored row's chunk → lesson → topic to collect affected topic_ids.
     3. For each affected topic: add keyword back into topic_bag.keyword_refs if absent
-       (creating a minimal system-managed bag if none exists), then re-sync the topic
-       to PG+Neo4j to rebuild keyword_embedding_text + embedding.
+       (creating a minimal system-managed bag if none exists), then refresh the active
+       topic_bag in Mongo to rebuild keyword_embedding_text + topic_bag_embedding.
 
     Returns a debug dict with counts and errors.
     """
@@ -624,7 +625,7 @@ def _cascade_keyword_restore(db, keyword_oid, kw_doc, now, actor: str) -> dict:
             if lesson_doc and lesson_doc.get("topic_id"):
                 affected_topic_ids.add(lesson_doc["topic_id"])
 
-    # 2. For each affected topic, update topic_bag and re-sync topic
+    # 2. For each affected topic, update topic_bag and refresh its embedding fields
     for topic_oid in affected_topic_ids:
         topic_doc = db["topic"].find_one({"_id": topic_oid, "is_deleted": {"$ne": True}})
         if not topic_doc:
@@ -637,6 +638,8 @@ def _cascade_keyword_restore(db, keyword_oid, kw_doc, now, actor: str) -> dict:
                 "topic_name": str(topic_doc.get("topic_name") or "").strip(),
                 "keyword_refs": [kw_ref_entry],
                 "total_keywords": 1,
+                "keyword_embedding_text": "",
+                "topic_bag_embedding": None,
                 "is_deleted": False, "deleted_at": None,
                 "created_at": now, "updated_at": now,
                 "created_by": actor, "updated_by": actor,
@@ -655,10 +658,10 @@ def _cascade_keyword_restore(db, keyword_oid, kw_doc, now, actor: str) -> dict:
                 affected_topic_bag += 1
 
         try:
-            sync_doc_to_postgres(db, "topic", topic_doc)
+            refresh_topic_bag_embedding(db, topic_doc)
             affected_topic_sync += 1
         except Exception as _e:
-            cascade_errors.append({"step": "topic_sync", "id": str(topic_oid), "error": str(_e)})
+            cascade_errors.append({"step": "topic_bag_embedding_refresh", "id": str(topic_oid), "error": str(_e)})
 
     return {
         "chunk_keyword_restored_count": ck_restored,

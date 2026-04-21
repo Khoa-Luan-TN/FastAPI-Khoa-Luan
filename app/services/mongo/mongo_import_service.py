@@ -18,6 +18,7 @@ from app.services.keyword.keyword_alias_service import (
     _resolve_keyword_slug,
     enforce_canonical_name_precedence,
 )
+from app.services.search.topic_embedding_text_service import refresh_topic_bag_embedding
 from app.services.shared._utils import utc_now, slugify_vi
 
 _log = logging.getLogger(__name__)
@@ -550,6 +551,8 @@ def _upsert_topic_bag(
         "topic_name": topic_name,
         "keyword_refs": [{"keyword_id": kw_oid, "keyword_name": keyword_name}],
         "total_keywords": 1,
+        "keyword_embedding_text": "",
+        "topic_bag_embedding": None,
         "is_deleted": False,
         "deleted_at": None,
         "created_at": now,
@@ -566,12 +569,7 @@ def _finalize_topic_embeddings(
     sync_one: Callable[[str, Dict[str, Any]], Dict[str, Any]],
     errors: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Sync each affected topic once after the full topic_bag is populated.
-
-    Rebuilds keyword_embedding_candidates / keyword_embedding_selected /
-    keyword_embedding_text / keyword_embedding_used_fallback in Mongo and
-    pushes the updated embedding to PG + Neo4j.
-    """
+    """Refresh each active topic_bag embedding once after keyword updates."""
     finalized = 0
     finalize_errors: List[Dict[str, Any]] = []
 
@@ -595,12 +593,17 @@ def _finalize_topic_embeddings(
                 topic_id, _import_key, _topic_name,
             )
 
-            result = sync_one("topic", topic_doc)
-            if isinstance(result, dict) and result.get("ok"):
+            result = refresh_topic_bag_embedding(db, topic_doc)
+            if isinstance(result, dict) and result.get("ok") and not result.get("skipped"):
                 finalized += 1
                 _log.info(
                     "[import] finalize: OK topic id=%s import_key=%s",
                     topic_id, _import_key,
+                )
+            elif isinstance(result, dict) and result.get("ok") and result.get("skipped"):
+                _log.info(
+                    "[import] finalize: SKIPPED topic id=%s import_key=%s reason=%s",
+                    topic_id, _import_key, result.get("reason", "no detail"),
                 )
             else:
                 err = result.get("error", "no detail") if isinstance(result, dict) else "no detail"

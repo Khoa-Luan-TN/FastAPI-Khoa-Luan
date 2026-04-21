@@ -6,18 +6,13 @@ from typing import Any, Optional
 from bson import ObjectId
 from app.services.infrastructure.postgre_client import SessionLocal
 import app.models.model_postgre as pg_models
-from app.services.sync.entity_embedding_service import ensure_topic_embedding, clear_topic_embedding
-from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity, clear_topic_embedding_neo
-from app.services.search.topic_embedding_text_service import build_topic_embedding_text_from_topic_bag
+from app.services.sync.neo_sync_service import sync_upsert as neo_sync_upsert, detach_delete_entity
+from app.services.search.topic_embedding_text_service import refresh_topic_bag_embedding
 
 _log = logging.getLogger(__name__)
 
 
 _OID_HEX_RE = re.compile(r"^[0-9a-fA-F]{24}$")
-
-def _resolve_topic_keyword_text(db, doc: dict) -> str:
-    result = build_topic_embedding_text_from_topic_bag(db, doc)
-    return result["keyword_embedding_text"]
 
 def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
     topic_oid = topic_doc.get("_id")
@@ -119,16 +114,6 @@ def _restore_topic_subtree(db, pg, topic_doc: dict, topic_pg_id: str) -> dict:
 
 SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "keyword", "chunk_keyword", "user"}
 NEO_SYNCABLE_COLS = {"class", "subject", "topic", "lesson", "chunk", "chunk_keyword"}
-
-def _attach_vec_to_neo_payload(info: dict, vec: Any, model_name: Optional[str] = None) -> None:
-    """Chuẩn hóa vector và gắn vào info['neo_payload'] nếu hợp lệ."""
-    if not (isinstance(vec, (list, tuple)) and len(vec) == 768):
-        return
-    payload = info.get("neo_payload") or {}
-    payload["embedding"] = [float(x) for x in vec]
-    if model_name is not None:
-        payload["model_name"] = model_name
-    info["neo_payload"] = payload
 
 def _to_int(v, default=None):
     if v is None:
@@ -1284,37 +1269,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
     # Kiểm tra có xoá mềm hay không 
     is_deleted = doc.get("is_deleted") is True
 
-    _topic_kw_text: Optional[str] = None
-    _topic_restore_in_progress: bool = False
-    _topic_kw_empty_with_active_bag: bool = False
-    if col == "topic" and not is_deleted:
-        # Tạo keyword_embedding_text
-        _topic_kw_text = _resolve_topic_keyword_text(db, doc)
-        doc_id = doc.get("_id")
-        if doc_id is not None:
-            if not _topic_kw_text:
-                _deleted_bag_exists = db["topic_bag"].count_documents(
-                    {"topic_id": doc_id, "is_deleted": True}, limit=1
-                ) > 0
-                if _deleted_bag_exists:
-                    _topic_restore_in_progress = True
-                else:
-                    _active_bag_exists = db["topic_bag"].count_documents(
-                        {"topic_id": doc_id, "is_deleted": {"$ne": True}}, limit=1
-                    ) > 0
-                    if _active_bag_exists:
-                        _topic_kw_text = _resolve_topic_keyword_text(db, doc)
-                        if not _topic_kw_text:
-                            _topic_kw_empty_with_active_bag = True
-            if not _topic_restore_in_progress and not _topic_kw_empty_with_active_bag:
-                try:
-                    db["topic"].update_one(
-                        {"_id": doc_id},
-                        {"$set": {"keyword_embedding_text": _topic_kw_text or ""}},
-                    )
-                except Exception as _persist_err:
-                    _log.warning("Failed to persist keyword_embedding_text for topic _id=%s: %s", doc_id, _persist_err)
-
     pg = SessionLocal()
     try:
         # Nếu bị soft delete thì đi xoá cascade tương ứng trong PG và Neo4j
@@ -1427,57 +1381,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
             # trong đây có trả về neo_payload
             info = _upsert_one_to_pg(db, pg, col, doc)
 
-        if is_deleted and col == "topic" and isinstance(info, dict):
-            pg_id = info.get("pg_id")
-            if pg_id:
-                try:
-                    with pg.begin():
-                        pg_clear = clear_topic_embedding(pg, pg_id)
-                    info["embedding"] = {
-                        "ok": pg_clear.get("ok", True),
-                        "cleared": True,
-                        "reason": "topic is soft-deleted",
-                        "pg": pg_clear,
-                    }
-                except Exception as _emb_err:
-                    _log.warning("topic_embedding clear (soft-delete) failed for pg_id=%s: %s", pg_id, _emb_err)
-                    info["embedding"] = {"ok": False, "error": str(_emb_err)}
-
-        if not is_deleted and col == "topic" and isinstance(info, dict):
-            pg_id = info.get("pg_id")
-            if pg_id:
-                kw_text = (_topic_kw_text or "").strip()
-                try:
-                    if kw_text:
-                        with pg.begin():
-                            emb = ensure_topic_embedding(pg, pg_id, kw_text)
-                        _attach_vec_to_neo_payload(
-                            info,
-                            emb.get("embedding") if isinstance(emb, dict) else None,
-                        )
-                        info["embedding"] = {
-                            "ok": emb.get("ok", False),
-                            "model_name": emb.get("model_name"),
-                        }
-                    elif _topic_restore_in_progress:
-                        info["embedding"] = {"ok": True, "skipped": True, "reason": "restore_in_progress"}
-                    elif _topic_kw_empty_with_active_bag:
-                        info["embedding"] = {"ok": True, "skipped": True, "reason": "topic_keyword_text_resolve_empty_with_active_topic_bag"}
-                    else:
-                        with pg.begin():
-                            pg_clear = clear_topic_embedding(pg, pg_id)
-                        neo_clear = clear_topic_embedding_neo(pg_id)
-                        info["embedding"] = {
-                            "ok": pg_clear.get("ok", True) and neo_clear.get("ok", True),
-                            "cleared": True,
-                            "reason": "keyword_text is empty",
-                            "pg": pg_clear,
-                            "neo": neo_clear,
-                        }
-                except Exception as _emb_err:
-                    _log.warning("topic_embedding upsert/clear failed for pg_id=%s: %s", pg_id, _emb_err)
-                    info["embedding"] = {"ok": False, "error": str(_emb_err)}
-
         if col == "keyword" and isinstance(info, dict) and info.get("renamed"):
             old_name = info["old_keyword_name"]
             new_name = info["keyword_name"]
@@ -1575,46 +1478,12 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
                 except Exception as _tbr_err:
                     _log.warning("topic bag restore failed: %s", _tbr_err)
                     _topic_bag_restore = {"ok": False, "error": str(_tbr_err)}
-
-                if _topic_restore_in_progress and isinstance(_topic_bag_restore, dict) and _topic_bag_restore.get("ok"):
-                    _doc_id = doc.get("_id")
-                    if _doc_id is not None:
-                        try:
-                            _topic_kw_text = _resolve_topic_keyword_text(db, doc)
-                            db["topic"].update_one(
-                                {"_id": _doc_id},
-                                {"$set": {"keyword_embedding_text": _topic_kw_text or ""}},
-                            )
-                        except Exception as _defer_err:
-                            _log.warning("Failed to persist deferred keyword_embedding_text for topic _id=%s: %s", _doc_id, _defer_err)
-                    if restore_pg_id:
-                        _kw_text_after = (_topic_kw_text or "").strip()
-                        try:
-                            if _kw_text_after:
-                                with pg.begin():
-                                    _emb = ensure_topic_embedding(pg, restore_pg_id, _kw_text_after)
-                                _attach_vec_to_neo_payload(
-                                    info,
-                                    _emb.get("embedding") if isinstance(_emb, dict) else None,
-                                )
-                                info["embedding"] = {
-                                    "ok": _emb.get("ok", False),
-                                    "model_name": _emb.get("model_name"),
-                                }
-                            else:
-                                with pg.begin():
-                                    _pg_clear = clear_topic_embedding(pg, restore_pg_id)
-                                _neo_clear = clear_topic_embedding_neo(restore_pg_id)
-                                info["embedding"] = {
-                                    "ok": _pg_clear.get("ok", True) and _neo_clear.get("ok", True),
-                                    "cleared": True,
-                                    "reason": "keyword_text is empty after restore",
-                                    "pg": _pg_clear,
-                                    "neo": _neo_clear,
-                                }
-                        except Exception as _emb_err:
-                            _log.warning("topic_embedding deferred upsert/clear failed for pg_id=%s: %s", restore_pg_id, _emb_err)
-                            info["embedding"] = {"ok": False, "error": str(_emb_err)}
+                if isinstance(_topic_bag_restore, dict) and _topic_bag_restore.get("ok"):
+                    try:
+                        info["topic_bag_embedding_refresh"] = refresh_topic_bag_embedding(db, doc)
+                    except Exception as _tbe_err:
+                        _log.warning("topic_bag embedding refresh failed: %s", _tbe_err)
+                        info["topic_bag_embedding_refresh"] = {"ok": False, "error": str(_tbe_err)}
 
                 if restore_pg_id:
                     try:
@@ -1673,8 +1542,8 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         cleanup_ok = neo_cleanup.get("ok", True) if neo_cleanup else True
         upsert_ok = neo_upsert.get("ok", True) if neo_upsert else True
         rename_prop_ok = not bool(isinstance(info, dict) and info.get("keyword_rename_errors"))
-        _emb_result = info.get("embedding") if isinstance(info, dict) else None
-        emb_ok = _emb_result.get("ok", True) if isinstance(_emb_result, dict) else True
+        _topic_bag_refresh_result = info.get("topic_bag_embedding_refresh") if isinstance(info, dict) else None
+        topic_bag_refresh_ok = _topic_bag_refresh_result.get("ok", True) if isinstance(_topic_bag_refresh_result, dict) else True
         _restore_result = info.get("restore_subtree") if isinstance(info, dict) else None
         restore_ok = _restore_result.get("ok", True) if isinstance(_restore_result, dict) else True
         restore_ck_ok = _restore_ck_result.get("ok", True) if isinstance(_restore_ck_result, dict) else True
@@ -1685,7 +1554,7 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
         topic_bag_restore_ok = _topic_bag_restore.get("ok", True) if isinstance(_topic_bag_restore, dict) else True
         subject_topic_restore_ok = _subject_topic_restore.get("ok", True) if isinstance(_subject_topic_restore, dict) else True
         class_subject_restore_ok = _class_subject_restore.get("ok", True) if isinstance(_class_subject_restore, dict) else True
-        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and emb_ok and restore_ok and restore_ck_ok and ck_mongo_restore_ok and pg_persist_ok and lesson_cascade_ok and topic_lesson_restore_ok and topic_bag_restore_ok and subject_topic_restore_ok and class_subject_restore_ok
+        top_ok = cleanup_ok and upsert_ok and rename_prop_ok and topic_bag_refresh_ok and restore_ok and restore_ck_ok and ck_mongo_restore_ok and pg_persist_ok and lesson_cascade_ok and topic_lesson_restore_ok and topic_bag_restore_ok and subject_topic_restore_ok and class_subject_restore_ok
 
         result: dict = {"ok": top_ok, **(info or {})}
         if neo_cleanup is not None:
@@ -1706,9 +1575,6 @@ def sync_doc_to_postgres(db, col: str, doc: dict) -> dict:
 
         result["neo_entity_sync"] = _neo_entity
         result["neo"] = _neo_entity
-
-        if isinstance(_emb_result, dict):
-            result["embedding_sync"] = _emb_result
 
         if isinstance(_restore_result, dict):
             result["restore_subtree"] = _restore_result
