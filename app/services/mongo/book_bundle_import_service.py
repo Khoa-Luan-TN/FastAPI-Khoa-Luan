@@ -865,7 +865,7 @@ def import_book_bundle(
         },
     )
     finalize_result: Dict[str, Any] = {}
-    if sync_one and affected_topic_ids:
+    if affected_topic_ids:
         _fe: List[Dict[str, Any]] = []
         finalize_result = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, _fe)
         errors.extend(_fe)

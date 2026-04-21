@@ -840,7 +840,7 @@ def _import_keyword_rows(
             })
 
     topic_finalize_summary: Dict[str, Any] = {"affected_topics": 0, "finalized_topics": 0, "topic_finalize_errors": []}
-    if sync_one is not None and affected_topic_ids:
+    if affected_topic_ids:
         _log.info("[import] finalizing topic embeddings for %d affected topic(s)", len(affected_topic_ids))
         topic_finalize_summary = _finalize_topic_embeddings(db, affected_topic_ids, sync_one, errors)
 
