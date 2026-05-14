@@ -1,2550 +1,727 @@
 [{
   "_id": {
-    "$oid": "69c9851c9d3ad7ce44964545"
+    "$oid": "69e77959104e6a99b261b1c8"
   },
   "owner_type": "subject",
-  "owner_id": "69c9851c9d3ad7ce44964544",
+  "owner_id": "69e77959104e6a99b261b1c7",
   "asset_type": "document",
   "bucket": "data-edu",
   "path_prefix": "documents/lop-11/tin-hoc/subject",
-  "object_key": "documents/lop-11/tin-hoc/subject/SGK-KHMT-11_cbd529f8.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/subject/SGK-KHMT-11_cbd529f8.pdf",
+  "object_key": "documents/lop-11/tin-hoc/subject/Tin-hoc-11-ket-noi-tri-thuc_da28cf18.pdf",
+  "file_name": "Tin-hoc-11-ket-noi-tri-thuc_da28cf18.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/subject/Tin-hoc-11-ket-noi-tri-thuc_da28cf18.pdf",
   "content_type": "application/pdf",
-  "size": 35943334,
+  "size": 30224596,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:32.282Z"
+    "$date": "2026-04-21T13:19:21.336Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:32.282Z"
+    "$date": "2026-04-21T13:19:21.336Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c9851c9d3ad7ce44964548"
+    "$oid": "69e77959104e6a99b261b1cb"
   },
   "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce44964546",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/topic/topic_01",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_01/SGK-KHMT-11_cbd529f8_topic_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_01/SGK-KHMT-11_cbd529f8_topic_01.pdf",
-  "content_type": "application/pdf",
-  "size": 7541660,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.404Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.404Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851c9d3ad7ce4496454b"
-  },
-  "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce44964549",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/topic/topic_02",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_02/SGK-KHMT-11_cbd529f8_topic_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_02/SGK-KHMT-11_cbd529f8_topic_02.pdf",
-  "content_type": "application/pdf",
-  "size": 2413068,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.507Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.507Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851c9d3ad7ce4496454e"
-  },
-  "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce4496454c",
+  "owner_id": "69e77959104e6a99b261b1c9",
   "asset_type": "document",
   "bucket": "data-edu",
   "path_prefix": "documents/lop-11/tin-hoc/topic/topic_03",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_03/SGK-KHMT-11_cbd529f8_topic_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_03/SGK-KHMT-11_cbd529f8_topic_03.pdf",
+  "object_key": "documents/lop-11/tin-hoc/topic/topic_03/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_topic_03.pdf",
+  "file_name": "Tin-hoc-11-ket-noi-tri-thuc_da28cf18_topic_03.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_03/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_topic_03.pdf",
   "content_type": "application/pdf",
-  "size": 1653871,
+  "size": 1306090,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:32.581Z"
+    "$date": "2026-04-21T13:19:21.547Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:32.581Z"
+    "$date": "2026-04-21T13:19:21.547Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c9851c9d3ad7ce44964551"
-  },
-  "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce4496454f",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/topic/topic_04",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_04/SGK-KHMT-11_cbd529f8_topic_04.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_04.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_04/SGK-KHMT-11_cbd529f8_topic_04.pdf",
-  "content_type": "application/pdf",
-  "size": 7584267,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.658Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.658Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851c9d3ad7ce44964554"
-  },
-  "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce44964552",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/topic/topic_05",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_05/SGK-KHMT-11_cbd529f8_topic_05.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_05.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_05/SGK-KHMT-11_cbd529f8_topic_05.pdf",
-  "content_type": "application/pdf",
-  "size": 1271339,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.724Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.724Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851c9d3ad7ce44964557"
-  },
-  "owner_type": "topic",
-  "owner_id": "69c9851c9d3ad7ce44964555",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/topic/topic_06",
-  "object_key": "documents/lop-11/tin-hoc/topic/topic_06/SGK-KHMT-11_cbd529f8_topic_06.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_topic_06.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/topic/topic_06/SGK-KHMT-11_cbd529f8_topic_06.pdf",
-  "content_type": "application/pdf",
-  "size": 14427230,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.838Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.838Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851c9d3ad7ce44964559"
+    "$oid": "69e77959104e6a99b261b1cd"
   },
   "owner_type": "lesson",
-  "owner_id": "69c9851c9d3ad7ce44964558",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_01",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_01/SGK-KHMT-11_cbd529f8_lesson_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_01-lesson_01/SGK-KHMT-11_cbd529f8_lesson_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1554245,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:32.906Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:32.906Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce4496455b"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851c9d3ad7ce4496455a",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_02",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_02/SGK-KHMT-11_cbd529f8_lesson_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_01-lesson_02/SGK-KHMT-11_cbd529f8_lesson_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1220223,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.019Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.019Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce4496455d"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce4496455c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_03",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_03/SGK-KHMT-11_cbd529f8_lesson_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_01-lesson_03/SGK-KHMT-11_cbd529f8_lesson_03.pdf",
-  "content_type": "application/pdf",
-  "size": 1701082,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.084Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.084Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce4496455f"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce4496455e",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_04",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_04/SGK-KHMT-11_cbd529f8_lesson_04.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_04.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_01-lesson_04/SGK-KHMT-11_cbd529f8_lesson_04.pdf",
-  "content_type": "application/pdf",
-  "size": 1568709,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.146Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.146Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce44964561"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964560",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_05",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_01-lesson_05/SGK-KHMT-11_cbd529f8_lesson_05.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_05.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_01-lesson_05/SGK-KHMT-11_cbd529f8_lesson_05.pdf",
-  "content_type": "application/pdf",
-  "size": 1508514,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.236Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.236Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce44964563"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964562",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_06",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_06/SGK-KHMT-11_cbd529f8_lesson_06.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_06.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_02-lesson_06/SGK-KHMT-11_cbd529f8_lesson_06.pdf",
-  "content_type": "application/pdf",
-  "size": 910436,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.333Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.333Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce44964565"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964564",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_07",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_07/SGK-KHMT-11_cbd529f8_lesson_07.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_07.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_02-lesson_07/SGK-KHMT-11_cbd529f8_lesson_07.pdf",
-  "content_type": "application/pdf",
-  "size": 684542,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.420Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.420Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce44964567"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964566",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_08",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_02-lesson_08/SGK-KHMT-11_cbd529f8_lesson_08.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_08.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_02-lesson_08/SGK-KHMT-11_cbd529f8_lesson_08.pdf",
-  "content_type": "application/pdf",
-  "size": 823712,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.553Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.553Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce44964569"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964568",
+  "owner_id": "69e77959104e6a99b261b1cc",
   "asset_type": "document",
   "bucket": "data-edu",
   "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_03-lesson_09",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_03-lesson_09/SGK-KHMT-11_cbd529f8_lesson_09.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_09.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_03-lesson_09/SGK-KHMT-11_cbd529f8_lesson_09.pdf",
+  "object_key": "documents/lop-11/tin-hoc/lesson/topic_03-lesson_09/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09.pdf",
+  "file_name": "Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_03-lesson_09/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09.pdf",
   "content_type": "application/pdf",
-  "size": 1653871,
+  "size": 1306090,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:33.679Z"
+    "$date": "2026-04-21T13:19:21.705Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:33.679Z"
+    "$date": "2026-04-21T13:19:21.705Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c9851d9d3ad7ce4496456b"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce4496456a",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_10",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_10/SGK-KHMT-11_cbd529f8_lesson_10.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_10.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_10/SGK-KHMT-11_cbd529f8_lesson_10.pdf",
-  "content_type": "application/pdf",
-  "size": 1067311,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.771Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.771Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce4496456d"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce4496456c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_11",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_11/SGK-KHMT-11_cbd529f8_lesson_11.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_11.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_11/SGK-KHMT-11_cbd529f8_lesson_11.pdf",
-  "content_type": "application/pdf",
-  "size": 1363101,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.874Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.874Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851d9d3ad7ce4496456f"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce4496456e",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_12",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_12/SGK-KHMT-11_cbd529f8_lesson_12.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_12.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_12/SGK-KHMT-11_cbd529f8_lesson_12.pdf",
-  "content_type": "application/pdf",
-  "size": 1583257,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:33.958Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:33.958Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964571"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851d9d3ad7ce44964570",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_13",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_13/SGK-KHMT-11_cbd529f8_lesson_13.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_13.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_13/SGK-KHMT-11_cbd529f8_lesson_13.pdf",
-  "content_type": "application/pdf",
-  "size": 1439675,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.041Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.041Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964573"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964572",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_14",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_14/SGK-KHMT-11_cbd529f8_lesson_14.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_14.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_14/SGK-KHMT-11_cbd529f8_lesson_14.pdf",
-  "content_type": "application/pdf",
-  "size": 1017692,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.187Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.187Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964575"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964574",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_15",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_04-lesson_15/SGK-KHMT-11_cbd529f8_lesson_15.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_15.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_04-lesson_15/SGK-KHMT-11_cbd529f8_lesson_15.pdf",
-  "content_type": "application/pdf",
-  "size": 1127145,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.336Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.336Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964577"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964576",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_05-lesson_16",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_05-lesson_16/SGK-KHMT-11_cbd529f8_lesson_16.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_16.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_05-lesson_16/SGK-KHMT-11_cbd529f8_lesson_16.pdf",
-  "content_type": "application/pdf",
-  "size": 1271339,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.442Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.442Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964579"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964578",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_17",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_17/SGK-KHMT-11_cbd529f8_lesson_17.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_17.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_17/SGK-KHMT-11_cbd529f8_lesson_17.pdf",
-  "content_type": "application/pdf",
-  "size": 1063760,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.543Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.543Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce4496457b"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce4496457a",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_18",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_18/SGK-KHMT-11_cbd529f8_lesson_18.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_18.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_18/SGK-KHMT-11_cbd529f8_lesson_18.pdf",
-  "content_type": "application/pdf",
-  "size": 615500,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.618Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.618Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce4496457d"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce4496457c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_19",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_19/SGK-KHMT-11_cbd529f8_lesson_19.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_19.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_19/SGK-KHMT-11_cbd529f8_lesson_19.pdf",
-  "content_type": "application/pdf",
-  "size": 1171546,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.709Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.709Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce4496457f"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce4496457e",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_20",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_20/SGK-KHMT-11_cbd529f8_lesson_20.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_20.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_20/SGK-KHMT-11_cbd529f8_lesson_20.pdf",
-  "content_type": "application/pdf",
-  "size": 1007025,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.781Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.781Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964581"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964580",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_21",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_21/SGK-KHMT-11_cbd529f8_lesson_21.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_21.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_21/SGK-KHMT-11_cbd529f8_lesson_21.pdf",
-  "content_type": "application/pdf",
-  "size": 1139562,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.860Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.860Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851e9d3ad7ce44964583"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964582",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_22",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_22/SGK-KHMT-11_cbd529f8_lesson_22.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_22.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_22/SGK-KHMT-11_cbd529f8_lesson_22.pdf",
-  "content_type": "application/pdf",
-  "size": 474145,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:34.929Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:34.929Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964585"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851e9d3ad7ce44964584",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_23",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_23/SGK-KHMT-11_cbd529f8_lesson_23.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_23.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_23/SGK-KHMT-11_cbd529f8_lesson_23.pdf",
-  "content_type": "application/pdf",
-  "size": 1333474,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.006Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.006Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964587"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce44964586",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_24",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_24/SGK-KHMT-11_cbd529f8_lesson_24.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_24.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_24/SGK-KHMT-11_cbd529f8_lesson_24.pdf",
-  "content_type": "application/pdf",
-  "size": 1101018,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.085Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.085Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964589"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce44964588",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_25",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_25/SGK-KHMT-11_cbd529f8_lesson_25.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_25.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_25/SGK-KHMT-11_cbd529f8_lesson_25.pdf",
-  "content_type": "application/pdf",
-  "size": 543005,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.167Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.167Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce4496458b"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce4496458a",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_26",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_26/SGK-KHMT-11_cbd529f8_lesson_26.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_26.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_26/SGK-KHMT-11_cbd529f8_lesson_26.pdf",
-  "content_type": "application/pdf",
-  "size": 1211961,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.269Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.269Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce4496458d"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce4496458c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_27",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_27/SGK-KHMT-11_cbd529f8_lesson_27.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_27.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_27/SGK-KHMT-11_cbd529f8_lesson_27.pdf",
-  "content_type": "application/pdf",
-  "size": 760570,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.387Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.387Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce4496458f"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce4496458e",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_28",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_28/SGK-KHMT-11_cbd529f8_lesson_28.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_28.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_28/SGK-KHMT-11_cbd529f8_lesson_28.pdf",
-  "content_type": "application/pdf",
-  "size": 1137287,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.488Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.488Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964591"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce44964590",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_29",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_29/SGK-KHMT-11_cbd529f8_lesson_29.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_29.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_29/SGK-KHMT-11_cbd529f8_lesson_29.pdf",
-  "content_type": "application/pdf",
-  "size": 996234,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.587Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.587Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964593"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce44964592",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_30",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_30/SGK-KHMT-11_cbd529f8_lesson_30.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_30.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_30/SGK-KHMT-11_cbd529f8_lesson_30.pdf",
-  "content_type": "application/pdf",
-  "size": 1202170,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.679Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.679Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964595"
-  },
-  "owner_type": "lesson",
-  "owner_id": "69c9851f9d3ad7ce44964594",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_31",
-  "object_key": "documents/lop-11/tin-hoc/lesson/topic_06-lesson_31/SGK-KHMT-11_cbd529f8_lesson_31.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_31.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/lesson/topic_06-lesson_31/SGK-KHMT-11_cbd529f8_lesson_31.pdf",
-  "content_type": "application/pdf",
-  "size": 708753,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.745Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.745Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9851f9d3ad7ce44964597"
+    "$oid": "69e77959104e6a99b261b1cf"
   },
   "owner_type": "chunk",
-  "owner_id": "69c9851f9d3ad7ce44964596",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01/SGK-KHMT-11_cbd529f8_lesson_01_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_01_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01/SGK-KHMT-11_cbd529f8_lesson_01_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 3056765,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:35.826Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:35.826Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985209d3ad7ce449645a2"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985209d3ad7ce449645a1",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02/SGK-KHMT-11_cbd529f8_lesson_01_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_01_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02/SGK-KHMT-11_cbd529f8_lesson_01_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 2761396,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:36.127Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:36.127Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985209d3ad7ce449645ae"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985209d3ad7ce449645ad",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03/SGK-KHMT-11_cbd529f8_lesson_01_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_01_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03/SGK-KHMT-11_cbd529f8_lesson_01_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 335739,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:36.430Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:36.430Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985209d3ad7ce449645b9"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985209d3ad7ce449645b8",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01/SGK-KHMT-11_cbd529f8_lesson_02_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_02_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01/SGK-KHMT-11_cbd529f8_lesson_02_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1220223,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:36.722Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:36.722Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985219d3ad7ce449645cd"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985219d3ad7ce449645cc",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01/SGK-KHMT-11_cbd529f8_lesson_03_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_03_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01/SGK-KHMT-11_cbd529f8_lesson_03_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1902799,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:37.183Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:37.183Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985219d3ad7ce449645d9"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985219d3ad7ce449645d8",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02/SGK-KHMT-11_cbd529f8_lesson_03_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_03_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02/SGK-KHMT-11_cbd529f8_lesson_03_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 3552678,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:37.457Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:37.457Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985219d3ad7ce449645e2"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985219d3ad7ce449645e1",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03/SGK-KHMT-11_cbd529f8_lesson_03_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_03_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03/SGK-KHMT-11_cbd529f8_lesson_03_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 688133,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:37.644Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:37.644Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985219d3ad7ce449645ed"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985219d3ad7ce449645ec",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01/SGK-KHMT-11_cbd529f8_lesson_04_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_04_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01/SGK-KHMT-11_cbd529f8_lesson_04_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 5006615,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:37.868Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:37.868Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985229d3ad7ce449645f9"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985229d3ad7ce449645f8",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02/SGK-KHMT-11_cbd529f8_lesson_04_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_04_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02/SGK-KHMT-11_cbd529f8_lesson_04_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1196739,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:38.116Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:38.116Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985229d3ad7ce44964602"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985229d3ad7ce44964601",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01/SGK-KHMT-11_cbd529f8_lesson_05_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_05_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01/SGK-KHMT-11_cbd529f8_lesson_05_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 5240206,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:38.540Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:38.540Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985229d3ad7ce4496460e"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985229d3ad7ce4496460d",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02/SGK-KHMT-11_cbd529f8_lesson_05_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_05_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02/SGK-KHMT-11_cbd529f8_lesson_05_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1479608,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:38.974Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:38.974Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985239d3ad7ce44964619"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985239d3ad7ce44964618",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01/SGK-KHMT-11_cbd529f8_lesson_06_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_06_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01/SGK-KHMT-11_cbd529f8_lesson_06_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2045801,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:39.244Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:39.244Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985239d3ad7ce44964624"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985239d3ad7ce44964623",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02/SGK-KHMT-11_cbd529f8_lesson_06_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_06_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02/SGK-KHMT-11_cbd529f8_lesson_06_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 2150670,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:39.491Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:39.491Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985239d3ad7ce4496462d"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985239d3ad7ce4496462c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01/SGK-KHMT-11_cbd529f8_lesson_07_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_07_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01/SGK-KHMT-11_cbd529f8_lesson_07_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 684542,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:39.724Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:39.724Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985249d3ad7ce44964642"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985249d3ad7ce44964641",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01/SGK-KHMT-11_cbd529f8_lesson_08_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_08_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01/SGK-KHMT-11_cbd529f8_lesson_08_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2872120,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:40.141Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:40.141Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985249d3ad7ce4496464e"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985249d3ad7ce4496464d",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02/SGK-KHMT-11_cbd529f8_lesson_08_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_08_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02/SGK-KHMT-11_cbd529f8_lesson_08_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1870228,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:40.397Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:40.397Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985249d3ad7ce4496465a"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985249d3ad7ce44964659",
+  "owner_id": "69e77959104e6a99b261b1ce",
   "asset_type": "document",
   "bucket": "data-edu",
   "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01/SGK-KHMT-11_cbd529f8_lesson_09_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_09_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01/SGK-KHMT-11_cbd529f8_lesson_09_chunk_01.pdf",
+  "object_key": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_01.pdf",
+  "file_name": "Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_01.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_01.pdf",
   "content_type": "application/pdf",
-  "size": 6238985,
+  "size": 7542081,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:40.618Z"
+    "$date": "2026-04-21T13:19:21.868Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:40.618Z"
+    "$date": "2026-04-21T13:19:21.868Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985249d3ad7ce44964666"
+    "$oid": "69e7795a104e6a99b261b1db"
   },
   "owner_type": "chunk",
-  "owner_id": "69c985249d3ad7ce44964665",
+  "owner_id": "69e7795a104e6a99b261b1da",
   "asset_type": "document",
   "bucket": "data-edu",
   "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02/SGK-KHMT-11_cbd529f8_lesson_09_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_09_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02/SGK-KHMT-11_cbd529f8_lesson_09_chunk_02.pdf",
+  "object_key": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_02.pdf",
+  "file_name": "Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_02.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02/Tin-hoc-11-ket-noi-tri-thuc_da28cf18_lesson_09_chunk_02.pdf",
   "content_type": "application/pdf",
-  "size": 1072259,
+  "size": 1120846,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:40.843Z"
+    "$date": "2026-04-21T13:19:22.248Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:40.843Z"
+    "$date": "2026-04-21T13:19:22.248Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985259d3ad7ce44964672"
+    "$oid": "69e77b44104e6a99b261b1e6"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985259d3ad7ce44964671",
+  "owner_type": "subject",
+  "owner_id": "69e7719f104e6a99b261ae36",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01/SGK-KHMT-11_cbd529f8_lesson_10_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_10_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01/SGK-KHMT-11_cbd529f8_lesson_10_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/subject",
+  "object_key": "documents/lop-10/tin-hoc/subject/SGK-TIN-10.pdf",
+  "file_name": "SGK-TIN-10.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/subject/SGK-TIN-10.pdf",
   "content_type": "application/pdf",
-  "size": 2292413,
+  "size": 38632664,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:41.091Z"
+    "$date": "2026-04-21T13:27:32.052Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:41.091Z"
+    "$date": "2026-04-21T13:27:32.052Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985259d3ad7ce4496467e"
+    "$oid": "69e77c25104e6a99b261b1ea"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985259d3ad7ce4496467d",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae39",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02/SGK-KHMT-11_cbd529f8_lesson_10_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_10_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02/SGK-KHMT-11_cbd529f8_lesson_10_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_03",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_03/tin-hoc-10-topic-03.pdf",
+  "file_name": "tin-hoc-10-topic-03.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_03/tin-hoc-10-topic-03.pdf",
   "content_type": "application/pdf",
-  "size": 4454949,
+  "size": 443604,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:41.395Z"
+    "$date": "2026-04-21T13:31:17.349Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:41.395Z"
+    "$date": "2026-04-21T13:31:17.349Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985259d3ad7ce44964688"
+    "$oid": "69e77c2d104e6a99b261b1eb"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985259d3ad7ce44964687",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae3b",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03/SGK-KHMT-11_cbd529f8_lesson_10_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_10_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03/SGK-KHMT-11_cbd529f8_lesson_10_chunk_03.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_05",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_05/tin-hoc-10-topic-05.pdf",
+  "file_name": "tin-hoc-10-topic-05.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_05/tin-hoc-10-topic-05.pdf",
   "content_type": "application/pdf",
-  "size": 881238,
+  "size": 14351163,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:41.604Z"
+    "$date": "2026-04-21T13:31:25.198Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:41.604Z"
+    "$date": "2026-04-21T13:31:25.198Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985259d3ad7ce44964691"
+    "$oid": "69e77c3a104e6a99b261b1ec"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985259d3ad7ce44964690",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae3c",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01/SGK-KHMT-11_cbd529f8_lesson_11_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_11_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01/SGK-KHMT-11_cbd529f8_lesson_11_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_06",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_06/tin-hoc-10-topic-06.pdf",
+  "file_name": "tin-hoc-10-topic-06.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_06/tin-hoc-10-topic-06.pdf",
   "content_type": "application/pdf",
-  "size": 2613355,
+  "size": 1162858,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:41.854Z"
+    "$date": "2026-04-21T13:31:38.375Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:41.854Z"
+    "$date": "2026-04-21T13:31:38.375Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985269d3ad7ce4496469d"
+    "$oid": "69e77c44104e6a99b261b1ed"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985269d3ad7ce4496469c",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae38",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02/SGK-KHMT-11_cbd529f8_lesson_11_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_11_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02/SGK-KHMT-11_cbd529f8_lesson_11_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_02",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_02/tin-hoc-10-topic-02.pdf",
+  "file_name": "tin-hoc-10-topic-02.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_02/tin-hoc-10-topic-02.pdf",
   "content_type": "application/pdf",
-  "size": 578338,
+  "size": 3846200,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:42.073Z"
+    "$date": "2026-04-21T13:31:48.107Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:42.073Z"
+    "$date": "2026-04-21T13:31:48.107Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985269d3ad7ce449646a9"
+    "$oid": "69e77c4c104e6a99b261b1ee"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985269d3ad7ce449646a8",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae37",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01/SGK-KHMT-11_cbd529f8_lesson_12_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_12_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01/SGK-KHMT-11_cbd529f8_lesson_12_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_01",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_01/01.pdf",
+  "file_name": "01.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_01/01.pdf",
   "content_type": "application/pdf",
-  "size": 1870247,
+  "size": 5052226,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:42.331Z"
+    "$date": "2026-04-21T13:31:56.092Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:42.331Z"
+    "$date": "2026-04-21T13:31:56.092Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985269d3ad7ce449646b2"
+    "$oid": "69e77c52104e6a99b261b1ef"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985269d3ad7ce449646b1",
+  "owner_type": "topic",
+  "owner_id": "69e7719f104e6a99b261ae3a",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02/SGK-KHMT-11_cbd529f8_lesson_12_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_12_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02/SGK-KHMT-11_cbd529f8_lesson_12_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/topic/topic_04",
+  "object_key": "documents/lop-10/tin-hoc/topic/topic_04/tin-hoc-10-topic-04.pdf",
+  "file_name": "tin-hoc-10-topic-04.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/topic/topic_04/tin-hoc-10-topic-04.pdf",
   "content_type": "application/pdf",
-  "size": 2558764,
+  "size": 5195813,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:42.566Z"
+    "$date": "2026-04-21T13:32:02.827Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:42.566Z"
+    "$date": "2026-04-21T13:32:02.827Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985269d3ad7ce449646be"
+    "$oid": "69e77c80104e6a99b261b1f2"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985269d3ad7ce449646bd",
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae3d",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03/SGK-KHMT-11_cbd529f8_lesson_12_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_12_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03/SGK-KHMT-11_cbd529f8_lesson_12_chunk_03.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_01-lesson_01",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_01-lesson_01/tin-hoc-10-lesson-01.pdf",
+  "file_name": "tin-hoc-10-lesson-01.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_01-lesson_01/tin-hoc-10-lesson-01.pdf",
   "content_type": "application/pdf",
-  "size": 1488467,
+  "size": 991039,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:42.812Z"
+    "$date": "2026-04-21T13:32:48.412Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:42.812Z"
+    "$date": "2026-04-21T13:32:48.412Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e77dfb104e6a99b261b1f3"
+  },
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae3d",
+  "asset_type": "video",
+  "bucket": "data-edu",
+  "path_prefix": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01",
+  "object_key": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/Hướng dẫn tạo mẫu thu thập thông tin bằng Google Forms - YouTube.mp4",
+  "file_name": "Hướng dẫn tạo mẫu thu thập thông tin bằng Google Forms - YouTube.mp4",
+  "url": "http://127.0.0.1:9000/data-edu/videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/Hu%CC%9Bo%CC%9B%CC%81ng%20da%CC%82%CC%83n%20ta%CC%A3o%20ma%CC%82%CC%83u%20thu%20tha%CC%A3%CC%82p%20tho%CC%82ng%20tin%20ba%CC%86%CC%80ng%20Google%20Forms%20-%20YouTube.mp4",
+  "content_type": "video/mp4",
+  "size": 35046921,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-04-21T13:39:07.354Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T13:39:07.354Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e77dfb104e6a99b261b1f4"
+  },
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae3d",
+  "asset_type": "video",
+  "bucket": "data-edu",
+  "path_prefix": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01",
+  "object_key": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/Ngành Công Nghệ Thông Tin là gì- Hiểu gọn trong 3 phút! - YouTube.mp4",
+  "file_name": "Ngành Công Nghệ Thông Tin là gì- Hiểu gọn trong 3 phút! - YouTube.mp4",
+  "url": "http://127.0.0.1:9000/data-edu/videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/Nga%CC%80nh%20Co%CC%82ng%20Nghe%CC%A3%CC%82%20Tho%CC%82ng%20Tin%20la%CC%80%20gi%CC%80-%20Hie%CC%82%CC%89u%20go%CC%A3n%20trong%203%20phu%CC%81t%21%20-%20YouTube.mp4",
+  "content_type": "video/mp4",
+  "size": 4612680,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-04-21T13:39:07.416Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T13:39:07.416Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e77dfb104e6a99b261b1f5"
+  },
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae3d",
+  "asset_type": "video",
+  "bucket": "data-edu",
+  "path_prefix": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01",
+  "object_key": "videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/What is Information Processing - Explained in 2 min - YouTube.mp4",
+  "file_name": "What is Information Processing - Explained in 2 min - YouTube.mp4",
+  "url": "http://127.0.0.1:9000/data-edu/videos/lop-10/tin-hoc/lesson/topic_01-lesson_01/What%20is%20Information%20Processing%20-%20Explained%20in%202%20min%20-%20YouTube.mp4",
+  "content_type": "video/mp4",
+  "size": 6286638,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-04-21T13:39:07.491Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T13:39:07.491Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e77e4a104e6a99b261b1f7"
+  },
+  "owner_type": "keyword",
+  "owner_id": "69e771a4104e6a99b261aeb8",
+  "asset_type": "video",
+  "bucket": "data-edu",
+  "path_prefix": "videos/keyword/byte__61aeb8",
+  "object_key": "videos/keyword/byte__61aeb8/byte-la-gi.png",
+  "file_name": "byte-la-gi.png",
+  "url": "http://127.0.0.1:9000/data-edu/videos/keyword/byte__61aeb8/byte-la-gi.png",
+  "content_type": "image/png",
+  "size": 206406,
+  "is_deleted": true,
+  "deleted_at": {
+    "$date": "2026-04-21T13:40:43.881Z"
+  },
+  "created_at": {
+    "$date": "2026-04-21T13:40:26.564Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T13:40:43.881Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e77e6e104e6a99b261b1fa"
+  },
+  "owner_type": "keyword",
+  "owner_id": "69e771a4104e6a99b261aeb8",
+  "asset_type": "image",
+  "bucket": "data-edu",
+  "path_prefix": "images/keyword/byte__61aeb8",
+  "object_key": "images/keyword/byte__61aeb8/byte-la-gi.png",
+  "file_name": "byte-la-gi.png",
+  "url": "http://127.0.0.1:9000/data-edu/images/keyword/byte__61aeb8/byte-la-gi.png",
+  "content_type": "image/png",
+  "size": 206406,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-04-21T13:41:02.280Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T13:41:02.280Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "69e7cba48143bdca2fb4de2d"
+  },
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae45",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_02-lesson_09",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_02-lesson_09/tin-hoc-10-lesson-09.pdf",
+  "file_name": "tin-hoc-10-lesson-09.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_02-lesson_09/tin-hoc-10-lesson-09.pdf",
+  "content_type": "application/pdf",
+  "size": 1180479,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-04-21T19:10:28.297Z"
+  },
+  "updated_at": {
+    "$date": "2026-04-21T19:10:28.297Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985279d3ad7ce449646ca"
+    "$oid": "69e7cbae8143bdca2fb4de2e"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985269d3ad7ce449646c9",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae4d",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01/SGK-KHMT-11_cbd529f8_lesson_13_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_13_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01/SGK-KHMT-11_cbd529f8_lesson_13_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_17",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_17/tin-hoc-10-lesson-17.pdf",
+  "file_name": "tin-hoc-10-lesson-17.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_05-lesson_17/tin-hoc-10-lesson-17.pdf",
   "content_type": "application/pdf",
-  "size": 4673855,
+  "size": 1156157,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:43.016Z"
+    "$date": "2026-04-21T19:10:38.618Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:43.016Z"
+    "$date": "2026-04-21T19:10:38.618Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985279d3ad7ce449646d6"
+    "$oid": "69e7cbba8143bdca2fb4de2f"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985279d3ad7ce449646d5",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae49",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02/SGK-KHMT-11_cbd529f8_lesson_13_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_13_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02/SGK-KHMT-11_cbd529f8_lesson_13_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_04-lesson_13",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_04-lesson_13/tin-hoc-10-lesson-13.pdf",
+  "file_name": "tin-hoc-10-lesson-13.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_04-lesson_13/tin-hoc-10-lesson-13.pdf",
   "content_type": "application/pdf",
-  "size": 1461869,
+  "size": 1432388,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:43.276Z"
+    "$date": "2026-04-21T19:10:50.601Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:43.276Z"
+    "$date": "2026-04-21T19:10:50.601Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985279d3ad7ce449646e2"
+    "$oid": "69e7cbc58143bdca2fb4de30"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985279d3ad7ce449646e1",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae4e",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01/SGK-KHMT-11_cbd529f8_lesson_14_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_14_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01/SGK-KHMT-11_cbd529f8_lesson_14_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_18",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_18/tin-hoc-10-lesson-18.pdf",
+  "file_name": "tin-hoc-10-lesson-18.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_05-lesson_18/tin-hoc-10-lesson-18.pdf",
   "content_type": "application/pdf",
-  "size": 2329750,
+  "size": 923613,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:43.556Z"
+    "$date": "2026-04-21T19:11:01.477Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:43.556Z"
+    "$date": "2026-04-21T19:11:01.477Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985279d3ad7ce449646eb"
+    "$oid": "69e7cbe88143bdca2fb4de31"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985279d3ad7ce449646ea",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae50",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02/SGK-KHMT-11_cbd529f8_lesson_14_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_14_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02/SGK-KHMT-11_cbd529f8_lesson_14_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_20",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_20/tin-hoc-10-lesson-20.pdf",
+  "file_name": "tin-hoc-10-lesson-20.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_05-lesson_20/tin-hoc-10-lesson-20.pdf",
   "content_type": "application/pdf",
-  "size": 2547006,
+  "size": 623852,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:43.795Z"
+    "$date": "2026-04-21T19:11:36.614Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:43.795Z"
+    "$date": "2026-04-21T19:11:36.614Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985289d3ad7ce449646f5"
+    "$oid": "69e7cc028143bdca2fb4de32"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985279d3ad7ce449646f4",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae51",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03/SGK-KHMT-11_cbd529f8_lesson_14_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_14_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03/SGK-KHMT-11_cbd529f8_lesson_14_chunk_03.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_21",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_21/tin-hoc-10-lesson-21.pdf",
+  "file_name": "tin-hoc-10-lesson-21.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_05-lesson_21/tin-hoc-10-lesson-21.pdf",
   "content_type": "application/pdf",
-  "size": 3569613,
+  "size": 702675,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:44.044Z"
+    "$date": "2026-04-21T19:12:02.571Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:44.044Z"
+    "$date": "2026-04-21T19:12:02.571Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985289d3ad7ce44964701"
+    "$oid": "69e7cc108143bdca2fb4de33"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985289d3ad7ce44964700",
+  "owner_type": "lesson",
+  "owner_id": "69e771a0104e6a99b261ae4f",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04/SGK-KHMT-11_cbd529f8_lesson_14_chunk_04.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_14_chunk_04.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04/SGK-KHMT-11_cbd529f8_lesson_14_chunk_04.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_19",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_05-lesson_19/tin-hoc-10-lesson-19.pdf",
+  "file_name": "tin-hoc-10-lesson-19.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_05-lesson_19/tin-hoc-10-lesson-19.pdf",
   "content_type": "application/pdf",
-  "size": 2132236,
+  "size": 925637,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:44.315Z"
+    "$date": "2026-04-21T19:12:16.963Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:44.315Z"
+    "$date": "2026-04-21T19:12:16.963Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "69c985289d3ad7ce4496470c"
+    "$oid": "69e7cc4a8143bdca2fb4de36"
   },
-  "owner_type": "chunk",
-  "owner_id": "69c985289d3ad7ce4496470b",
+  "owner_type": "lesson",
+  "owner_id": "69e7719f104e6a99b261ae3e",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01/SGK-KHMT-11_cbd529f8_lesson_15_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_15_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01/SGK-KHMT-11_cbd529f8_lesson_15_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/lesson/topic_01-lesson_02",
+  "object_key": "documents/lop-10/tin-hoc/lesson/topic_01-lesson_02/tin-hoc-10-lesson-02.pdf",
+  "file_name": "tin-hoc-10-lesson-02.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/lesson/topic_01-lesson_02/tin-hoc-10-lesson-02.pdf",
   "content_type": "application/pdf",
-  "size": 3782542,
+  "size": 1140174,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:44.554Z"
+    "$date": "2026-04-21T19:13:14.778Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:44.554Z"
+    "$date": "2026-04-21T19:13:14.778Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69c985289d3ad7ce44964718"
+    "$oid": "69e7ccf38143bdca2fb4de37"
   },
   "owner_type": "chunk",
-  "owner_id": "69c985289d3ad7ce44964717",
+  "owner_id": "69e771a1104e6a99b261ae62",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02/SGK-KHMT-11_cbd529f8_lesson_15_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_15_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02/SGK-KHMT-11_cbd529f8_lesson_15_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
+  "object_key": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01/Bai02_Muc1.pdf",
+  "file_name": "Bai02_Muc1.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01/Bai02_Muc1.pdf",
   "content_type": "application/pdf",
-  "size": 1594378,
+  "size": 1082075,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:44.809Z"
+    "$date": "2026-04-21T19:16:03.842Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:44.809Z"
+    "$date": "2026-04-21T19:16:03.842Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69c985299d3ad7ce44964724"
+    "$oid": "69e7cd708143bdca2fb4de3f"
   },
   "owner_type": "chunk",
-  "owner_id": "69c985299d3ad7ce44964723",
+  "owner_id": "69e771a2104e6a99b261ae8e",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01/SGK-KHMT-11_cbd529f8_lesson_16_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_16_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01/SGK-KHMT-11_cbd529f8_lesson_16_chunk_01.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01",
+  "object_key": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01/Bai21_Muc1.pdf",
+  "file_name": "Bai21_Muc1.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01/Bai21_Muc1.pdf",
   "content_type": "application/pdf",
-  "size": 1759187,
+  "size": 392004,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:45.070Z"
+    "$date": "2026-04-21T19:18:08.592Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:45.070Z"
+    "$date": "2026-04-21T19:18:08.592Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69c985299d3ad7ce4496472e"
+    "$oid": "69e7cdc78143bdca2fb4de42"
   },
   "owner_type": "chunk",
-  "owner_id": "69c985299d3ad7ce4496472d",
+  "owner_id": "69e771a0104e6a99b261ae60",
   "asset_type": "document",
   "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02/SGK-KHMT-11_cbd529f8_lesson_16_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_16_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02/SGK-KHMT-11_cbd529f8_lesson_16_chunk_02.pdf",
+  "path_prefix": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
+  "object_key": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02/Bai01_Muc2.pdf",
+  "file_name": "Bai01_Muc2.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02/Bai01_Muc2.pdf",
   "content_type": "application/pdf",
-  "size": 376249,
+  "size": 302859,
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-03-29T20:01:45.303Z"
+    "$date": "2026-04-21T19:19:35.648Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T20:01:45.303Z"
+    "$date": "2026-04-21T19:19:35.648Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985299d3ad7ce44964738"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985299d3ad7ce44964737",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03/SGK-KHMT-11_cbd529f8_lesson_16_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_16_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03/SGK-KHMT-11_cbd529f8_lesson_16_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 295951,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:45.578Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:45.578Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985299d3ad7ce44964741"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985299d3ad7ce44964740",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01/SGK-KHMT-11_cbd529f8_lesson_17_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_17_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01/SGK-KHMT-11_cbd529f8_lesson_17_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2725792,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:45.869Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:45.869Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852a9d3ad7ce4496474c"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852a9d3ad7ce4496474b",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02/SGK-KHMT-11_cbd529f8_lesson_17_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_17_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02/SGK-KHMT-11_cbd529f8_lesson_17_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1408730,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:46.203Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:46.203Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852a9d3ad7ce44964757"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852a9d3ad7ce44964756",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01/SGK-KHMT-11_cbd529f8_lesson_18_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_18_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01/SGK-KHMT-11_cbd529f8_lesson_18_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 615500,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:46.547Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:46.547Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852b9d3ad7ce44964769"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852b9d3ad7ce44964768",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01/SGK-KHMT-11_cbd529f8_lesson_19_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_19_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01/SGK-KHMT-11_cbd529f8_lesson_19_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2123499,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:47.278Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:47.278Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852b9d3ad7ce44964775"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852b9d3ad7ce44964774",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02/SGK-KHMT-11_cbd529f8_lesson_19_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_19_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02/SGK-KHMT-11_cbd529f8_lesson_19_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 2893540,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:47.627Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:47.627Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852b9d3ad7ce44964781"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852b9d3ad7ce44964780",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03/SGK-KHMT-11_cbd529f8_lesson_19_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_19_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03/SGK-KHMT-11_cbd529f8_lesson_19_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 2275064,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:47.879Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:47.879Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852c9d3ad7ce4496478b"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852c9d3ad7ce4496478a",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01/SGK-KHMT-11_cbd529f8_lesson_20_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_20_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01/SGK-KHMT-11_cbd529f8_lesson_20_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1007025,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:48.128Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:48.128Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852c9d3ad7ce4496479e"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852c9d3ad7ce4496479d",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01/SGK-KHMT-11_cbd529f8_lesson_21_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_21_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01/SGK-KHMT-11_cbd529f8_lesson_21_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 4021777,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:48.735Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:48.735Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852d9d3ad7ce449647a9"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852c9d3ad7ce449647a8",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02/SGK-KHMT-11_cbd529f8_lesson_21_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_21_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02/SGK-KHMT-11_cbd529f8_lesson_21_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1758878,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:49.078Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:49.078Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852d9d3ad7ce449647b3"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852d9d3ad7ce449647b2",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03/SGK-KHMT-11_cbd529f8_lesson_21_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_21_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03/SGK-KHMT-11_cbd529f8_lesson_21_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 2605830,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:49.363Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:49.363Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852d9d3ad7ce449647be"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852d9d3ad7ce449647bd",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01/SGK-KHMT-11_cbd529f8_lesson_22_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_22_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01/SGK-KHMT-11_cbd529f8_lesson_22_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 474145,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:49.613Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:49.613Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852e9d3ad7ce449647d0"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852d9d3ad7ce449647cf",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01/SGK-KHMT-11_cbd529f8_lesson_23_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_23_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01/SGK-KHMT-11_cbd529f8_lesson_23_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2328959,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:50.057Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:50.057Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852e9d3ad7ce449647da"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852e9d3ad7ce449647d9",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02/SGK-KHMT-11_cbd529f8_lesson_23_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_23_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02/SGK-KHMT-11_cbd529f8_lesson_23_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 3921746,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:50.331Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:50.331Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852e9d3ad7ce449647e4"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852e9d3ad7ce449647e3",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03/SGK-KHMT-11_cbd529f8_lesson_23_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_23_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03/SGK-KHMT-11_cbd529f8_lesson_23_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 1272771,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:50.568Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:50.568Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852e9d3ad7ce449647ee"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852e9d3ad7ce449647ed",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01/SGK-KHMT-11_cbd529f8_lesson_24_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_24_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01/SGK-KHMT-11_cbd529f8_lesson_24_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1449157,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:50.821Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:50.821Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852f9d3ad7ce449647f9"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852f9d3ad7ce449647f8",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02/SGK-KHMT-11_cbd529f8_lesson_24_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_24_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02/SGK-KHMT-11_cbd529f8_lesson_24_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 3618258,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:51.099Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:51.099Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852f9d3ad7ce44964804"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852f9d3ad7ce44964803",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03/SGK-KHMT-11_cbd529f8_lesson_24_chunk_03.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_24_chunk_03.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03/SGK-KHMT-11_cbd529f8_lesson_24_chunk_03.pdf",
-  "content_type": "application/pdf",
-  "size": 2346758,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:51.381Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:51.381Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c9852f9d3ad7ce4496480e"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c9852f9d3ad7ce4496480d",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01/SGK-KHMT-11_cbd529f8_lesson_25_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_25_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01/SGK-KHMT-11_cbd529f8_lesson_25_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 543005,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:51.629Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:51.629Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985309d3ad7ce44964820"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985309d3ad7ce4496481f",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01/SGK-KHMT-11_cbd529f8_lesson_26_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_26_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01/SGK-KHMT-11_cbd529f8_lesson_26_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 3959095,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:52.062Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:52.062Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985309d3ad7ce44964829"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985309d3ad7ce44964828",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02/SGK-KHMT-11_cbd529f8_lesson_26_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_26_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02/SGK-KHMT-11_cbd529f8_lesson_26_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1487916,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:52.313Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:52.313Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985309d3ad7ce44964832"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985309d3ad7ce44964831",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01/SGK-KHMT-11_cbd529f8_lesson_27_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_27_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01/SGK-KHMT-11_cbd529f8_lesson_27_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 760570,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:52.531Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:52.531Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985309d3ad7ce44964842"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985309d3ad7ce44964841",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01/SGK-KHMT-11_cbd529f8_lesson_28_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_28_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01/SGK-KHMT-11_cbd529f8_lesson_28_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 2615330,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:52.967Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:52.967Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985319d3ad7ce4496484d"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985319d3ad7ce4496484c",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02/SGK-KHMT-11_cbd529f8_lesson_28_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_28_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02/SGK-KHMT-11_cbd529f8_lesson_28_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 1352719,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:53.210Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:53.210Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985319d3ad7ce44964858"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985319d3ad7ce44964857",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01/SGK-KHMT-11_cbd529f8_lesson_29_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_29_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01/SGK-KHMT-11_cbd529f8_lesson_29_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 996234,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:53.439Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:53.439Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985319d3ad7ce44964867"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985319d3ad7ce44964866",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01/SGK-KHMT-11_cbd529f8_lesson_30_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_30_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01/SGK-KHMT-11_cbd529f8_lesson_30_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 1341912,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:53.813Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:53.813Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985329d3ad7ce44964873"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985319d3ad7ce44964872",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02/SGK-KHMT-11_cbd529f8_lesson_30_chunk_02.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_30_chunk_02.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02/SGK-KHMT-11_cbd529f8_lesson_30_chunk_02.pdf",
-  "content_type": "application/pdf",
-  "size": 770227,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:54.045Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:54.045Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69c985329d3ad7ce4496487e"
-  },
-  "owner_type": "chunk",
-  "owner_id": "69c985329d3ad7ce4496487d",
-  "asset_type": "document",
-  "bucket": "data-edu",
-  "path_prefix": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01",
-  "object_key": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01/SGK-KHMT-11_cbd529f8_lesson_31_chunk_01.pdf",
-  "file_name": "SGK-KHMT-11_cbd529f8_lesson_31_chunk_01.pdf",
-  "url": "http://127.0.0.1:9000/data-edu/documents/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01/SGK-KHMT-11_cbd529f8_lesson_31_chunk_01.pdf",
-  "content_type": "application/pdf",
-  "size": 708753,
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-03-29T20:01:54.266Z"
-  },
-  "updated_at": {
-    "$date": "2026-03-29T20:01:54.266Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 }]

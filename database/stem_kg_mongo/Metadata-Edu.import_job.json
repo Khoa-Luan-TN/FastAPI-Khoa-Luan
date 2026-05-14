@@ -1,6 +1,6 @@
 [{
   "_id": {
-    "$oid": "69c9663051bdda1a32d0de41"
+    "$oid": "69e7719e104e6a99b261ae34"
   },
   "status": "done",
   "progress": 100,
@@ -10,7 +10,7 @@
   "message": "Hoàn tất import",
   "error": null,
   "report": {
-    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpt6o36bmr.xlsx",
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpea3xy45j.xlsx",
     "collections": {
       "class": {
         "rows": 1,
@@ -53,8 +53,10 @@
         "reused": 59,
         "synced": 420,
         "errors": [],
-        "alias_processed_keywords": 63,
-        "alias_inserted": 11,
+        "alias_generation_enabled": true,
+        "alias_skipped_by_flag": false,
+        "alias_processed_keywords": 84,
+        "alias_inserted": 7,
         "alias_deleted": 0,
         "alias_skipped": 0,
         "alias_errors": [],
@@ -65,14 +67,16 @@
         "topic_finalize_errors": []
       }
     },
-    "errors": []
+    "errors": [],
+    "alias_generation_enabled": true,
+    "alias_skipped_by_flag": false
   },
-  "file_name": "ImportMetadataMongo.xlsx",
+  "file_name": "ImportMetadata.xlsx",
   "actor": "user_01",
   "created_at": {
-    "$date": "2026-03-29T17:49:36.302Z"
+    "$date": "2026-04-21T12:46:22.614Z"
   },
   "updated_at": {
-    "$date": "2026-03-29T17:57:17.155Z"
+    "$date": "2026-04-21T12:59:40.300Z"
   }
 }]
