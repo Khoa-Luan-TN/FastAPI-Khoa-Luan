@@ -51,11 +51,27 @@ _DEAD_KEY_PATTERNS = [
     "invalidapikey",
     "key has expired",
 ]
+_LEAKED_KEY_PATTERNS = [
+    "your api key was reported as leaked",
+    "reported as leaked",
+    "please use another api key",
+]
+
+
+def _is_leaked_key(exc: Exception) -> bool:
+    message = str(exc).lower()
+    if not any(pattern in message for pattern in _LEAKED_KEY_PATTERNS):
+        return False
+    if isinstance(exc, ClientError):
+        status = getattr(exc, "status_code", None)
+        if status not in (None, 403):
+            return False
+    return True
 
 
 def _is_dead_key(exc: Exception) -> bool:
     message = str(exc).lower()
-    return any(pattern in message for pattern in _DEAD_KEY_PATTERNS)
+    return _is_leaked_key(exc) or any(pattern in message for pattern in _DEAD_KEY_PATTERNS)
 
 
 def _is_rotatable(exc: Exception) -> bool:
@@ -72,6 +88,8 @@ def _is_rotatable(exc: Exception) -> bool:
 
 
 def _error_label(exc: Exception) -> str:
+    if _is_leaked_key(exc):
+        return "reported as leaked"
     if _is_dead_key(exc):
         return "invalid/expired-key"
     if isinstance(exc, ClientError):
@@ -100,7 +118,8 @@ def _event_to_message(event: dict) -> str:
         cooldown_seconds = event.get("cooldown_seconds", 0)
         return f"Key #{key_num} cooldown {cooldown_seconds}s"
     if event_type == "key_dead":
-        return f"Key #{key_num} invalid/expired — bỏ qua vĩnh viễn"
+        display_reason = reason or "dead-key"
+        return f"Gemini key #{key_num} marked dead: {display_reason}"
     if event_type == "all_keys_waiting":
         earliest = event.get("earliest_key_num", 0)
         wait_seconds = event.get("wait_seconds", 0)
@@ -122,6 +141,7 @@ class GeminiPool:
     def __init__(
         self,
         keys: list[str],
+        labels: list[str] | None = None,
         cooldown_seconds: int | None = None,
         min_interval: float | None = None,
         state_file: Path | None = None,
@@ -131,6 +151,7 @@ class GeminiPool:
         self._status_cb = None
         self._shared_pool = GeminiRotationPool(
             keys,
+            labels=labels,
             min_interval=5.0 if min_interval is None else min_interval,
             cooldown_seconds=300 if cooldown_seconds is None else cooldown_seconds,
             state_file=self._authoritative_state_file,

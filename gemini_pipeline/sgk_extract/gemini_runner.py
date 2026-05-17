@@ -37,6 +37,7 @@ def extract_structure_from_pdf(
     if not hasattr(key_manager, "_gemini_pool"):
         key_manager._gemini_pool = GeminiPool(
             key_manager.keys,
+            labels=getattr(key_manager, "labels", None),
             state_file=getattr(key_manager, "state_file", None),
         )
 

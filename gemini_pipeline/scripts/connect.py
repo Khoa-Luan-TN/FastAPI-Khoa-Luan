@@ -23,11 +23,13 @@ class KeyManager:
     def __init__(
         self,
         keys: list[str],
+        labels: list[str],
         *,
         env_path: Path,
         state_file: Optional[Path] = None,
     ) -> None:
         self.keys = keys
+        self.labels = labels
         self.env_path = env_path
         self.state_file: Optional[Path] = state_file
         self.authoritative_state_file = get_gemini_rotation_state_file()
@@ -37,6 +39,7 @@ def get_key_manager(env_path: str = "config.env", state_file: Optional[Path] = N
     config = load_gemini_key_config(env_path)
     return KeyManager(
         config["keys"],
+        config["labels"],
         env_path=Path(config["env_path"]),
         state_file=Path(state_file).expanduser().resolve() if state_file else None,
     )

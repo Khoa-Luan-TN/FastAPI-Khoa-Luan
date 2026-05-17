@@ -44,6 +44,22 @@ _ROTATABLE_PATTERNS = [
     "api key not valid",
     "api_key_invalid",
 ]
+_DEAD_KEY_PATTERNS = [
+    "api_key_invalid",
+    "api key invalid",
+    "api key expired",
+    "invalid api key",
+    "api key not valid",
+    "invalidapikey",
+    "key expired",
+    "expired api key",
+    "key has expired",
+]
+_LEAKED_KEY_PATTERNS = [
+    "your api key was reported as leaked",
+    "reported as leaked",
+    "please use another api key",
+]
 
 _state_file_lock = threading.Lock()
 _default_app_pool: GeminiRotationPool | None = None
@@ -179,11 +195,27 @@ def load_gemini_key_config(env_path: str | Path | None = None) -> dict[str, Any]
 
 
 def _default_is_rotatable(exc: Exception) -> bool:
+    if _default_is_dead_key(exc):
+        return True
     message = str(exc).lower()
     return any(pattern in message for pattern in _ROTATABLE_PATTERNS)
 
 
+def _default_is_leaked_key(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(pattern in message for pattern in _LEAKED_KEY_PATTERNS)
+
+
+def _default_is_dead_key(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return _default_is_leaked_key(exc) or any(pattern in message for pattern in _DEAD_KEY_PATTERNS)
+
+
 def _default_error_label(exc: Exception) -> str:
+    if _default_is_leaked_key(exc):
+        return "reported as leaked"
+    if _default_is_dead_key(exc):
+        return "invalid/expired-key"
     return "quota/rate-limit" if _default_is_rotatable(exc) else "error"
 
 
@@ -218,6 +250,8 @@ class GeminiRotationPool:
         self._last_call_time: dict[int, float] = {}
         self._cooldown_until: dict[int, float] = {}
         self._dead_keys: set[int] = set()
+        self._dead_reasons: dict[int, str] = {}
+        self._dead_at_epoch: dict[int, float] = {}
 
         self._next_idx = 0
         self._call_count = 0
@@ -260,14 +294,17 @@ class GeminiRotationPool:
         for idx, (label, key) in enumerate(zip(self._labels, self._keys)):
             remaining = self._cooldown_until.get(idx, 0.0) - mono_now
             cooldown_until_epoch = wall_now + remaining if remaining > 0 else None
-            keys.append(
-                {
-                    "pool_index": idx,
-                    "label": label,
-                    "key_hash": _key_hash(key),
-                    "cooldown_until_epoch": cooldown_until_epoch,
-                }
-            )
+            key_payload = {
+                "pool_index": idx,
+                "label": label,
+                "key_hash": _key_hash(key),
+                "cooldown_until_epoch": cooldown_until_epoch,
+            }
+            if idx in self._dead_keys:
+                key_payload["is_dead"] = True
+                key_payload["dead_reason"] = self._dead_reasons.get(idx, "dead-key")
+                key_payload["dead_at_epoch"] = self._dead_at_epoch.get(idx)
+            keys.append(key_payload)
 
         next_label = self._labels[next_idx] if self._labels else ""
         next_key_hash = _key_hash(self._keys[next_idx]) if self._keys else ""
@@ -385,6 +422,17 @@ class GeminiRotationPool:
                 continue
 
             cooldown_until_epoch = saved_entry.get("cooldown_until_epoch")
+            is_dead = bool(saved_entry.get("is_dead"))
+            if is_dead:
+                self._dead_keys.add(idx)
+                reason = str(saved_entry.get("dead_reason") or "dead-key").strip()
+                self._dead_reasons[idx] = reason or "dead-key"
+                dead_at = saved_entry.get("dead_at_epoch")
+                if isinstance(dead_at, (int, float)):
+                    self._dead_at_epoch[idx] = float(dead_at)
+                restored_labels.append(f"{self._labels[idx]}:dead")
+                continue
+
             if not isinstance(cooldown_until_epoch, (int, float)):
                 continue
 
@@ -425,13 +473,17 @@ class GeminiRotationPool:
         )
         self._persist_state()
 
-    def _mark_dead(self, idx: int) -> None:
+    def _mark_dead(self, idx: int, reason: str = "dead-key") -> None:
         self._dead_keys.add(idx)
+        self._dead_reasons[idx] = reason
+        self._dead_at_epoch[idx] = time.time()
         self._logger.warning(
-            "[%s] Key %s marked invalid/expired for this process",
+            "[%s] Key %s marked dead: %s",
             self._scope_label,
             self._labels[idx],
+            reason,
         )
+        self._persist_state()
 
     def _earliest_cooldown_remaining(self) -> tuple[float, str]:
         now = time.monotonic()
@@ -460,7 +512,7 @@ class GeminiRotationPool:
         error_label: Callable[[Exception], str] | None = None,
     ) -> Any:
         is_rotatable = is_rotatable or _default_is_rotatable
-        is_dead_key = is_dead_key or (lambda _exc: False)
+        is_dead_key = is_dead_key or _default_is_dead_key
         error_label = error_label or _default_error_label
 
         job_start = time.monotonic()
@@ -519,7 +571,7 @@ class GeminiRotationPool:
                             last_err = exc
                             reason = error_label(exc)
                             if is_dead_key(exc):
-                                self._mark_dead(idx)
+                                self._mark_dead(idx, reason=reason)
                                 self._emit_status(
                                     status_callback,
                                     "key_dead",
@@ -584,7 +636,7 @@ class GeminiRotationPool:
             live_keys = self._n - len(self._dead_keys)
             if live_keys <= 0:
                 raise RuntimeError(
-                    f"All {self._n} Gemini API key(s) are invalid/expired. "
+                    f"All {self._n} Gemini API key(s) are dead/unavailable. "
                     f"Dead keys: {sorted(idx + 1 for idx in self._dead_keys)}. "
                     f"Last error: {last_err}"
                 )
@@ -636,6 +688,7 @@ class GeminiRotationPool:
                     "in_cooldown": cooldown_remaining > 0,
                     "cooldown_remaining_s": round(cooldown_remaining, 1),
                     "is_dead": idx in self._dead_keys,
+                    "dead_reason": self._dead_reasons.get(idx),
                 }
             )
 
