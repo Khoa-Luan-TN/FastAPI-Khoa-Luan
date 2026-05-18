@@ -1,167 +1,219 @@
 [{
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae37"
+    "$oid": "6a0a2cb7cb9a10c9f6300251"
   },
-  "topic_num": 1,
   "topic_name": "Máy tính và xã hội tri thức",
+  "topic_num": 1,
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_01",
     "images": "images/lop-10/tin-hoc/topic/topic_01",
     "videos": "videos/lop-10/tin-hoc/topic/topic_01"
   },
-  "import_key": "tp_l10_tinhoc_kntt_01",
+  "import_key": "topic/lop-10/tin-hoc/topic_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.280Z"
+    "$date": "2026-05-17T21:01:43.161Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.280Z"
+    "$date": "2026-05-17T21:01:43.161Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae38"
+    "$oid": "6a0a2cb7cb9a10c9f6300254"
   },
+  "topic_name": "Mạng máy tính và internet",
   "topic_num": 2,
-  "topic_name": "Mạng máy tính và Internet",
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_02",
     "images": "images/lop-10/tin-hoc/topic/topic_02",
     "videos": "videos/lop-10/tin-hoc/topic/topic_02"
   },
-  "import_key": "tp_l10_tinhoc_kntt_02",
+  "import_key": "topic/lop-10/tin-hoc/topic_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.428Z"
+    "$date": "2026-05-17T21:01:43.352Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.428Z"
+    "$date": "2026-05-17T21:01:43.352Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae39"
+    "$oid": "6a0a2cb7cb9a10c9f6300257"
   },
-  "topic_num": 3,
   "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "topic_num": 3,
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_03",
     "images": "images/lop-10/tin-hoc/topic/topic_03",
     "videos": "videos/lop-10/tin-hoc/topic/topic_03"
   },
-  "import_key": "tp_l10_tinhoc_kntt_03",
+  "import_key": "topic/lop-10/tin-hoc/topic_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.475Z"
+    "$date": "2026-05-17T21:01:43.434Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.475Z"
+    "$date": "2026-05-17T21:01:43.434Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae3a"
+    "$oid": "6a0a2cb7cb9a10c9f630025a"
   },
-  "topic_num": 4,
   "topic_name": "Ứng dụng tin học",
+  "topic_num": 4,
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_04",
     "images": "images/lop-10/tin-hoc/topic/topic_04",
     "videos": "videos/lop-10/tin-hoc/topic/topic_04"
   },
-  "import_key": "tp_l10_tinhoc_kntt_04",
+  "import_key": "topic/lop-10/tin-hoc/topic_04",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.506Z"
+    "$date": "2026-05-17T21:01:43.513Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.506Z"
+    "$date": "2026-05-17T21:01:43.513Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae3b"
+    "$oid": "6a0a2cb7cb9a10c9f630025d"
   },
-  "topic_num": 5,
   "topic_name": "Giải quyết vấn đề với sự trợ giúp của máy tính",
+  "topic_num": 5,
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_05",
     "images": "images/lop-10/tin-hoc/topic/topic_05",
     "videos": "videos/lop-10/tin-hoc/topic/topic_05"
   },
-  "import_key": "tp_l10_tinhoc_kntt_05",
+  "import_key": "topic/lop-10/tin-hoc/topic_05",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.537Z"
+    "$date": "2026-05-17T21:01:43.618Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.537Z"
+    "$date": "2026-05-17T21:01:43.618Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae3c"
+    "$oid": "6a0a2cb7cb9a10c9f6300260"
   },
-  "topic_num": 6,
   "topic_name": "Hướng nghiệp với tin học",
+  "topic_num": 6,
   "subject_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/topic/topic_06",
     "images": "images/lop-10/tin-hoc/topic/topic_06",
     "videos": "videos/lop-10/tin-hoc/topic/topic_06"
   },
-  "import_key": "tp_l10_tinhoc_kntt_06",
+  "import_key": "topic/lop-10/tin-hoc/topic_06",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.568Z"
+    "$date": "2026-05-17T21:01:43.715Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.568Z"
+    "$date": "2026-05-17T21:01:43.715Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e77959104e6a99b261b1c9"
+    "$oid": "6a0a8226cb9a10c9f6300610"
+  },
+  "topic_name": "Máy tính và xã hội tri thức",
+  "topic_num": 1,
+  "subject_id": {
+    "$oid": "6a0a8225cb9a10c9f630060e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_01",
+    "images": "images/lop-11/tin-hoc/topic/topic_01",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_01"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:14.162Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:14.162Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8226cb9a10c9f6300613"
+  },
+  "topic_name": "Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+  "topic_num": 2,
+  "subject_id": {
+    "$oid": "6a0a8225cb9a10c9f630060e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_02",
+    "images": "images/lop-11/tin-hoc/topic/topic_02",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_02"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:14.284Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:14.284Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8226cb9a10c9f6300616"
   },
   "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
   "topic_num": 3,
   "subject_id": {
-    "$oid": "69e77959104e6a99b261b1c7"
+    "$oid": "6a0a8225cb9a10c9f630060e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/tin-hoc/topic/topic_03",
@@ -172,10 +224,270 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T13:19:21.382Z"
+    "$date": "2026-05-18T03:06:14.363Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T13:19:21.382Z"
+    "$date": "2026-05-18T03:06:14.363Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8226cb9a10c9f6300619"
+  },
+  "topic_name": "Giới thiệu các hệ cơ sở dữ liệu",
+  "topic_num": 4,
+  "subject_id": {
+    "$oid": "6a0a8225cb9a10c9f630060e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_04",
+    "images": "images/lop-11/tin-hoc/topic/topic_04",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_04"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:14.456Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:14.456Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8226cb9a10c9f630061c"
+  },
+  "topic_name": "Hướng nghiệp với tin học",
+  "topic_num": 5,
+  "subject_id": {
+    "$oid": "6a0a8225cb9a10c9f630060e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_05",
+    "images": "images/lop-11/tin-hoc/topic/topic_05",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_05"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:14.575Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:14.575Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8226cb9a10c9f630061f"
+  },
+  "topic_name": "Kĩ thuật lập trình",
+  "topic_num": 6,
+  "subject_id": {
+    "$oid": "6a0a8225cb9a10c9f630060e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/topic/topic_06",
+    "images": "images/lop-11/tin-hoc/topic/topic_06",
+    "videos": "videos/lop-11/tin-hoc/topic/topic_06"
+  },
+  "import_key": "topic/lop-11/tin-hoc/topic_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:14.684Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:14.684Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338c5"
+  },
+  "topic_name": "Máy tính và xã hội tri thức",
+  "topic_num": 1,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_01",
+    "images": "images/lop-12/tin-hoc/topic/topic_01",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_01"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.539Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.539Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338c8"
+  },
+  "topic_name": "Mạng máy tính và internet",
+  "topic_num": 2,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_02",
+    "images": "images/lop-12/tin-hoc/topic/topic_02",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_02"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.656Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.656Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338cb"
+  },
+  "topic_name": "Đạo đức, pháp luật và văn hoá trong môi trường số",
+  "topic_num": 3,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_03",
+    "images": "images/lop-12/tin-hoc/topic/topic_03",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_03"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.737Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.737Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338ce"
+  },
+  "topic_name": "Giải quyết vấn đề với sự trợ giúp của máy tính",
+  "topic_num": 4,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_04",
+    "images": "images/lop-12/tin-hoc/topic/topic_04",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_04"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.813Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.813Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338d1"
+  },
+  "topic_name": "Hướng nghiệp với tin học",
+  "topic_num": 5,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_05",
+    "images": "images/lop-12/tin-hoc/topic/topic_05",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_05"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.921Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.921Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3638b8980203e4338d4"
+  },
+  "topic_name": "Mạng máy tính và internet",
+  "topic_num": 6,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_06",
+    "images": "images/lop-12/tin-hoc/topic/topic_06",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_06"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:51.007Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:51.007Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3638b8980203e4338d7"
+  },
+  "topic_name": "Giải quyết vấn đề với sự trợ giúp của máy tính",
+  "topic_num": 7,
+  "subject_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/topic/topic_07",
+    "images": "images/lop-12/tin-hoc/topic/topic_07",
+    "videos": "videos/lop-12/tin-hoc/topic/topic_07"
+  },
+  "import_key": "topic/lop-12/tin-hoc/topic_07",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:51.087Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:51.087Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"

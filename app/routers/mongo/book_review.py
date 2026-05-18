@@ -499,6 +499,11 @@ async def approve_chunks(job_id: str):
         current = job["status"]
         if current in _PAST_CHUNKS_STATUSES:
             return {"ok": True, "already_advanced": True, "status": current}
+        if job.get("extraction_partial") and not job.get("allow_partial_chunks"):
+            raise HTTPException(
+                status_code=409,
+                detail="Chunk extraction is partial; skipped lessons must be resolved before approval.",
+            )
         raise HTTPException(
             status_code=409,
             detail=f"Job must be in 'reviewing_chunks' status (current: {current})",

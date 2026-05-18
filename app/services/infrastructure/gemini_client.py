@@ -54,6 +54,11 @@ _DEAD_KEY_PATTERNS = [
     "key expired",
     "expired api key",
     "key has expired",
+    "consumer_suspended",
+    "consumer has been suspended",
+    "has been suspended",
+    "key suspended",
+    "api key suspended",
 ]
 _LEAKED_KEY_PATTERNS = [
     "your api key was reported as leaked",
@@ -215,6 +220,9 @@ def _default_error_label(exc: Exception) -> str:
     if _default_is_leaked_key(exc):
         return "reported as leaked"
     if _default_is_dead_key(exc):
+        message = str(exc).lower()
+        if "suspended" in message or "consumer_suspended" in message:
+            return "suspended-key"
         return "invalid/expired-key"
     return "quota/rate-limit" if _default_is_rotatable(exc) else "error"
 

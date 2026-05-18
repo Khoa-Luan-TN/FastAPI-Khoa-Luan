@@ -1,36 +1,35 @@
 [{
   "_id": {
-    "$oid": "69e7719f104e6a99b261ae36"
+    "$oid": "6a0a2cb6cb9a10c9f630024f"
   },
   "subject_name": "Tin học",
   "subject_type": "Kết nối tri thức",
-  "bucket_name": "data-edu",
   "class_id": {
-    "$oid": "69e7719e104e6a99b261ae35"
+    "$oid": "6a0a2cb6cb9a10c9f630024e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/subject"
   },
-  "import_key": "s_l10_tinhoc_kntt",
+  "import_key": "subj/lop-10/tin-hoc",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:23.074Z"
+    "$date": "2026-05-17T21:01:42.872Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:23.074Z"
+    "$date": "2026-05-17T21:01:42.872Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e77959104e6a99b261b1c7"
+    "$oid": "6a0a8225cb9a10c9f630060e"
   },
   "subject_name": "Tin học",
   "subject_type": "Kết nối tri thức",
   "class_id": {
-    "$oid": "69e77958104e6a99b261b1c6"
+    "$oid": "6a0a8225cb9a10c9f630060d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/tin-hoc/subject"
@@ -39,10 +38,34 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T13:19:20.978Z"
+    "$date": "2026-05-18T03:06:13.949Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T13:19:20.978Z"
+    "$date": "2026-05-18T03:06:13.949Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3628b8980203e4338c3"
+  },
+  "subject_name": "Tin học",
+  "subject_type": "Kết nối tri thức",
+  "class_id": {
+    "$oid": "6a0ad3628b8980203e4338c2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/subject"
+  },
+  "import_key": "subj/lop-12/tin-hoc",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:50.324Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:50.324Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"

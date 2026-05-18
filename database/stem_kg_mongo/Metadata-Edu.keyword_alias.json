@@ -1,20 +1,9 @@
 [{
   "_id": {
-    "$oid": "69e7730d104e6a99b261b1be"
+    "$oid": "6a0a2dc5cb9a10c9f6300606"
   },
   "keyword_id": {
-    "$oid": "69e771a4104e6a99b261aecc"
-  },
-  "keyword_name": "Internet of Things (IoT)",
-  "alias_name": "IoT",
-  "alias_norm": "iot"
-},
-{
-  "_id": {
-    "$oid": "69e7730d104e6a99b261b1bf"
-  },
-  "keyword_id": {
-    "$oid": "69e771a4104e6a99b261aed0"
+    "$oid": "6a0a2cbdcb9a10c9f63002d2"
   },
   "keyword_name": "Trí tuệ nhân tạo",
   "alias_name": "AI",
@@ -22,10 +11,10 @@
 },
 {
   "_id": {
-    "$oid": "69e7730d104e6a99b261b1c0"
+    "$oid": "6a0a2dc6cb9a10c9f6300607"
   },
   "keyword_id": {
-    "$oid": "69e771a4104e6a99b261aedc"
+    "$oid": "6a0a2cbdcb9a10c9f63002da"
   },
   "keyword_name": "Hệ điều hành",
   "alias_name": "OS",
@@ -33,32 +22,32 @@
 },
 {
   "_id": {
-    "$oid": "69e77347104e6a99b261b1c1"
+    "$oid": "6a0a2dd4cb9a10c9f6300608"
   },
   "keyword_id": {
-    "$oid": "69e771a6104e6a99b261af3d"
+    "$oid": "6a0a2cbdcb9a10c9f63002e0"
   },
-  "keyword_name": "Mạng LAN",
-  "alias_name": "Mạng cục bộ",
-  "alias_norm": "mang cuc bo"
+  "keyword_name": "Hệ quản trị cơ sở dữ liệu",
+  "alias_name": "DBMS",
+  "alias_norm": "dbms"
 },
 {
   "_id": {
-    "$oid": "69e77347104e6a99b261b1c2"
+    "$oid": "6a0a2ddfcb9a10c9f6300609"
   },
   "keyword_id": {
-    "$oid": "69e771a6104e6a99b261af41"
+    "$oid": "6a0a2cc0cb9a10c9f6300343"
   },
-  "keyword_name": "Router",
-  "alias_name": "Bộ định tuyến",
-  "alias_norm": "bo dinh tuyen"
+  "keyword_name": "Personal Digital Assistant (PDA)",
+  "alias_name": "PDA",
+  "alias_norm": "pda"
 },
 {
   "_id": {
-    "$oid": "69e77347104e6a99b261b1c3"
+    "$oid": "6a0a2df0cb9a10c9f630060a"
   },
   "keyword_id": {
-    "$oid": "69e771a6104e6a99b261af43"
+    "$oid": "6a0a2cc0cb9a10c9f6300358"
   },
   "keyword_name": "Mạng diện rộng",
   "alias_name": "WAN",
@@ -66,12 +55,133 @@
 },
 {
   "_id": {
-    "$oid": "69e773bc104e6a99b261b1c4"
+    "$oid": "6a0a2df0cb9a10c9f630060b"
   },
   "keyword_id": {
-    "$oid": "69e771ac104e6a99b261b021"
+    "$oid": "6a0a2cc1cb9a10c9f630036c"
   },
-  "keyword_name": "PNG",
-  "alias_name": "Portable Network Graphics",
-  "alias_norm": "portable network graphics"
+  "keyword_name": "SaaS",
+  "alias_name": "Software as a Service",
+  "alias_norm": "software as a service"
+},
+{
+  "_id": {
+    "$oid": "6a0a835acb9a10c9f630095a"
+  },
+  "keyword_id": {
+    "$oid": "6a0a822acb9a10c9f6300663"
+  },
+  "keyword_name": "Plug & Play",
+  "alias_name": "PnP",
+  "alias_norm": "pnp"
+},
+{
+  "_id": {
+    "$oid": "6a0a83a8cb9a10c9f630095b"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828dcb9a10c9f6300778"
+  },
+  "keyword_name": "Hệ cơ sở dữ liệu",
+  "alias_name": "Hệ CSDL",
+  "alias_norm": "he csdl"
+},
+{
+  "_id": {
+    "$oid": "6a0a83a8cb9a10c9f630095c"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828dcb9a10c9f630077a"
+  },
+  "keyword_name": "Hệ QTCSDL",
+  "alias_name": "DBMS",
+  "alias_norm": "dbms"
+},
+{
+  "_id": {
+    "$oid": "6a0a83a8cb9a10c9f630095d"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828ecb9a10c9f630078f"
+  },
+  "keyword_name": "Cơ sở dữ liệu quan hệ",
+  "alias_name": "CSDL quan hệ",
+  "alias_norm": "csdl quan he"
+},
+{
+  "_id": {
+    "$oid": "6a0a83cdcb9a10c9f630095e"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828fcb9a10c9f63007b3"
+  },
+  "keyword_name": "DDL",
+  "alias_name": "Data Definition Language",
+  "alias_norm": "data definition language"
+},
+{
+  "_id": {
+    "$oid": "6a0a83cdcb9a10c9f630095f"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828fcb9a10c9f63007bb"
+  },
+  "keyword_name": "SQL DML",
+  "alias_name": "SQL Data Manipulation Language",
+  "alias_norm": "sql data manipulation language"
+},
+{
+  "_id": {
+    "$oid": "6a0a83cdcb9a10c9f6300960"
+  },
+  "keyword_id": {
+    "$oid": "6a0a828fcb9a10c9f63007c8"
+  },
+  "keyword_name": "DCL",
+  "alias_name": "Data Control Language",
+  "alias_norm": "data control language"
+},
+{
+  "_id": {
+    "$oid": "6a0a83d8cb9a10c9f6300961"
+  },
+  "keyword_id": {
+    "$oid": "6a0a8291cb9a10c9f63007f4"
+  },
+  "keyword_name": "Nhà quản trị CSDL",
+  "alias_name": "DBA",
+  "alias_norm": "dba"
+},
+{
+  "_id": {
+    "$oid": "6a0a841fcb9a10c9f6300962"
+  },
+  "keyword_id": {
+    "$oid": "6a0a8298cb9a10c9f6300937"
+  },
+  "keyword_name": "InsertionSort",
+  "alias_name": "Insertion Sort",
+  "alias_norm": "insertion sort"
+},
+{
+  "_id": {
+    "$oid": "6a0ad44e8b8980203e433bf7"
+  },
+  "keyword_id": {
+    "$oid": "6a0ad3688b8980203e43396f"
+  },
+  "keyword_name": "Mạng cục bộ",
+  "alias_name": "LAN",
+  "alias_norm": "lan"
+},
+{
+  "_id": {
+    "$oid": "6a0ad46a8b8980203e433bf8"
+  },
+  "keyword_id": {
+    "$oid": "6a0ad36e8b8980203e433a4c"
+  },
+  "keyword_name": "CSS",
+  "alias_name": "Cascading Style Sheets",
+  "alias_norm": "cascading style sheets"
 }]

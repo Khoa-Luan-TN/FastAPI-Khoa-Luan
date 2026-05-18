@@ -262,6 +262,13 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                     "status": "reviewing_chunks",
                     "chunks": result.get("chunks", []),
                     "error": None,
+                    "extraction_partial": bool(result.get("partial")),
+                    "partial_stage": result.get("stage") if result.get("partial") else None,
+                    "partial_message": result.get("message") if result.get("partial") else None,
+                    "partial_total_lessons": result.get("total_lessons"),
+                    "partial_generated_chunks": result.get("generated_chunks"),
+                    "skipped_lessons": result.get("skipped_lessons", []),
+                    "allow_partial_chunks": bool(result.get("allow_partial_chunks")),
                     "updated_at": _utc_now(),
                 }
                 if result.get("bundle_path"):
@@ -272,15 +279,27 @@ def _run_stage_inner(db: Database, job_id: str, workspace: Path, stage: str, pyt
                 )
         else:
             log_tail = _read_log_tail(workspace, stage)
-            _col(db).update_one(
-                {"job_id": job_id},
-                {"$set": {
-                    "status": "error",
-                    "error": result.get("error", f"{stage} extraction failed"),
-                    "error_log_tail": log_tail,
-                    "updated_at": _utc_now(),
-                }},
-            )
+            update = {
+                "status": "error",
+                "error": result.get("error", f"{stage} extraction failed"),
+                "error_log_tail": log_tail,
+                "updated_at": _utc_now(),
+            }
+            if result.get("partial"):
+                update.update({
+                    "extraction_partial": True,
+                    "partial_stage": result.get("stage"),
+                    "partial_message": result.get("message"),
+                    "partial_total_lessons": result.get("total_lessons"),
+                    "partial_generated_chunks": result.get("generated_chunks"),
+                    "skipped_lessons": result.get("skipped_lessons", []),
+                    "allow_partial_chunks": bool(result.get("allow_partial_chunks")),
+                })
+                if stage == "chunks":
+                    update["chunks"] = result.get("chunks", [])
+                    if result.get("bundle_path"):
+                        update["bundle_path"] = result["bundle_path"]
+            _col(db).update_one({"job_id": job_id}, {"$set": update})
     except subprocess.CalledProcessError as exc:
         # Giữ lại output của subprocess trong workspace để dò lỗi sau này
         try:
@@ -585,7 +604,14 @@ def approve_lessons_and_start_chunks(db: Database, job_id: str) -> bool:
 # Đợi người dùng duyệt xong và cập nhật job
 def approve_chunks_final(db: Database, job_id: str) -> bool:
     result = _col(db).update_one(
-        {"job_id": job_id, "status": "reviewing_chunks"},
+        {
+            "job_id": job_id,
+            "status": "reviewing_chunks",
+            "$or": [
+                {"extraction_partial": {"$ne": True}},
+                {"allow_partial_chunks": True},
+            ],
+        },
         {"$set": {"status": "approved_for_heavy_stage", "updated_at": _utc_now()}},
     )
     return result.modified_count > 0

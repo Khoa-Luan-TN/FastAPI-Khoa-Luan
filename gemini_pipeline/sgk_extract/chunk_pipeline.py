@@ -33,6 +33,37 @@ _EXERCISE_PAGE_RE  = re.compile(
 )
 
 
+def _lesson_skip_payload(
+    *,
+    lesson_pdf: Path,
+    lesson_index: int,
+    total_lessons: int,
+    stage: str,
+    error: str,
+) -> Dict[str, Any]:
+    lesson_name = ""
+    meta_path = lesson_pdf.with_suffix(".json")
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            lesson_name = str(meta.get("lesson_name") or meta.get("raw_title") or "").strip()
+        except Exception:
+            lesson_name = ""
+
+    return {
+        "lesson_index": lesson_index,
+        "lesson_order": lesson_index,
+        "total_lessons": total_lessons,
+        "lesson_name": lesson_name,
+        "lesson_stem": lesson_pdf.stem,
+        "lesson_pdf": str(lesson_pdf),
+        "lesson_path": str(lesson_pdf),
+        "error": str(error),
+        "error_message": str(error),
+        "stage": stage,
+    }
+
+
 # ─── Filter helpers ───────────────────────────────────────────────────────────
 
 def _is_junk_candidate(heading: str, title: str) -> Tuple[bool, str]:
@@ -269,7 +300,7 @@ def run_extract_and_split_chunks_for_book(
     _done = 0
 
     # Duyệt các file pdf
-    for lesson_pdf in lesson_pdfs:
+    for lesson_index, lesson_pdf in enumerate(lesson_pdfs, start=1):
         lesson_stem = lesson_pdf.stem
 
         try:
@@ -278,7 +309,13 @@ def run_extract_and_split_chunks_for_book(
                 lesson_chunk_dir = chunk_root / lesson_stem
                 if lesson_chunk_dir.exists() and any(lesson_chunk_dir.rglob("*.pdf")):
                     summary["skipped_lessons"].append(
-                        {"lesson": str(lesson_pdf), "reason": "Đã có chunk pdf, skip"}
+                        _lesson_skip_payload(
+                            lesson_pdf=lesson_pdf,
+                            lesson_index=lesson_index,
+                            total_lessons=_total,
+                            stage="resume",
+                            error="Đã có chunk pdf, skip",
+                        )
                     )
                     continue
             
@@ -344,10 +381,13 @@ def run_extract_and_split_chunks_for_book(
 
             if not list_chunk_computed:
                 summary["skipped_lessons"].append(
-                    {
-                        "lesson": str(lesson_pdf),
-                        "reason": "Không tạo được list_chunk_computed",
-                    }
+                    _lesson_skip_payload(
+                        lesson_pdf=lesson_pdf,
+                        lesson_index=lesson_index,
+                        total_lessons=_total,
+                        stage="compute_chunks",
+                        error="Không tạo được list_chunk_computed",
+                    )
                 )
                 continue
                 
@@ -424,7 +464,13 @@ def run_extract_and_split_chunks_for_book(
 
         except Exception as e:
             summary["skipped_lessons"].append(
-                {"lesson": str(lesson_pdf), "reason": str(e)}
+                _lesson_skip_payload(
+                    lesson_pdf=lesson_pdf,
+                    lesson_index=lesson_index,
+                    total_lessons=_total,
+                    stage="extract_chunks",
+                    error=str(e),
+                )
             )
 
         finally:
@@ -436,4 +482,3 @@ def run_extract_and_split_chunks_for_book(
                     pass
 
     return summary
-

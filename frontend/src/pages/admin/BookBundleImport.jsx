@@ -538,7 +538,8 @@ export default function BookBundleImport() {
   const allChunksApproved = chunkApprovals.length > 0 && chunkApprovals.every(Boolean);
   const canApproveTopics = isTopicStage && allTopicsApproved;
   const canApproveLessons = isLessonStage && allLessonsApproved;
-  const canApproveChunks = isChunkStage && allChunksApproved;
+  const hasPartialChunkExtraction = Boolean(job?.extraction_partial && job?.partial_stage === "chunks");
+  const canApproveChunks = isChunkStage && allChunksApproved && (!hasPartialChunkExtraction || job?.allow_partial_chunks);
 
   const PAST_TOPICS_STATUSES = new Set(["extracting_lessons","reviewing_lessons","extracting_chunks","reviewing_chunks","approved_for_heavy_stage","heavy_stage_running","heavy_stage_done"]);
   const PAST_LESSONS_STATUSES = new Set(["extracting_chunks","reviewing_chunks","approved_for_heavy_stage","heavy_stage_running","heavy_stage_done"]);
@@ -652,6 +653,10 @@ export default function BookBundleImport() {
 
           {jobError && (
             <AlertBox type="error" message={jobError} style={{ marginTop: 12 }} />
+          )}
+
+          {hasPartialChunkExtraction && (
+            <PartialChunkWarning job={job} />
           )}
 
           {job.status === "error" && job.error && (
@@ -848,6 +853,41 @@ function AlertBox({ type, message, style: extra = {} }) {
   return (
     <div style={{ padding: "10px 14px", borderRadius: 8, background: t.bg, border: `1px solid ${t.border}`, color: t.color, fontSize: 13, ...extra }}>
       {message}
+    </div>
+  );
+}
+
+function PartialChunkWarning({ job }) {
+  const skipped = Array.isArray(job.skipped_lessons) ? job.skipped_lessons : [];
+  const count = skipped.length;
+  const names = skipped
+    .map((item) => item.lesson_name || item.lesson_stem || item.lesson_pdf || item.lesson_path)
+    .filter(Boolean);
+  return (
+    <div style={{ ...s.card, marginTop: 12, border: "1px solid #fde68a" }}>
+      <div style={{ ...s.cardHeader, background: "#fffbeb", borderBottom: "1px solid #fde68a" }}>
+        <span style={{ ...s.cardTitle, color: "#92400e" }}>
+          Tách chunk chưa hoàn tất
+        </span>
+      </div>
+      <div style={{ padding: "12px 20px", color: "#92400e", fontSize: 13 }}>
+        <div>Một số bài học bị bỏ qua. Không thể xác nhận hoặc chạy bước nặng khi kết quả chunk còn thiếu.</div>
+        <div style={{ marginTop: 6, color: "#a16207" }}>
+          Đã tạo {job.partial_generated_chunks ?? (job.chunks || []).length} chunk; bỏ qua {count} bài học.
+        </div>
+        {names.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+            {names.slice(0, 12).map((name, i) => (
+              <span key={`${name}-${i}`} style={{ fontSize: 12, padding: "3px 8px", borderRadius: 14, background: "#fef3c7", border: "1px solid #fde68a", color: "#92400e" }}>
+                {name}
+              </span>
+            ))}
+            {names.length > 12 && (
+              <span style={{ fontSize: 12, color: "#a16207", alignSelf: "center" }}>+{names.length - 12} bài khác</span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

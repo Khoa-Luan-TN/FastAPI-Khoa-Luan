@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -31,6 +32,25 @@ from sgk_extract.pdf_output import (  # noqa: E402
 from sgk_extract.prompts import build_topic_lesson_prompt  # noqa: E402
 
 _DEFAULT_MODEL = "gemini-2.5-flash-lite"
+_API_KEY_RE = re.compile(r"AIza[0-9A-Za-z_-]{20,}")
+
+
+def _as_bool(value: Any, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _mask_sensitive_text(text: str) -> str:
+    def _mask(match: re.Match[str]) -> str:
+        key = match.group(0)
+        if len(key) <= 12:
+            return key[:4] + "***"
+        return key[:8] + "***" + key[-3:]
+
+    return _API_KEY_RE.sub(_mask, str(text))
 
 
 def _write_progress(
@@ -814,9 +834,14 @@ def _run_chunks(workspace: Path, config: dict) -> None:
     pdf_path: str = config["source_pdf_path"]
     api_config = config.get("api_config", str(_GEMINI_ROOT / "config.env"))
     model = config.get("model", _DEFAULT_MODEL)
+    allow_partial_chunks = _as_bool(
+        config.get("ALLOW_PARTIAL_CHUNKS", config.get("allow_partial_chunks", os.environ.get("ALLOW_PARTIAL_CHUNKS"))),
+        default=False,
+    )
     rotation_state_path = workspace / "gemini_rotation_state.json"
     key_manager = get_key_manager(api_config, state_file=rotation_state_path)
     log(f"book_stem={book_stem} | debug_rotation_state={rotation_state_path}")
+    log(f"allow_partial_chunks={allow_partial_chunks}")
 
     # Kiểm tra xem có đang bật debug không
     debug_enabled, debug_topic_index = _read_debug_config(workspace)
@@ -989,15 +1014,60 @@ def _run_chunks(workspace: Path, config: dict) -> None:
 
     log(f"final chunks collected: {len(chunks)}")
     chunks.sort(key=lambda x: (x.get("lesson_stem", ""), x.get("chunk", "")))
-    result = {
-        "ok": True,
-        "bundle_path": str(bundle_dir),
-        "chunks": chunks,
-    }
-    (workspace / "result.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    skipped_lessons = list(chunk_summary.get("skipped_lessons") or [])
+    if skipped_lessons:
+        log(f"partial chunk extraction: skipped_lessons={len(skipped_lessons)}")
+        for skipped in skipped_lessons:
+            lesson_index = skipped.get("lesson_index") or skipped.get("lesson_order") or "?"
+            lesson_name = skipped.get("lesson_name") or skipped.get("lesson_stem") or skipped.get("lesson_pdf") or "unknown"
+            error = skipped.get("error_message") or skipped.get("error") or "unknown error"
+            log(f"skipped lesson {lesson_index}/{lesson_count}: {lesson_name} | {error}")
+
+        partial_result = {
+            "ok": bool(allow_partial_chunks),
+            "partial": True,
+            "allow_partial_chunks": allow_partial_chunks,
+            "stage": "chunks",
+            "message": "Chunk extraction completed partially; some lessons were skipped.",
+            "error": "Tách chunk chưa hoàn tất. Một số bài học bị bỏ qua.",
+            "bundle_path": str(bundle_dir),
+            "total_lessons": lesson_count,
+            "generated_chunks": len(chunks),
+            "skipped_lessons": skipped_lessons,
+            "chunks": chunks,
+        }
+        (workspace / "result.json").write_text(
+            json.dumps(partial_result, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        _write_partial(workspace, "chunks", chunks)
+
+        if not allow_partial_chunks:
+            _write_progress(
+                workspace,
+                status="error",
+                progress_stage="chunks_partial_failed",
+                progress_message=partial_result["error"],
+                progress_current=lesson_count,
+                progress_total=lesson_count,
+                progress_percent=100,
+            )
+            log("chunks_partial_failed: partial output written; stage marked failed")
+            return
+
+        log("partial chunks allowed by ALLOW_PARTIAL_CHUNKS; continuing to reviewing_chunks")
+        result = partial_result
+    else:
+        result = {
+            "ok": True,
+            "partial": False,
+            "bundle_path": str(bundle_dir),
+            "chunks": chunks,
+        }
+        (workspace / "result.json").write_text(
+            json.dumps(result, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
     _write_progress(
         workspace,
@@ -1041,14 +1111,15 @@ if __name__ == "__main__":
     try:
         main(ws, args.stage)
     except Exception as exc:
-        tb = traceback.format_exc()
+        tb = _mask_sensitive_text(traceback.format_exc())
+        error_text = _mask_sensitive_text(str(exc))
         _write_progress(
             ws,
             status="error",
             progress_stage="error",
-            progress_message=str(exc)[:500],
+            progress_message=error_text[:500],
         )
-        err = {"ok": False, "error": str(exc), "traceback": tb}
+        err = {"ok": False, "error": error_text, "traceback": tb}
         try:
             (ws / "result.json").write_text(
                 json.dumps(err, ensure_ascii=False, indent=2),
@@ -1058,6 +1129,6 @@ if __name__ == "__main__":
             pass
 
         log_path = ws / f"{args.stage}.log"
-        _append_log(log_path, f"ERROR: {exc}")
+        _append_log(log_path, f"ERROR: {error_text}")
         _append_log(log_path, tb[:1000])
         sys.exit(1)

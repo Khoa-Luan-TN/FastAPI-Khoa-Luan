@@ -4,6 +4,8 @@
 config.env
 **/config.env
 *.env
+*.bak*
+*.bak_*
 
 # Nếu bạn muốn giữ file mẫu để người khác copy:
 # (không ignore các file dạng *.example)
@@ -60,3 +62,4 @@ app/core/gemini_rotation_state.json.tmp
 
 Output
 /gemini_pipeline/scripts/kaggle/kernels
+gemini_pipeline/ReviewWorkspace/

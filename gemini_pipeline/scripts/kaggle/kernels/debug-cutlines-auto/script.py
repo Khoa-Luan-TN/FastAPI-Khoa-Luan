@@ -8,7 +8,7 @@ os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 os.environ["DISABLE_PDF_UPDATE"] = "0"   # ✅ cho phép fitz update PDF
 
 # Rewritten by cli.py before each `kaggle kernels push`.
-_EMBEDDED_RUN_REQUEST_JSON = "{\"expected_book_stem\": \"SGK-KHMT-11_3c55de53\", \"request_id\": \"a1535ad9\", \"requested_at\": \"2026-04-18T01:50:06.893406+00:00\", \"attempt\": 1}"
+_EMBEDDED_RUN_REQUEST_JSON = "{\"expected_book_stem\": \"SGK-KHMT-12_7bb349b4\", \"request_id\": \"7b95ace9\", \"requested_at\": \"2026-05-18T08:15:38.712277+00:00\", \"attempt\": 1}"
 
 def sh(cmd):
     print(">>>", cmd)

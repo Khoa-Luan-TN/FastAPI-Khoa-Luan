@@ -1,1987 +1,2531 @@
 [{
   "_id": {
-    "$oid": "69e771a0104e6a99b261ae5f"
+    "$oid": "6a0a2cbbcb9a10c9f63002a7"
   },
-  "chunk_num": 1,
   "chunk_name": "Thông tin và dữ liệu",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3d"
+    "$oid": "6a0a2cb7cb9a10c9f6300263"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_01_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_01/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:24.827Z"
+    "$date": "2026-05-17T21:01:47.609Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:24.827Z"
+    "$date": "2026-05-17T21:01:47.609Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a0104e6a99b261ae60"
+    "$oid": "6a0a2cbccb9a10c9f63002b3"
   },
-  "chunk_num": 2,
   "chunk_name": "Đơn vị lưu trữ dữ liệu",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3d"
+    "$oid": "6a0a2cb7cb9a10c9f6300263"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_01_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_01/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:24.971Z"
+    "$date": "2026-05-17T21:01:48.308Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:24.971Z"
+    "$date": "2026-05-17T21:01:48.308Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae61"
+    "$oid": "6a0a2cbccb9a10c9f63002bf"
   },
-  "chunk_num": 3,
   "chunk_name": "Lưu trữ, xử lí và truyền thông bằng thiết bị số",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3d"
+    "$oid": "6a0a2cb7cb9a10c9f6300263"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_01-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_01_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_01/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.004Z"
+    "$date": "2026-05-17T21:01:48.595Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.004Z"
+    "$date": "2026-05-17T21:01:48.595Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae62"
+    "$oid": "6a0a2cbccb9a10c9f63002ca"
   },
-  "chunk_num": 1,
   "chunk_name": "Thiết bị thông minh",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3e"
+    "$oid": "6a0a2cb7cb9a10c9f6300265"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_02_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_02/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.041Z"
+    "$date": "2026-05-17T21:01:48.890Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.041Z"
+    "$date": "2026-05-17T21:01:48.890Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae63"
+    "$oid": "6a0a2cbdcb9a10c9f63002d6"
   },
-  "chunk_num": 2,
   "chunk_name": "Các thành tựu của tin học",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3e"
+    "$oid": "6a0a2cb7cb9a10c9f6300265"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_02-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_02_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_02/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.072Z"
+    "$date": "2026-05-17T21:01:49.142Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.072Z"
+    "$date": "2026-05-17T21:01:49.142Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae64"
+    "$oid": "6a0a2cbdcb9a10c9f63002e2"
   },
-  "chunk_num": 1,
   "chunk_name": "Phân loại và biểu diễn thông tin trong máy tính",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3f"
+    "$oid": "6a0a2cb8cb9a10c9f6300267"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_03_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_03/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.101Z"
+    "$date": "2026-05-17T21:01:49.405Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.101Z"
+    "$date": "2026-05-17T21:01:49.405Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae65"
+    "$oid": "6a0a2cbdcb9a10c9f63002ee"
   },
-  "chunk_num": 2,
   "chunk_name": "Biểu diễn dữ liệu văn bản",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae3f"
+    "$oid": "6a0a2cb8cb9a10c9f6300267"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_03-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_03_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_03/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.135Z"
+    "$date": "2026-05-17T21:01:49.672Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.135Z"
+    "$date": "2026-05-17T21:01:49.672Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae66"
+    "$oid": "6a0a2cbdcb9a10c9f63002fa"
   },
-  "chunk_num": 1,
   "chunk_name": "Hệ nhị phân và biểu diễn số nguyên",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae40"
+    "$oid": "6a0a2cb8cb9a10c9f6300269"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_04_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_04/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.162Z"
+    "$date": "2026-05-17T21:01:49.996Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.162Z"
+    "$date": "2026-05-17T21:01:49.996Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae67"
+    "$oid": "6a0a2cbecb9a10c9f6300306"
   },
-  "chunk_num": 2,
   "chunk_name": "Các phép tính số học trong hệ nhị phân",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae40"
+    "$oid": "6a0a2cb8cb9a10c9f6300269"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_04-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_04_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_04/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.189Z"
+    "$date": "2026-05-17T21:01:50.273Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.189Z"
+    "$date": "2026-05-17T21:01:50.273Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae68"
+    "$oid": "6a0a2cbecb9a10c9f6300310"
   },
-  "chunk_num": 1,
   "chunk_name": "Các giá trị chân lí và các phép toán lôgic",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae41"
+    "$oid": "6a0a2cb8cb9a10c9f630026b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_05_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_05/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.217Z"
+    "$date": "2026-05-17T21:01:50.547Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.217Z"
+    "$date": "2026-05-17T21:01:50.547Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae69"
+    "$oid": "6a0a2cbecb9a10c9f630031c"
   },
-  "chunk_num": 2,
   "chunk_name": "Biểu diễn dữ liệu lôgic",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae41"
+    "$oid": "6a0a2cb8cb9a10c9f630026b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_05-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_05_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_05/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.248Z"
+    "$date": "2026-05-17T21:01:50.920Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.248Z"
+    "$date": "2026-05-17T21:01:50.920Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae6a"
+    "$oid": "6a0a2cbfcb9a10c9f6300326"
   },
-  "chunk_num": 1,
   "chunk_name": "Biểu diễn âm thanh",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae42"
+    "$oid": "6a0a2cb8cb9a10c9f630026d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_06_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_06/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.298Z"
+    "$date": "2026-05-17T21:01:51.202Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.298Z"
+    "$date": "2026-05-17T21:01:51.202Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae6b"
+    "$oid": "6a0a2cbfcb9a10c9f6300332"
   },
-  "chunk_num": 2,
   "chunk_name": "Biểu diễn hình ảnh",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae42"
+    "$oid": "6a0a2cb8cb9a10c9f630026d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_06-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_06_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_06/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.328Z"
+    "$date": "2026-05-17T21:01:51.693Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.328Z"
+    "$date": "2026-05-17T21:01:51.693Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae6c"
+    "$oid": "6a0a2cc0cb9a10c9f630033e"
   },
-  "chunk_num": 1,
   "chunk_name": "Trợ thủ số cá nhân",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae43"
+    "$oid": "6a0a2cb8cb9a10c9f630026f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_07_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_01/lesson_07/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.358Z"
+    "$date": "2026-05-17T21:01:52.011Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.358Z"
+    "$date": "2026-05-17T21:01:52.011Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae6d"
+    "$oid": "6a0a2cc0cb9a10c9f6300352"
   },
-  "chunk_num": 2,
-  "chunk_name": "Thực hành sử dụng thiết bị số cá nhân",
-  "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae43"
-  },
-  "asset_prefixes": {
-    "documents": "documents/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_02",
-    "images": "images/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_02",
-    "videos": "videos/lop-10/tin-hoc/chunk/topic_01-lesson_07-chunk_02"
-  },
-  "import_key": "ch_les_l10_tinhoc_kntt_07_02",
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-04-21T12:46:25.388Z"
-  },
-  "updated_at": {
-    "$date": "2026-04-21T12:46:25.388Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69e771a1104e6a99b261ae6e"
-  },
+  "chunk_name": "Mang lan và internet",
   "chunk_num": 1,
-  "chunk_name": "Mạng LAN và Internet",
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae44"
+    "$oid": "6a0a2cb8cb9a10c9f6300271"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_08_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_08/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.415Z"
+    "$date": "2026-05-17T21:01:52.534Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.415Z"
+    "$date": "2026-05-17T21:01:52.534Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae6f"
+    "$oid": "6a0a2cc0cb9a10c9f630035e"
   },
+  "chunk_name": "Vai trò của internet",
   "chunk_num": 2,
-  "chunk_name": "Vai trò của Internet",
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae44"
+    "$oid": "6a0a2cb8cb9a10c9f6300271"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_08_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_08/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.451Z"
+    "$date": "2026-05-17T21:01:52.986Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.451Z"
+    "$date": "2026-05-17T21:01:52.986Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae70"
+    "$oid": "6a0a2cc1cb9a10c9f6300369"
   },
-  "chunk_num": 3,
   "chunk_name": "Điện toán đám mây",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae44"
+    "$oid": "6a0a2cb8cb9a10c9f6300271"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_08_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_08/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.481Z"
+    "$date": "2026-05-17T21:01:53.410Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.481Z"
+    "$date": "2026-05-17T21:01:53.410Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae71"
+    "$oid": "6a0a2cc1cb9a10c9f6300374"
   },
-  "chunk_num": 4,
   "chunk_name": "Kết nối vạn vật",
+  "chunk_num": 4,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae44"
+    "$oid": "6a0a2cb8cb9a10c9f6300271"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_04",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_04",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_08-chunk_04"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_08_04",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_08/chunk_04",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.511Z"
+    "$date": "2026-05-17T21:01:53.801Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.511Z"
+    "$date": "2026-05-17T21:01:53.801Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae72"
+    "$oid": "6a0a2cc2cb9a10c9f630037e"
   },
-  "chunk_num": 1,
   "chunk_name": "Một số nguy cơ trên mạng",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae45"
+    "$oid": "6a0a2cb8cb9a10c9f6300273"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_09_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_09/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.541Z"
+    "$date": "2026-05-17T21:01:54.092Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.541Z"
+    "$date": "2026-05-17T21:01:54.092Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae73"
+    "$oid": "6a0a2cc2cb9a10c9f630038a"
   },
-  "chunk_num": 2,
   "chunk_name": "Phần mềm độc hại",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae45"
+    "$oid": "6a0a2cb8cb9a10c9f6300273"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_09-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_09_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_09/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.570Z"
+    "$date": "2026-05-17T21:01:54.373Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.570Z"
+    "$date": "2026-05-17T21:01:54.373Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae74"
+    "$oid": "6a0a2cc2cb9a10c9f6300396"
   },
+  "chunk_name": "Không có mục chính",
   "chunk_num": 1,
-  "chunk_name": "Bài thực hành 10",
   "lesson_id": {
-    "$oid": "69e7719f104e6a99b261ae46"
+    "$oid": "6a0a2cb8cb9a10c9f6300275"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_02-lesson_10-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_02-lesson_10-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_02-lesson_10-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_10_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_02/lesson_10/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.597Z"
+    "$date": "2026-05-17T21:01:54.654Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.597Z"
+    "$date": "2026-05-17T21:01:54.654Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae75"
+    "$oid": "6a0a2cc3cb9a10c9f63003ac"
   },
-  "chunk_num": 1,
   "chunk_name": "Những vấn đề đạo đức, pháp luật và văn hoá",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae47"
+    "$oid": "6a0a2cb8cb9a10c9f6300277"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_11_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_03/lesson_11/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.627Z"
+    "$date": "2026-05-17T21:01:55.126Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.627Z"
+    "$date": "2026-05-17T21:01:55.126Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae76"
+    "$oid": "6a0a2cc3cb9a10c9f63003b8"
   },
-  "chunk_num": 2,
   "chunk_name": "Một số quy định pháp lí đối với người dùng trên mạng",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae47"
+    "$oid": "6a0a2cb8cb9a10c9f6300277"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_11_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_03/lesson_11/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.661Z"
+    "$date": "2026-05-17T21:01:55.344Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.661Z"
+    "$date": "2026-05-17T21:01:55.344Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae77"
+    "$oid": "6a0a2cc3cb9a10c9f63003c3"
   },
-  "chunk_num": 3,
   "chunk_name": "Quyền tác giả và bản quyền",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae47"
+    "$oid": "6a0a2cb8cb9a10c9f6300277"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_03-lesson_11-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_11_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_03/lesson_11/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.692Z"
+    "$date": "2026-05-17T21:01:55.579Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.692Z"
+    "$date": "2026-05-17T21:01:55.579Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae78"
+    "$oid": "6a0a2cc3cb9a10c9f63003ce"
   },
-  "chunk_num": 1,
   "chunk_name": "Thiết kế đồ hoạ",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae48"
+    "$oid": "6a0a2cb8cb9a10c9f6300279"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_12_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_12/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.722Z"
+    "$date": "2026-05-17T21:01:55.842Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.722Z"
+    "$date": "2026-05-17T21:01:55.842Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae79"
+    "$oid": "6a0a2cc4cb9a10c9f63003d9"
   },
-  "chunk_num": 2,
   "chunk_name": "Phần mềm đồ hoạ",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae48"
+    "$oid": "6a0a2cb8cb9a10c9f6300279"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_12_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_12/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.757Z"
+    "$date": "2026-05-17T21:01:56.071Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.757Z"
+    "$date": "2026-05-17T21:01:56.071Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7a"
+    "$oid": "6a0a2cc4cb9a10c9f63003e4"
   },
-  "chunk_num": 3,
   "chunk_name": "Các đối tượng đồ hoạ của hình vẽ",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae48"
+    "$oid": "6a0a2cb8cb9a10c9f6300279"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_12-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_12_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_12/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.792Z"
+    "$date": "2026-05-17T21:01:56.395Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.792Z"
+    "$date": "2026-05-17T21:01:56.395Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7b"
+    "$oid": "6a0a2cc4cb9a10c9f63003ef"
   },
-  "chunk_num": 1,
   "chunk_name": "Các đối tượng hình khối",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae49"
+    "$oid": "6a0a2cb8cb9a10c9f630027b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_13_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_13/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.827Z"
+    "$date": "2026-05-17T21:01:56.644Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.827Z"
+    "$date": "2026-05-17T21:01:56.644Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7c"
+    "$oid": "6a0a2cc4cb9a10c9f63003fa"
   },
-  "chunk_num": 2,
   "chunk_name": "Thiết lập màu tô, màu vẽ và tô màu cho đối tượng",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae49"
+    "$oid": "6a0a2cb8cb9a10c9f630027b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_13_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_13/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.873Z"
+    "$date": "2026-05-17T21:01:56.888Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.873Z"
+    "$date": "2026-05-17T21:01:56.888Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7d"
+    "$oid": "6a0a2cc5cb9a10c9f6300405"
   },
-  "chunk_num": 3,
   "chunk_name": "Các phép ghép đối tượng đồ hoạ",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae49"
+    "$oid": "6a0a2cb8cb9a10c9f630027b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_13-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_13_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_13/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.904Z"
+    "$date": "2026-05-17T21:01:57.144Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.904Z"
+    "$date": "2026-05-17T21:01:57.144Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7e"
+    "$oid": "6a0a2cc5cb9a10c9f6300410"
   },
-  "chunk_num": 1,
   "chunk_name": "Làm quen với đối tượng dạng đường",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4a"
+    "$oid": "6a0a2cb9cb9a10c9f630027d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_14_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_14/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.938Z"
+    "$date": "2026-05-17T21:01:57.416Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.938Z"
+    "$date": "2026-05-17T21:01:57.416Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a1104e6a99b261ae7f"
+    "$oid": "6a0a2cc5cb9a10c9f630041b"
   },
-  "chunk_num": 2,
   "chunk_name": "Sử dụng công cụ tinh chỉnh đường",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4a"
+    "$oid": "6a0a2cb9cb9a10c9f630027d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_14_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_14/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:25.975Z"
+    "$date": "2026-05-17T21:01:57.720Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:25.975Z"
+    "$date": "2026-05-17T21:01:57.720Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae80"
+    "$oid": "6a0a2cc6cb9a10c9f6300426"
   },
-  "chunk_num": 3,
   "chunk_name": "Đối tượng văn bản",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4a"
+    "$oid": "6a0a2cb9cb9a10c9f630027d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_14-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_14_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_14/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.011Z"
+    "$date": "2026-05-17T21:01:58.131Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.011Z"
+    "$date": "2026-05-17T21:01:58.131Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae81"
+    "$oid": "6a0a2cc6cb9a10c9f6300430"
   },
+  "chunk_name": "Không có mục chính",
   "chunk_num": 1,
-  "chunk_name": "Bài thực hành 15",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4b"
+    "$oid": "6a0a2cb9cb9a10c9f630027f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_04-lesson_15-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_15_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_04/lesson_15/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.054Z"
+    "$date": "2026-05-17T21:01:58.524Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.054Z"
+    "$date": "2026-05-17T21:01:58.524Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae82"
+    "$oid": "6a0a2cc7cb9a10c9f6300445"
   },
-  "chunk_num": 1,
   "chunk_name": "Ngôn ngữ lập trình bậc cao",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4c"
+    "$oid": "6a0a2cb9cb9a10c9f6300281"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_16_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_16/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.089Z"
+    "$date": "2026-05-17T21:01:59.068Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.089Z"
+    "$date": "2026-05-17T21:01:59.068Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae83"
+    "$oid": "6a0a2cc7cb9a10c9f6300450"
   },
+  "chunk_name": "Môi trường lập trình python",
   "chunk_num": 2,
-  "chunk_name": "Môi trường lập trình Python",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4c"
+    "$oid": "6a0a2cb9cb9a10c9f6300281"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_16_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_16/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.116Z"
+    "$date": "2026-05-17T21:01:59.334Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.116Z"
+    "$date": "2026-05-17T21:01:59.334Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae84"
+    "$oid": "6a0a2cc7cb9a10c9f630045c"
   },
+  "chunk_name": "Một số lệnh python đầu tiên",
   "chunk_num": 3,
-  "chunk_name": "Một số lệnh Python đầu tiên",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4c"
+    "$oid": "6a0a2cb9cb9a10c9f6300281"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_16-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_16_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_16/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.147Z"
+    "$date": "2026-05-17T21:01:59.622Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.147Z"
+    "$date": "2026-05-17T21:01:59.622Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae85"
+    "$oid": "6a0a2cc7cb9a10c9f6300466"
   },
-  "chunk_num": 1,
   "chunk_name": "Biến và lệnh gán",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4d"
+    "$oid": "6a0a2cb9cb9a10c9f6300283"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_17_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_17/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.181Z"
+    "$date": "2026-05-17T21:01:59.863Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.181Z"
+    "$date": "2026-05-17T21:01:59.863Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae86"
+    "$oid": "6a0a2cc8cb9a10c9f6300471"
   },
-  "chunk_num": 2,
   "chunk_name": "Các phép toán trên một số kiểu dữ liệu cơ bản",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4d"
+    "$oid": "6a0a2cb9cb9a10c9f6300283"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_17_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_17/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.211Z"
+    "$date": "2026-05-17T21:02:00.116Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.211Z"
+    "$date": "2026-05-17T21:02:00.116Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae87"
+    "$oid": "6a0a2cc8cb9a10c9f630047b"
   },
+  "chunk_name": "Từ khoá",
   "chunk_num": 3,
-  "chunk_name": "Từ khóa",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4d"
+    "$oid": "6a0a2cb9cb9a10c9f6300283"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_17-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_17_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_17/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.244Z"
+    "$date": "2026-05-17T21:02:00.367Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.244Z"
+    "$date": "2026-05-17T21:02:00.367Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae88"
+    "$oid": "6a0a2cc8cb9a10c9f6300486"
   },
-  "chunk_num": 1,
   "chunk_name": "Các lệnh vào ra đơn giản",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4e"
+    "$oid": "6a0a2cb9cb9a10c9f6300285"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_18_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_18/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.315Z"
+    "$date": "2026-05-17T21:02:00.725Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.315Z"
+    "$date": "2026-05-17T21:02:00.725Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae89"
+    "$oid": "6a0a2cc9cb9a10c9f6300491"
   },
-  "chunk_num": 2,
   "chunk_name": "Chuyển đổi kiểu dữ liệu cơ bản của python",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4e"
+    "$oid": "6a0a2cb9cb9a10c9f6300285"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_18-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_18_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_18/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.344Z"
+    "$date": "2026-05-17T21:02:01.163Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.344Z"
+    "$date": "2026-05-17T21:02:01.163Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8a"
+    "$oid": "6a0a2cc9cb9a10c9f630049d"
   },
+  "chunk_name": "Biểu thức lôgic",
   "chunk_num": 1,
-  "chunk_name": "Biểu thức logic",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4f"
+    "$oid": "6a0a2cb9cb9a10c9f6300287"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_19_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_19/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.374Z"
+    "$date": "2026-05-17T21:02:01.619Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.374Z"
+    "$date": "2026-05-17T21:02:01.619Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8b"
+    "$oid": "6a0a2cc9cb9a10c9f63004a6"
   },
-  "chunk_num": 2,
   "chunk_name": "Lệnh if",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae4f"
+    "$oid": "6a0a2cb9cb9a10c9f6300287"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_19-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_19_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_19/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.403Z"
+    "$date": "2026-05-17T21:02:01.884Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.403Z"
+    "$date": "2026-05-17T21:02:01.884Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8c"
+    "$oid": "6a0a2ccacb9a10c9f63004b1"
   },
+  "chunk_name": "Lệnh lặp for",
   "chunk_num": 1,
-  "chunk_name": "Lệnh for",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae50"
+    "$oid": "6a0a2cb9cb9a10c9f6300289"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_20_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_20/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.431Z"
+    "$date": "2026-05-17T21:02:02.133Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.431Z"
+    "$date": "2026-05-17T21:02:02.133Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8d"
+    "$oid": "6a0a2ccacb9a10c9f63004bc"
   },
-  "chunk_num": 2,
   "chunk_name": "Lệnh range",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae50"
+    "$oid": "6a0a2cb9cb9a10c9f6300289"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_20-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_20_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_20/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.460Z"
+    "$date": "2026-05-17T21:02:02.383Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.460Z"
+    "$date": "2026-05-17T21:02:02.383Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8e"
+    "$oid": "6a0a2ccacb9a10c9f63004c7"
   },
+  "chunk_name": "Lệnh lặp while",
   "chunk_num": 1,
-  "chunk_name": "Lệnh while",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae51"
+    "$oid": "6a0a2cb9cb9a10c9f630028b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_21_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_21/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.489Z"
+    "$date": "2026-05-17T21:02:02.615Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.489Z"
+    "$date": "2026-05-17T21:02:02.615Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae8f"
+    "$oid": "6a0a2ccacb9a10c9f63004d2"
   },
-  "chunk_num": 2,
   "chunk_name": "Cấu trúc lập trình",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae51"
+    "$oid": "6a0a2cb9cb9a10c9f630028b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_21-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_21_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_21/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.521Z"
+    "$date": "2026-05-17T21:02:02.922Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.521Z"
+    "$date": "2026-05-17T21:02:02.922Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae90"
+    "$oid": "6a0a2ccbcb9a10c9f63004dc"
   },
-  "chunk_num": 1,
   "chunk_name": "Kiểu dữ liệu danh sách",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae52"
+    "$oid": "6a0a2cb9cb9a10c9f630028d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_22_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_22/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.550Z"
+    "$date": "2026-05-17T21:02:03.258Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.550Z"
+    "$date": "2026-05-17T21:02:03.258Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae91"
+    "$oid": "6a0a2ccbcb9a10c9f63004e8"
   },
-  "chunk_num": 2,
   "chunk_name": "Duyệt các phần tử của danh sách",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae52"
+    "$oid": "6a0a2cb9cb9a10c9f630028d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_22_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_22/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.583Z"
+    "$date": "2026-05-17T21:02:03.525Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.583Z"
+    "$date": "2026-05-17T21:02:03.525Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae92"
+    "$oid": "6a0a2ccbcb9a10c9f63004f1"
   },
-  "chunk_num": 3,
   "chunk_name": "Thêm phần tử vào danh sách",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae52"
+    "$oid": "6a0a2cb9cb9a10c9f630028d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_22-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_22_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_22/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.618Z"
+    "$date": "2026-05-17T21:02:03.783Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.618Z"
+    "$date": "2026-05-17T21:02:03.783Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae93"
+    "$oid": "6a0a2ccccb9a10c9f63004fc"
   },
-  "chunk_num": 1,
   "chunk_name": "Duyệt danh sách với toán tử in",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae53"
+    "$oid": "6a0a2cbacb9a10c9f630028f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_23_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_23/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.652Z"
+    "$date": "2026-05-17T21:02:04.034Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.652Z"
+    "$date": "2026-05-17T21:02:04.034Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae94"
+    "$oid": "6a0a2ccccb9a10c9f6300505"
   },
+  "chunk_name": "Một số lệnh làm việc với danh sách",
   "chunk_num": 2,
-  "chunk_name": "Một số lệnh làm việc với dữ liệu danh sách",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae53"
+    "$oid": "6a0a2cbacb9a10c9f630028f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_23-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_23_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_23/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.687Z"
+    "$date": "2026-05-17T21:02:04.301Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.687Z"
+    "$date": "2026-05-17T21:02:04.301Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae95"
+    "$oid": "6a0a2ccccb9a10c9f6300510"
   },
+  "chunk_name": "Xâu là một dãy các kí tự",
   "chunk_num": 1,
-  "chunk_name": "Xâu là một dãy các ký tự",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae54"
+    "$oid": "6a0a2cbacb9a10c9f6300291"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_24_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_24/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.725Z"
+    "$date": "2026-05-17T21:02:04.646Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.725Z"
+    "$date": "2026-05-17T21:02:04.646Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae96"
+    "$oid": "6a0a2ccccb9a10c9f630051a"
   },
+  "chunk_name": "Lệnh duyệt kí tự của xâu",
   "chunk_num": 2,
-  "chunk_name": "Lệnh duyệt ký tự của xâu",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae54"
+    "$oid": "6a0a2cbacb9a10c9f6300291"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_24-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_24_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_24/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.760Z"
+    "$date": "2026-05-17T21:02:04.992Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.760Z"
+    "$date": "2026-05-17T21:02:04.992Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae97"
+    "$oid": "6a0a2ccdcb9a10c9f6300523"
   },
+  "chunk_name": "Xâu con và lệnh tìm vị trí xâu con",
   "chunk_num": 1,
-  "chunk_name": "Xâu con và lệnh tìm vị trí của xâu con",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae55"
+    "$oid": "6a0a2cbacb9a10c9f6300293"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_25_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_25/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.796Z"
+    "$date": "2026-05-17T21:02:05.214Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.796Z"
+    "$date": "2026-05-17T21:02:05.214Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae98"
+    "$oid": "6a0a2ccdcb9a10c9f630052c"
   },
+  "chunk_name": "Một số lệnh thường dùng với xâu kí tự",
   "chunk_num": 2,
-  "chunk_name": "Một số lệnh làm việc với xâu ký tự",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae55"
+    "$oid": "6a0a2cbacb9a10c9f6300293"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_25-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_25_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_25/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.827Z"
+    "$date": "2026-05-17T21:02:05.453Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.827Z"
+    "$date": "2026-05-17T21:02:05.453Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae99"
+    "$oid": "6a0a2ccdcb9a10c9f6300536"
   },
-  "chunk_num": 1,
   "chunk_name": "Một số hàm thiết kế sẵn của python",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae56"
+    "$oid": "6a0a2cbacb9a10c9f6300295"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_26_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_26/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.857Z"
+    "$date": "2026-05-17T21:02:05.704Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.857Z"
+    "$date": "2026-05-17T21:02:05.704Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae9a"
+    "$oid": "6a0a2ccdcb9a10c9f6300541"
   },
+  "chunk_name": "Thiết lập các hàm tự định nghĩa",
   "chunk_num": 2,
-  "chunk_name": "Thiết kế các hàm tự định nghĩa",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae56"
+    "$oid": "6a0a2cbacb9a10c9f6300295"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_26-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_26_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_26/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.888Z"
+    "$date": "2026-05-17T21:02:05.953Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.888Z"
+    "$date": "2026-05-17T21:02:05.953Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae9b"
+    "$oid": "6a0a2ccecb9a10c9f630054c"
   },
-  "chunk_num": 1,
   "chunk_name": "Tham số và đối số của hàm",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae57"
+    "$oid": "6a0a2cbacb9a10c9f6300297"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_27_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_27/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.919Z"
+    "$date": "2026-05-17T21:02:06.181Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.919Z"
+    "$date": "2026-05-17T21:02:06.181Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae9c"
+    "$oid": "6a0a2ccecb9a10c9f6300558"
   },
-  "chunk_num": 2,
   "chunk_name": "Cách sử dụng chương trình con",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae57"
+    "$oid": "6a0a2cbacb9a10c9f6300297"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_27-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_27_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_27/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.952Z"
+    "$date": "2026-05-17T21:02:06.451Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.952Z"
+    "$date": "2026-05-17T21:02:06.451Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a2104e6a99b261ae9d"
+    "$oid": "6a0a2ccecb9a10c9f6300562"
   },
-  "chunk_num": 1,
   "chunk_name": "Phạm vi của biến khai báo trong hàm",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae58"
+    "$oid": "6a0a2cbacb9a10c9f6300299"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_28_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_28/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:26.982Z"
+    "$date": "2026-05-17T21:02:06.716Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:26.982Z"
+    "$date": "2026-05-17T21:02:06.716Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261ae9e"
+    "$oid": "6a0a2ccecb9a10c9f630056d"
   },
-  "chunk_num": 2,
   "chunk_name": "Phạm vi của biến khai báo ngoài hàm",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae58"
+    "$oid": "6a0a2cbacb9a10c9f6300299"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_28-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_28_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_28/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.012Z"
+    "$date": "2026-05-17T21:02:06.960Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.012Z"
+    "$date": "2026-05-17T21:02:06.960Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261ae9f"
+    "$oid": "6a0a2ccfcb9a10c9f6300577"
   },
-  "chunk_num": 1,
   "chunk_name": "Nhận biết lỗi chương trình",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae59"
+    "$oid": "6a0a2cbacb9a10c9f630029b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_29_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_29/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.048Z"
+    "$date": "2026-05-17T21:02:07.210Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.048Z"
+    "$date": "2026-05-17T21:02:07.210Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea0"
+    "$oid": "6a0a2ccfcb9a10c9f6300583"
   },
-  "chunk_num": 2,
   "chunk_name": "Một số lỗi ngoại lệ thường gặp",
+  "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae59"
+    "$oid": "6a0a2cbacb9a10c9f630029b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_29-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_29_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_29/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.079Z"
+    "$date": "2026-05-17T21:02:07.467Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.079Z"
+    "$date": "2026-05-17T21:02:07.467Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea1"
+    "$oid": "6a0a2ccfcb9a10c9f630058c"
   },
-  "chunk_num": 1,
   "chunk_name": "Một vài phương pháp kiểm thử chương trình",
+  "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5a"
+    "$oid": "6a0a2cbbcb9a10c9f630029d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_30_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_30/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.109Z"
+    "$date": "2026-05-17T21:02:07.723Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.109Z"
+    "$date": "2026-05-17T21:02:07.723Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea2"
+    "$oid": "6a0a2cd0cb9a10c9f63005a2"
   },
-  "chunk_num": 2,
-  "chunk_name": "Ví dụ minh họa",
-  "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5a"
-  },
-  "asset_prefixes": {
-    "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_02",
-    "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_02",
-    "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_30-chunk_02"
-  },
-  "import_key": "ch_les_l10_tinhoc_kntt_30_02",
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-04-21T12:46:27.145Z"
-  },
-  "updated_at": {
-    "$date": "2026-04-21T12:46:27.145Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "69e771a3104e6a99b261aea3"
-  },
+  "chunk_name": "Không có mục chính",
   "chunk_num": 1,
-  "chunk_name": "Bài thực hành 31",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5b"
+    "$oid": "6a0a2cbbcb9a10c9f630029f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_31-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_31-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_31-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_31_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_31/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.177Z"
+    "$date": "2026-05-17T21:02:08.208Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.177Z"
+    "$date": "2026-05-17T21:02:08.208Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea4"
+    "$oid": "6a0a2cd0cb9a10c9f63005b5"
   },
+  "chunk_name": "Không có mục chính",
   "chunk_num": 1,
-  "chunk_name": "Bài thực hành 32",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5c"
+    "$oid": "6a0a2cbbcb9a10c9f63002a1"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_05-lesson_32-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_05-lesson_32-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_05-lesson_32-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_32_01",
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-10/tin-hoc/topic_05/lesson_32/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.205Z"
+    "$date": "2026-05-17T21:02:08.625Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.205Z"
+    "$date": "2026-05-17T21:02:08.625Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea5"
+    "$oid": "6a0a2cd1cb9a10c9f63005c9"
   },
+  "chunk_name": "Khái niệm về thiết kế đồ hoạ hức",
   "chunk_num": 1,
-  "chunk_name": "Khái niệm thiết kế đồ họa",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5d"
+    "$oid": "6a0a2cbbcb9a10c9f63002a3"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_33_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_33/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.237Z"
+    "$date": "2026-05-17T21:02:09.132Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.237Z"
+    "$date": "2026-05-17T21:02:09.132Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea6"
+    "$oid": "6a0a2cd1cb9a10c9f63005d3"
   },
+  "chunk_name": "Kiến thức, kĩ năng cần có của người thiết kế đồ hoạ",
   "chunk_num": 2,
-  "chunk_name": "Kiến thức, kỹ năng cần có của người thiết kế đồ họa",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5d"
+    "$oid": "6a0a2cbbcb9a10c9f63002a3"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_33_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_33/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.268Z"
+    "$date": "2026-05-17T21:02:09.366Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.268Z"
+    "$date": "2026-05-17T21:02:09.366Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea7"
+    "$oid": "6a0a2cd1cb9a10c9f63005dd"
   },
+  "chunk_name": "Học tập và việc làm trong ngành thiết kế đồ hoạ",
   "chunk_num": 3,
-  "chunk_name": "Học tập và việc làm trong nghành thiết kế đồ họa",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5d"
+    "$oid": "6a0a2cbbcb9a10c9f63002a3"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_33-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_33_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_33/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.298Z"
+    "$date": "2026-05-17T21:02:09.650Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.298Z"
+    "$date": "2026-05-17T21:02:09.650Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea8"
+    "$oid": "6a0a2cd1cb9a10c9f63005e7"
   },
+  "chunk_name": "Phát triển phần mềm là gì?",
   "chunk_num": 1,
-  "chunk_name": "Phát triển phần mềm là gì",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5e"
+    "$oid": "6a0a2cbbcb9a10c9f63002a5"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_01",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_01",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_01"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_34_01",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_34/chunk_01",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.330Z"
+    "$date": "2026-05-17T21:02:09.965Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.330Z"
+    "$date": "2026-05-17T21:02:09.965Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aea9"
+    "$oid": "6a0a2cd2cb9a10c9f63005f3"
   },
+  "chunk_name": "Kiến thức, kĩ năng của người phát triển phần mềm",
   "chunk_num": 2,
-  "chunk_name": "Kiến thức, kỹ năng cần có của người phát triển phần mềm",
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5e"
+    "$oid": "6a0a2cbbcb9a10c9f63002a5"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_02",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_02",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_02"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_34_02",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_34/chunk_02",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.367Z"
+    "$date": "2026-05-17T21:02:10.222Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.367Z"
+    "$date": "2026-05-17T21:02:10.222Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e771a3104e6a99b261aeaa"
+    "$oid": "6a0a2cd2cb9a10c9f63005fe"
   },
-  "chunk_num": 3,
   "chunk_name": "Công việc phát triển phần mềm",
+  "chunk_num": 3,
   "lesson_id": {
-    "$oid": "69e771a0104e6a99b261ae5e"
+    "$oid": "6a0a2cbbcb9a10c9f63002a5"
   },
   "asset_prefixes": {
     "documents": "documents/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_03",
     "images": "images/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_03",
     "videos": "videos/lop-10/tin-hoc/chunk/topic_06-lesson_34-chunk_03"
   },
-  "import_key": "ch_les_l10_tinhoc_kntt_34_03",
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-10/tin-hoc/topic_06/lesson_34/chunk_03",
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T12:46:27.398Z"
+    "$date": "2026-05-17T21:02:10.459Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:46:27.398Z"
+    "$date": "2026-05-17T21:02:10.459Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e77959104e6a99b261b1ce"
+    "$oid": "6a0a8229cb9a10c9f6300660"
+  },
+  "chunk_name": "Lịch sử phát triển của hệ điều hành máy tính cá nhân",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300622"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_01/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:17.861Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:17.861Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822acb9a10c9f630066b"
+  },
+  "chunk_name": "Hệ điều hành cho thiết bị di động",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300622"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_01/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:18.222Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:18.222Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822acb9a10c9f6300677"
+  },
+  "chunk_name": "Quan hệ giữa hệ điều hành, phần cứng và phần mềm ứng dụng",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300622"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_01-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_01/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:18.627Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:18.627Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822bcb9a10c9f6300682"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300624"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_02-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_02/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:19.262Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:19.262Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822bcb9a10c9f6300695"
+  },
+  "chunk_name": "Phần mềm nguồn mở",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300626"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_03/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:19.877Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:19.877Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822ccb9a10c9f63006a1"
+  },
+  "chunk_name": "Vai trò của phần mềm thương mại và phần mềm nguồn mở",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300626"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_03/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:20.220Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:20.220Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822ccb9a10c9f63006aa"
+  },
+  "chunk_name": "Phần mềm chạy trên internet",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8226cb9a10c9f6300626"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_03-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_03/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:20.456Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:20.456Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822ccb9a10c9f63006b3"
+  },
+  "chunk_name": "Các thiết bị bên trong máy tính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300628"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_04/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:20.690Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:20.690Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822ccb9a10c9f63006bf"
+  },
+  "chunk_name": "Mạch lôgic và vai trò của mạch lôgic",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300628"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_04-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_04/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:20.951Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:20.951Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822dcb9a10c9f63006c9"
+  },
+  "chunk_name": "Một số thiết bị vào – ra thông dụng",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f630062a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_05/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:21.199Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:21.199Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822dcb9a10c9f63006d5"
+  },
+  "chunk_name": "Kết nối máy tính với thiết bị số",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f630062a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_01-lesson_05-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_01/lesson_05/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:21.444Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:21.444Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822dcb9a10c9f63006e0"
+  },
+  "chunk_name": "Lưu trữ và chia sẻ tệp tin trên internet – ổ đĩa trực tuyến",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f630062c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_02/lesson_06/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:21.645Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:21.645Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822dcb9a10c9f63006eb"
+  },
+  "chunk_name": "Thực hành: lưu trữ và chia sẻ tệp tin trên ổ đĩa trực tuyến",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f630062c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_02-lesson_06-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_02/lesson_06/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:21.865Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:21.865Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a822ecb9a10c9f63006f4"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f630062e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_02-lesson_07-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_02/lesson_07/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:06:22.119Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:06:22.119Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828bcb9a10c9f6300708"
+  },
+  "chunk_name": "Đánh dấu và phân loại thư điện tử",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300630"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_02/lesson_08/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:55.149Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:55.149Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828bcb9a10c9f6300714"
+  },
+  "chunk_name": "Khai thác một số chức năng nâng cao của mạng xã hội",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300630"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_02-lesson_08-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_02/lesson_08/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:55.444Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:55.444Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828bcb9a10c9f630071f"
   },
   "chunk_name": "Nhận biết và phòng tránh một số dạng lừa đảo trên không gian số",
   "chunk_num": 1,
   "lesson_id": {
-    "$oid": "69e77959104e6a99b261b1cc"
+    "$oid": "6a0a8227cb9a10c9f6300632"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_01",
@@ -1994,22 +2538,22 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T13:19:21.754Z"
+    "$date": "2026-05-18T03:07:55.677Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T13:19:21.754Z"
+    "$date": "2026-05-18T03:07:55.677Z"
   },
-  "created_by": "user_01",
-  "updated_by": "user_01"
+  "created_by": "user_02",
+  "updated_by": "user_02"
 },
 {
   "_id": {
-    "$oid": "69e7795a104e6a99b261b1da"
+    "$oid": "6a0a828bcb9a10c9f630072a"
   },
   "chunk_name": "Giao tiếp và ứng xử trong môi trường số",
   "chunk_num": 2,
   "lesson_id": {
-    "$oid": "69e77959104e6a99b261b1cc"
+    "$oid": "6a0a8227cb9a10c9f6300632"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/tin-hoc/chunk/topic_03-lesson_09-chunk_02",
@@ -2022,10 +2566,3202 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-04-21T13:19:22.180Z"
+    "$date": "2026-05-18T03:07:55.953Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T13:19:22.180Z"
+    "$date": "2026-05-18T03:07:55.953Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ccb9a10c9f6300735"
+  },
+  "chunk_name": "Cập nhật dữ liệu",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300634"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_10/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:56.227Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:56.227Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ccb9a10c9f6300740"
+  },
+  "chunk_name": "Truy xuất dữ liệu và khai thác thông tin",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300634"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_10/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:56.466Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:56.466Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ccb9a10c9f630074a"
+  },
+  "chunk_name": "Thu thập dữ liệu tự động",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300634"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_10-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_10/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:56.713Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:56.713Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ccb9a10c9f6300754"
+  },
+  "chunk_name": "Yêu cầu tổ chức lưu trữ dữ liệu một cách khoa học",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300636"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_11/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:56.956Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:56.956Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828dcb9a10c9f6300760"
+  },
+  "chunk_name": "Cơ sở dữ liệu và một số thuộc tính cơ bản",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8227cb9a10c9f6300636"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_11-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_11/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:57.226Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:57.226Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828dcb9a10c9f630076c"
+  },
+  "chunk_name": "Khái niệm hệ quản trị cơ sở dữ liệu",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300638"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_12/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:57.478Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:57.478Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828dcb9a10c9f6300776"
+  },
+  "chunk_name": "Hệ cơ sở dữ liệu",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300638"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_12/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:57.870Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:57.870Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ecb9a10c9f6300782"
+  },
+  "chunk_name": "Hệ cơ sở dữ liệu tập trung và phân tân",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300638"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_12-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_12/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:58.147Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:58.147Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ecb9a10c9f630078d"
+  },
+  "chunk_name": "Khái niệm cơ sở dữ liệu quan hệ",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_13/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:58.427Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:58.427Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ecb9a10c9f6300799"
+  },
+  "chunk_name": "Một số thuật ngữ, khái niệm liên quan",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_13-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_13/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:58.702Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:58.702Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828ecb9a10c9f63007a5"
+  },
+  "chunk_name": "Lợi ích của ngôn ngữ truy vấn",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_14/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:58.972Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:58.972Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828fcb9a10c9f63007af"
+  },
+  "chunk_name": "Khởi tạo csdl",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_14/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:59.224Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:59.224Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828fcb9a10c9f63007b9"
+  },
+  "chunk_name": "Cập nhật và truy xuất dữ liệu",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_14/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:59.462Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:59.462Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828fcb9a10c9f63007c4"
+  },
+  "chunk_name": "Kiểm soát quyền truy cập",
+  "chunk_num": 4,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_14-chunk_04"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_14/chunk_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:59.694Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:59.694Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a828fcb9a10c9f63007cf"
+  },
+  "chunk_name": "Bảo mật hệ csdl",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_15/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:07:59.960Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:07:59.960Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8290cb9a10c9f63007db"
+  },
+  "chunk_name": "Bảo đảm an toàn dữ liệu",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630063e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_04-lesson_15-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_04/lesson_15/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:00.305Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:00.305Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8290cb9a10c9f63007e7"
+  },
+  "chunk_name": "Nhà quản trị cơ sở dữ liệu",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300640"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_05/lesson_16/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:00.568Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:00.568Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8291cb9a10c9f63007f2"
+  },
+  "chunk_name": "Phẩm chất và năng lực của nhà quản trị csdl",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300640"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_05/lesson_16/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:01.001Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:01.001Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8291cb9a10c9f63007fd"
+  },
+  "chunk_name": "Cơ hội việc làm",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300640"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_05-lesson_16-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_05/lesson_16/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:01.329Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:01.329Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8291cb9a10c9f6300807"
+  },
+  "chunk_name": "Cầu trúc dữ liệu mảng một chiều",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300642"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_17/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:01.643Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:01.643Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8292cb9a10c9f6300813"
+  },
+  "chunk_name": "Cấu trúc dữ liệu mảng hai chiều",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300642"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_17-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_17/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:02.105Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:02.105Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8292cb9a10c9f630081e"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300644"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_18-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_18/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:02.391Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:02.391Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8292cb9a10c9f630082f"
+  },
+  "chunk_name": "Bài toán tìm kiếm trên thực tế",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300646"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_19/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:02.826Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:02.826Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8293cb9a10c9f630083a"
+  },
+  "chunk_name": "Tìm kiếm tuần tự",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300646"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_19/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:03.073Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:03.073Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8293cb9a10c9f6300844"
+  },
+  "chunk_name": "Tìm kiếm nhị phân",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300646"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_19-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_19/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:03.360Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:03.360Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8293cb9a10c9f6300850"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f6300648"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_20-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_20/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:03.601Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:03.601Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8294cb9a10c9f6300864"
+  },
+  "chunk_name": "Thuật toán sắp xếp chèn",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630064a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_21/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:04.023Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:04.023Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8294cb9a10c9f630086f"
+  },
+  "chunk_name": "Thuật toán sắp xếp chọn",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630064a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_21/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:04.273Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:04.273Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8294cb9a10c9f630087a"
+  },
+  "chunk_name": "Thuật toán sắp xếp nổi bọt",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630064a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_21-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_21/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:04.486Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:04.486Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8294cb9a10c9f6300885"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8228cb9a10c9f630064c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_22-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_22/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:04.712Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:04.712Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8295cb9a10c9f6300896"
+  },
+  "chunk_name": "Vai trò của kiểm thử chương trình",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630064e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_23/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:05.041Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:05.041Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8295cb9a10c9f63008a0"
+  },
+  "chunk_name": "Kiểm tra tính đúng của chương trình",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630064e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_23/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:05.305Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:05.305Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8295cb9a10c9f63008aa"
+  },
+  "chunk_name": "Đánh giá hiệu quả chương trình",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630064e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_23-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_23/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:05.504Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:05.504Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8295cb9a10c9f63008b4"
+  },
+  "chunk_name": "Đánh giá thời gian thực hiện chương trình",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300650"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_24/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:05.715Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:05.715Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8295cb9a10c9f63008bf"
+  },
+  "chunk_name": "Phân tích độ phức tạp thời gian thuật toán",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300650"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_24/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:05.948Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:05.948Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8296cb9a10c9f63008ca"
+  },
+  "chunk_name": "Một số quy tắc thực hành tính độ phức tạp thời gian thuật toán",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300650"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_24-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_24/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:06.213Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:06.213Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8296cb9a10c9f63008d4"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300652"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_25-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_25/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:06.425Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:06.425Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8296cb9a10c9f63008e6"
+  },
+  "chunk_name": "Phương pháp thiết kế làm mịn dần",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300654"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_26/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:06.784Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:06.784Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8297cb9a10c9f63008ef"
+  },
+  "chunk_name": "Thiết kế chương trình bằng phương pháp làm mịn dần",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300654"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_26-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_26/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:07.016Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:07.016Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8297cb9a10c9f63008f9"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300656"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_27-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_27/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:07.255Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:07.255Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8297cb9a10c9f6300909"
+  },
+  "chunk_name": "Thiết kế chương trình theo mô đun",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300658"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_28/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:07.643Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:07.643Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8297cb9a10c9f6300913"
+  },
+  "chunk_name": "Lợi ích của phương pháp thiết kế theo mô đun",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f6300658"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_28-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_28/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:07.885Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:07.885Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8298cb9a10c9f630091e"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630065a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_29-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_29/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:08.142Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:08.142Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8298cb9a10c9f630092d"
+  },
+  "chunk_name": "Thiết lập thư viện cho chương trình",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630065c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_30/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:08.521Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:08.521Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8298cb9a10c9f6300939"
+  },
+  "chunk_name": "Cấu trúc danh sách liên kết",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630065c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_30-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_30/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:08.761Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:08.761Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0a8298cb9a10c9f6300945"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0a8229cb9a10c9f630065e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01",
+    "images": "images/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01",
+    "videos": "videos/lop-11/tin-hoc/chunk/topic_06-lesson_31-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-11/tin-hoc/topic_06/lesson_31/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T03:08:08.983Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T03:08:08.983Z"
+  },
+  "created_by": "user_02",
+  "updated_by": "user_02"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3658b8980203e433916"
+  },
+  "chunk_name": "Khái niệm về ai",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338da"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_01/lesson_01/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:53.713Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:53.713Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3668b8980203e433921"
+  },
+  "chunk_name": "Một số ứng dụng của ai",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338da"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_01-lesson_01-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_01/lesson_01/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:54.085Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:54.085Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3668b8980203e43392d"
+  },
+  "chunk_name": "Trí tuệ nhân tạo và sự phát triển của một số lĩnh vực",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338dc"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_01/lesson_02/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:54.347Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:54.347Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3668b8980203e433936"
+  },
+  "chunk_name": "Trí tuệ nhân tạo và một vài cảnh báo",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338dc"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_01-lesson_02-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_01/lesson_02/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:54.887Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:54.887Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3678b8980203e433940"
+  },
+  "chunk_name": "Thiết bị mạng thông dụng",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338de"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_03/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:55.340Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:55.340Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3678b8980203e43394c"
+  },
+  "chunk_name": "Phần 2",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338de"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_03-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_03/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:55.782Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:55.782Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3688b8980203e433956"
+  },
+  "chunk_name": "Giao thức mạng",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e0"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_04/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:56.059Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:56.059Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3688b8980203e433962"
+  },
+  "chunk_name": "Giao thức tcp/ip",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e0"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_04-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_04/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:56.422Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:56.422Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3688b8980203e43396d"
+  },
+  "chunk_name": "Chia sẻ tệp và thư mục trên mạng cục bộ",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_05/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:56.728Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:56.728Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3688b8980203e433978"
+  },
+  "chunk_name": "Chia sẻ máy in",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_02-lesson_05-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_02/lesson_05/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:56.953Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:56.953Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3698b8980203e433983"
+  },
+  "chunk_name": "Giao tiếp trong không gian mạng",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e4"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_03/lesson_06/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:57.170Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:57.170Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3698b8980203e43398c"
+  },
+  "chunk_name": "Thể hiện tính nhân văn trong không gian mạng",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e4"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_03-lesson_06-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_03/lesson_06/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:57.418Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:57.418Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3698b8980203e433997"
+  },
+  "chunk_name": "Trang web và html",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_07/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:57.689Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:57.689Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3698b8980203e4339a3"
+  },
+  "chunk_name": "Cấu trúc cơ bản của một tệp html",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_07/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:57.933Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:57.933Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36a8b8980203e4339ae"
+  },
+  "chunk_name": "Phần mềm soạn thảo html",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_07-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_07/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:58.142Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:58.142Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36a8b8980203e4339b9"
+  },
+  "chunk_name": "Thuộc tính thẻ",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_08/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:58.440Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:58.440Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36a8b8980203e4339c3"
+  },
+  "chunk_name": "Các thẻ định dạng trình bày văn bản",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_08/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:58.692Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:58.692Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36a8b8980203e4339ce"
+  },
+  "chunk_name": "Các thẻ định dạng phông chữ",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338e8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_08-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_08/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:58.941Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:58.941Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36b8b8980203e4339d9"
+  },
+  "chunk_name": "Tạo danh sách",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338ea"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_09/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:59.193Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:59.193Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36b8b8980203e4339e4"
+  },
+  "chunk_name": "Thiết lập bảng",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338ea"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_09-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_09/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:59.441Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:59.441Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36b8b8980203e4339ed"
+  },
+  "chunk_name": "Siêu văn bản và đường dẫn",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338ec"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_10/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:59.678Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:59.678Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36b8b8980203e4339f8"
+  },
+  "chunk_name": "Các cách liên kết tới một trang web",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338ec"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_10/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:52:59.933Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:52:59.933Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36c8b8980203e433a02"
+  },
+  "chunk_name": "Phần 3",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3638b8980203e4338ec"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_10-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_10/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:00.146Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:00.146Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36c8b8980203e433a0c"
+  },
+  "chunk_name": "Chèn tệp ảnh vào trang web",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338ee"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_11/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:00.403Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:00.403Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36c8b8980203e433a17"
+  },
+  "chunk_name": "Chèn âm thanh và video vào trang web",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338ee"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_11/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:00.741Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:00.741Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36d8b8980203e433a22"
+  },
+  "chunk_name": "Tạo khung nội tuyên trong trang web",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338ee"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_11/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:01.263Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:01.263Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36d8b8980203e433a2d"
+  },
+  "chunk_name": "Phần 4",
+  "chunk_num": 4,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338ee"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_04",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_04",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_11-chunk_04"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_11/chunk_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:01.800Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:01.800Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36e8b8980203e433a35"
+  },
+  "chunk_name": "Biểu mẫu web",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f0"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_12/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:02.204Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:02.204Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36e8b8980203e433a3f"
+  },
+  "chunk_name": "Phần 2",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f0"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_12-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_12/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:02.582Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:02.582Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36e8b8980203e433a4a"
+  },
+  "chunk_name": "Khái niệm mẫu định dạng css",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_13/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:02.843Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:02.843Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36f8b8980203e433a56"
+  },
+  "chunk_name": "Cấu trúc css",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_13/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:03.075Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:03.075Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36f8b8980203e433a62"
+  },
+  "chunk_name": "Vai trò, ý nghĩa của css",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_13-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_13/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:03.332Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:03.332Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36f8b8980203e433a6c"
+  },
+  "chunk_name": "Định dạng văn bản bằng css",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f4"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_14/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:03.562Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:03.562Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad36f8b8980203e433a76"
+  },
+  "chunk_name": "Tính kế thừa và cách lựa chọn theo thứ tự của css",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f4"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_14/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:03.770Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:03.770Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3708b8980203e433a82"
+  },
+  "chunk_name": "Thực hành",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f4"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_14-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_14/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:04.018Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:04.018Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3708b8980203e433a8d"
+  },
+  "chunk_name": "Hệ thống màu của css",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_15/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:04.254Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:04.254Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3708b8980203e433a98"
+  },
+  "chunk_name": "Thiết lập bộ chọn là tổ hợp các phần tử có quan hệ",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_15/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:04.506Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:04.506Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3708b8980203e433aa2"
+  },
+  "chunk_name": "Thực hành",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f6"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_15-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_15/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:04.800Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:04.800Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3718b8980203e433aaa"
+  },
+  "chunk_name": "Phân loại phần tử khối và nội tuyến",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_16/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:05.106Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:05.106Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3718b8980203e433ab4"
+  },
+  "chunk_name": "Thiết lập định dạng khung bằng css",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_16/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:05.369Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:05.369Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3718b8980203e433abe"
+  },
+  "chunk_name": "Một số bộ chọn đặc biệt của css",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_16/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:05.586Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:05.586Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3718b8980203e433ac8"
+  },
+  "chunk_name": "Thực hành",
+  "chunk_num": 4,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338f8"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_04",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_04",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_16-chunk_04"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 4,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_16/chunk_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:05.789Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:05.789Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3718b8980203e433ad1"
+  },
+  "chunk_name": "Kiểu bộ chọn dạng pseudo-class và pseudo-element",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fa"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_17/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:05.997Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:05.997Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3728b8980203e433ada"
+  },
+  "chunk_name": "Mức độ ưu tiên khi áp dụng css",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fa"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_17/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:06.235Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:06.235Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3728b8980203e433ae4"
+  },
+  "chunk_name": "Thực hành",
+  "chunk_num": 3,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fa"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_03",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_03",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_17-chunk_03"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 3,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_17/chunk_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:06.500Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:06.500Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3728b8980203e433aec"
+  },
+  "chunk_name": "Dự án: xây dựng website giới thiệu các câu lạc bộ ngoại khoá của trường",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fc"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_18/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:06.758Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:06.758Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3738b8980203e433af7"
+  },
+  "chunk_name": "Thực hành",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fc"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_04-lesson_18-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_04/lesson_18/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:07.112Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:07.112Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3738b8980203e433b00"
+  },
+  "chunk_name": "Dịch vụ sửa chữa và bảo trì máy tính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fe"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_05/lesson_19/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:07.455Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:07.455Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3738b8980203e433b0b"
+  },
+  "chunk_name": "Nhu cầu nhân lực cho dịch vụ sửa chữa, bảo trì máy tính và ngành học liên quan",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e4338fe"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_05-lesson_19-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_05/lesson_19/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:07.735Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:07.735Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3738b8980203e433b16"
+  },
+  "chunk_name": "Nhóm nghề quản trị thuộc ngành công nghệ thông tin",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e433900"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_05/lesson_20/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:07.945Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:07.945Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3748b8980203e433b20"
+  },
+  "chunk_name": "Nhu cầu nhân lực trong nhóm nghề quản trị trong ngành công nghệ thông tin và ngành học liên quan",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e433900"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_05-lesson_20-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_05/lesson_20/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:08.157Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:08.157Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3748b8980203e433b29"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e433902"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_05-lesson_21-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_05-lesson_21-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_05-lesson_21-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-12/tin-hoc/topic_05/lesson_21/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:08.360Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:08.360Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3748b8980203e433b3e"
+  },
+  "chunk_name": "Server",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e433904"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_06/lesson_22/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:08.765Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:08.765Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3748b8980203e433b49"
+  },
+  "chunk_name": "Nhận diện và tìm hiểu tính năng kĩ thuật của các thiết bị kết nối",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3648b8980203e433904"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_06-lesson_22-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_06/lesson_22/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:08.993Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:08.993Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3758b8980203e433b52"
+  },
+  "chunk_name": "Đường truyền có dây",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433906"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_06/lesson_23/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:09.204Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:09.204Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3758b8980203e433b5e"
+  },
+  "chunk_name": "Đường truyền không dây",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433906"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_06-lesson_23-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_06/lesson_23/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:09.476Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:09.476Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3758b8980203e433b68"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433908"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_06-lesson_24-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_06-lesson_24-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_06-lesson_24-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-12/tin-hoc/topic_06/lesson_24/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:09.706Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:09.706Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3768b8980203e433b7b"
+  },
+  "chunk_name": "Tìm hiểu sơ lược về học máy",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_25/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:10.071Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:10.071Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3768b8980203e433b86"
+  },
+  "chunk_name": "Phân loại và vai trò của học máy trong thực tế",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390a"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_25-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_25/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:10.278Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:10.278Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3768b8980203e433b91"
+  },
+  "chunk_name": "Khái niệm và mục tiêu của khoa học dữ liệu",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_26/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:10.915Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:10.915Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3778b8980203e433b9c"
+  },
+  "chunk_name": "Một số thành tựu của khoa học dữ liệu",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_26-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_26/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:11.389Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:11.389Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3778b8980203e433ba5"
+  },
+  "chunk_name": "Vai trò của máy tính đối với sự phát triển của khoa học dữ liệu",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_27/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:11.972Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:11.972Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3788b8980203e433bad"
+  },
+  "chunk_name": "Tính ưu việt trong việc sử dụng máy tính và thuật toán hiệu quả để xử lí dữ liệu lớn",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e43390e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_27-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_27/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:12.339Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:12.339Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3788b8980203e433bb8"
+  },
+  "chunk_name": "Không có mục chính",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433910"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_28-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_28-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_28-chunk_01"
+  },
+  "lesson_type": "thuc hanh",
+  "chunk_count": 1,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_28/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:12.684Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:12.684Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3798b8980203e433bcc"
+  },
+  "chunk_name": "Mô phỏng và lợi ích của mô phỏng",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433912"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_29/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:13.074Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:13.074Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3798b8980203e433bd8"
+  },
+  "chunk_name": "Mô phỏng trong thực tế",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433912"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_29-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_29/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:13.308Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:13.308Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3798b8980203e433be3"
+  },
+  "chunk_name": "Giới thiệu một số phần mềm mô phỏng trong giáo dục",
+  "chunk_num": 1,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433914"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_01",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_01",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_01"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_30/chunk_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:13.568Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:13.568Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ad3798b8980203e433bee"
+  },
+  "chunk_name": "Thực hành: sử dụng phần mềm mô phỏng trong giáo dục",
+  "chunk_num": 2,
+  "lesson_id": {
+    "$oid": "6a0ad3658b8980203e433914"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_02",
+    "images": "images/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_02",
+    "videos": "videos/lop-12/tin-hoc/chunk/topic_07-lesson_30-chunk_02"
+  },
+  "lesson_type": "ly thuyet",
+  "chunk_count": 2,
+  "import_key": "chunk/lop-12/tin-hoc/topic_07/lesson_30/chunk_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-18T08:53:13.786Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-18T08:53:13.786Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
