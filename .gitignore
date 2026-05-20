@@ -63,3 +63,7 @@ app/core/gemini_rotation_state.json.tmp
 Output
 /gemini_pipeline/scripts/kaggle/kernels
 gemini_pipeline/ReviewWorkspace/
+.env/
+venv/
+__pycache__/
+*.pyc
