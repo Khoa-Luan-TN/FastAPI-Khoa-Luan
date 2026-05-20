@@ -93,4 +93,52 @@
   },
   "created_by": "user_01",
   "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d286b7f90b889d2d2cc46"
+  },
+  "subject_name": "Giáo dục kinh tế và pháp luật",
+  "subject_type": "Kết nối tri thức",
+  "class_id": {
+    "$oid": "6a0a8225cb9a10c9f630060d"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/subject"
+  },
+  "import_key": "subj/lop-11/giao-duc-kinh-te-va-phap-luat",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T03:20:11.253Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T03:20:11.253Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2a"
+  },
+  "subject_name": "Giáo dục kinh tế và pháp luật",
+  "subject_type": "Kết nối tri thức",
+  "class_id": {
+    "$oid": "6a0ad3628b8980203e4338c2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/subject"
+  },
+  "import_key": "subject/lop-12/giao-duc-kinh-te-va-phap-luat",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.303Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.303Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
 }]

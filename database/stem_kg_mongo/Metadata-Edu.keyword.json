@@ -21770,28 +21770,6 @@
 },
 {
   "_id": {
-    "$oid": "6a0ccd1a9b60371aab493fb7"
-  },
-  "keyword_name": "Hiến pháp năm 2013",
-  "keyword_slug": "hien-phap-nam-2013",
-  "aliases": [],
-  "asset_prefixes": {
-    "images": "images/keyword/hien-phap-nam-2013__493fb7",
-    "videos": "videos/keyword/hien-phap-nam-2013__493fb7"
-  },
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-05-19T20:50:34.985Z"
-  },
-  "updated_at": {
-    "$date": "2026-05-19T20:50:34.985Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
     "$oid": "6a0ccd1b9b60371aab493fb9"
   },
   "keyword_name": "Hình thức chính thể",
@@ -22100,28 +22078,6 @@
 },
 {
   "_id": {
-    "$oid": "6a0ccd1b9b60371aab493fd8"
-  },
-  "keyword_name": "Quyền bất khả xâm phạm",
-  "keyword_slug": "quyen-bat-kha-xam-pham",
-  "aliases": [],
-  "asset_prefixes": {
-    "images": "images/keyword/quyen-bat-kha-xam-pham__493fd8",
-    "videos": "videos/keyword/quyen-bat-kha-xam-pham__493fd8"
-  },
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-05-19T20:50:35.578Z"
-  },
-  "updated_at": {
-    "$date": "2026-05-19T20:50:35.578Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
     "$oid": "6a0ccd1b9b60371aab493fda"
   },
   "keyword_name": "Bảo hộ pháp luật",
@@ -22138,28 +22094,6 @@
   },
   "updated_at": {
     "$date": "2026-05-19T20:50:35.615Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
-    "$oid": "6a0ccd1b9b60371aab493fdd"
-  },
-  "keyword_name": "Quyền công dân",
-  "keyword_slug": "quyen-cong-dan",
-  "aliases": [],
-  "asset_prefixes": {
-    "images": "images/keyword/quyen-cong-dan__493fdd",
-    "videos": "videos/keyword/quyen-cong-dan__493fdd"
-  },
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-05-19T20:50:35.679Z"
-  },
-  "updated_at": {
-    "$date": "2026-05-19T20:50:35.679Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
@@ -26874,28 +26808,6 @@
 },
 {
   "_id": {
-    "$oid": "6a0d21b27f90b889d2d2cb5e"
-  },
-  "keyword_name": "Bình đẳng tôn giáo",
-  "keyword_slug": "binh-dang-ton-giao",
-  "aliases": [],
-  "asset_prefixes": {
-    "images": "images/keyword/binh-dang-ton-giao__d2cb5e",
-    "videos": "videos/keyword/binh-dang-ton-giao__d2cb5e"
-  },
-  "is_deleted": false,
-  "deleted_at": null,
-  "created_at": {
-    "$date": "2026-05-20T02:51:30.372Z"
-  },
-  "updated_at": {
-    "$date": "2026-05-20T02:51:30.372Z"
-  },
-  "created_by": "user_01",
-  "updated_by": "user_01"
-},
-{
-  "_id": {
     "$oid": "6a0d21b27f90b889d2d2cb60"
   },
   "keyword_name": "Luật Tín ngưỡng, tôn giáo 2016",
@@ -27886,1144 +27798,4158 @@
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbca"
+    "$oid": "6a0d29437f90b889d2d2cd35"
+  },
+  "keyword_name": "Quyền công dân",
+  "keyword_slug": "quyen-cong-dan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-cong-dan__d2cd35",
+    "videos": "videos/keyword/quyen-cong-dan__d2cd35"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T03:23:47.579Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T03:23:47.579Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d29457f90b889d2d2cd53"
+  },
+  "keyword_name": "Bình đẳng tôn giáo",
+  "keyword_slug": "binh-dang-ton-giao",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/binh-dang-ton-giao__d2cd53",
+    "videos": "videos/keyword/binh-dang-ton-giao__d2cd53"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T03:23:49.248Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T03:23:49.248Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d29477f90b889d2d2cd92"
   },
   "keyword_name": "Phòng chống xâm hại trẻ em",
   "keyword_slug": "phong-chong-xam-hai-tre-em",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/phong-chong-xam-hai-tre-em__d2cbca",
-    "videos": "videos/keyword/phong-chong-xam-hai-tre-em__d2cbca"
+    "images": "images/keyword/phong-chong-xam-hai-tre-em__d2cd92",
+    "videos": "videos/keyword/phong-chong-xam-hai-tre-em__d2cd92"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.848Z"
+    "$date": "2026-05-20T03:23:51.847Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.848Z"
+    "$date": "2026-05-20T03:23:51.847Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbcc"
+    "$oid": "6a0d29477f90b889d2d2cd94"
   },
   "keyword_name": "Bảo vệ quyền trẻ em",
   "keyword_slug": "bao-ve-quyen-tre-em",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/bao-ve-quyen-tre-em__d2cbcc",
-    "videos": "videos/keyword/bao-ve-quyen-tre-em__d2cbcc"
+    "images": "images/keyword/bao-ve-quyen-tre-em__d2cd94",
+    "videos": "videos/keyword/bao-ve-quyen-tre-em__d2cd94"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.865Z"
+    "$date": "2026-05-20T03:23:51.899Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.865Z"
+    "$date": "2026-05-20T03:23:51.899Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbcf"
+    "$oid": "6a0d29477f90b889d2d2cd96"
+  },
+  "keyword_name": "Quyền bất khả xâm phạm",
+  "keyword_slug": "quyen-bat-kha-xam-pham",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-bat-kha-xam-pham__d2cd96",
+    "videos": "videos/keyword/quyen-bat-kha-xam-pham__d2cd96"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T03:23:51.939Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T03:23:51.939Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d29477f90b889d2d2cd98"
   },
   "keyword_name": "Xúc phạm danh dự",
   "keyword_slug": "xuc-pham-danh-du",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/xuc-pham-danh-du__d2cbcf",
-    "videos": "videos/keyword/xuc-pham-danh-du__d2cbcf"
+    "images": "images/keyword/xuc-pham-danh-du__d2cd98",
+    "videos": "videos/keyword/xuc-pham-danh-du__d2cd98"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.895Z"
+    "$date": "2026-05-20T03:23:51.982Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.895Z"
+    "$date": "2026-05-20T03:23:51.982Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbd1"
+    "$oid": "6a0d29487f90b889d2d2cd9a"
   },
   "keyword_name": "Tố cáo hành vi vi phạm",
   "keyword_slug": "to-cao-hanh-vi-vi-pham",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/to-cao-hanh-vi-vi-pham__d2cbd1",
-    "videos": "videos/keyword/to-cao-hanh-vi-vi-pham__d2cbd1"
+    "images": "images/keyword/to-cao-hanh-vi-vi-pham__d2cd9a",
+    "videos": "videos/keyword/to-cao-hanh-vi-vi-pham__d2cd9a"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.911Z"
+    "$date": "2026-05-20T03:23:52.033Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.911Z"
+    "$date": "2026-05-20T03:23:52.033Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbd3"
+    "$oid": "6a0d29487f90b889d2d2cd9c"
   },
   "keyword_name": "Quyền bất khả xâm phạm về chỗ ở",
   "keyword_slug": "quyen-bat-kha-xam-pham-ve-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/quyen-bat-kha-xam-pham-ve-cho-o__d2cbd3",
-    "videos": "videos/keyword/quyen-bat-kha-xam-pham-ve-cho-o__d2cbd3"
+    "images": "images/keyword/quyen-bat-kha-xam-pham-ve-cho-o__d2cd9c",
+    "videos": "videos/keyword/quyen-bat-kha-xam-pham-ve-cho-o__d2cd9c"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.928Z"
+    "$date": "2026-05-20T03:23:52.075Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.928Z"
+    "$date": "2026-05-20T03:23:52.075Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbd5"
+    "$oid": "6a0d29487f90b889d2d2cd9e"
   },
   "keyword_name": "Chỗ ở hợp pháp",
   "keyword_slug": "cho-o-hop-phap",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/cho-o-hop-phap__d2cbd5",
-    "videos": "videos/keyword/cho-o-hop-phap__d2cbd5"
+    "images": "images/keyword/cho-o-hop-phap__d2cd9e",
+    "videos": "videos/keyword/cho-o-hop-phap__d2cd9e"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.945Z"
+    "$date": "2026-05-20T03:23:52.116Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.945Z"
+    "$date": "2026-05-20T03:23:52.116Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b37f90b889d2d2cbd7"
+    "$oid": "6a0d29487f90b889d2d2cda0"
   },
   "keyword_name": "Khám xét chỗ ở",
   "keyword_slug": "kham-xet-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/kham-xet-cho-o__d2cbd7",
-    "videos": "videos/keyword/kham-xet-cho-o__d2cbd7"
+    "images": "images/keyword/kham-xet-cho-o__d2cda0",
+    "videos": "videos/keyword/kham-xet-cho-o__d2cda0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:31.968Z"
+    "$date": "2026-05-20T03:23:52.167Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:31.968Z"
+    "$date": "2026-05-20T03:23:52.167Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbda"
+    "$oid": "6a0d29487f90b889d2d2cda2"
+  },
+  "keyword_name": "Hiến pháp năm 2013",
+  "keyword_slug": "hien-phap-nam-2013",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hien-phap-nam-2013__d2cda2",
+    "videos": "videos/keyword/hien-phap-nam-2013__d2cda2"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T03:23:52.206Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T03:23:52.206Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d29487f90b889d2d2cda4"
   },
   "keyword_name": "Bộ luật Tố tụng hình sự",
   "keyword_slug": "bo-luat-to-tung-hinh-su",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/bo-luat-to-tung-hinh-su__d2cbda",
-    "videos": "videos/keyword/bo-luat-to-tung-hinh-su__d2cbda"
+    "images": "images/keyword/bo-luat-to-tung-hinh-su__d2cda4",
+    "videos": "videos/keyword/bo-luat-to-tung-hinh-su__d2cda4"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.006Z"
+    "$date": "2026-05-20T03:23:52.243Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.006Z"
+    "$date": "2026-05-20T03:23:52.243Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbdc"
+    "$oid": "6a0d29487f90b889d2d2cda6"
   },
   "keyword_name": "Vi phạm quyền bất khả xâm phạm về chỗ ở",
   "keyword_slug": "vi-pham-quyen-bat-kha-xam-pham-ve-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-quyen-bat-kha-xam-pham-ve-cho-o__d2cbdc",
-    "videos": "videos/keyword/vi-pham-quyen-bat-kha-xam-pham-ve-cho-o__d2cbdc"
+    "images": "images/keyword/vi-pham-quyen-bat-kha-xam-pham-ve-cho-o__d2cda6",
+    "videos": "videos/keyword/vi-pham-quyen-bat-kha-xam-pham-ve-cho-o__d2cda6"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.025Z"
+    "$date": "2026-05-20T03:23:52.277Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.025Z"
+    "$date": "2026-05-20T03:23:52.277Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbde"
+    "$oid": "6a0d29487f90b889d2d2cda8"
   },
   "keyword_name": "Tội xâm phạm chỗ ở",
   "keyword_slug": "toi-xam-pham-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/toi-xam-pham-cho-o__d2cbde",
-    "videos": "videos/keyword/toi-xam-pham-cho-o__d2cbde"
+    "images": "images/keyword/toi-xam-pham-cho-o__d2cda8",
+    "videos": "videos/keyword/toi-xam-pham-cho-o__d2cda8"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.045Z"
+    "$date": "2026-05-20T03:23:52.312Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.045Z"
+    "$date": "2026-05-20T03:23:52.312Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbe0"
+    "$oid": "6a0d29487f90b889d2d2cdaa"
   },
   "keyword_name": "Hậu quả pháp lý",
   "keyword_slug": "hau-qua-phap-ly",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/hau-qua-phap-ly__d2cbe0",
-    "videos": "videos/keyword/hau-qua-phap-ly__d2cbe0"
+    "images": "images/keyword/hau-qua-phap-ly__d2cdaa",
+    "videos": "videos/keyword/hau-qua-phap-ly__d2cdaa"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.070Z"
+    "$date": "2026-05-20T03:23:52.354Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.070Z"
+    "$date": "2026-05-20T03:23:52.354Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbe2"
+    "$oid": "6a0d29487f90b889d2d2cdac"
   },
   "keyword_name": "Xử lí hành vi vi phạm",
   "keyword_slug": "xu-li-hanh-vi-vi-pham",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/xu-li-hanh-vi-vi-pham__d2cbe2",
-    "videos": "videos/keyword/xu-li-hanh-vi-vi-pham__d2cbe2"
+    "images": "images/keyword/xu-li-hanh-vi-vi-pham__d2cdac",
+    "videos": "videos/keyword/xu-li-hanh-vi-vi-pham__d2cdac"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.088Z"
+    "$date": "2026-05-20T03:23:52.389Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.088Z"
+    "$date": "2026-05-20T03:23:52.389Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbe4"
+    "$oid": "6a0d29487f90b889d2d2cdae"
   },
   "keyword_name": "Bồi thường thiệt hại",
   "keyword_slug": "boi-thuong-thiet-hai",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/boi-thuong-thiet-hai__d2cbe4",
-    "videos": "videos/keyword/boi-thuong-thiet-hai__d2cbe4"
+    "images": "images/keyword/boi-thuong-thiet-hai__d2cdae",
+    "videos": "videos/keyword/boi-thuong-thiet-hai__d2cdae"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.110Z"
+    "$date": "2026-05-20T03:23:52.420Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.110Z"
+    "$date": "2026-05-20T03:23:52.420Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbe6"
+    "$oid": "6a0d29487f90b889d2d2cdb0"
   },
   "keyword_name": "Trách nhiệm học sinh",
   "keyword_slug": "trach-nhiem-hoc-sinh",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/trach-nhiem-hoc-sinh__d2cbe6",
-    "videos": "videos/keyword/trach-nhiem-hoc-sinh__d2cbe6"
+    "images": "images/keyword/trach-nhiem-hoc-sinh__d2cdb0",
+    "videos": "videos/keyword/trach-nhiem-hoc-sinh__d2cdb0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.129Z"
+    "$date": "2026-05-20T03:23:52.455Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.129Z"
+    "$date": "2026-05-20T03:23:52.455Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbe8"
+    "$oid": "6a0d29487f90b889d2d2cdb2"
   },
   "keyword_name": "Bảo vệ quyền về chỗ ở",
   "keyword_slug": "bao-ve-quyen-ve-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/bao-ve-quyen-ve-cho-o__d2cbe8",
-    "videos": "videos/keyword/bao-ve-quyen-ve-cho-o__d2cbe8"
+    "images": "images/keyword/bao-ve-quyen-ve-cho-o__d2cdb2",
+    "videos": "videos/keyword/bao-ve-quyen-ve-cho-o__d2cdb2"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.153Z"
+    "$date": "2026-05-20T03:23:52.490Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.153Z"
+    "$date": "2026-05-20T03:23:52.490Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbea"
+    "$oid": "6a0d29487f90b889d2d2cdb4"
   },
   "keyword_name": "Tôn trọng chỗ ở người khác",
   "keyword_slug": "ton-trong-cho-o-nguoi-khac",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/ton-trong-cho-o-nguoi-khac__d2cbea",
-    "videos": "videos/keyword/ton-trong-cho-o-nguoi-khac__d2cbea"
+    "images": "images/keyword/ton-trong-cho-o-nguoi-khac__d2cdb4",
+    "videos": "videos/keyword/ton-trong-cho-o-nguoi-khac__d2cdb4"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.171Z"
+    "$date": "2026-05-20T03:23:52.531Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.171Z"
+    "$date": "2026-05-20T03:23:52.531Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbec"
+    "$oid": "6a0d29487f90b889d2d2cdb6"
   },
   "keyword_name": "Tuyên truyền pháp luật",
   "keyword_slug": "tuyen-truyen-phap-luat",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tuyen-truyen-phap-luat__d2cbec",
-    "videos": "videos/keyword/tuyen-truyen-phap-luat__d2cbec"
+    "images": "images/keyword/tuyen-truyen-phap-luat__d2cdb6",
+    "videos": "videos/keyword/tuyen-truyen-phap-luat__d2cdb6"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.192Z"
+    "$date": "2026-05-20T03:23:52.571Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.192Z"
+    "$date": "2026-05-20T03:23:52.571Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbee"
+    "$oid": "6a0d29487f90b889d2d2cdb8"
   },
   "keyword_name": "Phê phán hành vi xâm phạm chỗ ở",
   "keyword_slug": "phe-phan-hanh-vi-xam-pham-cho-o",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/phe-phan-hanh-vi-xam-pham-cho-o__d2cbee",
-    "videos": "videos/keyword/phe-phan-hanh-vi-xam-pham-cho-o__d2cbee"
+    "images": "images/keyword/phe-phan-hanh-vi-xam-pham-cho-o__d2cdb8",
+    "videos": "videos/keyword/phe-phan-hanh-vi-xam-pham-cho-o__d2cdb8"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.211Z"
+    "$date": "2026-05-20T03:23:52.622Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.211Z"
+    "$date": "2026-05-20T03:23:52.622Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbf0"
+    "$oid": "6a0d29487f90b889d2d2cdba"
   },
   "keyword_name": "Quyền bí mật thư tín",
   "keyword_slug": "quyen-bi-mat-thu-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/quyen-bi-mat-thu-tin__d2cbf0",
-    "videos": "videos/keyword/quyen-bi-mat-thu-tin__d2cbf0"
+    "images": "images/keyword/quyen-bi-mat-thu-tin__d2cdba",
+    "videos": "videos/keyword/quyen-bi-mat-thu-tin__d2cdba"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.233Z"
+    "$date": "2026-05-20T03:23:52.667Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.233Z"
+    "$date": "2026-05-20T03:23:52.667Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbf2"
+    "$oid": "6a0d29487f90b889d2d2cdbc"
   },
   "keyword_name": "An toàn điện thoại điện tín",
   "keyword_slug": "an-toan-dien-thoai-dien-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/an-toan-dien-thoai-dien-tin__d2cbf2",
-    "videos": "videos/keyword/an-toan-dien-thoai-dien-tin__d2cbf2"
+    "images": "images/keyword/an-toan-dien-thoai-dien-tin__d2cdbc",
+    "videos": "videos/keyword/an-toan-dien-thoai-dien-tin__d2cdbc"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.252Z"
+    "$date": "2026-05-20T03:23:52.708Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.252Z"
+    "$date": "2026-05-20T03:23:52.708Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbf4"
+    "$oid": "6a0d29487f90b889d2d2cdbe"
   },
   "keyword_name": "Bảo vệ thông tin riêng tư",
   "keyword_slug": "bao-ve-thong-tin-rieng-tu",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/bao-ve-thong-tin-rieng-tu__d2cbf4",
-    "videos": "videos/keyword/bao-ve-thong-tin-rieng-tu__d2cbf4"
+    "images": "images/keyword/bao-ve-thong-tin-rieng-tu__d2cdbe",
+    "videos": "videos/keyword/bao-ve-thong-tin-rieng-tu__d2cdbe"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.272Z"
+    "$date": "2026-05-20T03:23:52.743Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.272Z"
+    "$date": "2026-05-20T03:23:52.743Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbf6"
+    "$oid": "6a0d29487f90b889d2d2cdc0"
   },
   "keyword_name": "Không bóc mở thư tín",
   "keyword_slug": "khong-boc-mo-thu-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/khong-boc-mo-thu-tin__d2cbf6",
-    "videos": "videos/keyword/khong-boc-mo-thu-tin__d2cbf6"
+    "images": "images/keyword/khong-boc-mo-thu-tin__d2cdc0",
+    "videos": "videos/keyword/khong-boc-mo-thu-tin__d2cdc0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.292Z"
+    "$date": "2026-05-20T03:23:52.788Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.292Z"
+    "$date": "2026-05-20T03:23:52.788Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbf8"
+    "$oid": "6a0d29487f90b889d2d2cdc2"
   },
   "keyword_name": "Kiểm soát thông tin theo pháp luật",
   "keyword_slug": "kiem-soat-thong-tin-theo-phap-luat",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/kiem-soat-thong-tin-theo-phap-luat__d2cbf8",
-    "videos": "videos/keyword/kiem-soat-thong-tin-theo-phap-luat__d2cbf8"
+    "images": "images/keyword/kiem-soat-thong-tin-theo-phap-luat__d2cdc2",
+    "videos": "videos/keyword/kiem-soat-thong-tin-theo-phap-luat__d2cdc2"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.313Z"
+    "$date": "2026-05-20T03:23:52.835Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.313Z"
+    "$date": "2026-05-20T03:23:52.835Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbfa"
+    "$oid": "6a0d29487f90b889d2d2cdc4"
   },
   "keyword_name": "Vi phạm bí mật thư tín",
   "keyword_slug": "vi-pham-bi-mat-thu-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-bi-mat-thu-tin__d2cbfa",
-    "videos": "videos/keyword/vi-pham-bi-mat-thu-tin__d2cbfa"
+    "images": "images/keyword/vi-pham-bi-mat-thu-tin__d2cdc4",
+    "videos": "videos/keyword/vi-pham-bi-mat-thu-tin__d2cdc4"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.336Z"
+    "$date": "2026-05-20T03:23:52.877Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.336Z"
+    "$date": "2026-05-20T03:23:52.877Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbfc"
+    "$oid": "6a0d29487f90b889d2d2cdc6"
   },
   "keyword_name": "Xâm phạm an toàn thông tin",
   "keyword_slug": "xam-pham-an-toan-thong-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/xam-pham-an-toan-thong-tin__d2cbfc",
-    "videos": "videos/keyword/xam-pham-an-toan-thong-tin__d2cbfc"
+    "images": "images/keyword/xam-pham-an-toan-thong-tin__d2cdc6",
+    "videos": "videos/keyword/xam-pham-an-toan-thong-tin__d2cdc6"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.360Z"
+    "$date": "2026-05-20T03:23:52.917Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.360Z"
+    "$date": "2026-05-20T03:23:52.917Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cbfe"
+    "$oid": "6a0d29487f90b889d2d2cdc8"
   },
   "keyword_name": "Hậu quả vi phạm quyền riêng tư",
   "keyword_slug": "hau-qua-vi-pham-quyen-rieng-tu",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/hau-qua-vi-pham-quyen-rieng-tu__d2cbfe",
-    "videos": "videos/keyword/hau-qua-vi-pham-quyen-rieng-tu__d2cbfe"
+    "images": "images/keyword/hau-qua-vi-pham-quyen-rieng-tu__d2cdc8",
+    "videos": "videos/keyword/hau-qua-vi-pham-quyen-rieng-tu__d2cdc8"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.384Z"
+    "$date": "2026-05-20T03:23:52.955Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.384Z"
+    "$date": "2026-05-20T03:23:52.955Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc00"
+    "$oid": "6a0d29487f90b889d2d2cdca"
   },
   "keyword_name": "Xử phạt hành chính hình sự",
   "keyword_slug": "xu-phat-hanh-chinh-hinh-su",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/xu-phat-hanh-chinh-hinh-su__d2cc00",
-    "videos": "videos/keyword/xu-phat-hanh-chinh-hinh-su__d2cc00"
+    "images": "images/keyword/xu-phat-hanh-chinh-hinh-su__d2cdca",
+    "videos": "videos/keyword/xu-phat-hanh-chinh-hinh-su__d2cdca"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.409Z"
+    "$date": "2026-05-20T03:23:52.998Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.409Z"
+    "$date": "2026-05-20T03:23:52.998Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc04"
+    "$oid": "6a0d29497f90b889d2d2cdce"
   },
   "keyword_name": "Tôn trọng bí mật thư tín",
   "keyword_slug": "ton-trong-bi-mat-thu-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/ton-trong-bi-mat-thu-tin__d2cc04",
-    "videos": "videos/keyword/ton-trong-bi-mat-thu-tin__d2cc04"
+    "images": "images/keyword/ton-trong-bi-mat-thu-tin__d2cdce",
+    "videos": "videos/keyword/ton-trong-bi-mat-thu-tin__d2cdce"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.448Z"
+    "$date": "2026-05-20T03:23:53.097Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.448Z"
+    "$date": "2026-05-20T03:23:53.097Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc06"
+    "$oid": "6a0d29497f90b889d2d2cdd0"
   },
   "keyword_name": "Không xem trộm điện thoại",
   "keyword_slug": "khong-xem-trom-dien-thoai",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/khong-xem-trom-dien-thoai__d2cc06",
-    "videos": "videos/keyword/khong-xem-trom-dien-thoai__d2cc06"
+    "images": "images/keyword/khong-xem-trom-dien-thoai__d2cdd0",
+    "videos": "videos/keyword/khong-xem-trom-dien-thoai__d2cdd0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.470Z"
+    "$date": "2026-05-20T03:23:53.138Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.470Z"
+    "$date": "2026-05-20T03:23:53.138Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc08"
+    "$oid": "6a0d29497f90b889d2d2cdd2"
   },
   "keyword_name": "Tuyên truyền quyền riêng tư",
   "keyword_slug": "tuyen-truyen-quyen-rieng-tu",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tuyen-truyen-quyen-rieng-tu__d2cc08",
-    "videos": "videos/keyword/tuyen-truyen-quyen-rieng-tu__d2cc08"
+    "images": "images/keyword/tuyen-truyen-quyen-rieng-tu__d2cdd2",
+    "videos": "videos/keyword/tuyen-truyen-quyen-rieng-tu__d2cdd2"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.492Z"
+    "$date": "2026-05-20T03:23:53.178Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.492Z"
+    "$date": "2026-05-20T03:23:53.178Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc0b"
+    "$oid": "6a0d29497f90b889d2d2cdd5"
   },
   "keyword_name": "Tự do ngôn luận",
   "keyword_slug": "tu-do-ngon-luan",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tu-do-ngon-luan__d2cc0b",
-    "videos": "videos/keyword/tu-do-ngon-luan__d2cc0b"
+    "images": "images/keyword/tu-do-ngon-luan__d2cdd5",
+    "videos": "videos/keyword/tu-do-ngon-luan__d2cdd5"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.525Z"
+    "$date": "2026-05-20T03:23:53.248Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.525Z"
+    "$date": "2026-05-20T03:23:53.248Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc0d"
+    "$oid": "6a0d29497f90b889d2d2cdd7"
   },
   "keyword_name": "Tự do báo chí",
   "keyword_slug": "tu-do-bao-chi",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tu-do-bao-chi__d2cc0d",
-    "videos": "videos/keyword/tu-do-bao-chi__d2cc0d"
+    "images": "images/keyword/tu-do-bao-chi__d2cdd7",
+    "videos": "videos/keyword/tu-do-bao-chi__d2cdd7"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.545Z"
+    "$date": "2026-05-20T03:23:53.286Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.545Z"
+    "$date": "2026-05-20T03:23:53.286Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc0f"
+    "$oid": "6a0d29497f90b889d2d2cdd9"
   },
   "keyword_name": "Tiếp cận thông tin",
   "keyword_slug": "tiep-can-thong-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tiep-can-thong-tin__d2cc0f",
-    "videos": "videos/keyword/tiep-can-thong-tin__d2cc0f"
+    "images": "images/keyword/tiep-can-thong-tin__d2cdd9",
+    "videos": "videos/keyword/tiep-can-thong-tin__d2cdd9"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.563Z"
+    "$date": "2026-05-20T03:23:53.326Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.563Z"
+    "$date": "2026-05-20T03:23:53.326Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc12"
+    "$oid": "6a0d29497f90b889d2d2cddc"
   },
   "keyword_name": "Nghĩa vụ cung cấp thông tin trung thực",
   "keyword_slug": "nghia-vu-cung-cap-thong-tin-trung-thuc",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/nghia-vu-cung-cap-thong-tin-trung-thuc__d2cc12",
-    "videos": "videos/keyword/nghia-vu-cung-cap-thong-tin-trung-thuc__d2cc12"
+    "images": "images/keyword/nghia-vu-cung-cap-thong-tin-trung-thuc__d2cddc",
+    "videos": "videos/keyword/nghia-vu-cung-cap-thong-tin-trung-thuc__d2cddc"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.596Z"
+    "$date": "2026-05-20T03:23:53.378Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.596Z"
+    "$date": "2026-05-20T03:23:53.378Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc14"
+    "$oid": "6a0d29497f90b889d2d2cdde"
   },
   "keyword_name": "Vi phạm tự do ngôn luận",
   "keyword_slug": "vi-pham-tu-do-ngon-luan",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-tu-do-ngon-luan__d2cc14",
-    "videos": "videos/keyword/vi-pham-tu-do-ngon-luan__d2cc14"
+    "images": "images/keyword/vi-pham-tu-do-ngon-luan__d2cdde",
+    "videos": "videos/keyword/vi-pham-tu-do-ngon-luan__d2cdde"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.617Z"
+    "$date": "2026-05-20T03:23:53.417Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.617Z"
+    "$date": "2026-05-20T03:23:53.417Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc16"
+    "$oid": "6a0d29497f90b889d2d2cde0"
   },
   "keyword_name": "Vi phạm tự do báo chí",
   "keyword_slug": "vi-pham-tu-do-bao-chi",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-tu-do-bao-chi__d2cc16",
-    "videos": "videos/keyword/vi-pham-tu-do-bao-chi__d2cc16"
+    "images": "images/keyword/vi-pham-tu-do-bao-chi__d2cde0",
+    "videos": "videos/keyword/vi-pham-tu-do-bao-chi__d2cde0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.635Z"
+    "$date": "2026-05-20T03:23:53.452Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.635Z"
+    "$date": "2026-05-20T03:23:53.452Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc18"
+    "$oid": "6a0d29497f90b889d2d2cde2"
   },
   "keyword_name": "Vi phạm tiếp cận thông tin",
   "keyword_slug": "vi-pham-tiep-can-thong-tin",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-tiep-can-thong-tin__d2cc18",
-    "videos": "videos/keyword/vi-pham-tiep-can-thong-tin__d2cc18"
+    "images": "images/keyword/vi-pham-tiep-can-thong-tin__d2cde2",
+    "videos": "videos/keyword/vi-pham-tiep-can-thong-tin__d2cde2"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.656Z"
+    "$date": "2026-05-20T03:23:53.489Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.656Z"
+    "$date": "2026-05-20T03:23:53.489Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc1d"
+    "$oid": "6a0d29497f90b889d2d2cde7"
   },
   "keyword_name": "Thực hiện quyền tự do ngôn luận",
   "keyword_slug": "thuc-hien-quyen-tu-do-ngon-luan",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/thuc-hien-quyen-tu-do-ngon-luan__d2cc1d",
-    "videos": "videos/keyword/thuc-hien-quyen-tu-do-ngon-luan__d2cc1d"
+    "images": "images/keyword/thuc-hien-quyen-tu-do-ngon-luan__d2cde7",
+    "videos": "videos/keyword/thuc-hien-quyen-tu-do-ngon-luan__d2cde7"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.705Z"
+    "$date": "2026-05-20T03:23:53.604Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.705Z"
+    "$date": "2026-05-20T03:23:53.604Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc1f"
+    "$oid": "6a0d29497f90b889d2d2cde9"
   },
   "keyword_name": "Tiếp cận thông tin đúng pháp luật",
   "keyword_slug": "tiep-can-thong-tin-dung-phap-luat",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tiep-can-thong-tin-dung-phap-luat__d2cc1f",
-    "videos": "videos/keyword/tiep-can-thong-tin-dung-phap-luat__d2cc1f"
+    "images": "images/keyword/tiep-can-thong-tin-dung-phap-luat__d2cde9",
+    "videos": "videos/keyword/tiep-can-thong-tin-dung-phap-luat__d2cde9"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.725Z"
+    "$date": "2026-05-20T03:23:53.646Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.725Z"
+    "$date": "2026-05-20T03:23:53.646Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc22"
+    "$oid": "6a0d29497f90b889d2d2cdec"
   },
   "keyword_name": "Phản bác thông tin sai lệch",
   "keyword_slug": "phan-bac-thong-tin-sai-lech",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/phan-bac-thong-tin-sai-lech__d2cc22",
-    "videos": "videos/keyword/phan-bac-thong-tin-sai-lech__d2cc22"
+    "images": "images/keyword/phan-bac-thong-tin-sai-lech__d2cdec",
+    "videos": "videos/keyword/phan-bac-thong-tin-sai-lech__d2cdec"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.762Z"
+    "$date": "2026-05-20T03:23:53.710Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.762Z"
+    "$date": "2026-05-20T03:23:53.710Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc24"
+    "$oid": "6a0d29497f90b889d2d2cdee"
   },
   "keyword_name": "Tự do tín ngưỡng tôn giáo",
   "keyword_slug": "tu-do-tin-nguong-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tu-do-tin-nguong-ton-giao__d2cc24",
-    "videos": "videos/keyword/tu-do-tin-nguong-ton-giao__d2cc24"
+    "images": "images/keyword/tu-do-tin-nguong-ton-giao__d2cdee",
+    "videos": "videos/keyword/tu-do-tin-nguong-ton-giao__d2cdee"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.783Z"
+    "$date": "2026-05-20T03:23:53.748Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.783Z"
+    "$date": "2026-05-20T03:23:53.748Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc26"
+    "$oid": "6a0d29497f90b889d2d2cdf0"
   },
   "keyword_name": "Quyền theo hoặc không theo tôn giáo",
   "keyword_slug": "quyen-theo-hoac-khong-theo-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/quyen-theo-hoac-khong-theo-ton-giao__d2cc26",
-    "videos": "videos/keyword/quyen-theo-hoac-khong-theo-ton-giao__d2cc26"
+    "images": "images/keyword/quyen-theo-hoac-khong-theo-ton-giao__d2cdf0",
+    "videos": "videos/keyword/quyen-theo-hoac-khong-theo-ton-giao__d2cdf0"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.805Z"
+    "$date": "2026-05-20T03:23:53.790Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.805Z"
+    "$date": "2026-05-20T03:23:53.790Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc29"
+    "$oid": "6a0d29497f90b889d2d2cdf3"
   },
   "keyword_name": "Nghĩa vụ tôn trọng tín ngưỡng",
   "keyword_slug": "nghia-vu-ton-trong-tin-nguong",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/nghia-vu-ton-trong-tin-nguong__d2cc29",
-    "videos": "videos/keyword/nghia-vu-ton-trong-tin-nguong__d2cc29"
+    "images": "images/keyword/nghia-vu-ton-trong-tin-nguong__d2cdf3",
+    "videos": "videos/keyword/nghia-vu-ton-trong-tin-nguong__d2cdf3"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.838Z"
+    "$date": "2026-05-20T03:23:53.857Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.838Z"
+    "$date": "2026-05-20T03:23:53.857Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc2b"
+    "$oid": "6a0d29497f90b889d2d2cdf5"
   },
   "keyword_name": "Luật Tín ngưỡng tôn giáo",
   "keyword_slug": "luat-tin-nguong-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/luat-tin-nguong-ton-giao__d2cc2b",
-    "videos": "videos/keyword/luat-tin-nguong-ton-giao__d2cc2b"
+    "images": "images/keyword/luat-tin-nguong-ton-giao__d2cdf5",
+    "videos": "videos/keyword/luat-tin-nguong-ton-giao__d2cdf5"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.861Z"
+    "$date": "2026-05-20T03:23:53.898Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.861Z"
+    "$date": "2026-05-20T03:23:53.898Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc2d"
+    "$oid": "6a0d29497f90b889d2d2cdf7"
   },
   "keyword_name": "Vi phạm quyền tự do tín ngưỡng",
   "keyword_slug": "vi-pham-quyen-tu-do-tin-nguong",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/vi-pham-quyen-tu-do-tin-nguong__d2cc2d",
-    "videos": "videos/keyword/vi-pham-quyen-tu-do-tin-nguong__d2cc2d"
+    "images": "images/keyword/vi-pham-quyen-tu-do-tin-nguong__d2cdf7",
+    "videos": "videos/keyword/vi-pham-quyen-tu-do-tin-nguong__d2cdf7"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.880Z"
+    "$date": "2026-05-20T03:23:53.939Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.880Z"
+    "$date": "2026-05-20T03:23:53.939Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc2f"
+    "$oid": "6a0d29497f90b889d2d2cdf9"
   },
   "keyword_name": "Lợi dụng tín ngưỡng tôn giáo",
   "keyword_slug": "loi-dung-tin-nguong-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/loi-dung-tin-nguong-ton-giao__d2cc2f",
-    "videos": "videos/keyword/loi-dung-tin-nguong-ton-giao__d2cc2f"
+    "images": "images/keyword/loi-dung-tin-nguong-ton-giao__d2cdf9",
+    "videos": "videos/keyword/loi-dung-tin-nguong-ton-giao__d2cdf9"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.903Z"
+    "$date": "2026-05-20T03:23:53.981Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.903Z"
+    "$date": "2026-05-20T03:23:53.981Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc31"
+    "$oid": "6a0d294a7f90b889d2d2cdfb"
   },
   "keyword_name": "Hậu quả vi phạm tôn giáo",
   "keyword_slug": "hau-qua-vi-pham-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/hau-qua-vi-pham-ton-giao__d2cc31",
-    "videos": "videos/keyword/hau-qua-vi-pham-ton-giao__d2cc31"
+    "images": "images/keyword/hau-qua-vi-pham-ton-giao__d2cdfb",
+    "videos": "videos/keyword/hau-qua-vi-pham-ton-giao__d2cdfb"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.923Z"
+    "$date": "2026-05-20T03:23:54.017Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.923Z"
+    "$date": "2026-05-20T03:23:54.017Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc33"
+    "$oid": "6a0d294a7f90b889d2d2cdfd"
   },
   "keyword_name": "Gây mất đoàn kết dân tộc",
   "keyword_slug": "gay-mat-doan-ket-dan-toc",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/gay-mat-doan-ket-dan-toc__d2cc33",
-    "videos": "videos/keyword/gay-mat-doan-ket-dan-toc__d2cc33"
+    "images": "images/keyword/gay-mat-doan-ket-dan-toc__d2cdfd",
+    "videos": "videos/keyword/gay-mat-doan-ket-dan-toc__d2cdfd"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.946Z"
+    "$date": "2026-05-20T03:23:54.054Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.946Z"
+    "$date": "2026-05-20T03:23:54.054Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc37"
+    "$oid": "6a0d294a7f90b889d2d2ce01"
   },
   "keyword_name": "Tôn trọng tự do tín ngưỡng",
   "keyword_slug": "ton-trong-tu-do-tin-nguong",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/ton-trong-tu-do-tin-nguong__d2cc37",
-    "videos": "videos/keyword/ton-trong-tu-do-tin-nguong__d2cc37"
+    "images": "images/keyword/ton-trong-tu-do-tin-nguong__d2ce01",
+    "videos": "videos/keyword/ton-trong-tu-do-tin-nguong__d2ce01"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.981Z"
+    "$date": "2026-05-20T03:23:54.143Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.981Z"
+    "$date": "2026-05-20T03:23:54.143Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b47f90b889d2d2cc39"
+    "$oid": "6a0d294a7f90b889d2d2ce03"
   },
   "keyword_name": "Không kì thị tôn giáo",
   "keyword_slug": "khong-ki-thi-ton-giao",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/khong-ki-thi-ton-giao__d2cc39",
-    "videos": "videos/keyword/khong-ki-thi-ton-giao__d2cc39"
+    "images": "images/keyword/khong-ki-thi-ton-giao__d2ce03",
+    "videos": "videos/keyword/khong-ki-thi-ton-giao__d2ce03"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:32.999Z"
+    "$date": "2026-05-20T03:23:54.183Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:32.999Z"
+    "$date": "2026-05-20T03:23:54.183Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b57f90b889d2d2cc3b"
+    "$oid": "6a0d294a7f90b889d2d2ce05"
   },
   "keyword_name": "Phê phán mê tín dị đoan",
   "keyword_slug": "phe-phan-me-tin-di-doan",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/phe-phan-me-tin-di-doan__d2cc3b",
-    "videos": "videos/keyword/phe-phan-me-tin-di-doan__d2cc3b"
+    "images": "images/keyword/phe-phan-me-tin-di-doan__d2ce05",
+    "videos": "videos/keyword/phe-phan-me-tin-di-doan__d2ce05"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:33.016Z"
+    "$date": "2026-05-20T03:23:54.226Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:33.016Z"
+    "$date": "2026-05-20T03:23:54.226Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21b57f90b889d2d2cc3d"
+    "$oid": "6a0d294a7f90b889d2d2ce07"
   },
   "keyword_name": "Tuyên truyền pháp luật tín ngưỡng",
   "keyword_slug": "tuyen-truyen-phap-luat-tin-nguong",
   "aliases": [],
   "asset_prefixes": {
-    "images": "images/keyword/tuyen-truyen-phap-luat-tin-nguong__d2cc3d",
-    "videos": "videos/keyword/tuyen-truyen-phap-luat-tin-nguong__d2cc3d"
+    "images": "images/keyword/tuyen-truyen-phap-luat-tin-nguong__d2ce07",
+    "videos": "videos/keyword/tuyen-truyen-phap-luat-tin-nguong__d2ce07"
   },
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:33.032Z"
+    "$date": "2026-05-20T03:23:54.277Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:33.032Z"
+    "$date": "2026-05-20T03:23:54.277Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce6a"
+  },
+  "keyword_name": "Tổng sản phẩm quốc nội",
+  "keyword_slug": "tong-san-pham-quoc-noi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tong-san-pham-quoc-noi__d2ce6a",
+    "videos": "videos/keyword/tong-san-pham-quoc-noi__d2ce6a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.512Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.512Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce6c"
+  },
+  "keyword_name": "GDP",
+  "keyword_slug": "gdp",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/gdp__d2ce6c",
+    "videos": "videos/keyword/gdp__d2ce6c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.579Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.579Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce6e"
+  },
+  "keyword_name": "GNI",
+  "keyword_slug": "gni",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/gni__d2ce6e",
+    "videos": "videos/keyword/gni__d2ce6e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.626Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.626Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce70"
+  },
+  "keyword_name": "Chỉ tiêu tăng trưởng",
+  "keyword_slug": "chi-tieu-tang-truong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chi-tieu-tang-truong__d2ce70",
+    "videos": "videos/keyword/chi-tieu-tang-truong__d2ce70"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.661Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.661Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce73"
+  },
+  "keyword_name": "Cơ cấu kinh tế",
+  "keyword_slug": "co-cau-kinh-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/co-cau-kinh-te__d2ce73",
+    "videos": "videos/keyword/co-cau-kinh-te__d2ce73"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.723Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.723Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce75"
+  },
+  "keyword_name": "Tiến bộ xã hội",
+  "keyword_slug": "tien-bo-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tien-bo-xa-hoi__d2ce75",
+    "videos": "videos/keyword/tien-bo-xa-hoi__d2ce75"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.759Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.759Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce77"
+  },
+  "keyword_name": "Phát triển con người",
+  "keyword_slug": "phat-trien-con-nguoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phat-trien-con-nguoi__d2ce77",
+    "videos": "videos/keyword/phat-trien-con-nguoi__d2ce77"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.794Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.794Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce79"
+  },
+  "keyword_name": "Chỉ số HDI",
+  "keyword_slug": "chi-so-hdi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chi-so-hdi__d2ce79",
+    "videos": "videos/keyword/chi-so-hdi__d2ce79"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.828Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.828Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce7e"
+  },
+  "keyword_name": "Công bằng xã hội",
+  "keyword_slug": "cong-bang-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cong-bang-xa-hoi__d2ce7e",
+    "videos": "videos/keyword/cong-bang-xa-hoi__d2ce7e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.959Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.959Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbd7f90b889d2d2ce80"
+  },
+  "keyword_name": "Nguồn lực phát triển",
+  "keyword_slug": "nguon-luc-phat-trien",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nguon-luc-phat-trien__d2ce80",
+    "videos": "videos/keyword/nguon-luc-phat-trien__d2ce80"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:09.999Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:09.999Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce82"
+  },
+  "keyword_name": "Hội nhập kinh tế quốc tế",
+  "keyword_slug": "hoi-nhap-kinh-te-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hoi-nhap-kinh-te-quoc-te__d2ce82",
+    "videos": "videos/keyword/hoi-nhap-kinh-te-quoc-te__d2ce82"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.040Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.040Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce85"
+  },
+  "keyword_name": "Toàn cầu hoá",
+  "keyword_slug": "toan-cau-hoa",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/toan-cau-hoa__d2ce85",
+    "videos": "videos/keyword/toan-cau-hoa__d2ce85"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.078Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.078Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce87"
+  },
+  "keyword_name": "Phân công lao động quốc tế",
+  "keyword_slug": "phan-cong-lao-dong-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phan-cong-lao-dong-quoc-te__d2ce87",
+    "videos": "videos/keyword/phan-cong-lao-dong-quoc-te__d2ce87"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.145Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.145Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce89"
+  },
+  "keyword_name": "Quan hệ kinh tế quốc tế",
+  "keyword_slug": "quan-he-kinh-te-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quan-he-kinh-te-quoc-te__d2ce89",
+    "videos": "videos/keyword/quan-he-kinh-te-quoc-te__d2ce89"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.183Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.183Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce8c"
+  },
+  "keyword_name": "Hình thức hội nhập kinh tế quốc tế",
+  "keyword_slug": "hinh-thuc-hoi-nhap-kinh-te-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hinh-thuc-hoi-nhap-kinh-te-quoc-te__d2ce8c",
+    "videos": "videos/keyword/hinh-thuc-hoi-nhap-kinh-te-quoc-te__d2ce8c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.241Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.241Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce8e"
+  },
+  "keyword_name": "Thương mại quốc tế",
+  "keyword_slug": "thuong-mai-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/thuong-mai-quoc-te__d2ce8e",
+    "videos": "videos/keyword/thuong-mai-quoc-te__d2ce8e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.280Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.280Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce90"
+  },
+  "keyword_name": "Đầu tư quốc tế",
+  "keyword_slug": "dau-tu-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/dau-tu-quoc-te__d2ce90",
+    "videos": "videos/keyword/dau-tu-quoc-te__d2ce90"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.318Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.318Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce92"
+  },
+  "keyword_name": "Hợp tác kinh tế",
+  "keyword_slug": "hop-tac-kinh-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hop-tac-kinh-te__d2ce92",
+    "videos": "videos/keyword/hop-tac-kinh-te__d2ce92"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.354Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.354Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce94"
+  },
+  "keyword_name": "Liên kết kinh tế",
+  "keyword_slug": "lien-ket-kinh-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/lien-ket-kinh-te__d2ce94",
+    "videos": "videos/keyword/lien-ket-kinh-te__d2ce94"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.390Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.390Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce97"
+  },
+  "keyword_name": "Đường lối, chính sách",
+  "keyword_slug": "duong-loi-chinh-sach",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/duong-loi-chinh-sach__d2ce97",
+    "videos": "videos/keyword/duong-loi-chinh-sach__d2ce97"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.448Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.448Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce99"
+  },
+  "keyword_name": "Thu hút đầu tư nước ngoài",
+  "keyword_slug": "thu-hut-dau-tu-nuoc-ngoai",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/thu-hut-dau-tu-nuoc-ngoai__d2ce99",
+    "videos": "videos/keyword/thu-hut-dau-tu-nuoc-ngoai__d2ce99"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.485Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.485Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce9b"
+  },
+  "keyword_name": "Phát triển kinh tế bền vững",
+  "keyword_slug": "phat-trien-kinh-te-ben-vung",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phat-trien-kinh-te-ben-vung__d2ce9b",
+    "videos": "videos/keyword/phat-trien-kinh-te-ben-vung__d2ce9b"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.518Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.518Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce9d"
+  },
+  "keyword_name": "Cam kết quốc tế",
+  "keyword_slug": "cam-ket-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cam-ket-quoc-te__d2ce9d",
+    "videos": "videos/keyword/cam-ket-quoc-te__d2ce9d"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.560Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.560Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ce9f"
+  },
+  "keyword_name": "Bảo hiểm",
+  "keyword_slug": "bao-hiem",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-hiem__d2ce9f",
+    "videos": "videos/keyword/bao-hiem__d2ce9f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.598Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.598Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2cea2"
+  },
+  "keyword_name": "Bảo hiểm xã hội",
+  "keyword_slug": "bao-hiem-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-hiem-xa-hoi__d2cea2",
+    "videos": "videos/keyword/bao-hiem-xa-hoi__d2cea2"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.632Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.632Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2cea4"
+  },
+  "keyword_name": "Bảo hiểm y tế",
+  "keyword_slug": "bao-hiem-y-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-hiem-y-te__d2cea4",
+    "videos": "videos/keyword/bao-hiem-y-te__d2cea4"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.663Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.663Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2cea6"
+  },
+  "keyword_name": "Bảo hiểm trách nhiệm dân sự",
+  "keyword_slug": "bao-hiem-trach-nhiem-dan-su",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-hiem-trach-nhiem-dan-su__d2cea6",
+    "videos": "videos/keyword/bao-hiem-trach-nhiem-dan-su__d2cea6"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.694Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.694Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2cea8"
+  },
+  "keyword_name": "Bảo hiểm cháy nổ",
+  "keyword_slug": "bao-hiem-chay-no",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-hiem-chay-no__d2cea8",
+    "videos": "videos/keyword/bao-hiem-chay-no__d2cea8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.726Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.726Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ceab"
+  },
+  "keyword_name": "Vai trò bảo hiểm",
+  "keyword_slug": "vai-tro-bao-hiem",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/vai-tro-bao-hiem__d2ceab",
+    "videos": "videos/keyword/vai-tro-bao-hiem__d2ceab"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.776Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.776Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2cead"
+  },
+  "keyword_name": "Ổn định tài chính",
+  "keyword_slug": "on-dinh-tai-chinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/on-dinh-tai-chinh__d2cead",
+    "videos": "videos/keyword/on-dinh-tai-chinh__d2cead"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.807Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.807Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ceb0"
+  },
+  "keyword_name": "An toàn xã hội",
+  "keyword_slug": "an-toan-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/an-toan-xa-hoi__d2ceb0",
+    "videos": "videos/keyword/an-toan-xa-hoi__d2ceb0"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.868Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.868Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ceb3"
+  },
+  "keyword_name": "Chính sách an sinh xã hội",
+  "keyword_slug": "chinh-sach-an-sinh-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chinh-sach-an-sinh-xa-hoi__d2ceb3",
+    "videos": "videos/keyword/chinh-sach-an-sinh-xa-hoi__d2ceb3"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.939Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.939Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbe7f90b889d2d2ceb6"
+  },
+  "keyword_name": "Trợ giúp xã hội",
+  "keyword_slug": "tro-giup-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tro-giup-xa-hoi__d2ceb6",
+    "videos": "videos/keyword/tro-giup-xa-hoi__d2ceb6"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:10.999Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:10.999Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2ceb8"
+  },
+  "keyword_name": "Hỗ trợ việc làm",
+  "keyword_slug": "ho-tro-viec-lam",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ho-tro-viec-lam__d2ceb8",
+    "videos": "videos/keyword/ho-tro-viec-lam__d2ceb8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.037Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.037Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cebc"
+  },
+  "keyword_name": "Phát triển kinh tế xã hội",
+  "keyword_slug": "phat-trien-kinh-te-xa-hoi_2",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phat-trien-kinh-te-xa-hoi_2__d2cebc",
+    "videos": "videos/keyword/phat-trien-kinh-te-xa-hoi_2__d2cebc"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.117Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.117Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cec0"
+  },
+  "keyword_name": "Kế hoạch kinh doanh",
+  "keyword_slug": "ke-hoach-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ke-hoach-kinh-doanh__d2cec0",
+    "videos": "videos/keyword/ke-hoach-kinh-doanh__d2cec0"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.195Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.195Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cec3"
+  },
+  "keyword_name": "Mục tiêu kinh doanh",
+  "keyword_slug": "muc-tieu-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/muc-tieu-kinh-doanh__d2cec3",
+    "videos": "videos/keyword/muc-tieu-kinh-doanh__d2cec3"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.230Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.230Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cec6"
+  },
+  "keyword_name": "Phân tích rủi ro",
+  "keyword_slug": "phan-tich-rui-ro",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phan-tich-rui-ro__d2cec6",
+    "videos": "videos/keyword/phan-tich-rui-ro__d2cec6"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.294Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.294Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cec8"
+  },
+  "keyword_name": "Kế hoạch tài chính",
+  "keyword_slug": "ke-hoach-tai-chinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ke-hoach-tai-chinh__d2cec8",
+    "videos": "videos/keyword/ke-hoach-tai-chinh__d2cec8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.331Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.331Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2ceca"
+  },
+  "keyword_name": "Lập kế hoạch kinh doanh",
+  "keyword_slug": "lap-ke-hoach-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/lap-ke-hoach-kinh-doanh__d2ceca",
+    "videos": "videos/keyword/lap-ke-hoach-kinh-doanh__d2ceca"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.384Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.384Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2cecd"
+  },
+  "keyword_name": "Phân tích thị trường",
+  "keyword_slug": "phan-tich-thi-truong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phan-tich-thi-truong__d2cecd",
+    "videos": "videos/keyword/phan-tich-thi-truong__d2cecd"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.460Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.460Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2ced0"
+  },
+  "keyword_name": "Tổ chức thực hiện",
+  "keyword_slug": "to-chuc-thuc-hien",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/to-chuc-thuc-hien__d2ced0",
+    "videos": "videos/keyword/to-chuc-thuc-hien__d2ced0"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.549Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.549Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2ced4"
+  },
+  "keyword_name": "Hình thức thực hiện trách nhiệm xã hội",
+  "keyword_slug": "hinh-thuc-thuc-hien-trach-nhiem-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hinh-thuc-thuc-hien-trach-nhiem-xa-hoi__d2ced4",
+    "videos": "videos/keyword/hinh-thuc-thuc-hien-trach-nhiem-xa-hoi__d2ced4"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.663Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.663Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbf7f90b889d2d2ced8"
+  },
+  "keyword_name": "Quyền lợi người lao động",
+  "keyword_slug": "quyen-loi-nguoi-lao-dong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-loi-nguoi-lao-dong__d2ced8",
+    "videos": "videos/keyword/quyen-loi-nguoi-lao-dong__d2ced8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:11.888Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:11.888Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cedd"
+  },
+  "keyword_name": "Phát triển doanh nghiệp",
+  "keyword_slug": "phat-trien-doanh-nghiep",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phat-trien-doanh-nghiep__d2cedd",
+    "videos": "videos/keyword/phat-trien-doanh-nghiep__d2cedd"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.047Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.047Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cedf"
+  },
+  "keyword_name": "Cộng đồng xã hội",
+  "keyword_slug": "cong-dong-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cong-dong-xa-hoi__d2cedf",
+    "videos": "videos/keyword/cong-dong-xa-hoi__d2cedf"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.103Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.103Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cee1"
+  },
+  "keyword_name": "Quản lí thu chi gia đình",
+  "keyword_slug": "quan-li-thu-chi-gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quan-li-thu-chi-gia-dinh__d2cee1",
+    "videos": "videos/keyword/quan-li-thu-chi-gia-dinh__d2cee1"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.145Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.145Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cee4"
+  },
+  "keyword_name": "Thu nhập gia đình",
+  "keyword_slug": "thu-nhap-gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/thu-nhap-gia-dinh__d2cee4",
+    "videos": "videos/keyword/thu-nhap-gia-dinh__d2cee4"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.204Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.204Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cee6"
+  },
+  "keyword_name": "Chi tiêu gia đình",
+  "keyword_slug": "chi-tieu-gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chi-tieu-gia-dinh__d2cee6",
+    "videos": "videos/keyword/chi-tieu-gia-dinh__d2cee6"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.248Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.248Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cee8"
+  },
+  "keyword_name": "Cân đối tài chính",
+  "keyword_slug": "can-doi-tai-chinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/can-doi-tai-chinh__d2cee8",
+    "videos": "videos/keyword/can-doi-tai-chinh__d2cee8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.291Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.291Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2ceeb"
+  },
+  "keyword_name": "Kế hoạch quản lí thu chi",
+  "keyword_slug": "ke-hoach-quan-li-thu-chi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ke-hoach-quan-li-thu-chi__d2ceeb",
+    "videos": "videos/keyword/ke-hoach-quan-li-thu-chi__d2ceeb"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.375Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.375Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2ceed"
+  },
+  "keyword_name": "Ngân sách gia đình",
+  "keyword_slug": "ngan-sach-gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ngan-sach-gia-dinh__d2ceed",
+    "videos": "videos/keyword/ngan-sach-gia-dinh__d2ceed"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.424Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.424Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cef0"
+  },
+  "keyword_name": "Phân bổ chi tiêu",
+  "keyword_slug": "phan-bo-chi-tieu",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phan-bo-chi-tieu__d2cef0",
+    "videos": "videos/keyword/phan-bo-chi-tieu__d2cef0"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.498Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.498Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cef2"
+  },
+  "keyword_name": "Kiểm soát tài chính",
+  "keyword_slug": "kiem-soat-tai-chinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/kiem-soat-tai-chinh__d2cef2",
+    "videos": "videos/keyword/kiem-soat-tai-chinh__d2cef2"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.537Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.537Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cef4"
+  },
+  "keyword_name": "Quyền kinh doanh",
+  "keyword_slug": "quyen-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-kinh-doanh__d2cef4",
+    "videos": "videos/keyword/quyen-kinh-doanh__d2cef4"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.575Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.575Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cef7"
+  },
+  "keyword_name": "Nghĩa vụ kinh doanh",
+  "keyword_slug": "nghia-vu-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nghia-vu-kinh-doanh__d2cef7",
+    "videos": "videos/keyword/nghia-vu-kinh-doanh__d2cef7"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.623Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.623Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cef9"
+  },
+  "keyword_name": "Tự do kinh doanh",
+  "keyword_slug": "tu-do-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tu-do-kinh-doanh__d2cef9",
+    "videos": "videos/keyword/tu-do-kinh-doanh__d2cef9"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.664Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.664Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cefb"
+  },
+  "keyword_name": "Đăng kí kinh doanh",
+  "keyword_slug": "dang-ki-kinh-doanh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/dang-ki-kinh-doanh__d2cefb",
+    "videos": "videos/keyword/dang-ki-kinh-doanh__d2cefb"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.704Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.704Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cefe"
+  },
+  "keyword_name": "Nộp thuế",
+  "keyword_slug": "nop-thue",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nop-thue__d2cefe",
+    "videos": "videos/keyword/nop-thue__d2cefe"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.781Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.781Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cf03"
+  },
+  "keyword_name": "Chấp hành pháp luật thuế",
+  "keyword_slug": "chap-hanh-phap-luat-thue",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chap-hanh-phap-luat-thue__d2cf03",
+    "videos": "videos/keyword/chap-hanh-phap-luat-thue__d2cf03"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.943Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.943Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc07f90b889d2d2cf05"
+  },
+  "keyword_name": "Quyền sở hữu tài sản",
+  "keyword_slug": "quyen-so-huu-tai-san",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-so-huu-tai-san__d2cf05",
+    "videos": "videos/keyword/quyen-so-huu-tai-san__d2cf05"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:12.979Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:12.979Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf07"
+  },
+  "keyword_name": "Nghĩa vụ sở hữu tài sản",
+  "keyword_slug": "nghia-vu-so-huu-tai-san",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nghia-vu-so-huu-tai-san__d2cf07",
+    "videos": "videos/keyword/nghia-vu-so-huu-tai-san__d2cf07"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.020Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.020Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf09"
+  },
+  "keyword_name": "Tài sản hợp pháp",
+  "keyword_slug": "tai-san-hop-phap",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tai-san-hop-phap__d2cf09",
+    "videos": "videos/keyword/tai-san-hop-phap__d2cf09"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.066Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.066Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf0b"
+  },
+  "keyword_name": "Chiếm hữu sử dụng định đoạt",
+  "keyword_slug": "chiem-huu-su-dung-dinh-doat",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chiem-huu-su-dung-dinh-doat__d2cf0b",
+    "videos": "videos/keyword/chiem-huu-su-dung-dinh-doat__d2cf0b"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.099Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.099Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf0d"
+  },
+  "keyword_name": "Bảo vệ quyền sở hữu",
+  "keyword_slug": "bao-ve-quyen-so-huu",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-ve-quyen-so-huu__d2cf0d",
+    "videos": "videos/keyword/bao-ve-quyen-so-huu__d2cf0d"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.132Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.132Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf0f"
+  },
+  "keyword_name": "Tôn trọng tài sản người khác",
+  "keyword_slug": "ton-trong-tai-san-nguoi-khac",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ton-trong-tai-san-nguoi-khac__d2cf0f",
+    "videos": "videos/keyword/ton-trong-tai-san-nguoi-khac__d2cf0f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.166Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.166Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf12"
+  },
+  "keyword_name": "Xâm phạm tài sản",
+  "keyword_slug": "xam-pham-tai-san",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/xam-pham-tai-san__d2cf12",
+    "videos": "videos/keyword/xam-pham-tai-san__d2cf12"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.245Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.245Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf18"
+  },
+  "keyword_name": "Kết hôn",
+  "keyword_slug": "ket-hon",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ket-hon__d2cf18",
+    "videos": "videos/keyword/ket-hon__d2cf18"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.408Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.408Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf1a"
+  },
+  "keyword_name": "Li hôn",
+  "keyword_slug": "li-hon",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/li-hon__d2cf1a",
+    "videos": "videos/keyword/li-hon__d2cf1a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.448Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.448Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf1c"
+  },
+  "keyword_name": "Pháp luật hôn nhân",
+  "keyword_slug": "phap-luat-hon-nhan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phap-luat-hon-nhan__d2cf1c",
+    "videos": "videos/keyword/phap-luat-hon-nhan__d2cf1c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.490Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.490Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf1e"
+  },
+  "keyword_name": "Chế độ hôn nhân",
+  "keyword_slug": "che-do-hon-nhan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/che-do-hon-nhan__d2cf1e",
+    "videos": "videos/keyword/che-do-hon-nhan__d2cf1e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.531Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.531Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf20"
+  },
+  "keyword_name": "Quyền và nghĩa vụ",
+  "keyword_slug": "quyen-va-nghia-vu",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-va-nghia-vu__d2cf20",
+    "videos": "videos/keyword/quyen-va-nghia-vu__d2cf20"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.570Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.570Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf22"
+  },
+  "keyword_name": "Gia đình",
+  "keyword_slug": "gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/gia-dinh__d2cf22",
+    "videos": "videos/keyword/gia-dinh__d2cf22"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.605Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.605Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf24"
+  },
+  "keyword_name": "Vợ chồng",
+  "keyword_slug": "vo-chong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/vo-chong__d2cf24",
+    "videos": "videos/keyword/vo-chong__d2cf24"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.637Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.637Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf26"
+  },
+  "keyword_name": "Cha mẹ và con",
+  "keyword_slug": "cha-me-va-con",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cha-me-va-con__d2cf26",
+    "videos": "videos/keyword/cha-me-va-con__d2cf26"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.667Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.667Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf28"
+  },
+  "keyword_name": "Luật Hôn nhân và Gia đình",
+  "keyword_slug": "luat-hon-nhan-va-gia-dinh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-hon-nhan-va-gia-dinh__d2cf28",
+    "videos": "videos/keyword/luat-hon-nhan-va-gia-dinh__d2cf28"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.705Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.705Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf2a"
+  },
+  "keyword_name": "Quyền học tập của công dân",
+  "keyword_slug": "quyen-hoc-tap-cua-cong-dan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-hoc-tap-cua-cong-dan__d2cf2a",
+    "videos": "videos/keyword/quyen-hoc-tap-cua-cong-dan__d2cf2a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.739Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.739Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf2c"
+  },
+  "keyword_name": "Bình đẳng trong học tập",
+  "keyword_slug": "binh-dang-trong-hoc-tap",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/binh-dang-trong-hoc-tap__d2cf2c",
+    "videos": "videos/keyword/binh-dang-trong-hoc-tap__d2cf2c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.778Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.778Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf2e"
+  },
+  "keyword_name": "Học tập suốt đời",
+  "keyword_slug": "hoc-tap-suot-doi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hoc-tap-suot-doi__d2cf2e",
+    "videos": "videos/keyword/hoc-tap-suot-doi__d2cf2e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.815Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.815Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf30"
+  },
+  "keyword_name": "Chính sách hỗ trợ giáo dục",
+  "keyword_slug": "chinh-sach-ho-tro-giao-duc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chinh-sach-ho-tro-giao-duc__d2cf30",
+    "videos": "videos/keyword/chinh-sach-ho-tro-giao-duc__d2cf30"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.850Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.850Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf32"
+  },
+  "keyword_name": "Tự do lựa chọn ngành học",
+  "keyword_slug": "tu-do-lua-chon-nganh-hoc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tu-do-lua-chon-nganh-hoc__d2cf32",
+    "videos": "videos/keyword/tu-do-lua-chon-nganh-hoc__d2cf32"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.887Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.887Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf34"
+  },
+  "keyword_name": "Nghĩa vụ học tập của công dân",
+  "keyword_slug": "nghia-vu-hoc-tap-cua-cong-dan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nghia-vu-hoc-tap-cua-cong-dan__d2cf34",
+    "videos": "videos/keyword/nghia-vu-hoc-tap-cua-cong-dan__d2cf34"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.927Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.927Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc17f90b889d2d2cf36"
+  },
+  "keyword_name": "Giáo dục bắt buộc",
+  "keyword_slug": "giao-duc-bat-buoc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/giao-duc-bat-buoc__d2cf36",
+    "videos": "videos/keyword/giao-duc-bat-buoc__d2cf36"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:13.962Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:13.962Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf39"
+  },
+  "keyword_name": "Luật Giáo dục 2019",
+  "keyword_slug": "luat-giao-duc-2019",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-giao-duc-2019__d2cf39",
+    "videos": "videos/keyword/luat-giao-duc-2019__d2cf39"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.029Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.029Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf3b"
+  },
+  "keyword_name": "Nhiệm vụ của người học",
+  "keyword_slug": "nhiem-vu-cua-nguoi-hoc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nhiem-vu-cua-nguoi-hoc__d2cf3b",
+    "videos": "videos/keyword/nhiem-vu-cua-nguoi-hoc__d2cf3b"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.067Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.067Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf3e"
+  },
+  "keyword_name": "Bảo vệ chăm sóc sức khỏe",
+  "keyword_slug": "bao-ve-cham-soc-suc-khoe",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-ve-cham-soc-suc-khoe__d2cf3e",
+    "videos": "videos/keyword/bao-ve-cham-soc-suc-khoe__d2cf3e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.132Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.132Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf40"
+  },
+  "keyword_name": "Khám bệnh chữa bệnh",
+  "keyword_slug": "kham-benh-chua-benh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/kham-benh-chua-benh__d2cf40",
+    "videos": "videos/keyword/kham-benh-chua-benh__d2cf40"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.168Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.168Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf42"
+  },
+  "keyword_name": "Luật Khám bệnh chữa bệnh 2023",
+  "keyword_slug": "luat-kham-benh-chua-benh-2023",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-kham-benh-chua-benh-2023__d2cf42",
+    "videos": "videos/keyword/luat-kham-benh-chua-benh-2023__d2cf42"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.215Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.215Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf44"
+  },
+  "keyword_name": "Dịch vụ y tế",
+  "keyword_slug": "dich-vu-y-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/dich-vu-y-te__d2cf44",
+    "videos": "videos/keyword/dich-vu-y-te__d2cf44"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.260Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.260Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc27f90b889d2d2cf4a"
+  },
+  "keyword_name": "Trợ cấp xã hội",
+  "keyword_slug": "tro-cap-xa-hoi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tro-cap-xa-hoi__d2cf4a",
+    "videos": "videos/keyword/tro-cap-xa-hoi__d2cf4a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:14.433Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:14.433Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc37f90b889d2d2cf4c"
+  },
+  "keyword_name": "Di sản văn hoá",
+  "keyword_slug": "di-san-van-hoa",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/di-san-van-hoa__d2cf4c",
+    "videos": "videos/keyword/di-san-van-hoa__d2cf4c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:15.847Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:15.847Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc37f90b889d2d2cf4f"
+  },
+  "keyword_name": "Bảo vệ di sản văn hoá",
+  "keyword_slug": "bao-ve-di-san-van-hoa",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-ve-di-san-van-hoa__d2cf4f",
+    "videos": "videos/keyword/bao-ve-di-san-van-hoa__d2cf4f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:15.914Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:15.914Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc37f90b889d2d2cf51"
+  },
+  "keyword_name": "Luật Di sản văn hoá",
+  "keyword_slug": "luat-di-san-van-hoa",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-di-san-van-hoa__d2cf51",
+    "videos": "videos/keyword/luat-di-san-van-hoa__d2cf51"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:15.958Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:15.958Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf53"
+  },
+  "keyword_name": "Tiếp cận và hưởng thụ di sản văn hoá",
+  "keyword_slug": "tiep-can-va-huong-thu-di-san-van-hoa",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tiep-can-va-huong-thu-di-san-van-hoa__d2cf53",
+    "videos": "videos/keyword/tiep-can-va-huong-thu-di-san-van-hoa__d2cf53"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.010Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.010Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf58"
+  },
+  "keyword_name": "Ô nhiễm môi trường",
+  "keyword_slug": "o-nhiem-moi-truong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/o-nhiem-moi-truong__d2cf58",
+    "videos": "videos/keyword/o-nhiem-moi-truong__d2cf58"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.165Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.165Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf5a"
+  },
+  "keyword_name": "Vi phạm pháp luật môi trường",
+  "keyword_slug": "vi-pham-phap-luat-moi-truong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/vi-pham-phap-luat-moi-truong__d2cf5a",
+    "videos": "videos/keyword/vi-pham-phap-luat-moi-truong__d2cf5a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.212Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.212Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf5c"
+  },
+  "keyword_name": "Pháp luật quốc tế",
+  "keyword_slug": "phap-luat-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/phap-luat-quoc-te__d2cf5c",
+    "videos": "videos/keyword/phap-luat-quoc-te__d2cf5c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.262Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.262Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf5f"
+  },
+  "keyword_name": "Vai trò pháp luật quốc tế",
+  "keyword_slug": "vai-tro-phap-luat-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/vai-tro-phap-luat-quoc-te__d2cf5f",
+    "videos": "videos/keyword/vai-tro-phap-luat-quoc-te__d2cf5f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.316Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.316Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf61"
+  },
+  "keyword_name": "Chủ thể pháp luật quốc tế",
+  "keyword_slug": "chu-the-phap-luat-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chu-the-phap-luat-quoc-te__d2cf61",
+    "videos": "videos/keyword/chu-the-phap-luat-quoc-te__d2cf61"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.359Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.359Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf63"
+  },
+  "keyword_name": "Quan hệ quốc tế",
+  "keyword_slug": "quan-he-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quan-he-quoc-te__d2cf63",
+    "videos": "videos/keyword/quan-he-quoc-te__d2cf63"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.409Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.409Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf65"
+  },
+  "keyword_name": "Giải quyết tranh chấp quốc tế",
+  "keyword_slug": "giai-quyet-tranh-chap-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/giai-quyet-tranh-chap-quoc-te__d2cf65",
+    "videos": "videos/keyword/giai-quyet-tranh-chap-quoc-te__d2cf65"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.456Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.456Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf67"
+  },
+  "keyword_name": "Nguyên tắc pháp luật quốc tế",
+  "keyword_slug": "nguyen-tac-phap-luat-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nguyen-tac-phap-luat-quoc-te__d2cf67",
+    "videos": "videos/keyword/nguyen-tac-phap-luat-quoc-te__d2cf67"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.502Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.502Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf69"
+  },
+  "keyword_name": "Bình đẳng chủ quyền quốc gia",
+  "keyword_slug": "binh-dang-chu-quyen-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/binh-dang-chu-quyen-quoc-gia__d2cf69",
+    "videos": "videos/keyword/binh-dang-chu-quyen-quoc-gia__d2cf69"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.550Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.550Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf6b"
+  },
+  "keyword_name": "Không can thiệp công việc nội bộ",
+  "keyword_slug": "khong-can-thiep-cong-viec-noi-bo",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/khong-can-thiep-cong-viec-noi-bo__d2cf6b",
+    "videos": "videos/keyword/khong-can-thiep-cong-viec-noi-bo__d2cf6b"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.592Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.592Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf6d"
+  },
+  "keyword_name": "Giải quyết tranh chấp hoà bình",
+  "keyword_slug": "giai-quyet-tranh-chap-hoa-binh",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/giai-quyet-tranh-chap-hoa-binh__d2cf6d",
+    "videos": "videos/keyword/giai-quyet-tranh-chap-hoa-binh__d2cf6d"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.654Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.654Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf6f"
+  },
+  "keyword_name": "Tôn trọng cam kết quốc tế",
+  "keyword_slug": "ton-trong-cam-ket-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/ton-trong-cam-ket-quoc-te__d2cf6f",
+    "videos": "videos/keyword/ton-trong-cam-ket-quoc-te__d2cf6f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.705Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.705Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf72"
+  },
+  "keyword_name": "Luật quốc gia",
+  "keyword_slug": "luat-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-quoc-gia__d2cf72",
+    "videos": "videos/keyword/luat-quoc-gia__d2cf72"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.783Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.783Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc47f90b889d2d2cf74"
+  },
+  "keyword_name": "Quan hệ pháp luật",
+  "keyword_slug": "quan-he-phap-luat",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quan-he-phap-luat__d2cf74",
+    "videos": "videos/keyword/quan-he-phap-luat__d2cf74"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:16.842Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:16.842Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf76"
+  },
+  "keyword_name": "Điều ước quốc tế",
+  "keyword_slug": "dieu-uoc-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/dieu-uoc-quoc-te__d2cf76",
+    "videos": "videos/keyword/dieu-uoc-quoc-te__d2cf76"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.083Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.083Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf78"
+  },
+  "keyword_name": "Thực hiện cam kết quốc tế",
+  "keyword_slug": "thuc-hien-cam-ket-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/thuc-hien-cam-ket-quoc-te__d2cf78",
+    "videos": "videos/keyword/thuc-hien-cam-ket-quoc-te__d2cf78"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.158Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.158Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf7a"
+  },
+  "keyword_name": "Công pháp quốc tế",
+  "keyword_slug": "cong-phap-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cong-phap-quoc-te__d2cf7a",
+    "videos": "videos/keyword/cong-phap-quoc-te__d2cf7a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.258Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.258Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf7c"
+  },
+  "keyword_name": "Dân cư",
+  "keyword_slug": "dan-cu",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/dan-cu__d2cf7c",
+    "videos": "videos/keyword/dan-cu__d2cf7c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.339Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.339Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf7e"
+  },
+  "keyword_name": "Quốc tịch",
+  "keyword_slug": "quoc-tich",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quoc-tich__d2cf7e",
+    "videos": "videos/keyword/quoc-tich__d2cf7e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.386Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.386Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf80"
+  },
+  "keyword_name": "Người nước ngoài",
+  "keyword_slug": "nguoi-nuoc-ngoai",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nguoi-nuoc-ngoai__d2cf80",
+    "videos": "videos/keyword/nguoi-nuoc-ngoai__d2cf80"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.434Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.434Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf82"
+  },
+  "keyword_name": "Quyền và nghĩa vụ pháp lí",
+  "keyword_slug": "quyen-va-nghia-vu-phap-li",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-va-nghia-vu-phap-li__d2cf82",
+    "videos": "videos/keyword/quyen-va-nghia-vu-phap-li__d2cf82"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.483Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.483Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf85"
+  },
+  "keyword_name": "Lãnh thổ quốc gia",
+  "keyword_slug": "lanh-tho-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/lanh-tho-quoc-gia__d2cf85",
+    "videos": "videos/keyword/lanh-tho-quoc-gia__d2cf85"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.562Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.562Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf87"
+  },
+  "keyword_name": "Biên giới quốc gia",
+  "keyword_slug": "bien-gioi-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bien-gioi-quoc-gia__d2cf87",
+    "videos": "videos/keyword/bien-gioi-quoc-gia__d2cf87"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.609Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.609Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf89"
+  },
+  "keyword_name": "Chủ quyền lãnh thổ",
+  "keyword_slug": "chu-quyen-lanh-tho",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/chu-quyen-lanh-tho__d2cf89",
+    "videos": "videos/keyword/chu-quyen-lanh-tho__d2cf89"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.676Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.676Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf8b"
+  },
+  "keyword_name": "Bảo vệ biên giới",
+  "keyword_slug": "bao-ve-bien-gioi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/bao-ve-bien-gioi__d2cf8b",
+    "videos": "videos/keyword/bao-ve-bien-gioi__d2cf8b"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.717Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.717Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf8d"
+  },
+  "keyword_name": "Công pháp quốc tế về biển",
+  "keyword_slug": "cong-phap-quoc-te-ve-bien",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/cong-phap-quoc-te-ve-bien__d2cf8d",
+    "videos": "videos/keyword/cong-phap-quoc-te-ve-bien__d2cf8d"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.754Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.754Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf8f"
+  },
+  "keyword_name": "Vùng biển quốc gia",
+  "keyword_slug": "vung-bien-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/vung-bien-quoc-gia__d2cf8f",
+    "videos": "videos/keyword/vung-bien-quoc-gia__d2cf8f"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.809Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.809Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf92"
+  },
+  "keyword_name": "Quyền chủ quyền",
+  "keyword_slug": "quyen-chu-quyen",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/quyen-chu-quyen__d2cf92",
+    "videos": "videos/keyword/quyen-chu-quyen__d2cf92"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.897Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.897Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf94"
+  },
+  "keyword_name": "Luật Biển quốc tế",
+  "keyword_slug": "luat-bien-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/luat-bien-quoc-te__d2cf94",
+    "videos": "videos/keyword/luat-bien-quoc-te__d2cf94"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.944Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.944Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc57f90b889d2d2cf96"
+  },
+  "keyword_name": "Tổ chức Thương mại Thế giới",
+  "keyword_slug": "to-chuc-thuong-mai-the-gioi",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/to-chuc-thuong-mai-the-gioi__d2cf96",
+    "videos": "videos/keyword/to-chuc-thuong-mai-the-gioi__d2cf96"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:17.991Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:17.991Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cf98"
+  },
+  "keyword_name": "WTO",
+  "keyword_slug": "wto",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/wto__d2cf98",
+    "videos": "videos/keyword/wto__d2cf98"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.057Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.057Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cf9a"
+  },
+  "keyword_name": "Nguyên tắc thương mại quốc tế",
+  "keyword_slug": "nguyen-tac-thuong-mai-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nguyen-tac-thuong-mai-quoc-te__d2cf9a",
+    "videos": "videos/keyword/nguyen-tac-thuong-mai-quoc-te__d2cf9a"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.168Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.168Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cf9c"
+  },
+  "keyword_name": "Tối huệ quốc",
+  "keyword_slug": "toi-hue-quoc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/toi-hue-quoc__d2cf9c",
+    "videos": "videos/keyword/toi-hue-quoc__d2cf9c"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.286Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.286Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cf9e"
+  },
+  "keyword_name": "Đối xử quốc gia",
+  "keyword_slug": "doi-xu-quoc-gia",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/doi-xu-quoc-gia__d2cf9e",
+    "videos": "videos/keyword/doi-xu-quoc-gia__d2cf9e"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.340Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.340Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cfa0"
+  },
+  "keyword_name": "Hợp đồng thương mại quốc tế",
+  "keyword_slug": "hop-dong-thuong-mai-quoc-te",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/hop-dong-thuong-mai-quoc-te__d2cfa0",
+    "videos": "videos/keyword/hop-dong-thuong-mai-quoc-te__d2cfa0"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.423Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.423Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cfa2"
+  },
+  "keyword_name": "Nguyên tắc hợp đồng",
+  "keyword_slug": "nguyen-tac-hop-dong",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/nguyen-tac-hop-dong__d2cfa2",
+    "videos": "videos/keyword/nguyen-tac-hop-dong__d2cfa2"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.500Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.500Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cfa4"
+  },
+  "keyword_name": "Tự do thoả thuận",
+  "keyword_slug": "tu-do-thoa-thuan",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/tu-do-thoa-thuan__d2cfa4",
+    "videos": "videos/keyword/tu-do-thoa-thuan__d2cfa4"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.550Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.550Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cfa6"
+  },
+  "keyword_name": "Thiện chí trung thực",
+  "keyword_slug": "thien-chi-trung-thuc",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/thien-chi-trung-thuc__d2cfa6",
+    "videos": "videos/keyword/thien-chi-trung-thuc__d2cfa6"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.606Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.606Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dc67f90b889d2d2cfa8"
+  },
+  "keyword_name": "Giải quyết tranh chấp thương mại",
+  "keyword_slug": "giai-quyet-tranh-chap-thuong-mai",
+  "aliases": [],
+  "asset_prefixes": {
+    "images": "images/keyword/giai-quyet-tranh-chap-thuong-mai__d2cfa8",
+    "videos": "videos/keyword/giai-quyet-tranh-chap-thuong-mai__d2cfa8"
+  },
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:18.662Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:18.662Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"

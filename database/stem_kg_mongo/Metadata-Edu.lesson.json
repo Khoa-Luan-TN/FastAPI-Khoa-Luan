@@ -2662,9 +2662,9 @@
   "_id": {
     "$oid": "6a0ccd0f9b60371aab493dfc"
   },
-  "lesson_num": 1,
-  "lesson_name": "Các hoạt động kinh tế cơ bản trong đời sống xã hội",
-  "lesson_type": "ly thuyet",
+  "lesson_num": null,
+  "lesson_name": null,
+  "lesson_type": null,
   "topic_id": {
     "$oid": "6a0ccd0f9b60371aab493df3"
   },
@@ -2680,7 +2680,7 @@
     "$date": "2026-05-19T20:50:23.552Z"
   },
   "updated_at": {
-    "$date": "2026-05-19T20:50:23.552Z"
+    "$date": "2026-05-20T03:19:30.301Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
@@ -2689,9 +2689,9 @@
   "_id": {
     "$oid": "6a0ccd0f9b60371aab493dfd"
   },
-  "lesson_num": 2,
-  "lesson_name": "Các chủ thể của nền kinh tế",
-  "lesson_type": "ly thuyet",
+  "lesson_num": null,
+  "lesson_name": null,
+  "lesson_type": null,
   "topic_id": {
     "$oid": "6a0ccd0f9b60371aab493df3"
   },
@@ -2707,7 +2707,7 @@
     "$date": "2026-05-19T20:50:23.654Z"
   },
   "updated_at": {
-    "$date": "2026-05-19T20:50:23.654Z"
+    "$date": "2026-05-20T03:19:30.304Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
@@ -3281,13 +3281,13 @@
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d4"
+    "$oid": "6a0d293b7f90b889d2d2cc51"
   },
   "lesson_num": 1,
   "lesson_name": "Cạnh tranh trong nền kinh tế thị trường",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cb"
+    "$oid": "6a0d293a7f90b889d2d2cc48"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01",
@@ -3298,23 +3298,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.604Z"
+    "$date": "2026-05-20T03:23:39.303Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.604Z"
+    "$date": "2026-05-20T03:23:39.303Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d5"
+    "$oid": "6a0d293b7f90b889d2d2cc52"
   },
   "lesson_num": 2,
   "lesson_name": "Cung – cầu trong nền kinh tế thị trường",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cb"
+    "$oid": "6a0d293a7f90b889d2d2cc48"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_02",
@@ -3325,23 +3325,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.626Z"
+    "$date": "2026-05-20T03:23:39.390Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.626Z"
+    "$date": "2026-05-20T03:23:39.390Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d6"
+    "$oid": "6a0d293b7f90b889d2d2cc53"
   },
   "lesson_num": 3,
   "lesson_name": "Lạm phát",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cc"
+    "$oid": "6a0d293b7f90b889d2d2cc49"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_03",
@@ -3352,23 +3352,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.644Z"
+    "$date": "2026-05-20T03:23:39.418Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.644Z"
+    "$date": "2026-05-20T03:23:39.418Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d7"
+    "$oid": "6a0d293b7f90b889d2d2cc54"
   },
   "lesson_num": 4,
   "lesson_name": "Thất nghiệp",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cc"
+    "$oid": "6a0d293b7f90b889d2d2cc49"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_04",
@@ -3379,23 +3379,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.660Z"
+    "$date": "2026-05-20T03:23:39.480Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.660Z"
+    "$date": "2026-05-20T03:23:39.480Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d8"
+    "$oid": "6a0d293b7f90b889d2d2cc55"
   },
   "lesson_num": 5,
   "lesson_name": "Thị trường lao động và việc làm",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cd"
+    "$oid": "6a0d293b7f90b889d2d2cc4a"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_05",
@@ -3406,23 +3406,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.676Z"
+    "$date": "2026-05-20T03:23:39.512Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.676Z"
+    "$date": "2026-05-20T03:23:39.512Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d9"
+    "$oid": "6a0d293b7f90b889d2d2cc56"
   },
   "lesson_num": 6,
   "lesson_name": "Ý tưởng, cơ hội kinh doanh và các năng lực cần thiết của người kinh doanh",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9ce"
+    "$oid": "6a0d293b7f90b889d2d2cc4b"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_06",
@@ -3433,23 +3433,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.694Z"
+    "$date": "2026-05-20T03:23:39.534Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.694Z"
+    "$date": "2026-05-20T03:23:39.534Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9da"
+    "$oid": "6a0d293b7f90b889d2d2cc57"
   },
   "lesson_num": 7,
   "lesson_name": "Đạo đức kinh doanh",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9cf"
+    "$oid": "6a0d293b7f90b889d2d2cc4c"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_07",
@@ -3460,23 +3460,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.714Z"
+    "$date": "2026-05-20T03:23:39.556Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.714Z"
+    "$date": "2026-05-20T03:23:39.556Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9db"
+    "$oid": "6a0d293b7f90b889d2d2cc58"
   },
   "lesson_num": 8,
   "lesson_name": "Văn hoá tiêu dùng",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d0"
+    "$oid": "6a0d293b7f90b889d2d2cc4d"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_08",
@@ -3487,23 +3487,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.732Z"
+    "$date": "2026-05-20T03:23:39.580Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.732Z"
+    "$date": "2026-05-20T03:23:39.580Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9dc"
+    "$oid": "6a0d293b7f90b889d2d2cc59"
   },
   "lesson_num": 9,
   "lesson_name": "Quyền bình đẳng của công dân trước pháp luật",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d1"
+    "$oid": "6a0d293b7f90b889d2d2cc4e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_09",
@@ -3514,23 +3514,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.748Z"
+    "$date": "2026-05-20T03:23:39.605Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.748Z"
+    "$date": "2026-05-20T03:23:39.605Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9dd"
+    "$oid": "6a0d293b7f90b889d2d2cc5a"
   },
   "lesson_num": 10,
   "lesson_name": "Bình đẳng giới trong các lĩnh vực",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d1"
+    "$oid": "6a0d293b7f90b889d2d2cc4e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_10",
@@ -3541,23 +3541,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.764Z"
+    "$date": "2026-05-20T03:23:39.634Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.764Z"
+    "$date": "2026-05-20T03:23:39.634Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9de"
+    "$oid": "6a0d293b7f90b889d2d2cc5b"
   },
   "lesson_num": 11,
   "lesson_name": "Quyền bình đẳng giữa các dân tộc",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d1"
+    "$oid": "6a0d293b7f90b889d2d2cc4e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_11",
@@ -3568,23 +3568,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.781Z"
+    "$date": "2026-05-20T03:23:39.659Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.781Z"
+    "$date": "2026-05-20T03:23:39.659Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9df"
+    "$oid": "6a0d293b7f90b889d2d2cc5c"
   },
   "lesson_num": 12,
   "lesson_name": "Quyền bình đẳng giữa các tôn giáo",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d1"
+    "$oid": "6a0d293b7f90b889d2d2cc4e"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_12",
@@ -3595,23 +3595,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.803Z"
+    "$date": "2026-05-20T03:23:39.686Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.803Z"
+    "$date": "2026-05-20T03:23:39.686Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e0"
+    "$oid": "6a0d293b7f90b889d2d2cc5d"
   },
   "lesson_num": 13,
   "lesson_name": "Quyền và nghĩa vụ của công dân trong tham gia quản lí nhà nước và xã hội",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d2"
+    "$oid": "6a0d293b7f90b889d2d2cc4f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_13",
@@ -3622,23 +3622,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.818Z"
+    "$date": "2026-05-20T03:23:39.728Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.818Z"
+    "$date": "2026-05-20T03:23:39.728Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e1"
+    "$oid": "6a0d293b7f90b889d2d2cc5e"
   },
   "lesson_num": 14,
   "lesson_name": "Quyền và nghĩa vụ của công dân về bầu cử và ứng cử",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d2"
+    "$oid": "6a0d293b7f90b889d2d2cc4f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_14",
@@ -3649,23 +3649,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.833Z"
+    "$date": "2026-05-20T03:23:39.754Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.833Z"
+    "$date": "2026-05-20T03:23:39.754Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e2"
+    "$oid": "6a0d293b7f90b889d2d2cc5f"
   },
   "lesson_num": 15,
   "lesson_name": "Quyền và nghĩa vụ của công dân về khiếu nại, tố cáo",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d2"
+    "$oid": "6a0d293b7f90b889d2d2cc4f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_15",
@@ -3676,23 +3676,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.848Z"
+    "$date": "2026-05-20T03:23:39.781Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.848Z"
+    "$date": "2026-05-20T03:23:39.781Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e3"
+    "$oid": "6a0d293b7f90b889d2d2cc60"
   },
   "lesson_num": 16,
   "lesson_name": "Quyền và nghĩa vụ của công dân về bảo vệ Tổ quốc",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d2"
+    "$oid": "6a0d293b7f90b889d2d2cc4f"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_16",
@@ -3703,23 +3703,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.863Z"
+    "$date": "2026-05-20T03:23:39.808Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.863Z"
+    "$date": "2026-05-20T03:23:39.808Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e4"
+    "$oid": "6a0d293b7f90b889d2d2cc61"
   },
   "lesson_num": 17,
   "lesson_name": "Quyền bất khả xâm phạm về thân thể và quyền được pháp luật bảo hộ về tính mạng, sức khoẻ, danh dự, nhân phẩm của công dân",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+    "$oid": "6a0d293b7f90b889d2d2cc50"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_17",
@@ -3730,23 +3730,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.882Z"
+    "$date": "2026-05-20T03:23:39.833Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.882Z"
+    "$date": "2026-05-20T03:23:39.833Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e5"
+    "$oid": "6a0d293b7f90b889d2d2cc62"
   },
   "lesson_num": 18,
   "lesson_name": "Quyền bất khả xâm phạm về chỗ ở của công dân",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+    "$oid": "6a0d293b7f90b889d2d2cc50"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_18",
@@ -3757,23 +3757,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.897Z"
+    "$date": "2026-05-20T03:23:39.890Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.897Z"
+    "$date": "2026-05-20T03:23:39.890Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e6"
+    "$oid": "6a0d293b7f90b889d2d2cc63"
   },
   "lesson_num": 19,
   "lesson_name": "Quyền được bảo đảm an toàn và bí mật thư tín, điện thoại, điện tín của công dân",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+    "$oid": "6a0d293b7f90b889d2d2cc50"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_19",
@@ -3784,23 +3784,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.914Z"
+    "$date": "2026-05-20T03:23:39.916Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.914Z"
+    "$date": "2026-05-20T03:23:39.916Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e7"
+    "$oid": "6a0d293b7f90b889d2d2cc64"
   },
   "lesson_num": 20,
   "lesson_name": "Quyền và nghĩa vụ của công dân về tự do ngôn luận, báo chí và tiếp cận thông tin",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+    "$oid": "6a0d293b7f90b889d2d2cc50"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_20",
@@ -3811,23 +3811,23 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.931Z"
+    "$date": "2026-05-20T03:23:39.941Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.931Z"
+    "$date": "2026-05-20T03:23:39.941Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
 },
 {
   "_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9e8"
+    "$oid": "6a0d293b7f90b889d2d2cc65"
   },
   "lesson_num": 21,
   "lesson_name": "Quyền và nghĩa vụ của công dân về tự do tín ngưỡng và tôn giáo",
   "lesson_type": "ly thuyet",
   "topic_id": {
-    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+    "$oid": "6a0d293b7f90b889d2d2cc50"
   },
   "asset_prefixes": {
     "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_21",
@@ -3838,10 +3838,442 @@
   "is_deleted": false,
   "deleted_at": null,
   "created_at": {
-    "$date": "2026-05-20T02:51:25.949Z"
+    "$date": "2026-05-20T03:23:39.966Z"
   },
   "updated_at": {
-    "$date": "2026-05-20T02:51:25.949Z"
+    "$date": "2026-05-20T03:23:39.966Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce34"
+  },
+  "lesson_num": 1,
+  "lesson_name": "Tăng trưởng và phát triển kinh tế",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2b"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_01/lesson_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.732Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.732Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce35"
+  },
+  "lesson_num": 2,
+  "lesson_name": "Hội nhập kinh tế quốc tế",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2c"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_02",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_02",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_02"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_02/lesson_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.764Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.764Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce36"
+  },
+  "lesson_num": 3,
+  "lesson_name": "Bảo hiểm",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2d"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_03",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_03",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_03"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_03/lesson_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.789Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.789Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce37"
+  },
+  "lesson_num": 4,
+  "lesson_name": "An sinh xã hội",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2d"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_04",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_04",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_04"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_03/lesson_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.812Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.812Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce38"
+  },
+  "lesson_num": 5,
+  "lesson_name": "Lập kế hoạch kinh doanh",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_05",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_05",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_05"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_04/lesson_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.837Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.837Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce39"
+  },
+  "lesson_num": 6,
+  "lesson_name": "Trách nhiệm xã hội của doanh nghiệp",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce2f"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_06",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_06",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_06"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_05/lesson_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.860Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.860Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce3a"
+  },
+  "lesson_num": 7,
+  "lesson_name": "Quản lí thu, chi trong gia đình",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce30"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_07",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_07",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_07"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_06/lesson_07",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.883Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.883Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce3b"
+  },
+  "lesson_num": 8,
+  "lesson_name": "Quyền và nghĩa vụ của công dân về kinh doanh và nộp thuế",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce31"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_08",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_08",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_08"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_07/lesson_08",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.906Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.906Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce3c"
+  },
+  "lesson_num": 9,
+  "lesson_name": "Quyền và nghĩa vụ của công dân về sở hữu tài sản và tôn trọng tài sản của người khác",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce31"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_09",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_09",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_09"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_07/lesson_09",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.933Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.933Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce3d"
+  },
+  "lesson_num": 10,
+  "lesson_name": "Quyền và nghĩa vụ của công dân trong hôn nhân và gia đình",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce32"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_10",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_10",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_10"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_08/lesson_10",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.958Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.958Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce3e"
+  },
+  "lesson_num": 11,
+  "lesson_name": "Quyền và nghĩa vụ của công dân trong học tập",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce32"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_11",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_11",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_11"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_08/lesson_11",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:07.981Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:07.981Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbc7f90b889d2d2ce3f"
+  },
+  "lesson_num": 12,
+  "lesson_name": "Quyền và nghĩa vụ của công dân trong bảo vệ, chăm sóc sức khỏe và bảo đảm an sinh xã hội",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce32"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_12",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_12",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_12"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_08/lesson_12",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:08.010Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:08.010Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbc7f90b889d2d2ce40"
+  },
+  "lesson_num": 13,
+  "lesson_name": "Quyền và nghĩa vụ của công dân trong bảo vệ di sản văn hóa, môi trường và tài nguyên thiên nhiên",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce32"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_13",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_13",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_13"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_08/lesson_13",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:08.041Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:08.041Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbc7f90b889d2d2ce41"
+  },
+  "lesson_num": 14,
+  "lesson_name": "Một số vấn đề chung về pháp luật quốc tế",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce33"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_14",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_14",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_14"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_09/lesson_14",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:08.067Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:08.067Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbc7f90b889d2d2ce42"
+  },
+  "lesson_num": 15,
+  "lesson_name": "Công pháp quốc tế về dân cư, lãnh thổ và chủ quyền quốc gia",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce33"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_15",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_15",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_15"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_09/lesson_15",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:08.094Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:08.094Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d3dbc7f90b889d2d2ce43"
+  },
+  "lesson_num": 16,
+  "lesson_name": "Nguyên tắc cơ bản của Tổ chức Thương mại thế giới và hợp đồng thương mại quốc tế",
+  "lesson_type": "ly thuyet",
+  "topic_id": {
+    "$oid": "6a0d3dbb7f90b889d2d2ce33"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_16",
+    "images": "images/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_16",
+    "videos": "videos/lop-12/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_16"
+  },
+  "import_key": "lesson/lop-12/giao-duc-kinh-te-va-phap-luat/topic_09/lesson_16",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T04:51:08.133Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T04:51:08.133Z"
   },
   "created_by": "user_01",
   "updated_by": "user_01"
