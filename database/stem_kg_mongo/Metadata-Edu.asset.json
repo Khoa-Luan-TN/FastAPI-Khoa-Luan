@@ -19888,4 +19888,856 @@
   },
   "created_by": "user_01",
   "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d161d9b60371aab49409d"
+  },
+  "owner_type": "subject",
+  "owner_id": "6a0ccd0e9b60371aab493df2",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/subject",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/subject/GD KT-PL 10 KNTT.pdf",
+  "file_name": "GD KT-PL 10 KNTT.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/subject/GD%20KT-PL%2010%20KNTT.pdf",
+  "content_type": "application/pdf",
+  "size": 12568343,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:02:05.487Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:02:05.487Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16b39b60371aab49409e"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df3",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01/CD1_NenKinhTeVaCacChuTheCuaNenKinhTe.pdf",
+  "file_name": "CD1_NenKinhTeVaCacChuTheCuaNenKinhTe.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01/CD1_NenKinhTeVaCacChuTheCuaNenKinhTe.pdf",
+  "content_type": "application/pdf",
+  "size": 3045202,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:04:35.453Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:04:35.453Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16bf9b60371aab49409f"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df4",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02/CD2_ThiTruongVaCoCheThiTruong.pdf",
+  "file_name": "CD2_ThiTruongVaCoCheThiTruong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02/CD2_ThiTruongVaCoCheThiTruong.pdf",
+  "content_type": "application/pdf",
+  "size": 1082187,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:04:47.818Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:04:47.818Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16cd9b60371aab4940a0"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df5",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03/CD3_NganSachNhaNuocVaThue.pdf",
+  "file_name": "CD3_NganSachNhaNuocVaThue.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03/CD3_NganSachNhaNuocVaThue.pdf",
+  "content_type": "application/pdf",
+  "size": 579057,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:01.183Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:01.183Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16d89b60371aab4940a1"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df6",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04/CD4_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "file_name": "CD4_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04/CD4_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "content_type": "application/pdf",
+  "size": 1389598,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:12.868Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:12.868Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16e59b60371aab4940a2"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df7",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05/CD5_TinDungVaCachSuDungCacDichVuTinDungTrongDoiSong.pdf",
+  "file_name": "CD5_TinDungVaCachSuDungCacDichVuTinDungTrongDoiSong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05/CD5_TinDungVaCachSuDungCacDichVuTinDungTrongDoiSong.pdf",
+  "content_type": "application/pdf",
+  "size": 777077,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:25.687Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:25.687Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16ee9b60371aab4940a3"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df8",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06/CD6_LapKeHoachTaiChinhCaNhan.pdf",
+  "file_name": "CD6_LapKeHoachTaiChinhCaNhan.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06/CD6_LapKeHoachTaiChinhCaNhan.pdf",
+  "content_type": "application/pdf",
+  "size": 632611,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:34.294Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:34.294Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d16fc9b60371aab4940a4"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493df9",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07/CD7_PhapLuatNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "CD7_PhapLuatNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07/CD7_PhapLuatNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 1639204,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:48.592Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:48.592Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17069b60371aab4940a5"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493dfa",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08/CD8_HienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "CD8_HienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08/CD8_HienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 773535,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:05:58.858Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:05:58.858Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17129b60371aab4940a6"
+  },
+  "owner_type": "topic",
+  "owner_id": "6a0ccd0f9b60371aab493dfb",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09/CD9_HeThongChinhTriNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "CD9_HeThongChinhTriNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09/CD9_HeThongChinhTriNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 1698647,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:06:10.538Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:06:10.538Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17309b60371aab4940a7"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493dfc",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01/B1_M1_HoatDongSanXuat.pdf",
+  "file_name": "B1_M1_HoatDongSanXuat.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01/B1_M1_HoatDongSanXuat.pdf",
+  "content_type": "application/pdf",
+  "size": 1414967,
+  "is_deleted": true,
+  "deleted_at": {
+    "$date": "2026-05-20T02:07:00.992Z"
+  },
+  "created_at": {
+    "$date": "2026-05-20T02:06:40.707Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:00.992Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17519b60371aab4940a8"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493dfc",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01/B1_CacHoatDongKinhTeCoBanTrongDoiSongXaHoi.pdf",
+  "file_name": "B1_CacHoatDongKinhTeCoBanTrongDoiSongXaHoi.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_01/B1_CacHoatDongKinhTeCoBanTrongDoiSongXaHoi.pdf",
+  "content_type": "application/pdf",
+  "size": 1859290,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:07:13.809Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:13.809Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d175b9b60371aab4940a9"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493dfd",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_02",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_02/B2_CacChuTheCuaNenKinhTe.pdf",
+  "file_name": "B2_CacChuTheCuaNenKinhTe.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_01-lesson_02/B2_CacChuTheCuaNenKinhTe.pdf",
+  "content_type": "application/pdf",
+  "size": 1496175,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:07:23.822Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:23.822Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17669b60371aab4940aa"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493dfe",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_03",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_03/B3_ThiTruong.pdf",
+  "file_name": "B3_ThiTruong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_03/B3_ThiTruong.pdf",
+  "content_type": "application/pdf",
+  "size": 722196,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:07:34.420Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:34.420Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17709b60371aab4940ab"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493dff",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_04",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_04/B4_CoCheThiTruong.pdf",
+  "file_name": "B4_CoCheThiTruong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_02-lesson_04/B4_CoCheThiTruong.pdf",
+  "content_type": "application/pdf",
+  "size": 647020,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:07:44.975Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:44.975Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d177b9b60371aab4940ac"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e00",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_05",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_05/B5_NganSachNhaNuoc.pdf",
+  "file_name": "B5_NganSachNhaNuoc.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_05/B5_NganSachNhaNuoc.pdf",
+  "content_type": "application/pdf",
+  "size": 434961,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:07:55.547Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:07:55.547Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17889b60371aab4940ad"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e01",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_06",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_06/B6_Thue.pdf",
+  "file_name": "B6_Thue.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_03-lesson_06/B6_Thue.pdf",
+  "content_type": "application/pdf",
+  "size": 484895,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:08:08.226Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:08:08.226Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17909b60371aab4940ae"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e02",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_07",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_07/B7_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "file_name": "B7_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_04-lesson_07/B7_SanXuatKinhDoanhVaCacMoHinhSanXuatKinhDoanh.pdf",
+  "content_type": "application/pdf",
+  "size": 1455596,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:08:16.906Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:08:16.906Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17999b60371aab4940af"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e03",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_08",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_08/B8_TinDungVaVaiTroCuaTinDungTrongDoiSong.pdf",
+  "file_name": "B8_TinDungVaVaiTroCuaTinDungTrongDoiSong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_08/B8_TinDungVaVaiTroCuaTinDungTrongDoiSong.pdf",
+  "content_type": "application/pdf",
+  "size": 482034,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:08:25.009Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:08:25.009Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17a19b60371aab4940b0"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e04",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_09",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_09/B9_DichVuTinDung.pdf",
+  "file_name": "B9_DichVuTinDung.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_05-lesson_09/B9_DichVuTinDung.pdf",
+  "content_type": "application/pdf",
+  "size": 584667,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:08:33.601Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:08:33.601Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17b59b60371aab4940b1"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e05",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_10",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_10/B10_LapKeHoachTaiChinhCaNhan.pdf",
+  "file_name": "B10_LapKeHoachTaiChinhCaNhan.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_06-lesson_10/B10_LapKeHoachTaiChinhCaNhan.pdf",
+  "content_type": "application/pdf",
+  "size": 697882,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:08:53.832Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:08:53.832Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17c19b60371aab4940b2"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd0f9b60371aab493e06",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_11",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_11/B11_KhaiNiemDacDiemVaVaiTroCuaPhapLuat.pdf",
+  "file_name": "B11_KhaiNiemDacDiemVaVaiTroCuaPhapLuat.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_11/B11_KhaiNiemDacDiemVaVaiTroCuaPhapLuat.pdf",
+  "content_type": "application/pdf",
+  "size": 357502,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:09:05.402Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:09:05.402Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17cd9b60371aab4940b3"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e07",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_12",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_12/B12_HeThongPhapLuatVaVanBanPhapLuatVietNam.pdf",
+  "file_name": "B12_HeThongPhapLuatVaVanBanPhapLuatVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_12/B12_HeThongPhapLuatVaVanBanPhapLuatVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 516327,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:09:17.972Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:09:17.972Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17dc9b60371aab4940b4"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e08",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_13",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_13/B13_ThucHienPhapLuat.pdf",
+  "file_name": "B13_ThucHienPhapLuat.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_07-lesson_13/B13_ThucHienPhapLuat.pdf",
+  "content_type": "application/pdf",
+  "size": 1365562,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:09:32.261Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:09:32.261Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17e69b60371aab4940b5"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e09",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_14",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_14/B14_GioiThieuVeHienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "B14_GioiThieuVeHienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_14/B14_GioiThieuVeHienPhapNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 452405,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:09:42.609Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:09:42.609Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d17f99b60371aab4940b6"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0a",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_15",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_15/B15_NoiDungCoBanCuaHienPhapVietNamVeCheDoChinhTri.pdf",
+  "file_name": "B15_NoiDungCoBanCuaHienPhapVietNamVeCheDoChinhTri.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_15/B15_NoiDungCoBanCuaHienPhapVietNamVeCheDoChinhTri.pdf",
+  "content_type": "application/pdf",
+  "size": 491489,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:01.852Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:01.852Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d18039b60371aab4940b7"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0b",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_16",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_16/B16_QuyenConNguoiQuyenVaNghiaVuCoBanCuaCongDanTrongHienPhap.pdf",
+  "file_name": "B16_QuyenConNguoiQuyenVaNghiaVuCoBanCuaCongDanTrongHienPhap.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_16/B16_QuyenConNguoiQuyenVaNghiaVuCoBanCuaCongDanTrongHienPhap.pdf",
+  "content_type": "application/pdf",
+  "size": 333777,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:11.482Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:11.482Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d180b9b60371aab4940b8"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0c",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_17",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_17/B17_NoiDungCoBanCuaHienPhapVeKinhTeVanHoaXaHoiGiaoDucKhoaHocCongNgheMoiTruong.pdf",
+  "file_name": "B17_NoiDungCoBanCuaHienPhapVeKinhTeVanHoaXaHoiGiaoDucKhoaHocCongNgheMoiTruong.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_17/B17_NoiDungCoBanCuaHienPhapVeKinhTeVanHoaXaHoiGiaoDucKhoaHocCongNgheMoiTruong.pdf",
+  "content_type": "application/pdf",
+  "size": 314007,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:19.969Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:19.969Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d18169b60371aab4940b9"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0d",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_18",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_18/B18_NoiDungCoBanCuaHienPhapVeBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "B18_NoiDungCoBanCuaHienPhapVeBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_08-lesson_18/B18_NoiDungCoBanCuaHienPhapVeBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 349434,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:30.288Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:30.288Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d18299b60371aab4940ba"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0e",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_19",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_19/B19_DacDiemCauTrucVaNguyenTacHoatDongCuaHeThongChinhTriVietNam.pdf",
+  "file_name": "B19_DacDiemCauTrucVaNguyenTacHoatDongCuaHeThongChinhTriVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_19/B19_DacDiemCauTrucVaNguyenTacHoatDongCuaHeThongChinhTriVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 556340,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:49.962Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:49.962Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d18339b60371aab4940bb"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e0f",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_20",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_20/B20_DacDiemNguyenTacToChucVaHoatDongCuaBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "B20_DacDiemNguyenTacToChucVaHoatDongCuaBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_20/B20_DacDiemNguyenTacToChucVaHoatDongCuaBoMayNhaNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 483520,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:10:59.071Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:10:59.071Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d183b9b60371aab4940bc"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e10",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_21",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_21/B21_QuocHoiChuTichNuocChinhPhuNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "file_name": "B21_QuocHoiChuTichNuocChinhPhuNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_21/B21_QuocHoiChuTichNuocChinhPhuNuocCongHoaXaHoiChuNghiaVietNam.pdf",
+  "content_type": "application/pdf",
+  "size": 649061,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:11:07.158Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:11:07.158Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d184e9b60371aab4940bd"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e11",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_22",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_22/B22_ToaAnNhanDanVaVienKiemSatNhanDan.pdf",
+  "file_name": "B22_ToaAnNhanDanVaVienKiemSatNhanDan.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_22/B22_ToaAnNhanDanVaVienKiemSatNhanDan.pdf",
+  "content_type": "application/pdf",
+  "size": 917202,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:11:26.162Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:11:26.162Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d18589b60371aab4940be"
+  },
+  "owner_type": "lesson",
+  "owner_id": "6a0ccd109b60371aab493e12",
+  "asset_type": "document",
+  "bucket": "data-edu",
+  "path_prefix": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_23",
+  "object_key": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_23/B23_HoiDongNhanDanVaUyBanNhanDan.pdf",
+  "file_name": "B23_HoiDongNhanDanVaUyBanNhanDan.pdf",
+  "url": "http://127.0.0.1:9000/data-edu/documents/lop-10/giao-duc-kinh-te-va-phap-luat/lesson/topic_09-lesson_23/B23_HoiDongNhanDanVaUyBanNhanDan.pdf",
+  "content_type": "application/pdf",
+  "size": 345692,
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:11:36.858Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:11:36.858Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
 }]

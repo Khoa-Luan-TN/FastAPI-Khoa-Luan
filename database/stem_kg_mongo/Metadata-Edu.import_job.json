@@ -1,22 +1,168 @@
 [{
   "_id": {
-    "$oid": "69e7719e104e6a99b261ae34"
+    "$oid": "6a0c788adb83607e8066bb78"
   },
   "status": "done",
   "progress": 100,
   "current_collection": null,
-  "processed_rows": 958,
-  "total_rows": 958,
+  "processed_rows": 1,
+  "total_rows": 1,
   "message": "Hoàn tất import",
   "error": null,
   "report": {
-    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpea3xy45j.xlsx",
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpe_xauyip.xlsx",
     "collections": {
       "class": {
         "rows": 1,
         "inserted": 1,
         "updated": 0,
-        "synced": 1,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-10) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 10', 'mongo_id': '6a0c788adb83607e8066bb79'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "class"
+          }
+        ]
+      },
+      "subject": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "topic": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "lesson": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "chunk": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "keyword": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      }
+    },
+    "errors": [],
+    "alias_generation_enabled": false,
+    "alias_skipped_by_flag": false
+  },
+  "file_name": "ImportMetadatav1.xlsx",
+  "actor": "user_01",
+  "created_at": {
+    "$date": "2026-05-19T14:49:46.312Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T14:49:46.508Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a0c87cedb83607e8066bb7a"
+  },
+  "status": "done",
+  "progress": 100,
+  "current_collection": null,
+  "processed_rows": 1,
+  "total_rows": 1,
+  "message": "Hoàn tất import",
+  "error": null,
+  "report": {
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpqx_88n5m.xlsx",
+    "collections": {
+      "class": {
+        "rows": 1,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "errors": []
+      },
+      "subject": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "topic": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "lesson": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "chunk": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      },
+      "keyword": {
+        "rows": 0,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
+        "skipped": true
+      }
+    },
+    "errors": [],
+    "alias_generation_enabled": false,
+    "alias_skipped_by_flag": false
+  },
+  "file_name": "ImportMetadatav1.xlsx",
+  "actor": "user_01",
+  "created_at": {
+    "$date": "2026-05-19T15:54:54.948Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T15:54:55.039Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0e9b60371aab493df1"
+  },
+  "status": "done",
+  "progress": 100,
+  "current_collection": null,
+  "processed_rows": 718,
+  "total_rows": 718,
+  "message": "Hoàn tất import",
+  "error": null,
+  "report": {
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpx411897h.xlsx",
+    "collections": {
+      "class": {
+        "rows": 1,
+        "inserted": 0,
+        "updated": 0,
+        "synced": 0,
         "errors": []
       },
       "subject": {
@@ -27,56 +173,820 @@
         "errors": []
       },
       "topic": {
-        "rows": 6,
-        "inserted": 6,
+        "rows": 9,
+        "inserted": 9,
         "updated": 0,
-        "synced": 6,
+        "synced": 9,
         "errors": []
       },
       "lesson": {
-        "rows": 34,
-        "inserted": 34,
+        "rows": 23,
+        "inserted": 23,
         "updated": 0,
-        "synced": 34,
+        "synced": 23,
         "errors": []
       },
       "chunk": {
-        "rows": 76,
-        "inserted": 76,
+        "rows": 62,
+        "inserted": 62,
         "updated": 0,
-        "synced": 76,
+        "synced": 62,
         "errors": []
       },
       "keyword": {
-        "rows": 420,
-        "inserted": 361,
-        "reused": 59,
-        "synced": 420,
-        "errors": [],
-        "alias_generation_enabled": true,
-        "alias_skipped_by_flag": false,
-        "alias_processed_keywords": 84,
-        "alias_inserted": 7,
+        "rows": 311,
+        "inserted": 255,
+        "reused": 55,
+        "synced": 310,
+        "errors": [
+          {
+            "row": 315,
+            "error": "missing chunk_ref",
+            "collection": "keyword"
+          }
+        ],
+        "alias_generation_enabled": false,
+        "alias_skipped_by_flag": true,
+        "alias_processed_keywords": 0,
+        "alias_inserted": 0,
         "alias_deleted": 0,
-        "alias_skipped": 0,
+        "alias_skipped": 1,
         "alias_errors": [],
         "alias_stopped_due_to_quota": false,
         "alias_remaining_keywords": [],
-        "affected_topics": 6,
-        "finalized_topics": 6,
+        "affected_topics": 9,
+        "finalized_topics": 9,
         "topic_finalize_errors": []
       }
     },
     "errors": [],
-    "alias_generation_enabled": true,
-    "alias_skipped_by_flag": false
+    "alias_generation_enabled": false,
+    "alias_skipped_by_flag": true
   },
-  "file_name": "ImportMetadata.xlsx",
+  "file_name": "ImportMetadatav1_ai.xlsx",
   "actor": "user_01",
   "created_at": {
-    "$date": "2026-04-21T12:46:22.614Z"
+    "$date": "2026-05-19T20:50:22.562Z"
   },
   "updated_at": {
-    "$date": "2026-04-21T12:59:40.300Z"
+    "$date": "2026-05-19T20:50:46.887Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9c8"
+  },
+  "status": "done",
+  "progress": 100,
+  "current_collection": null,
+  "processed_rows": 683,
+  "total_rows": 683,
+  "message": "Hoàn tất import",
+  "error": null,
+  "report": {
+    "file": "/var/folders/nh/nz0xn5c57d9cxnrxqv23w7w00000gn/T/tmpr2_4ldjy.xlsx",
+    "collections": {
+      "class": {
+        "rows": 1,
+        "inserted": 1,
+        "updated": 0,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "class"
+          }
+        ]
+      },
+      "subject": {
+        "rows": 1,
+        "inserted": 1,
+        "updated": 0,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "subject"
+          }
+        ]
+      },
+      "topic": {
+        "rows": 9,
+        "inserted": 9,
+        "updated": 0,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 3,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 4,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 5,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 6,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 7,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 8,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 9,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          },
+          {
+            "row": 10,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "topic"
+          }
+        ]
+      },
+      "lesson": {
+        "rows": 23,
+        "inserted": 21,
+        "updated": 0,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 3,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 4,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 5,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 6,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 7,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 8,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 9,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 10,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 11,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 12,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 13,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 14,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 15,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 16,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 17,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 18,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 19,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 20,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 21,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 22,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "lesson"
+          },
+          {
+            "row": 23,
+            "error": "missing import_key",
+            "collection": "lesson"
+          },
+          {
+            "row": 24,
+            "error": "missing import_key",
+            "collection": "lesson"
+          }
+        ]
+      },
+      "chunk": {
+        "rows": 59,
+        "inserted": 59,
+        "updated": 0,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 3,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 4,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 5,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 6,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 7,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 8,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 9,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 10,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 11,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 12,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 13,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 14,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 15,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 16,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 17,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 18,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 19,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 20,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 21,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 22,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 23,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 24,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 25,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 26,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 27,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 28,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 29,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 30,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 31,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 32,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 33,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 34,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 35,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 36,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 37,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 38,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 39,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 40,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 41,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 42,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 43,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 44,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 45,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 46,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 47,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 48,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 49,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 50,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          },
+          {
+            "row": 51,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk"
+          }
+        ]
+      },
+      "keyword": {
+        "rows": 295,
+        "inserted": 235,
+        "reused": 60,
+        "synced": 0,
+        "errors": [
+          {
+            "row": 2,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 3,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 4,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 5,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 6,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 7,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 8,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 9,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 10,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 11,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 12,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 13,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 14,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 15,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 16,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 17,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 18,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 19,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 20,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 21,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 22,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 23,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 24,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 25,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 26,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 27,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 28,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 29,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 30,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 31,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 32,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 33,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 34,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 35,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 36,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 37,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 38,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 39,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 40,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 41,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 42,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 43,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 44,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 45,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 46,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 47,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 48,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 49,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 50,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          },
+          {
+            "row": 51,
+            "error": "sync_failed: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"class_pkey\"\nDETAIL:  Key (class_id)=(lop-11) already exists.\n\n[SQL: INSERT INTO class (class_name, mongo_id) VALUES (%(class_name)s, %(mongo_id)s) RETURNING class.class_id]\n[parameters: {'class_name': 'Lớp 11', 'mongo_id': '6a0d21ad7f90b889d2d2c9c9'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)",
+            "collection": "chunk_keyword"
+          }
+        ],
+        "alias_generation_enabled": false,
+        "alias_skipped_by_flag": true,
+        "alias_processed_keywords": 0,
+        "alias_inserted": 0,
+        "alias_deleted": 0,
+        "alias_skipped": 16,
+        "alias_errors": [],
+        "alias_stopped_due_to_quota": false,
+        "alias_remaining_keywords": [],
+        "affected_topics": 9,
+        "finalized_topics": 9,
+        "topic_finalize_errors": []
+      }
+    },
+    "errors": [],
+    "alias_generation_enabled": false,
+    "alias_skipped_by_flag": true
+  },
+  "file_name": "ImportMetadatav2_ai.xlsx",
+  "actor": "user_01",
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.184Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:40.785Z"
   }
 }]

@@ -491,4 +491,472 @@
   },
   "created_by": "user_01",
   "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df3"
+  },
+  "topic_num": 1,
+  "topic_name": "Nền kinh tế và các chủ thể của nền kinh tế",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_01"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.132Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.132Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df4"
+  },
+  "topic_num": 2,
+  "topic_name": "Thị trường và cơ chế thị trường",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_02"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.270Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.270Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df5"
+  },
+  "topic_num": 3,
+  "topic_name": "Ngân sách nhà nước và thuế",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_03"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.312Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.312Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df6"
+  },
+  "topic_num": 4,
+  "topic_name": "Sản xuất kinh doanh và các mô hình sản xuất kinh doanh",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_04"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.344Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.344Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df7"
+  },
+  "topic_num": 5,
+  "topic_name": "Tín dụng và cách sử dụng các dịch vụ tín dụng trong đời sống",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_05"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.372Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.372Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df8"
+  },
+  "topic_num": 6,
+  "topic_name": "Lập kế hoạch tài chính cá nhân",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_06"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.403Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.403Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493df9"
+  },
+  "topic_num": 7,
+  "topic_name": "Pháp luật nước Cộng hòa xã hội chủ nghĩa Việt Nam",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_07"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_07",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.434Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.434Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493dfa"
+  },
+  "topic_num": 8,
+  "topic_name": "Hiến pháp nước Cộng hòa xã hội chủ nghĩa Việt Nam",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_08"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_08",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.464Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.464Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0f9b60371aab493dfb"
+  },
+  "topic_num": 9,
+  "topic_name": "Hệ thống chính trị nước Cộng hòa xã hội chủ nghĩa Việt Nam",
+  "subject_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09",
+    "images": "images/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09",
+    "videos": "videos/lop-10/giao-duc-kinh-te-va-phap-luat/topic/topic_09"
+  },
+  "import_key": "topic/lop-10/giao-duc-kinh-te-va-phap-luat/topic_09",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:23.492Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:23.492Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9cb"
+  },
+  "topic_num": 1,
+  "topic_name": "Cạnh tranh, cung – cầu trong nền kinh tế thị trường",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_01",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_01",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_01"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_01",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.396Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.396Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9cc"
+  },
+  "topic_num": 2,
+  "topic_name": "Lạm phát, thất nghiệp",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_02",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_02",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_02"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_02",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.445Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.445Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9cd"
+  },
+  "topic_num": 3,
+  "topic_name": "Thị trường lao động và việc làm",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_03",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_03",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_03"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_03",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.467Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.467Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ce"
+  },
+  "topic_num": 4,
+  "topic_name": "Ý tưởng, cơ hội kinh doanh và các năng lực cần thiết của người kinh doanh",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_04",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_04",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_04"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_04",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.485Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.485Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9cf"
+  },
+  "topic_num": 5,
+  "topic_name": "Đạo đức kinh doanh",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_05",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_05",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_05"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_05",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.500Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.500Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9d0"
+  },
+  "topic_num": 6,
+  "topic_name": "Văn hoá tiêu dùng",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_06",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_06",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_06"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_06",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.514Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.514Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9d1"
+  },
+  "topic_num": 7,
+  "topic_name": "Quyền bình đẳng của công dân trước pháp luật",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_07",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_07",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_07"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_07",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.528Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.528Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9d2"
+  },
+  "topic_num": 8,
+  "topic_name": "Một số quyền dân chủ cơ bản của công dân",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_08",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_08",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_08"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_08",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.542Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.542Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9d3"
+  },
+  "topic_num": 9,
+  "topic_name": "Một số quyền tự do cơ bản của công dân",
+  "subject_id": {
+    "$oid": "6a0d21ad7f90b889d2d2c9ca"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_09",
+    "images": "images/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_09",
+    "videos": "videos/lop-11/giao-duc-kinh-te-va-phap-luat/topic/topic_09"
+  },
+  "import_key": "topic/lop-11/giao-duc-kinh-te-va-phap-luat/topic_09",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-20T02:51:25.560Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-20T02:51:25.560Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
 }]

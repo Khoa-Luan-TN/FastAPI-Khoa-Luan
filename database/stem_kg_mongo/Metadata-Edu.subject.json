@@ -69,4 +69,28 @@
   },
   "created_by": "user_01",
   "updated_by": "user_01"
+},
+{
+  "_id": {
+    "$oid": "6a0ccd0e9b60371aab493df2"
+  },
+  "subject_name": "Giáo dục kinh tế và pháp luật",
+  "subject_type": "Kết nối tri thức",
+  "class_id": {
+    "$oid": "6a0a2cb6cb9a10c9f630024e"
+  },
+  "asset_prefixes": {
+    "documents": "documents/lop-10/giao-duc-kinh-te-va-phap-luat/subject"
+  },
+  "import_key": "subj/lop-10/giao-duc-kinh-te-va-phap-luat",
+  "is_deleted": false,
+  "deleted_at": null,
+  "created_at": {
+    "$date": "2026-05-19T20:50:22.682Z"
+  },
+  "updated_at": {
+    "$date": "2026-05-19T20:50:22.682Z"
+  },
+  "created_by": "user_01",
+  "updated_by": "user_01"
 }]
